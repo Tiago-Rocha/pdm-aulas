@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 02 · Como o Flutter funciona e Dart I · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* Só nesta aula: em modo projeção usa a largura do ecrã, para o código não precisar de scroll horizontal.
+   Se mesmo assim uma linha não couber, quebra em vez de ficar escondida (o botão Copiar copia a linha inteira na mesma). */
+html.proj.deck, html.proj header.site .wrap, html.proj .deckbar .inner, html.proj .deck { max-width: min(1600px, 100vw - 48px); }
+html.proj .deck .slide pre, html.proj .deck .slide pre code { white-space: pre-wrap; overflow-wrap: normal; word-break: normal; }
+html.proj .deck .slide pre { font-size: clamp(.7rem, 1.4vw, .8rem); } /* em projetores estreitos (1280 px) encolhe um pouco em vez de quebrar */
+/* Secção 4: blocos só para ler (traço amarelo) e tabela das funções de ordem superior */
+pre.ler { box-shadow: inset 5px 0 0 var(--warn); }
+pre.ler[data-title]::before { color: var(--warn); }
+.deck .slide table.hof { font-size: 1.05rem; }
+.deck .slide table.hof td:nth-child(2) { font-size: 1.5em; white-space: nowrap; }
+.deck .slide table.hof code { font-size: 1em; white-space: nowrap; }
+</style>
+</head>
+<body data-aula="2">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 02 · Semana 3 · Terça, 22 de setembro de 2026 · 08:30 às 10:30</p>
+  <h1>Como o Flutter funciona, e Dart I</h1>
+  <p class="lead">Arranque: continuação do setup, com o emulador a instalar-se em segundo plano. Teoria: o que acontece entre o código e os pixels do ecrã, e porque o hot reload é possível. Prática: Dart no DartPad, sem instalação, e o primeiro repositório no GitHub.</p>
+    <aside class="notes">Começa por perguntar quem ficou com o flutter doctor limpo ontem. Quem não, resolve nos últimos 15 minutos da aula, não agora.</aside>
+</section>
+
+<section class="slide" data-part="Arranque">
+  <h2>Continuar o setup: o que fica a correr durante a teoria</h2>
+  <p>Ontem ficou a instalação base. Hoje começa o que demora: o emulador. Quem tem telemóvel Android com cabo pode saltar este passo.</p>
+  <ol class="steps">
+    <li>Android Studio → ecrã inicial → menu de três pontos → <strong>Virtual Device Manager</strong> → <strong>+</strong>.</li>
+    <li><strong>Medium Phone</strong> → Next → aceitar a imagem de sistema sugerida → Finish. Descarrega cerca de 1 GB: fica a correr durante a teoria.</li>
+    <li>No Windows, se pedir para ativar a <em>Plataforma de Hipervisor do Windows</em>: aceitar; obriga a reiniciar, por isso fazer no fim da aula ou em casa.</li>
+  </ol>
+  <div class="shots-2">
+    <figure class="shot"><img src="../assets/img/instalacao/as-device-manager.png" alt="Device Manager do Android Studio com o botão + para adicionar um dispositivo virtual"><figcaption><strong>Device Manager:</strong> o <strong>+</strong> cria o emulador; o triângulo arranca-o.</figcaption></figure>
+    <figure class="shot"><img src="../assets/img/instalacao/as-add-device.png" alt="Janela Add Device com a lista de telefones, Medium Phone e Pixel"><figcaption><strong>Add Device:</strong> Medium Phone é o mais leve; qualquer Pixel serve.</figcaption></figure>
+  </div>
+  <aside class="notes">Quem ainda não acabou a instalação de ontem continua pelo guia enquanto os outros criam o emulador; passa caso a caso (pastas, PATH, licenças) nos primeiros 15 minutos e durante a prática. O emulador só precisa de estar pronto na sexta.</aside>
+</section>
+
+<section class="slide">
+  <h2>Ponto de situação</h2>
+  <ul class="checklist">
+    <li><code>flutter --version</code> responde num terminal novo.</li>
+    <li>Android Studio instalado, Command-line Tools marcadas, licenças aceites (<code>flutter doctor --android-licenses</code>).</li>
+    <li><code>flutter doctor</code>: ✓ em Flutter, Android toolchain e Android Studio.</li>
+    <li>Emulador a descarregar, ou telemóvel Android com depuração USB.</li>
+    <li>Conta GitHub criada e email confirmado (é precisa na última meia hora de hoje).</li>
+  </ul>
+  <p>O que faltar fica para casa, com o <a href="../guia-instalacao.html">guia</a>; a prática de hoje corre no browser e não depende de nada disto.</p>
+  <aside class="notes">Levantamento de mãos por item. A prática de hoje é no DartPad de propósito: ninguém fica parado por causa da instalação. O push do fim precisa só de Git, VS Code e conta GitHub.</aside>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Três camadas</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="As três camadas do Flutter: framework em Dart, engine em C++, embedder por plataforma; por baixo, o sistema operativo">
+    <rect x="40" y="20" width="820" height="62" rx="10" class="box accent"/>
+    <text x="60" y="46" class="t b">Framework · Dart</text>
+    <text x="60" y="68" class="t s">Material e Cupertino · widgets · layout · animações · gestos · tema. Código aberto dentro do SDK.</text>
+    <rect x="40" y="100" width="820" height="62" rx="10" class="box"/>
+    <text x="60" y="126" class="t b">Engine · C++</text>
+    <text x="60" y="148" class="t s">Impeller desenha · Dart VM (JIT em debug) ou código AOT (release) · texto e imagens · canais para a plataforma</text>
+    <rect x="40" y="180" width="820" height="62" rx="10" class="box"/>
+    <text x="60" y="206" class="t b">Embedder · Kotlin/Java, Swift/Objective-C, C++</text>
+    <text x="60" y="228" class="t s">Cria a Activity ou a janela · entrega toques e ciclo de vida · acessibilidade · platform channels</text>
+    <rect x="40" y="262" width="820" height="28" rx="8" class="box muted"/>
+    <text x="450" y="281" class="t s" text-anchor="middle">Sistema operativo: uma superfície para desenhar e eventos de toque</text>
+    <text x="840" y="46" class="t s" text-anchor="end">a app vive aqui</text>
+  </svg>
+  <figcaption>A app corre no framework. O sistema só entrega uma superfície e os toques; o Flutter faz o resto.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Camada</th><th>Escrita em</th><th>O que faz</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Framework</strong></td><td>Dart</td><td>O que se usa no dia a dia: widgets (Material, Cupertino), layout, animações, gestos, tema. Código Dart aberto, dentro do SDK.</td></tr>
+  <tr><td><strong>Engine</strong></td><td>C++</td><td>Desenha (Impeller), executa o Dart (Dart VM em desenvolvimento, código AOT em release), trata de texto, imagens, e fala com a plataforma.</td></tr>
+  <tr><td><strong>Embedder</strong></td><td>Kotlin/Java, Swift/Objective-C, C++</td><td>Específico de cada sistema: cria a janela ou a Activity, entrega eventos de toque, ciclo de vida, acessibilidade, e canais para código nativo.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide">
+  <h2>O sistema dá uma superfície e os toques. O resto é o Flutter.</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="Três cartões: o sistema operativo empresta um retângulo em branco e entrega os toques; o Flutter pinta nele cada pixel; o hardware, como câmara, GPS e notificações, só é alcançado por uma ponte chamada platform channel, que os plugins escondem">
+    <rect x="20" y="16" width="270" height="240" rx="12" class="box muted"/>
+    <rect x="95" y="46" width="120" height="110" rx="6" class="box"/>
+    <text x="155" y="106" class="t s" text-anchor="middle" style="font-size:12px">superfície em branco</text>
+    <ellipse cx="220" cy="150" rx="14" ry="20" class="box warn"/>
+    <text x="155" y="196" class="t b" text-anchor="middle">Sistema operativo</text>
+    <text x="155" y="217" class="t s" text-anchor="middle">Empresta um retângulo</text>
+    <text x="155" y="235" class="t s" text-anchor="middle">e entrega os toques.</text>
+
+    <rect x="315" y="16" width="270" height="240" rx="12" class="box muted"/>
+    <g>
+      <rect x="392" y="46" width="24" height="24" class="box accent"/><rect x="418" y="46" width="24" height="24" class="box accent"/><rect x="444" y="46" width="24" height="24" class="box"/><rect x="470" y="46" width="24" height="24" class="box"/>
+      <rect x="392" y="72" width="24" height="24" class="box"/><rect x="418" y="72" width="24" height="24" class="box ok"/><rect x="444" y="72" width="24" height="24" class="box ok"/><rect x="470" y="72" width="24" height="24" class="box"/>
+      <rect x="392" y="98" width="24" height="24" class="box"/><rect x="418" y="98" width="24" height="24" class="box"/><rect x="444" y="98" width="24" height="24" class="box ok"/><rect x="470" y="98" width="24" height="24" class="box"/>
+      <rect x="392" y="124" width="24" height="24" class="box"/><rect x="418" y="124" width="24" height="24" class="box"/><rect x="444" y="124" width="24" height="24" class="box"/><rect x="470" y="124" width="24" height="24" class="box"/>
+    </g>
+    <text x="450" y="196" class="t b" text-anchor="middle">Flutter</text>
+    <text x="450" y="217" class="t s" text-anchor="middle">Pinta cada pixel: igual num</text>
+    <text x="450" y="235" class="t s" text-anchor="middle">Samsung de 2019 e num iPhone de 2026.</text>
+
+    <rect x="610" y="16" width="270" height="240" rx="12" class="box muted"/>
+    <rect x="660" y="56" width="44" height="34" rx="6" class="box"/><circle cx="682" cy="73" r="9" class="box accent"/>
+    <path d="M745 92 a14 14 0 1 1 28 0 c0 12 -14 22 -14 30 c0 -8 -14 -18 -14 -30 z" class="box ok"/>
+    <path d="M822 60 a12 12 0 0 1 12 12 v10 l6 8 h-36 l6 -8 v-10 a12 12 0 0 1 12 -12 z" class="box warn"/>
+    <line x1="590" y1="120" x2="612" y2="120" class="arrow dashed"/>
+    <text x="745" y="132" class="t s" text-anchor="middle" style="font-size:12px">câmara · GPS · notificações</text>
+    <text x="745" y="196" class="t b" text-anchor="middle">Hardware e serviços</text>
+    <text x="745" y="217" class="t s" text-anchor="middle">Só por uma ponte (platform channel),</text>
+    <text x="745" y="235" class="t s" text-anchor="middle">que os plugins do pub.dev escondem.</text>
+    <text x="450" y="284" class="t s" text-anchor="middle">Um mapa ou um vídeo nativos entram pela mesma ponte, como platform view.</text>
+  </svg>
+  <figcaption>O sistema não sabe o que a app desenha; só vê o retângulo pintado.</figcaption>
+  </figure>
+  <aside class="notes">Desenha no quadro se ajudar: caixa "SO" → superfície + toques → caixa "Flutter" → app; setas de volta para o hardware com a palavra "ponte". Hoje basta saber que a ponte existe.</aside>
+</section>
+
+<section class="slide">
+  <h2>Tudo é um widget</h2>
+  <p>Um widget é um objeto Dart imutável que descreve um pedaço de interface. Compõem-se uns dentro dos outros numa árvore.</p>
+<pre data-title="lib/main.dart"><code class="language-dart">import 'package:flutter/material.dart';
+
+void main() => runApp(const TempoApp());
+
+class TempoApp extends StatelessWidget {
+  const TempoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Tempo Açores')),
+        body: const Center(child: Text('Ponta Delgada · 21 °C')),
+      ),
+    );
+  }
+}</code></pre>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 270" role="img" aria-label="À esquerda, a árvore de widgets do código: MaterialApp contém Scaffold, que contém AppBar com Text e Center com Text. À direita, as três árvores em paralelo: os widgets criam elements, que criam render objects">
+    <text x="40" y="18" class="t s">Árvore de widgets do código acima</text>
+    <rect x="40" y="32" width="140" height="34" rx="8" class="box accent"/>
+    <text x="110" y="54" class="t mono" text-anchor="middle">MaterialApp</text>
+    <rect x="40" y="92" width="140" height="34" rx="8" class="box"/>
+    <text x="110" y="114" class="t mono" text-anchor="middle">Scaffold</text>
+    <rect x="40" y="152" width="140" height="34" rx="8" class="box"/>
+    <text x="110" y="174" class="t mono" text-anchor="middle">AppBar</text>
+    <rect x="230" y="152" width="140" height="34" rx="8" class="box"/>
+    <text x="300" y="174" class="t mono" text-anchor="middle">Center</text>
+    <rect x="30" y="212" width="184" height="34" rx="8" class="box"/>
+    <text x="122" y="234" class="t mono" text-anchor="middle">Text('Tempo Açores')</text>
+    <rect x="230" y="212" width="244" height="34" rx="8" class="box"/>
+    <text x="352" y="234" class="t mono" text-anchor="middle">Text('Ponta Delgada · 21 °C')</text>
+    <line x1="110" y1="68" x2="110" y2="90" class="arrow"/>
+    <line x1="110" y1="128" x2="110" y2="150" class="arrow"/>
+    <polyline points="110,128 110,139 300,139 300,150" class="arrow"/>
+    <line x1="110" y1="188" x2="110" y2="210" class="arrow"/>
+    <line x1="300" y1="188" x2="300" y2="210" class="arrow"/>
+    <text x="480" y="18" class="t s">Três árvores em paralelo</text>
+    <rect x="480" y="32" width="390" height="56" rx="10" class="box accent"/>
+    <text x="500" y="56" class="t b">Widgets</text>
+    <text x="500" y="76" class="t s">descrição imutável do que deve aparecer; barata de recriar</text>
+    <line x1="675" y1="90" x2="675" y2="110" class="arrow"/>
+    <text x="686" y="104" class="t s">cria</text>
+    <rect x="480" y="112" width="390" height="56" rx="10" class="box"/>
+    <text x="500" y="136" class="t b">Elements</text>
+    <text x="500" y="156" class="t s">instância viva na árvore; sobrevive a rebuilds</text>
+    <line x1="675" y1="170" x2="675" y2="190" class="arrow"/>
+    <text x="686" y="184" class="t s">cria</text>
+    <rect x="480" y="192" width="390" height="56" rx="10" class="box"/>
+    <text x="500" y="216" class="t b">RenderObjects</text>
+    <text x="500" y="236" class="t s">layout e pintura; sabem tamanho e posição</text>
+  </svg>
+  <figcaption>Cada widget do código gera um element e, se ocupa espaço, um render object; as três árvores andam a par.</figcaption>
+  </figure>
+  <div class="callout"><strong>Analogia</strong> O widget é a planta de um edifício: imutável e barata de redesenhar. O element é a obra em curso, que segue a planta e sabe onde está na árvore. O render object é o edifício construído, com dimensões e posição. Mudar a planta não deita o edifício abaixo: a obra compara a planta nova com a antiga e só mexe no que mudou.</div>
+</section>
+
+<section class="slide">
+  <h2><code>build</code> não desenha nada</h2>
+  <p>Devolve a <em>descrição</em> do que deve existir. O framework compara a descrição nova com a anterior e só mexe no que mudou. Chamar <code>build</code> muitas vezes é normal e barato; é assim que o Flutter foi desenhado.</p>
+  <div class="callout"><strong>Três árvores, uma ideia</strong>
+    <ul>
+      <li><strong>Widgets</strong> são a descrição: baratos, imutáveis, recriados a cada build.</li>
+      <li><strong>Elements</strong> são a instância viva que liga uma descrição a uma posição na árvore.</li>
+      <li><strong>RenderObjects</strong> fazem layout e pintura.</li>
+    </ul>
+    O programador escreve widgets; o framework gere as outras duas.
+  </div>
+  <p><strong>Para os testes:</strong> um widget é imutável; o que muda é o estado, e o estado vive noutro sítio.</p>
+  <div class="callout"><strong>Analogia</strong> <code>build</code> é uma lista de compras, não a ida às compras. Escrever a lista muitas vezes é barato; o framework é quem vai à loja, e só compra o que mudou em relação à lista anterior.</div>
+</section>
+
+<section class="slide">
+  <h2>Hot reload, hot restart, rebuild</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 240" role="img" aria-label="Três linhas: hot reload injeta o código alterado na Dart VM e chama build de novo, mantendo o estado em menos de um segundo; hot restart reinicia a app mantendo a compilação e perde o estado; rebuild recompila tudo quando muda o pubspec ou código nativo">
+    <rect x="30" y="24" width="150" height="52" rx="10" class="box accent"/>
+    <text x="105" y="46" class="t b" text-anchor="middle">Hot reload</text>
+    <text x="105" y="65" class="t s" text-anchor="middle">tecla r</text>
+    <line x1="182" y1="50" x2="204" y2="50" class="arrow"/>
+    <rect x="206" y="24" width="200" height="52" rx="10" class="box"/>
+    <text x="306" y="46" class="t" text-anchor="middle">código alterado</text>
+    <text x="306" y="65" class="t s" text-anchor="middle">guardas o ficheiro</text>
+    <line x1="408" y1="50" x2="430" y2="50" class="arrow"/>
+    <rect x="432" y="24" width="200" height="52" rx="10" class="box"/>
+    <text x="532" y="46" class="t" text-anchor="middle">Dart VM no telemóvel</text>
+    <text x="532" y="65" class="t s" text-anchor="middle">injeta código, chama build()</text>
+    <line x1="634" y1="50" x2="656" y2="50" class="arrow"/>
+    <rect x="658" y="24" width="212" height="52" rx="10" class="box ok"/>
+    <text x="764" y="46" class="t b" text-anchor="middle">estado mantido</text>
+    <text x="764" y="65" class="t s" text-anchor="middle">menos de 1 segundo</text>
+    <rect x="30" y="96" width="150" height="52" rx="10" class="box"/>
+    <text x="105" y="118" class="t b" text-anchor="middle">Hot restart</text>
+    <text x="105" y="137" class="t s" text-anchor="middle">tecla R</text>
+    <line x1="182" y1="122" x2="204" y2="122" class="arrow"/>
+    <rect x="206" y="96" width="200" height="52" rx="10" class="box"/>
+    <text x="306" y="118" class="t" text-anchor="middle">main() ou estado global</text>
+    <text x="306" y="137" class="t s" text-anchor="middle">ou o tipo de um estado</text>
+    <line x1="408" y1="122" x2="430" y2="122" class="arrow"/>
+    <rect x="432" y="96" width="200" height="52" rx="10" class="box"/>
+    <text x="532" y="118" class="t" text-anchor="middle">reinicia a app do zero</text>
+    <text x="532" y="137" class="t s" text-anchor="middle">compilação mantida</text>
+    <line x1="634" y1="122" x2="656" y2="122" class="arrow"/>
+    <rect x="658" y="96" width="212" height="52" rx="10" class="box warn"/>
+    <text x="764" y="118" class="t b" text-anchor="middle">estado perdido</text>
+    <text x="764" y="137" class="t s" text-anchor="middle">alguns segundos</text>
+    <rect x="30" y="168" width="150" height="52" rx="10" class="box"/>
+    <text x="105" y="190" class="t b" text-anchor="middle">Rebuild</text>
+    <text x="105" y="209" class="t s" text-anchor="middle">flutter run</text>
+    <line x1="182" y1="194" x2="204" y2="194" class="arrow"/>
+    <rect x="206" y="168" width="200" height="52" rx="10" class="box"/>
+    <text x="306" y="190" class="t" text-anchor="middle">pubspec.yaml ou nativo</text>
+    <text x="306" y="209" class="t s" text-anchor="middle">dependências, recursos</text>
+    <line x1="408" y1="194" x2="430" y2="194" class="arrow"/>
+    <rect x="432" y="168" width="200" height="52" rx="10" class="box"/>
+    <text x="532" y="190" class="t" text-anchor="middle">compila tudo de novo</text>
+    <text x="532" y="209" class="t s" text-anchor="middle">instala a app outra vez</text>
+    <line x1="634" y1="194" x2="656" y2="194" class="arrow"/>
+    <rect x="658" y="168" width="212" height="52" rx="10" class="box danger"/>
+    <text x="764" y="190" class="t b" text-anchor="middle">arranque a frio</text>
+    <text x="764" y="209" class="t s" text-anchor="middle">dezenas de segundos</text>
+  </svg>
+  <figcaption>Quanto mais em baixo, mais lento e mais se perde: hot reload por defeito; subir de nível só quando não chega.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Hot reload</strong> (<kbd>r</kbd>): injeta o código alterado na Dart VM que está a correr no telemóvel e volta a chamar <code>build</code>. O estado mantém-se: um formulário meio preenchido no terceiro ecrã continua lá. Menos de um segundo.</li>
+    <li><strong>Hot restart</strong> (<kbd>R</kbd>): reinicia a app do zero, mantendo a compilação. Necessário quando muda o <code>main</code>, uma variável global, ou o tipo de um estado.</li>
+    <li><strong>Rebuild completo</strong>: quando mudam dependências no <code>pubspec.yaml</code>, código nativo, ou recursos. Voltar a correr <code>flutter run</code>.</li>
+  </ul>
+  <div class="callout"><strong>Analogia</strong> Hot reload é trocar a receita a meio de cozinhar sem deitar fora o que já está na panela: o código muda, o estado fica. Hot restart deita fora a panela e começa de novo, mas com a cozinha já montada (a compilação). O rebuild completo é montar a cozinha outra vez.</div>
+</section>
+
+<section class="slide">
+  <h2>Porquê Dart</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 230" role="img" aria-label="Dois caminhos a partir do mesmo código Dart: em desenvolvimento corre numa máquina virtual com JIT, o que permite hot reload em menos de um segundo; em release compila AOT para código máquina ARM, sem interpretador">
+    <rect x="20" y="70" width="170" height="90" rx="10" class="box accent"/>
+    <text x="105" y="105" class="t b" text-anchor="middle">Código Dart</text>
+    <text x="105" y="130" class="t s" text-anchor="middle">o mesmo ficheiro</text>
+    <line x1="190" y1="95" x2="298" y2="55" class="arrow"/>
+    <line x1="190" y1="135" x2="298" y2="175" class="arrow accent"/>
+    <rect x="300" y="20" width="270" height="70" rx="10" class="box"/>
+    <text x="435" y="48" class="t b" text-anchor="middle">Em desenvolvimento: JIT</text>
+    <text x="435" y="72" class="t s" text-anchor="middle">corre numa máquina virtual no telemóvel</text>
+    <rect x="300" y="140" width="270" height="70" rx="10" class="box"/>
+    <text x="435" y="168" class="t b" text-anchor="middle">Em release: AOT</text>
+    <text x="435" y="192" class="t s" text-anchor="middle">compilado para código máquina ARM</text>
+    <line x1="570" y1="55" x2="678" y2="55" class="arrow"/>
+    <line x1="570" y1="175" x2="678" y2="175" class="arrow accent"/>
+    <rect x="680" y="20" width="200" height="70" rx="10" class="box ok"/>
+    <text x="780" y="48" class="t b" text-anchor="middle">Hot reload</text>
+    <text x="780" y="72" class="t s" text-anchor="middle">alterações em menos de 1 s</text>
+    <rect x="680" y="140" width="200" height="70" rx="10" class="box ok"/>
+    <text x="780" y="168" class="t b" text-anchor="middle">App rápida</text>
+    <text x="780" y="192" class="t s" text-anchor="middle">sem interpretador a correr</text>
+  </svg>
+  <figcaption>Poucas linguagens fazem as duas coisas bem: rapidez a desenvolver e rapidez a correr.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Null safety:</strong> o compilador sabe se uma variável pode ser <code>null</code>. Uma família inteira de crashes desaparece antes de a app correr.</li>
+    <li><strong>Sintaxe familiar:</strong> quem sabe JavaScript, Java, Kotlin ou PHP moderno lê Dart no primeiro dia.</li>
+    <li><strong>Feito para interfaces:</strong> garbage collector afinado para muitos objetos pequenos (os widgets), <code>async</code>/<code>await</code> na linguagem, isolates para trabalho pesado sem bloquear o ecrã.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Prática">
+  <h2>Dart I no DartPad</h2>
+  <p>Abrir <a href="https://dartpad.dev" target="_blank" rel="noopener">dartpad.dev</a>. Hoje não é preciso o Flutter: só Dart, no browser.</p>
+  <p>Constrói-se, passo a passo, o modelo de dados que a app do projeto vai usar. Seis blocos, cada um com um exercício curto no fim.</p>
+  <div class="callout task"><strong>Escrever o código em vez de o copiar</strong> Escrever pratica a sintaxe; copiar não. Os erros do compilador fazem parte do exercício: convém lê-los. Os blocos marcados «só para ler» não se escrevem: servem para comparar.</div>
+</section>
+
+<section class="slide">
+  <h2>1. Variáveis e tipos</h2>
+<pre><code class="language-dart">void main() {
+  var cidade = 'Ponta Delgada';   // tipo inferido: String
+  int dia = 21;
+  double temperatura = 21.5;
+  bool chove = false;
+  final ilha = 'São Miguel';      // atribuído uma vez, em runtime
+  const maxDias = 5;              // constante em tempo de compilação
+
+  print('$cidade, $ilha: $temperatura °C, chuva: $chove');
+  print('Dia ${dia + 1} de $maxDias');
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Variáveis e tipos: o que interessa</h2>
+  <ul>
+    <li><code>var</code> infere o tipo e fixa-o. <code>cidade = 3;</code> é erro de compilação.</li>
+    <li><code>final</code> para valores que não mudam depois de atribuídos. É a escolha por defeito; <code>var</code> só quando é preciso reatribuir.</li>
+    <li><code>const</code> é para constantes conhecidas em compilação. Em Flutter, <code>const</code> aparece em muitos widgets, por uma razão de desempenho.</li>
+    <li>Interpolação: <code>$nome</code> ou <code>${expressão}</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 1</strong> No mesmo <code>main</code>, acrescentar <code>double tMin = 17.0;</code> e <code>double tMax = 23.0;</code>, calcular a amplitude (<code>tMax - tMin</code>) e imprimir, com interpolação e uma casa decimal (<code>toStringAsFixed(1)</code>), exatamente: <code>Amplitude: 6.0 °C</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>2. Null safety</h2>
+<pre><code class="language-dart">void main() {
+  String nome = 'Horta';
+  String? alcunha;            // pode ser null; tem de ser declarado com ?
+
+  // nome = null;             // erro de compilação
+  print(alcunha ?? 'sem alcunha');        // ?? dá um valor por defeito
+  print(alcunha?.length);                 // ?. só chama se não for null → null
+  alcunha = 'Cidade do Mar';
+  print(alcunha.length);                  // o compilador já sabe que não é null aqui
+
+  late String descricao;      // prometo inicializar antes de usar
+  descricao = '$nome, $alcunha';
+  print(descricao);
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Null safety: o que interessa</h2>
+  <ul>
+    <li>Por defeito nada pode ser <code>null</code>. <code>String?</code> é um tipo diferente de <code>String</code>.</li>
+    <li><code>??</code>, <code>?.</code> e <code>??=</code> são os operadores do dia a dia.</li>
+    <li><code>!</code> força ("confio que não é null") e é uma origem frequente de crashes. Convém evitá-lo.</li>
+    <li>Isto interessa em mobile porque quase tudo o que vem da rede ou do disco pode faltar.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 2</strong> No mesmo <code>main</code>, acrescentar <code>int? humidade;</code> e uma linha que imprime <code>Humidade: n/d</code> quando é null e <code>Humidade: 80%</code> quando tem valor, sem usar <code>!</code> (dica: <code>humidade == null ? 'n/d' : '$humidade%'</code>, ou <code>??</code>). Testar as duas situações: uma vez antes e outra depois de <code>humidade = 80;</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>3. Funções</h2>
+<pre><code class="language-dart">double celsiusParaFahrenheit(double c) => c * 9 / 5 + 32;
+
+String descreve(String cidade, {required double tMax, double? tMin, bool chuva = false}) {
+  final min = tMin == null ? '' : ', mín $tMin';
+  return '$cidade: máx $tMax$min${chuva ? ', chuva' : ''}';
+}
+
+void main() {
+  print(celsiusParaFahrenheit(21));
+  print(descreve('Angra', tMax: 24));
+  print(descreve('Horta', tMax: 22, tMin: 17, chuva: true));
+
+  final formatar = (double t) => '${t.round()} °C';   // função como valor
+  print(formatar(21.6));
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Funções: o que interessa</h2>
+  <ul>
+    <li>Parâmetros <strong>nomeados</strong> entre chavetas: <code>{required double tMax, bool chuva = false}</code>. Em Flutter quase tudo usa parâmetros nomeados.</li>
+    <li><code>required</code> obriga; um valor por defeito torna opcional; <code>?</code> permite null.</li>
+    <li>Sintaxe <code>=></code> para funções de uma expressão. Funções são valores: podem guardar-se e passar-se.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 3</strong> Escrever <code>String classifica({required double t})</code> que devolve <code>'frio'</code> abaixo de 15, <code>'ameno'</code> até 25 e <code>'quente'</code> acima. Depois usá-la dentro de <code>descreve</code>, para <code>descreve('Horta', tMax: 22, tMin: 17, chuva: true)</code> passar a devolver <code>Horta: máx 22.0, mín 17.0, chuva (ameno)</code>.</div>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até amanhã</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer até amanhã</h3>
+      <ul class="checklist">
+        <li>Exercícios 1 a 3 guardados (no DartPad ou num ficheiro): amanhã continuam a partir deles.</li>
+        <li>Ler o <a href="https://dart.dev/language" target="_blank" rel="noopener">Dart language tour</a> até "Functions".</li>
+        <li>Setup: <code>flutter doctor</code> com ✓ em Flutter, Android toolchain e Android Studio; emulador criado (ou telemóvel com depuração USB). Confirma-se amanhã na aula.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/learn/pathway/how-flutter-works" target="_blank" rel="noopener">How Flutter works</a>: percurso oficial pelas camadas, pelas três árvores e pelo que acontece em cada frame.</li>
+        <li><a href="https://docs.flutter.dev/resources/architectural-overview" target="_blank" rel="noopener">Flutter architectural overview</a>: as três camadas e as três árvores, com diagramas.</li>
+        <li><a href="https://docs.flutter.dev/tools/hot-reload" target="_blank" rel="noopener">Hot reload</a>: o que pode e não pode ser recarregado a quente.</li>
+        <li><a href="https://dart.dev/null-safety/understanding-null-safety" target="_blank" rel="noopener">Understanding null safety</a>: porquê e como.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

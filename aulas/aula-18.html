@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 18 · Concorrência, performance e sprint 1 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="18">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 18 · Semana 8 · Quarta, 28 de outubro de 2026 · 16:00 às 18:00</p>
+  <h1>Concorrência, performance e sprint 1</h1>
+  <p class="lead">Teoria (30 minutos): desempenho em Flutter: isolates, rebuilds, listas e imagens, medições em modo profile. Prática: sprint 1, com um exercício de medição na app de cada grupo. A sprint 1 fecha na aula seguinte.</p>
+  <div class="meta"><span>Sprint 1 · último dia</span></div>
+  <aside class="notes">Começa pelo estado da sprint: pergunta a cada grupo, em dez segundos, se a app corre no telemóvel e quantos PRs faltam. Anota no quadro. Isso define quem precisa de ti na segunda parte. A teoria é curta hoje: não deixes passar dos 30 minutos.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Explicar o que é um isolate e quando usar <code>compute()</code> em vez de <code>async</code>/<code>await</code>.</li>
+    <li>Identificar rebuilds desnecessários e reduzi-los com <code>const</code>, divisão de widgets e <code>Selector</code>.</li>
+    <li>Escolher as opções certas para listas longas e imagens de rede sem esgotar a memória.</li>
+    <li>Medir a tua app em modo profile com o performance overlay e o DevTools, e dizer o que é jank.</li>
+    <li>Fechar a sprint 1 com PRs merged, app a correr e demo preparada.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Isolates: memória separada, trabalho pesado fora da UI</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Dois isolates lado a lado, o principal com a UI e o de trabalho a correr compute com jsonDecode, cada um com memória própria e mensagens copiadas entre eles; por baixo, uma linha do tempo em que a UI continua a 60 fps enquanto o worker trabalha">
+    <rect x="40" y="20" width="340" height="130" rx="10" class="box accent"/>
+    <text x="60" y="46" class="t b">Isolate principal (UI)</text>
+    <text x="60" y="68" class="t s">event loop: build, toques, animações</text>
+    <rect x="60" y="84" width="300" height="50" rx="8" class="box muted"/>
+    <text x="72" y="105" class="t">Memória própria</text>
+    <text x="72" y="124" class="t s">widgets, estado, BuildContext, controllers</text>
+    <rect x="520" y="20" width="340" height="130" rx="10" class="box"/>
+    <text x="540" y="46" class="t b">Isolate de trabalho</text>
+    <text x="540" y="68" class="t mono">compute(_parsePrevisoes, corpo)</text>
+    <rect x="540" y="84" width="300" height="50" rx="8" class="box muted"/>
+    <text x="552" y="105" class="t">Memória própria</text>
+    <text x="552" y="124" class="t s">só o que recebeu por mensagem: a String</text>
+    <line x1="380" y1="70" x2="520" y2="70" class="arrow accent"/>
+    <text x="450" y="62" class="t s" text-anchor="middle">corpo (cópia)</text>
+    <line x1="520" y1="120" x2="380" y2="120" class="arrow accent"/>
+    <text x="450" y="112" class="t s" text-anchor="middle">resultado (cópia)</text>
+    <text x="450" y="95" class="t s" text-anchor="middle">memória separada</text>
+    <text x="40" y="192" class="t b">Linha do tempo</text>
+    <text x="860" y="192" class="t s" text-anchor="end">a UI continua a 60 fps enquanto o worker trabalha</text>
+    <line x1="300" y1="212" x2="300" y2="296" class="box muted"/>
+    <line x1="640" y1="212" x2="640" y2="296" class="box muted"/>
+    <text x="40" y="238" class="t">UI · 60 fps</text>
+    <rect x="140" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="170" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="200" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="230" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="260" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="290" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="320" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="350" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="380" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="410" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="440" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="470" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="500" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="530" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="560" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="590" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="620" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="650" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="680" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="710" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="740" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="770" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="800" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <rect x="830" y="222" width="24" height="22" rx="3" class="box ok"/>
+    <text x="40" y="278" class="t">Worker</text>
+    <rect x="140" y="262" width="714" height="22" rx="3" class="box muted"/>
+    <rect x="300" y="262" width="340" height="22" rx="3" class="box accent"/>
+    <text x="470" y="278" class="t mono" text-anchor="middle">compute(_parse, corpo)</text>
+    <text x="300" y="314" class="t s" text-anchor="middle">compute() chamado</text>
+    <text x="640" y="314" class="t s" text-anchor="middle">Future completa → setState</text>
+  </svg>
+  <figcaption>Cada isolate tem a sua memória; o que passa entre eles é copiado por mensagem, e a UI nunca espera pelo cálculo.</figcaption>
+  </figure>
+  <ul>
+    <li>Dart corre numa thread com um event loop. <code>async</code>/<code>await</code> liberta a thread enquanto <em>espera</em> (rede, disco), mas não liberta nada enquanto <em>calcula</em>.</li>
+    <li>Um isolate é outra thread com a sua própria memória. Não partilha objetos: o que entra e sai é <strong>copiado</strong> por mensagem.</li>
+    <li><code>compute(funcao, argumento)</code> (ou <code>Isolate.run</code>) cria um isolate, corre a função e devolve o resultado como <code>Future</code>.</li>
+    <li>Usa-o para: JSON grande (centenas de KB), ordenar ou filtrar milhares de itens, processar imagens, cifrar.</li>
+    <li>Não pode passar entre isolates: <code>BuildContext</code>, controllers, sockets, instâncias de plugins. Passa dados simples e modelos.</li>
+  </ul>
+<pre data-title="lib/data/previsao_parser.dart"><code class="language-dart">import 'dart:convert';
+import 'package:flutter/foundation.dart';
+
+List&lt;Previsao&gt; _parsePrevisoes(String corpo) {
+  final lista = jsonDecode(corpo) as List&lt;dynamic&gt;;
+  return lista.map((e) =&gt; Previsao.fromJson(e as Map&lt;String, dynamic&gt;)).toList();
+}
+
+// A função tem de ser top-level ou static: vai correr noutro isolate.
+Future&lt;List&lt;Previsao&gt;&gt; parsePrevisoes(String corpo) =&gt; compute(_parsePrevisoes, corpo);</code></pre>
+  <p><strong>Para os testes:</strong> <code>async</code>/<code>await</code> resolve espera; isolates resolvem cálculo. Um parse de 5 MB com <code>await</code> continua a bloquear a interface.</p>
+  <div class="callout"><strong>Analogia</strong> Dois cozinheiros em cozinhas separadas, cada um com os seus tachos (a memória). Não partilham nada; passam pratos pela janela, e o que passa é uma cópia (as mensagens entre isolates). O cozinheiro da sala (o isolate principal) nunca deixa a sala vazia: enquanto o outro descasca o JSON de 5 MB, ele continua a atender os clientes, que são os frames.</div>
+  <aside class="notes">Pergunta: "se meto o jsonDecode dentro de uma função async, a UI deixa de bloquear?" A maioria diz que sim. Explica que async só cede a thread nos await, e jsonDecode não tem await lá dentro. Criar um isolate custa alguns milissegundos: para JSON pequeno não compensa.</aside>
+</section>
+
+<section class="slide">
+  <h2>Rebuilds: baratos, mas não grátis</h2>
+  <ul>
+    <li><code>setState</code> reconstrói o widget inteiro e tudo o que está abaixo. Se o ecrã inteiro é um <code>StatefulWidget</code>, um contador a mudar reconstrói a lista toda.</li>
+    <li><strong><code>const</code></strong>: um widget <code>const</code> é criado uma vez e reutilizado; o framework salta-o no rebuild. O lint <code>prefer_const_constructors</code> aponta os candidatos.</li>
+    <li><strong>Dividir widgets</strong>: o que muda fica num widget pequeno com o seu próprio estado; o que não muda fica fora.</li>
+    <li><strong><code>Selector</code> e <code>context.select</code></strong>: reconstruir só quando o campo que interessa muda, e não a cada <code>notifyListeners()</code>.</li>
+    <li><strong>Chaves</strong>: <code>ValueKey(localidade.id)</code> em itens de lista que se reordenam ou removem, para o framework reutilizar o estado certo.</li>
+    <li>Ver: DevTools → Inspector → <em>Track widget builds</em>; Android Studio → Flutter Performance → rebuild counts.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> <code>build</code> correr muitas vezes é normal; o problema é reconstruir muitos widgets que não mudaram.</p>
+</section>
+
+<section class="slide">
+  <h2>Listas e imagens</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Problema</th><th>Sintoma</th><th>Solução</th></tr></thead>
+  <tbody>
+  <tr><td><code>ListView(children: [...])</code> com 2000 itens</td><td>Arranque lento; constrói tudo de uma vez</td><td><code>ListView.builder</code>: só constrói o que está visível</td></tr>
+  <tr><td>Itens com altura variável</td><td>Scroll a saltar, layout caro por frame</td><td><code>itemExtent</code> ou <code>prototypeItem</code> quando a altura é fixa</td></tr>
+  <tr><td>Scroll rápido mostra itens em branco</td><td>Constrói tarde</td><td><code>cacheExtent</code> maior (pré-constrói fora do ecrã)</td></tr>
+  <tr><td>Foto de 4000×3000 num cartão de 300 px</td><td>48 MB de memória por imagem; a app morre em Android com pouca RAM</td><td><code>cacheWidth</code>/<code>cacheHeight</code>; servidor com miniaturas</td></tr>
+  <tr><td>Imagens de rede recarregadas a cada scroll</td><td>Rede e bateria gastas, flicker</td><td><code>cached_network_image</code>: cache em disco e memória, placeholder</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> a memória de uma imagem é largura × altura × 4 bytes, descodificada, e não o tamanho do ficheiro.</p>
+</section>
+
+<section class="slide">
+  <h2>Frames: medir em profile, nunca em debug</h2>
+  <ul>
+    <li>60 fps dá <strong>16,6 ms</strong> por frame; 120 fps dá 8,3 ms. Cada frame passa pela thread de UI (Dart, build, layout) e pela thread de raster (pintar). Se uma delas passa do orçamento, o frame salta: <em>jank</em>.</li>
+    <li><strong>Performance overlay</strong> (<kbd>P</kbd> no terminal do <code>flutter run</code>, ou <code>showPerformanceOverlay: true</code>): dois gráficos, raster em cima e UI em baixo. Barra vermelha = frame lento.</li>
+    <li><strong>Modo debug</strong> corre JIT, com asserts e verificações extra: é 2 a 5 vezes mais lento e não representa nada. Mede com <code>flutter run --profile</code> num telemóvel real.</li>
+    <li><strong>Shaders</strong>: com Impeller (por defeito em iOS e Android atuais) o jank da primeira animação praticamente desapareceu; o antigo <em>SkSL warm-up</em> era um remendo do Skia.</li>
+    <li>DevTools → Performance: timeline de frames, o que demorou em cada um, e o botão <em>Enhance tracing</em> para ver builds e layouts.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> só se mede desempenho em modo profile ou release, num dispositivo físico.</p>
+  <div class="callout"><strong>Analogia</strong> O ecrã pede uma imagem nova 60 vezes por segundo, e cada pedido tem 16 ms para ser servido. Um <code>jsonDecode</code> de 80 ms é um cliente que ocupa o balcão durante cinco pedidos seguidos: os outros ficam à espera e o ecrã encrava. É esse o jank que o overlay mostra a vermelho.</div>
+  <aside class="notes">Mostra o overlay na tua app com o telemóvel projetado. Faz scroll rápido numa lista com imagens sem cache e deixa aparecer barras vermelhas. Depois liga o cached_network_image e repete. Dois minutos, e a turma percebe o que vai procurar no exercício.</aside>
+</section>
+
+<section class="slide">
+  <h2>Bateria e rede</h2>
+  <ul>
+    <li>O rádio (Wi-Fi, 4G/5G) é dos maiores consumidores. Cada pedido acorda-o e mantém-no ligado alguns segundos: <strong>agrupa pedidos</strong> em vez de fazer dez seguidos.</li>
+    <li><strong>Sem polling.</strong> Perguntar ao servidor "há novidades?" de 30 em 30 segundos esgota a bateria. Alternativas: push (aula 19), sincronização em background com restrições (aula 23), atualizar ao abrir.</li>
+    <li><strong>Localização só quando precisa</strong>, com a precisão mínima que chega. O GPS ligado em contínuo esgota um telemóvel em poucas horas (aula 21).</li>
+    <li>Respeita o <em>modo de poupança</em> e o <em>Data Saver</em>: menos animações, menos imagens, sem pré-carregar.</li>
+    <li>Exemplos: o Instagram pré-carrega imagens em lote enquanto o rádio já está acordado; o Google Maps só liga o GPS de alta precisão em navegação.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> o custo de um pedido não é só os bytes; é acordar o rádio.</p>
+</section>
+
+<section class="slide" data-part="Sprint">
+  <h2>Sprint 1: ponto de situação</h2>
+  <p>Cada grupo, um minuto, em pé, sem ligar o portátil:</p>
+  <ol class="steps">
+    <li><strong>O que está merged em <code>main</code></strong> e corre no telemóvel neste momento.</li>
+    <li><strong>O que está em PR aberto</strong> e quem está a rever.</li>
+    <li><strong>O que não vai entrar</strong> na sprint 1 e passa para a sprint 2. Dizer isto agora é melhor do que na segunda, na review.</li>
+    <li><strong>Um bloqueio</strong>, se houver. O docente resolve primeiro os bloqueios, depois circula.</li>
+  </ol>
+  <div class="callout warn"><strong>Segunda é review</strong> Demo de 5 minutos por grupo, no telemóvel, a partir de <code>main</code>. Não se mostra código em branch.</div>
+  <aside class="notes">Cronometra. Quem passar do minuto é interrompido. Escreve os bloqueios no quadro e ataca-os por ordem. Grupos sem bloqueio começam já o exercício de medição.</aside>
+</section>
+
+<section class="slide">
+  <h2>Exercício de 20 minutos: mede a tua app</h2>
+  <ol class="steps">
+    <li><strong>Corre em profile</strong> com o telemóvel ligado por cabo:
+<pre class="term"><code class="language-bash">flutter run --profile</code></pre></li>
+    <li><strong>Liga o overlay</strong>: carrega em <kbd>P</kbd> no terminal. Faz scroll na lista de localidades, abre um detalhe, volta. Procura barras vermelhas.</li>
+    <li><strong>Abre o DevTools</strong> (<kbd>v</kbd> no terminal) → Inspector → ativa <em>Track widget builds</em>. Interage outra vez e vê que widgets se reconstroem a cada toque.</li>
+    <li><strong>Encontra um rebuild desnecessário</strong>: um widget que se reconstrói sem os seus dados mudarem. Corrige com <code>const</code>, extraindo um widget, ou com <code>Selector</code>.</li>
+    <li><strong>Encontra um widget que pode ser <code>const</code></strong> e ainda não é. Corre <code>flutter analyze</code>: o lint <code>prefer_const_constructors</code> ajuda.</li>
+  </ol>
+  <div class="callout task"><strong>Exercício 1</strong> Abre um PR com as duas correções e, na descrição, uma captura do overlay antes e depois. Um colega de outro grupo revê. Se a tua app não tem lista com dados reais ainda, mede a <code>solucao/</code> da aula 13.</div>
+</section>
+
+<section class="slide">
+  <h2>O que interessa quando estás a medir</h2>
+  <ul>
+    <li>Uma barra vermelha isolada ao abrir um ecrã é normal (primeira construção). Barras vermelhas seguidas durante scroll são o que procuras.</li>
+    <li>Se o gráfico de cima (raster) está alto, o problema é pintar: imagens grandes, sombras, <code>Opacity</code> em listas, <code>ClipRRect</code> em cada item.</li>
+    <li>Se o gráfico de baixo (UI) está alto, o problema é Dart: build pesado, parse na thread principal, lógica dentro de <code>build</code>.</li>
+    <li>Um ecrã inteiro a reconstruir quando só mudou um texto quer dizer que o <code>setState</code> ou o <code>watch</code> está alto demais na árvore.</li>
+    <li>Não otimizes o que não mediste. Um <code>const</code> a mais não faz mal; uma arquitetura torcida por um ganho imaginário faz.</li>
+  </ul>
+  <aside class="notes">Dúvida frequente: "o overlay mostra vermelho no emulador". Explica que o emulador rasteriza por software e não conta. Quem não tiver telemóvel usa o de um colega do grupo. Dá 20 minutos e depois pede a dois grupos que mostrem o antes e depois.</aside>
+</section>
+
+<section class="slide">
+  <h2>Fechar a sprint 1 até segunda às 16:00</h2>
+  <div class="cols">
+    <div>
+      <h3>Definição de pronto</h3>
+      <ul class="checklist">
+        <li>Todos os PRs da sprint merged ou fechados com justificação.</li>
+        <li><code>main</code> compila e corre no telemóvel de cada membro.</li>
+        <li><code>flutter analyze</code> sem avisos.</li>
+        <li>Estados de loading, erro e vazio tratados nos ecrãs entregues.</li>
+        <li>Nenhum segredo no repositório (auditoria da aula 16).</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Demo de 5 minutos</h3>
+      <ul>
+        <li>1 min: qual era o objetivo da sprint.</li>
+        <li>3 min: a app a funcionar, no telemóvel, projetada.</li>
+        <li>1 min: o que ficou por fazer e porquê.</li>
+        <li>Cada membro fala da parte que fez. Ensaiem uma vez.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Diz que a review não é avaliação de funcionalidades, mas de processo: PRs, revisões, estados de erro. Um grupo com menos funcionalidades e tudo revisto está melhor do que um com muita coisa em branches por rever.</aside>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até segunda</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Sprint 1 fecha segunda: PRs merged, app a correr em <code>main</code>, demo de 5 minutos preparada e ensaiada.</li>
+        <li>PR do exercício de medição aberto e revisto por alguém de fora do grupo.</li>
+        <li>Instala o <code>scrcpy</code> ou ativa o espelhamento do telemóvel para a demo não depender do cabo do docente.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/perf/best-practices" target="_blank" rel="noopener">Performance best practices</a>: a lista oficial do que evitar em build, listas e animações.</li>
+        <li><a href="https://docs.flutter.dev/perf/ui-performance" target="_blank" rel="noopener">Flutter performance profiling</a>: o overlay e a timeline do DevTools explicados, com o que procurar em cada gráfico.</li>
+        <li><a href="https://docs.flutter.dev/perf/isolates" target="_blank" rel="noopener">Concurrency and isolates</a> (Flutter) e <a href="https://dart.dev/language/isolates" target="_blank" rel="noopener">Isolates</a> (dart.dev): quando compensa, <code>compute</code> e <code>Isolate.run</code>, e o que pode passar entre isolates.</li>
+        <li><a href="https://docs.flutter.dev/perf/impeller" target="_blank" rel="noopener">Impeller</a>: o motor de rendering atual e porque o jank de compilação de shaders desapareceu.</li>
+        <li><a href="https://blog.codemagic.io/understanding-flutter-isolates/" target="_blank" rel="noopener">Flutter isolates, everything you need to know</a> (Codemagic): event loop, isolates e portas de mensagens com exemplos completos.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

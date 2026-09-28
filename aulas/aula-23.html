@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 23 · Trabalho em background e sprint 2 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="23">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 23 · Semana 10 · Terça, 10 de novembro de 2026 · 08:30 às 10:30</p>
+  <h1>Trabalho em background e sprint 2</h1>
+  <p class="lead">Teoria (30 minutos): execução em segundo plano: porque o sistema suspende ou termina a app, o que WorkManager e BGTaskScheduler garantem, e o que pode correr num isolate de background em Flutter. Prática: ponto de situação da sprint 2, demonstração do workmanager a atualizar a cache, e trabalho de grupo.</p>
+  <div class="meta"><span>Review da sprint 2: quarta 18/11</span></div>
+  <aside class="notes">Começa pelo estado da sprint: cada grupo diz em dez segundos se a notificação de aviso de ontem já está em PR. Anota no quadro. Tem a demo do workmanager preparada num telemóvel Android com a solução da aula 22 e a tarefa registada com initialDelay de 10 segundos; não dependas de esperar 6 horas. A teoria acaba às 09:00.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Explicar porque o sistema operativo suspende ou mata uma app em segundo plano e o que se perde nesse momento.</li>
+    <li>Escolher entre WorkManager, foreground service e alarme no Android, e entre <code>BGAppRefreshTask</code>, <code>BGProcessingTask</code> e silent push no iOS.</li>
+    <li>Dizer o que pode e não pode correr num isolate de background em Flutter.</li>
+    <li>Registar uma tarefa periódica com <code>workmanager</code> e escrever o callback de topo com <code>@pragma('vm:entry-point')</code>.</li>
+    <li>Fechar o ponto de situação da sprint 2 com um plano para a semana que falta até à review.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Porque o sistema limita o background</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 320" role="img" aria-label="Linha do tempo de uma app: no ecrã tudo corre; em segundo plano o iOS suspende em segundos e o Android mata o processo quando precisa de memória; morrem timers, streams e pedidos a meio; sobrevive o que está em disco e o que o sistema agendou por ti, quando ele decidir">
+    <rect x="40" y="20" width="240" height="86" rx="10" class="box accent"/>
+    <text x="60" y="46" class="t b">1. No ecrã</text>
+    <text x="60" y="68" class="t s">Tudo corre: Timer, streams,</text>
+    <text x="60" y="88" class="t s">animações, await http.get</text>
+    <path d="M280 63H328" class="arrow"/>
+    <rect x="330" y="20" width="240" height="86" rx="10" class="box warn"/>
+    <text x="350" y="46" class="t b">2. Em segundo plano</text>
+    <text x="350" y="68" class="t s">iOS: suspende em segundos</text>
+    <text x="350" y="88" class="t s">Android: até faltar memória</text>
+    <path d="M570 63H618" class="arrow"/>
+    <rect x="620" y="20" width="240" height="86" rx="10" class="box danger"/>
+    <text x="640" y="46" class="t b">3. Processo terminado</text>
+    <text x="640" y="68" class="t s">Sem aviso; nada termina</text>
+    <text x="640" y="88" class="t s">Volta do zero, em main()</text>
+    <rect x="40" y="130" width="400" height="90" rx="10" class="box danger"/>
+    <text x="60" y="156" class="t b">O que morre</text>
+    <text x="60" y="178" class="t s">Timer, streams, animações, isolates</text>
+    <text x="60" y="198" class="t s">um await http.get a meio: a app não é avisada</text>
+    <rect x="460" y="130" width="400" height="90" rx="10" class="box ok"/>
+    <text x="480" y="156" class="t b">O que sobrevive</text>
+    <text x="480" y="178" class="t s">WorkManager · BGTaskScheduler · push silenciosa</text>
+    <text x="480" y="198" class="t s">notificações e alarmes · o que está em disco (aula 15)</text>
+    <path d="M660 220V242" class="arrow"/>
+    <rect x="40" y="244" width="820" height="56" rx="10" class="box muted"/>
+    <text x="450" y="267" class="t b" text-anchor="middle">O SO decide quando corre, não tu</text>
+    <text x="450" y="288" class="t s" text-anchor="middle">Pedes uma janela; o sistema escolhe a hora, junta com outras apps e pode adiar ou recusar.</text>
+  </svg>
+  <figcaption>Ao sair do ecrã a app não fica a correr: o que estava a meio morre, e só corre depois o que o sistema aceitou agendar.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Uma bateria, muitas apps.</strong> Cada app que "só verifica uma coisa" a cada minuto acorda o CPU e o rádio. Dez apps assim esgotam um telemóvel numa tarde, e o utilizador culpa o telemóvel.</li>
+    <li><strong>Privacidade e controlo.</strong> O utilizador quer saber o que corre sem ele ver. Por isso o iOS mostra "usou a localização em segundo plano" e o Android 14 obriga a declarar o tipo de cada foreground service.</li>
+    <li><strong>Ao sair do ecrã</strong>: o iOS suspende a app em segundos (uns 30 s de graça com <code>beginBackgroundTask</code>); o Android mantém o processo até precisar de memória, e depois mata-o sem aviso.</li>
+    <li><strong>O que morre</strong>: <code>Timer</code>, streams, animações, um <code>await http.get</code> a meio, isolates. A app não é avisada; da próxima vez começa do zero, em <code>main()</code>.</li>
+    <li><strong>O que sobrevive</strong>: o que está em disco (aula 15) e o que o sistema aceitou agendar por ti: notificações (aula 22), tarefas do WorkManager, alarmes.</li>
+    <li>Exemplos: o WhatsApp não fica a correr, é o push que o acorda; o Spotify corre porque tem um foreground service de áudio, com notificação visível.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> uma app em segundo plano não está a correr; está suspensa ou morta, e o código que estava a meio não termina.</p>
+  <div class="callout"><strong>Analogia</strong> Uma app é uma loja num centro comercial. Aberta e com clientes é o primeiro plano; com as luzes apagadas mas o stock no lugar é o segundo plano ou a suspensão. De madrugada, o centro comercial pode despejar a loja sem avisar para dar o espaço a outra: é o processo terminado. Quando o cliente volta, a loja reabre como se nada fosse, e o que não estava guardado no armazém (o disco) perdeu-se.</div>
+  <aside class="notes">Pergunta: "se tiveres um Timer.periodic a atualizar a previsão de minuto a minuto, o que acontece quando bloqueias o telemóvel?" A maioria acha que continua. No iOS pára em segundos; no Android continua até o processo morrer, e ninguém sabe quando. Nenhuma das duas respostas serve para desenhar uma app.</aside>
+</section>
+
+<section class="slide">
+  <h2>Android: WorkManager, foreground services, Doze e buckets</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Mecanismo</th><th>O que é</th><th>O que a tua app tem de saber</th></tr></thead>
+  <tbody>
+  <tr><td><strong>WorkManager</strong></td><td>Trabalho diferido ou periódico, com restrições (rede, carregador, bateria). Sobrevive a reinícios.</td><td>Mínimo 15 min entre execuções. O sistema escolhe a hora. A tarefa deve ser curta e idempotente.</td></tr>
+  <tr><td><strong>Foreground service</strong></td><td>Processo a correr com notificação permanente visível.</td><td>Só para o que o utilizador vê a acontecer: música, navegação, upload. Android 14 exige tipo declarado e permissão própria.</td></tr>
+  <tr><td><strong>AlarmManager</strong></td><td>Acordar a app a uma hora.</td><td>Exato exige <code>SCHEDULE_EXACT_ALARM</code> (12+); no 14 só despertadores e calendários a têm por defeito. Inexato pode atrasar minutos.</td></tr>
+  <tr><td><strong>Doze</strong></td><td>Ecrã desligado e telemóvel parado: rede, jobs e alarmes adiados para janelas de manutenção cada vez mais espaçadas.</td><td>A tua tarefa "de 6 em 6 horas" pode correr às 8 ou às 9. Não há volta a dar, e é assim que deve ser.</td></tr>
+  <tr><td><strong>App Standby buckets</strong></td><td>Active, working set, frequent, rare, restricted, consoante quanto o utilizador usa a app.</td><td>App raramente aberta: poucos jobs por dia. O utilizador pode ainda pô-la em "restrito" nas definições de bateria.</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> o WorkManager garante que a tarefa corre, não quando; o Doze e os buckets decidem o quando.</p>
+  <div class="callout"><strong>Analogia</strong> Registar uma tarefa no WorkManager é deixar um recado ao porteiro do prédio, o sistema operativo: «quando puderes, vai regar as plantas». O porteiro decide a hora, junta os recados de vários moradores para poupar viagens, e se o prédio estiver em modo poupança (Doze) só passa de madrugada. Nenhum morador pode exigir «às 20:00 em ponto»; para isso existem o alarme e a notificação agendada.</div>
+</section>
+
+<section class="slide">
+  <h2>iOS: BGAppRefreshTask, BGProcessingTask e silent push</h2>
+  <ul>
+    <li><strong><code>BGAppRefreshTask</code></strong>: até 30 s, para "atualizar antes de o utilizador abrir". O sistema aprende a que horas abres a app e acorda-a um pouco antes. Pedes <code>earliestBeginDate</code>, não uma hora.</li>
+    <li><strong><code>BGProcessingTask</code></strong>: minutos, para manutenção pesada. Corre tipicamente de noite, a carregar. Podes exigir rede e carregador.</li>
+    <li><strong>Sem garantias</strong>: se o utilizador raramente abre a app, o iOS quase não a acorda. Se desligar "Atualização em segundo plano" nas Definições, nunca.</li>
+    <li><strong>Silent push</strong> (<code>content-available: 1</code>, aula 19): o servidor acorda a app quando há novidade. Também limitado: poucas por hora, sem garantia de entrega.</li>
+    <li><strong><code>UIBackgroundModes</code></strong> no <code>Info.plist</code>: <code>fetch</code>, <code>processing</code>, <code>remote-notification</code>, <code>audio</code>, <code>location</code>, <code>voip</code>. Cada um é revisto pela Apple; áudio sem tocar som é rejeição.</li>
+    <li><strong>Testar</strong>: não há <code>adb</code>. Com a app parada no debugger do Xcode, <code>e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"..."]</code>.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> no iOS não há tarefa periódica com hora; o sistema aprende os hábitos do utilizador e decide quando acordar a app.</p>
+</section>
+
+<section class="slide">
+  <h2>No Flutter: workmanager, background_fetch e o isolate</h2>
+  <ul>
+    <li><strong><code>workmanager</code></strong>: WorkManager no Android e BGTaskScheduler no iOS, com uma API só. Periódicas com frequência só no Android; no iOS registas identificadores e o sistema chama quando quer.</li>
+    <li><strong><code>background_fetch</code></strong>: o mesmo espaço, com background fetch no iOS e modo <em>headless</em> no Android. <strong><code>flutter_background_service</code></strong>: foreground service com um isolate a correr.</li>
+    <li><strong>O callback corre num isolate novo</strong>, aberto pelo código nativo, sem a app: memória separada, o <code>main()</code> não correu, nenhum widget existe.</li>
+    <li><strong>Pode</strong>: Dart puro, <code>http</code>, <code>shared_preferences</code>, <code>drift</code>, <code>flutter_secure_storage</code>, <code>flutter_local_notifications</code>. <strong>Não pode</strong>: <code>BuildContext</code>, <code>Provider</code>, <code>setState</code>, plugins que precisam de uma Activity (diálogos de permissão, <code>image_picker</code>), o estado em memória da app.</li>
+    <li><strong><code>@pragma('vm:entry-point')</code></strong> na função de topo: em release o <em>tree-shaking</em> apaga o que nenhum código Dart chama, e esta é chamada pelo nativo.</li>
+    <li>Com a app aberta ao mesmo tempo são dois isolates a usar a mesma base de dados. O disco é o único ponto de encontro: o drift aguenta, um <code>Map</code> em memória não.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> o callback de background corre num isolate novo, sem árvore de widgets e sem o estado da app; só o disco é partilhado.</p>
+  <aside class="notes">Liga com a aula 18: o compute() cria um isolate a partir da app; aqui é o sistema que cria o isolate e a app pode nem existir. As regras são as mesmas (nada de BuildContext, dados copiados), com a agravante de que o main() não correu: quem quiser o token tem de o ler do secure storage outra vez.</aside>
+</section>
+
+<section class="slide">
+  <h2>Padrões: sincronizar de madrugada, não fazer polling, respeitar o utilizador</h2>
+  <ul>
+    <li><strong>Sincronizar quando compensa</strong>: com rede e bateria não fraca (restrições), a carregar para o que é pesado, de madrugada para o que pode esperar.</li>
+    <li><strong>Não fazer polling.</strong> "Há novidades?" de 15 em 15 minutos é o que o WorkManager permite, e é quase sempre a resposta errada: push (aula 19) para o que o servidor sabe, atualizar ao abrir para o resto.</li>
+    <li><strong>Curto e idempotente</strong>: pode ser morto a meio e repetido. Guarda "última sincronização" e não faz mais do que uma por janela; <code>return false</code> deixa o WorkManager repetir com backoff.</li>
+    <li><strong>Respeitar o utilizador</strong>: interruptor nas definições, respeitar o modo de poupança de bateria, nada de acordar o telemóvel por causa de analytics.</li>
+    <li><strong>Medir</strong>: Battery Historian e <code>adb shell dumpsys batterystats</code>; Energy gauge no Xcode. O utilizador vê "gastou 12% em segundo plano" nas definições de bateria, e desinstala.</li>
+    <li>Exemplos: o Gmail sincroniza por push, não por polling; o Spotify descarrega playlists de noite a carregar; as apps de tempo usam o refresh do sistema e um widget de ecrã inicial.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> trabalho em background é curto, idempotente e tolera ser adiado ou repetido; se precisa de hora exata, não é background, é um alarme ou uma notificação agendada.</p>
+</section>
+
+<section class="slide" data-part="Sprint">
+  <h2>Sprint 2: ponto de situação (semana 2 de 2)</h2>
+  <p>Cada grupo, um minuto, em pé, sem ligar o portátil:</p>
+  <ol class="steps">
+    <li><strong>O que está merged em <code>main</code></strong> e corre no telemóvel neste momento. A notificação de aviso e o deep link de ontem já estão em PR?</li>
+    <li><strong>O que está em PR aberto</strong> e quem está a rever.</li>
+    <li><strong>O que entra na review de quarta 18/11</strong> e o que passa para a sprint 3. Decidir hoje é melhor do que descobrir na terça.</li>
+    <li><strong>Um bloqueio</strong>, se houver. O docente resolve primeiro os bloqueios, depois circula pela ordem do quadro.</li>
+  </ol>
+  <div class="callout warn"><strong>Review da sprint 2: quarta 18/11</strong> Demo de 5 minutos por grupo, no telemóvel, a partir de <code>main</code>. Candidatos: favoritos sincronizados, cache offline com "atualizado há X", mapa com localidade mais próxima, notificação de aviso com deep link. Nem tudo é obrigatório; o que entrar tem os quatro estados de UI tratados.</div>
+  <aside class="notes">Cronometra: quem passar do minuto é interrompido. Escreve os bloqueios no quadro e ataca-os por ordem. Grupos sem bloqueio veem a demo às 09:10 e vão trabalhar. A partir das 09:25 circula: pede a cada grupo que te mostre o deep link com a app fechada e a app em modo avião; são os dois caminhos que ninguém testa sozinho.</aside>
+</section>
+
+<section class="slide">
+  <h2>Demo (1 de 2): registar a tarefa periódica no Android</h2>
+<pre data-title="lib/main.dart"><code class="language-dart">import 'package:workmanager/workmanager.dart';
+import 'background/tarefas_background.dart'; // callbackDispatcher e tarefaCache
+
+Future&lt;void&gt; main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Workmanager().initialize(callbackDispatcher); // função de topo: slide seguinte
+
+  // Android: de 6 em 6 horas, só com rede e bateria não fraca. O sistema escolhe a hora.
+  // O nome único evita duplicar: registar outra vez com o mesmo nome mantém a existente.
+  await Workmanager().registerPeriodicTask(
+    tarefaCache, // uniqueName: para cancelar e não duplicar
+    tarefaCache, // taskName: o que chega ao callback
+    frequency: const Duration(hours: 6),
+    constraints: Constraints(
+      networkType: NetworkType.connected,
+      requiresBatteryNotLow: true,
+    ),
+    backoffPolicy: BackoffPolicy.exponential, // falhou? repete com espera crescente
+  );
+
+  // Testar já, só em desenvolvimento: registerOneOffTask('teste', tarefaCache, initialDelay: 10 s)
+  runApp(/* ...como na aula 22 */);
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Demo (2 de 2): o callback de topo, num isolate sem a app</h2>
+<pre data-title="lib/background/tarefas_background.dart"><code class="language-dart">import 'package:workmanager/workmanager.dart';
+const tarefaCache = 'pt.uac.tempoacores.atualizarCache';
+
+/// Chamada pelo nativo num isolate novo, sem a app: de topo, e com o pragma
+/// para o tree-shaking não a apagar em release.
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((tarefa, dados) async {
+    if (tarefa != tarefaCache) return true; // tarefa desconhecida: não repetir
+    try { // sem Provider nem BuildContext: montamos o que precisamos à mão
+      final token = await const FlutterSecureStorage().read(key: 'token');
+      if (token == null) return true; // sem sessão, nada a fazer
+      final api = ApiClient(token: token);
+      final cache = PrevisoesCache(AppDatabase()); // drift, aula 15
+      final favoritos = await FavoritosLocais.ids(); // shared_preferences
+      for (final id in favoritos) {
+        await cache.guardar(id, await api.previsao(id)); // GET /v1/forecast/{id}
+      }
+      await AvisosBackground(api, cache).verificarENotificar(favoritos); // aula 22
+      return true;
+    } catch (e) {
+      return false; // o WorkManager repete com backoff exponencial
+    }
+  });
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Demo: o que interessa</h2>
+  <ul>
+    <li><strong>Nome único vs nome da tarefa</strong>: o primeiro identifica o registo (cancelar com <code>cancelByUniqueName</code>, não duplicar); o segundo chega ao callback para ele saber o que fazer.</li>
+    <li><strong>6 horas é um pedido.</strong> Com Doze e buckets pode ser 7 ou 9. Mínimo 15 minutos. Se precisas de uma hora, é <code>zonedSchedule</code> (ontem) ou um alarme.</li>
+    <li><strong>Mesma base de dados, dois isolates</strong>: o drift abre outra ligação. A app aberta vê os dados novos quando o utilizador faz refresh, ou logo, se observar a tabela com <code>watch()</code>.</li>
+    <li><code>return true</code> é feito; <code>return false</code> é repetir com backoff; exceção não apanhada é falha silenciosa em release. Apanha tudo e regista.</li>
+    <li><strong>Ver e forçar</strong>: <code>adb shell dumpsys jobscheduler | grep tempoacores</code> lista o que está agendado; <code>registerOneOffTask</code> com <code>initialDelay</code> de 10 s corre já. Os <code>print</code> do isolate aparecem no <code>flutter run</code> normal.</li>
+    <li><strong>iOS</strong>: <code>BGTaskSchedulerPermittedIdentifiers</code> e <code>UIBackgroundModes</code> no <code>Info.plist</code>, registo no <code>AppDelegate</code>, e o sistema chama <code>executeTask</code> quando quiser. Não entra no projeto.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 1 (extra, só depois do essencial da sprint)</strong> Tarefa periódica no Android que atualiza a cache dos favoritos e dispara a notificação de aviso da aula 22 sem a app aberta. Interruptor "Atualizar em segundo plano" nas definições que faz <code>cancelByUniqueName</code>. Testa com <code>initialDelay</code> de 10 s, a app fechada e o telemóvel bloqueado.</div>
+  <aside class="notes">Faz a demo com a app fechada e o telemóvel bloqueado, e mostra o log no terminal quando a tarefa corre e a notificação de aviso a aparecer no ecrã bloqueado. Depois abre a app: o "atualizado há 0 min" prova que a cache foi escrita pelo isolate. Quinze minutos no total; o resto da aula é dos grupos.</aside>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até amanhã</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Sprint 2 continua: PRs de ontem (notificação de aviso e deep link) revistos e merged; review na quarta 18/11 a partir de <code>main</code>.</li>
+        <li>Decidir hoje o que entra na review e fechar, com justificação, as issues que passam para a sprint 3.</li>
+        <li>Amanhã às 16:00: hardware e sensores. Traz o telemóvel com NFC ligado, se tiver.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://developer.android.com/develop/background-work/background-tasks" target="_blank" rel="noopener">Background tasks overview</a> no Android: a árvore de decisão entre WorkManager, foreground service e alarmes.</li>
+        <li><a href="https://developer.android.com/develop/background-work/background-tasks/persistent" target="_blank" rel="noopener">Persistent work with WorkManager</a>: restrições, trabalho periódico, o mínimo de 15 minutos e o backoff em caso de falha.</li>
+        <li><a href="https://developer.apple.com/documentation/backgroundtasks" target="_blank" rel="noopener">BackgroundTasks</a> na Apple: <code>BGAppRefreshTask</code>, <code>BGProcessingTask</code> e como o sistema decide quando as corre.</li>
+        <li><a href="https://developer.android.com/guide/components/activities/process-lifecycle" target="_blank" rel="noopener">Processes and app lifecycle</a>: a hierarquia de processos do Android e a ordem pela qual o sistema os termina quando falta memória.</li>
+        <li><a href="https://pub.dev/packages/workmanager" target="_blank" rel="noopener">workmanager</a>: a configuração por plataforma, as restrições e o que o iOS não suporta.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

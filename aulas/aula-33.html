@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 33 · Revisão para o teste 2 e workshop de finalização · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="33">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 33 · Semana 13 · Sexta, 4 de dezembro de 2026 · 08:30 às 12:30</p>
+  <h1>Revisão para o teste 2 e workshop de finalização</h1>
+  <p class="lead">Primeira parte: revisão da matéria das aulas 21 a 32, com dez perguntas-tipo resolvidas em conjunto e os erros mais frequentes. Segunda parte: finalização do projeto: checklist de entrega, correções, README, build final assinado e upload aos testers. O teste é na segunda-feira seguinte; o freeze na quarta.</p>
+    <aside class="notes">Começa às 08:30 em ponto com o mapa da matéria; quem chega tarde apanha as perguntas. Nas perguntas, faz votação de mãos no ar por opção antes de revelar: mostra à turma que as opções erradas são plausíveis. Guarda 10 minutos antes da pausa para dúvidas soltas. A partir das 10:35 é trabalho por grupos; anda a rodar e não te deixes prender num só grupo.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Situar cada tema das aulas 21 a 32 e dizer qual é a ideia central que o teste vai perguntar.</li>
+    <li>Resolver perguntas de escolha múltipla por eliminação, identificando a opção "quase certa" que é a armadilha.</li>
+    <li>Reconhecer os cinco erros clássicos desta matéria e explicar porque estão errados.</li>
+    <li>Verificar o projeto contra a checklist de entrega e fechar o que falta.</li>
+    <li>Gerar o build final assinado e distribuí-lo aos testers pelo Firebase App Distribution ou TestFlight.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Mapa da matéria (1 de 2): aulas 21 a 26</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Aula</th><th>Tema</th><th>A ideia que o teste pergunta</th></tr></thead>
+  <tbody>
+  <tr><td>21</td><td>Localização e mapas</td><td>Precisão vs bateria; when-in-use vs always; negação permanente; OSM grátis vs Google Maps com chave e custos.</td></tr>
+  <tr><td>22</td><td>Deep links</td><td>Custom scheme vs Universal/App Links; verificação de domínio com AASA e assetlinks; o router decide o ecrã.</td></tr>
+  <tr><td>23</td><td>Background</td><td>O SO limita por bateria; WorkManager com restrições e sem hora exata; iOS sem garantias; silent push.</td></tr>
+  <tr><td>24</td><td>Hardware e sensores</td><td>Cada sensor tem permissão, consumo e limites por plataforma; NFC mais restrito no iOS; BLE precisa de permissões de scan.</td></tr>
+  <tr><td>25 e 26</td><td>Testes, CI e observabilidade</td><td>Pirâmide; fakes em vez de rede; CI como definição de pronto; crash-free, ANR, feature flags e kill switch.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide">
+  <h2>Mapa da matéria (2 de 2): aulas 27 a 32</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Aula</th><th>Tema</th><th>A ideia que o teste pergunta</th></tr></thead>
+  <tbody>
+  <tr><td>27</td><td>Distribuição a testers</td><td>App Distribution sem revisão; TestFlight externo com revisão beta; internal testing até 100; nunca distribuir debug.</td></tr>
+  <tr><td>28</td><td>Platform channels e APIs</td><td>MethodChannel e tipos do codec; avaliar um package; versionar uma API sem partir apps instaladas.</td></tr>
+  <tr><td>29</td><td>Lojas e monetização</td><td>IAP obrigatório para conteúdo digital; motivos de rejeição; ASO e pedir avaliação no momento certo.</td></tr>
+  <tr><td>30</td><td>Tamanho, arranque e atualizações</td><td>AAB e split por ABI; medir antes do primeiro frame; code push com limites; forced update.</td></tr>
+  <tr><td>31 e 32</td><td>Build, assinatura e consolas</td><td>Assinatura prova autoria e integridade; versionCode nunca desce; tracks, rollout gradual, data safety e privacy labels, vitals.</td></tr>
+  </tbody></table></div>
+  <aside class="notes">Passa os dois mapas em 10 minutos, não mais. Para cada linha pergunta "quem me diz em uma frase o que é X?" a um aluno diferente. Se ninguém sabe, é aí que gastas dois minutos.</aside>
+</section>
+
+<section class="slide">
+  <h2>Como responder a escolha múltipla</h2>
+  <ul>
+    <li>Lê a pergunta até ao fim antes das opções. Sublinha a palavra que muda tudo: <em>sempre</em>, <em>nunca</em>, <em>garante</em>, <em>obrigatório</em>, <em>só</em>.</li>
+    <li>Elimina primeiro as duas que são claramente de outro tema ou absolutas demais. Ficam duas: uma certa e uma "quase certa".</li>
+    <li>A "quase certa" costuma ser verdadeira noutro contexto (Android em vez de iOS, debug em vez de release, web em vez de mobile). Pergunta-te "para esta plataforma e este cenário?".</li>
+    <li>Não há penalização por errar: responde a todas. Uma pergunta que não sabes ao fim de 90 segundos, marca e volta no fim.</li>
+    <li>40 perguntas em 75 minutos dá menos de dois minutos por pergunta. O tempo não é o problema se não empatares.</li>
+  </ul>
+  <p>Nos próximos dez slides o formato é o do teste. Votas, e só depois vemos a resposta.</p>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 1 · Localização</h2>
+  <p>A Tempo Açores quer abrir na localidade mais próxima do utilizador quando ele abre a app. Que permissão deve pedir?</p>
+  <ol type="A">
+    <li>Localização <em>always</em>, para funcionar também em segundo plano.</li>
+    <li>Localização <em>when in use</em>, com precisão aproximada a chegar.</li>
+    <li>Localização em segundo plano com um foreground service para não falhar.</li>
+    <li>Nenhuma: as coordenadas do GPS são públicas e não precisam de permissão.</li>
+  </ol>
+  <aside class="notes">Resposta: B. A app só precisa da posição enquanto está aberta; pedir always é rejeitado pelas lojas sem justificação e assusta o utilizador. Para escolher a localidade mais próxima entre nove ilhas, precisão aproximada chega. A é o erro clássico "always vs when-in-use"; C confunde background com fiabilidade; D é falsa, a localização é dado sensível e pede sempre permissão em runtime.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 2 · Deep links</h2>
+  <p>Porque é que um link de "login mágico" enviado por e-mail não deve usar um custom scheme como <code>tempoacores://login?token=...</code>?</p>
+  <ol type="A">
+    <li>Porque os custom schemes não funcionam no Android.</li>
+    <li>Porque qualquer app instalada pode registar o mesmo scheme e receber o link com o token.</li>
+    <li>Porque o iOS só permite schemes registados na App Store.</li>
+    <li>Porque os custom schemes exigem HTTPS e um certificado.</li>
+  </ol>
+  <aside class="notes">Resposta: B. Um scheme não tem dono: não há verificação de domínio, por isso outra app pode reclamar tempoacores:// e apanhar o token. Universal Links e App Links resolvem isto porque o domínio prova, com o AASA e o assetlinks.json, que a app é dele. A e C são falsas; D mistura schemes com links HTTPS. Erro clássico: "custom scheme como seguro".</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 3 · Background</h2>
+  <p>Configuras o WorkManager para atualizar a cache de previsões de 6 em 6 horas. O que o Android garante?</p>
+  <ol type="A">
+    <li>Que a tarefa corre exatamente de 6 em 6 horas, mesmo em Doze.</li>
+    <li>Que a tarefa corre pelo menos uma vez em cada período, quando as restrições permitirem, e sobrevive a reinícios.</li>
+    <li>Que a tarefa corre só enquanto a app estiver em primeiro plano.</li>
+    <li>Que a mesma configuração funciona no iOS com a mesma garantia.</li>
+  </ol>
+  <aside class="notes">Resposta: B. O WorkManager garante execução, não hora: o período é um mínimo e o sistema junta tarefas em janelas de manutenção, sobretudo em Doze e nos App Standby buckets. Sobrevive a reboot. A é o erro clássico "WorkManager com hora garantida". C descreve o oposto do que ele serve. D é falsa: no iOS é o BGTaskScheduler, com ainda menos garantias.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 4 · Hardware</h2>
+  <p>Uma app quer fazer scan de dispositivos Bluetooth Low Energy num Android atual. O que precisa?</p>
+  <ol type="A">
+    <li>Nada: o scan BLE é livre porque não identifica o utilizador.</li>
+    <li>Só a permissão de NFC, porque BLE e NFC partilham o rádio.</li>
+    <li>A permissão <code>BLUETOOTH_SCAN</code> (Android 12 e posteriores) e, em versões anteriores, a permissão de localização.</li>
+    <li>A permissão de câmara, porque o scan usa o leitor de códigos.</li>
+  </ol>
+  <aside class="notes">Resposta: C. Até ao Android 11 o scan BLE exigia localização, porque os beacons permitem localizar pessoas; desde o 12 há permissões próprias de Bluetooth (SCAN, CONNECT) com a opção de declarar que não se deriva localização. A ignora o risco de privacidade; B e D são disparates plausíveis para quem não estudou. Ligação com a aula 24.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 5 · Testes</h2>
+  <p>Na pirâmide de testes há muitos testes unitários e poucos de integração ou E2E. Porquê?</p>
+  <ol type="A">
+    <li>Porque os unitários são rápidos, baratos e apontam diretamente a causa da falha.</li>
+    <li>Porque o Flutter não suporta testes de integração.</li>
+    <li>Porque os unitários testam a interface e os E2E só testam a lógica.</li>
+    <li>Porque os golden tests substituem os testes E2E.</li>
+  </ol>
+  <aside class="notes">Resposta: A. Um unitário corre em milissegundos e diz "fromJson falha com campo em falta"; um E2E demora minutos, precisa de dispositivo e diz "o ecrã ficou em branco". B é falsa, existe integration_test. C está ao contrário. D confunde comparação de pixels com fluxo completo. Reforça: no projeto, parsing, notifier com repository fake e um widget test por estado.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 6 · Observabilidade</h2>
+  <p>O Crashlytics mostra "crash-free users: 99,2 %" na última semana. O que isto significa?</p>
+  <ol type="A">
+    <li>Que 0,8 % das sessões terminaram num crash.</li>
+    <li>Que 99,2 % dos crashes já foram corrigidos.</li>
+    <li>Que 0,8 % dos utilizadores tiveram pelo menos um crash nesse período.</li>
+    <li>Que a app tem 0,8 % de código com bugs.</li>
+  </ol>
+  <aside class="notes">Resposta: C. A métrica é por utilizador e por período: de todos os que usaram a app, 0,8 % viram pelo menos um crash. A confunde utilizadores com sessões (existe crash-free sessions, é outra métrica). B e D são leituras impossíveis. Pergunta de seguida: "e isto é bom?" Depende do produto; acima de 99 % é o normal esperado, e a Play começa a penalizar por volta de 1,1 % de crashes percebidos.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 7 · Distribuição a testers</h2>
+  <p>Qual é a diferença essencial entre distribuir um build a testers externos pelo TestFlight e pelo Firebase App Distribution?</p>
+  <ol type="A">
+    <li>O Firebase App Distribution só funciona para iOS.</li>
+    <li>O TestFlight externo passa por uma revisão beta da Apple; o Firebase entrega o ficheiro sem revisão.</li>
+    <li>O TestFlight não tem limite de testers; o Firebase está limitado a 25.</li>
+    <li>Não há diferença: ambos instalam através da App Store.</li>
+  </ol>
+  <aside class="notes">Resposta: B. TestFlight externo (até 10 000 testers) exige uma revisão beta, mais leve do que a da loja mas existe; testers internos (até 100, membros da equipa) não passam por ela. O Firebase App Distribution entrega APK/AAB ou IPA ad hoc diretamente, sem revisão, e no iOS exige que o UDID do tester esteja no perfil. A e D são falsas; C inverte os limites.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 8 · Platform channels</h2>
+  <p>Que tipos podes enviar diretamente por um <code>MethodChannel</code> entre Dart e Kotlin ou Swift?</p>
+  <ol type="A">
+    <li>Qualquer objeto Dart, porque o canal serializa automaticamente com reflexão.</li>
+    <li>Só <code>String</code>; tudo o resto tem de ir em JSON.</li>
+    <li>Primitivos, <code>String</code>, listas e mapas suportados pelo <code>StandardMessageCodec</code>; objetos próprios convertem-se em mapas.</li>
+    <li>Widgets, para que o lado nativo os possa desenhar.</li>
+  </ol>
+  <aside class="notes">Resposta: C. O StandardMessageCodec suporta null, bool, int, double, String, Uint8List e afins, List e Map. Uma classe Previsao vai como Map (toJson) e reconstrói-se do outro lado. A não existe em Dart AOT; B é o que muita gente faz por preguiça, mas não é obrigatório; D confunde platform views com canais. Lembra a MissingPluginException na web e o EventChannel para streams.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 9 · Lojas e monetização</h2>
+  <p>A Tempo Açores passa a vender uma subscrição "Previsão a 10 dias" dentro da app iOS. O que a Apple exige?</p>
+  <ol type="A">
+    <li>Nada: a app pode aceitar cartão com qualquer fornecedor de pagamentos.</li>
+    <li>Que a compra de conteúdo digital use o sistema de compras in-app da Apple, com a comissão respetiva.</li>
+    <li>Que a subscrição seja vendida só no site e a app nunca a mencione.</li>
+    <li>Que a app seja paga na loja em vez de ter subscrição.</li>
+  </ol>
+  <aside class="notes">Resposta: B. Conteúdo e funcionalidades digitais consumidos na app passam pelo StoreKit (15 % ou 30 %). Bens físicos e serviços fora da app (uma viagem, um táxi) podem usar outro processador. Na UE, o DMA obrigou a Apple a permitir alternativas com condições próprias; a regra geral de exame continua a ser B. C descreve o modelo "reader" com restrições; D não tem nada a ver.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pergunta 10 · Build e versionamento</h2>
+  <p>Carregaste um app bundle com <code>versionCode</code> 7 para o track de teste interno. Corriges um bug e queres carregar para produção. O que o novo bundle precisa?</p>
+  <ol type="A">
+    <li>Nada: os tracks são independentes e o 7 pode repetir-se.</li>
+    <li><code>versionCode</code> 7 e um <code>versionName</code> diferente.</li>
+    <li><code>versionCode</code> 8 ou superior; o <code>versionName</code> pode ser o mesmo.</li>
+    <li>Um keystore novo, porque a chave de teste não serve para produção.</li>
+  </ol>
+  <aside class="notes">Resposta: C. O versionCode é único por app na Play, em todos os tracks, e só sobe. O versionName é para humanos e pode repetir-se. A e B são o erro clássico "versionCode igual". D é grave: mudar de keystore impediria a atualização de quem já tem a app; a chave é a mesma sempre, e com Play App Signing a upload key também.</aside>
+</section>
+
+<section class="slide">
+  <h2>Erros frequentes no teste</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>O erro</th><th>Porque está errado</th></tr></thead>
+  <tbody>
+  <tr><td>Pedir localização <em>always</em> "para garantir"</td><td>A app não precisa, as lojas rejeitam sem justificação e o utilizador nega. <em>When in use</em> chega para quase tudo.</td></tr>
+  <tr><td>Tratar um custom scheme como seguro</td><td>Não tem dono nem verificação de domínio. Para tokens e login, Universal/App Links.</td></tr>
+  <tr><td>Contar com o WorkManager a uma hora certa</td><td>Garante execução dentro de restrições, não hora. O SO junta e adia trabalho por bateria.</td></tr>
+  <tr><td>Achar que code push muda tudo sem loja</td><td>Só código Dart; nada de nativo, assets ou permissões. E a Apple exige que não mude o propósito da app.</td></tr>
+  <tr><td>Reutilizar o <code>versionCode</code></td><td>A Play recusa o upload e o telemóvel recusa o downgrade. Sobe sempre; o <code>versionName</code> é que pode repetir.</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> quando uma opção promete uma garantia absoluta (sempre, exatamente, sem limites) num sistema móvel, desconfia.</p>
+</section>
+
+<section class="slide" data-part="Workshop">
+  <h2>Workshop de finalização: checklist de entrega</h2>
+  <ul class="checklist">
+    <li><strong>Requisitos mínimos</strong> a funcionar no telemóvel: localidades com pesquisa, previsão a 5 dias, avisos, favoritos sincronizados, funcionamento sem rede com "dados de há X", estados de loading, erro e vazio em todos os ecrãs.</li>
+    <li><strong>Modo caos</strong> ligado durante 5 minutos sem a app falhar.</li>
+    <li><strong>CI verde</strong> no <code>main</code>: <code>flutter analyze</code> sem avisos e pelo menos cinco testes a passar.</li>
+    <li><strong>Sem segredos no repositório:</strong> <code>git log -p | grep -i secret</code> limpo, <code>key.properties</code> e keystore fora.</li>
+    <li><strong>README</strong> completo (slide seguinte).</li>
+    <li><strong>Build assinado</strong> <code>1.0.0+N</code>, distribuído pelo Firebase App Distribution a pelo menos 3 testers fora do grupo, e pelo TestFlight quem tiver iOS.</li>
+  </ul>
+  <div class="callout task"><strong>Como vai correr</strong> 10:35 a 10:50: cada grupo percorre a checklist e marca o que falta na milestone. 10:50 a 12:00: trabalho, com o docente a rodar. 12:00 a 12:30: uploads e verificação cruzada com outro grupo.</div>
+  <aside class="notes">A verificação cruzada é a parte que mais rende: o grupo A instala o build do grupo B pelo link do App Distribution, liga o modo avião e tenta partir a app durante 5 minutos, e vice-versa. Regista o que encontram como issues no repo do outro grupo. É o "tester real" da rubrica.</aside>
+</section>
+
+<section class="slide">
+  <h2>README e documentação: o que tem de lá estar</h2>
+  <ol class="steps">
+    <li><strong>Cabeçalho:</strong> nome da app, os membros com o utilizador GitHub, e um screenshot ou GIF da app a correr no telemóvel.</li>
+    <li><strong>Como correr:</strong> versão do Flutter, <code>flutter pub get</code>, o que pôr no <code>--dart-define</code> ou no <code>env/dev.json</code>, e como obter o client-id (não o próprio segredo).</li>
+    <li><strong>Arquitetura em dez linhas:</strong> camadas, pastas por feature, onde vive o estado, como a cache funciona. Um diagrama simples vale mais do que dez parágrafos.</li>
+    <li><strong>O que está feito e o que não está:</strong> os mínimos, os extras, a milestone "Depois". Honestidade aqui é avaliada; esconder um bug conhecido não é.</li>
+    <li><strong>Como obter o build:</strong> link de convite do App Distribution, versão atual, e quem tem o keystore.</li>
+    <li><strong>Retrospetiva:</strong> as duas frases da aula 32.</li>
+  </ol>
+  <div class="callout task"><strong>Exercício</strong> Troca o README com outro grupo. Sem falar com eles, tenta correr a app só com o que lá está escrito. Cada coisa que tiveste de perguntar é uma linha que falta.</div>
+</section>
+
+<section class="slide">
+  <h2>Build final assinado e upload ao App Distribution</h2>
+  <ol class="steps">
+    <li><strong>Sobe o build number</strong> no <code>pubspec.yaml</code>: <code>version: 1.0.0+N</code>, com N maior do que o último que distribuíste.</li>
+    <li><strong>Gera o APK de release</strong> com o flavor prod e a configuração de prod.
+<pre class="term"><code class="language-bash">flutter build apk --release --flavor prod --dart-define-from-file=env/prod.json</code></pre></li>
+    <li><strong>Faz o upload</strong> com o CLI do Firebase, para o grupo de testers da turma que criaste na aula 27.
+<pre class="term"><code class="language-bash">firebase appdistribution:distribute \
+  build/app/outputs/flutter-apk/app-prod-release.apk \
+  --app 1:123456789012:android:0123456789abcdef \
+  --groups turma-pdm \
+  --release-notes "v1.0.0 (N): build final para a defesa"</code></pre></li>
+    <li><strong>Confirma no telemóvel de outro grupo</strong> que a notificação do App Distribution chegou e que a app instala por cima da anterior, sem desinstalar.</li>
+  </ol>
+  <div class="callout task"><strong>Exercício</strong> Build distribuído a pelo menos 3 testers fora do grupo, com o link do release colado no README. Se a instalação por cima falhar, a causa está na aula 31: chave ou <code>versionCode</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>TestFlight, para quem tem iOS</h2>
+  <ol class="steps">
+    <li><strong>Conta paga e Mac.</strong> O docente faz o upload com a conta dele para os grupos que tenham a app a compilar em iOS; o bundle id tem de ser o combinado com ele.</li>
+    <li><strong>Gera o ficheiro .ipa</strong> e abre-o no Xcode ou no Transporter.
+<pre class="term"><code class="language-bash">flutter build ipa --release --flavor prod --dart-define-from-file=env/prod.json
+open build/ios/archive/Runner.xcarchive</code></pre></li>
+    <li><strong>Distribute App → App Store Connect → Upload.</strong> O build aparece em "Processing" durante alguns minutos.</li>
+    <li><strong>Testers internos</strong> não precisam de revisão: adiciona os Apple IDs dos colegas ao grupo de teste interno, e eles recebem o convite na app TestFlight.</li>
+    <li><strong>Sem Mac:</strong> não há caminho. Fica no README que o build iOS não foi distribuído e porquê; não é penalizado.</li>
+  </ol>
+  <aside class="notes">Faz um upload ao vivo para o teu App Store Connect se houver pelo menos um grupo com iOS; senão mostra o TestFlight com um build teu e a lista de testers. Verifica que a mensagem de "Missing Compliance" (encriptação) é respondida, é o bloqueio habitual dos builds a ficarem presos.</aside>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até à próxima aula</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Estudar a componente teórica das aulas 21 a 32. O teste é segunda, 07/12, às 16:00, em papel e sem consulta.</li>
+        <li>Fechar o que ficou por marcar na checklist de hoje. O freeze é quarta às 18:30, com tag <code>v1.0.0</code>.</li>
+        <li>Confirmar que os 3 testers fora do grupo instalaram mesmo o build.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://developer.android.com/develop/sensors-and-location/location/permissions" target="_blank" rel="noopener">Request location permissions</a> (developer.android.com): foreground vs background, precise vs approximate, com as regras por versão (aula 21).</li>
+        <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a> (docs.flutter.dev): custom schemes, App Links e Universal Links, e a verificação de domínio com <code>assetlinks.json</code> e AASA (aula 22).</li>
+        <li><a href="https://developer.android.com/develop/background-work/background-tasks/persistent" target="_blank" rel="noopener">WorkManager</a> (developer.android.com): o que o sistema garante e o que não garante a uma tarefa em background (aula 23).</li>
+        <li><a href="https://docs.flutter.dev/deployment/android" target="_blank" rel="noopener">Build and release an Android app</a> (docs.flutter.dev): assinatura, app bundle e versionamento; revê os passos se algum upload falhou hoje (aula 31).</li>
+        <li><a href="https://developer.apple.com/app-store/review/guidelines/" target="_blank" rel="noopener">App Store Review Guidelines</a>: a 2.1, a 3.1.1, a 4.2 e a 5.1.1, que são as que mais rejeitam (aulas 29 e 32).</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

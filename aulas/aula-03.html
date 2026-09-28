@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 03 · Como o Flutter funciona e Dart I · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* Só nesta aula: em modo projeção usa a largura do ecrã, para o código não precisar de scroll horizontal.
+   Se mesmo assim uma linha não couber, quebra em vez de ficar escondida (o botão Copiar copia a linha inteira na mesma). */
+html.proj.deck, html.proj header.site .wrap, html.proj .deckbar .inner, html.proj .deck { max-width: min(1600px, 100vw - 48px); }
+html.proj .deck .slide pre, html.proj .deck .slide pre code { white-space: pre-wrap; overflow-wrap: normal; word-break: normal; }
+html.proj .deck .slide pre { font-size: clamp(.7rem, 1.4vw, .8rem); } /* em projetores estreitos (1280 px) encolhe um pouco em vez de quebrar */
+/* Secção 4: blocos só para ler (traço amarelo) e tabela das funções de ordem superior */
+pre.ler { box-shadow: inset 5px 0 0 var(--warn); }
+pre.ler[data-title]::before { color: var(--warn); }
+.deck .slide table.hof { font-size: 1.05rem; }
+.deck .slide table.hof td:nth-child(2) { font-size: 1.5em; white-space: nowrap; }
+.deck .slide table.hof code { font-size: 1em; white-space: nowrap; }
+</style>
+</head>
+<body data-aula="3">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 03 · Semana 3 · Quarta, 23 de setembro de 2026 · 16:00 às 18:00</p>
+  <h1>Dart I (continuação) e primeiro repositório no GitHub</h1>
+  <p class="lead">Continuação da aula de ontem. Prática: os blocos 4 a 6 de Dart no DartPad (coleções, classes, controlo de fluxo) e o primeiro repositório no GitHub, com os exercícios guardados.</p>
+  <div class="meta"><span>DartPad: dartpad.dev</span></div>
+  <aside class="notes">Pede a um aluno que mostre o exercício 3 de ontem (classifica dentro de descreve) em dois minutos: os blocos de hoje partem daí. Confirma que todos têm o dartpad.dev aberto com o código de ontem.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Usar List, Map e Set em Dart e transformá-los com <code>where</code>, <code>map</code> e <code>reduce</code>.</li>
+    <li>Escrever uma classe com construtor nomeado, campos <code>final</code> e <code>toString</code>.</li>
+    <li>Usar enums e um <code>switch</code> exaustivo com padrões.</li>
+    <li>Criar um repositório no GitHub, cloná-lo no VS Code e fazer commit e push.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Prática">
+  <h2>4. Coleções (1 de 3): List, Map e Set</h2>
+<pre data-title="Escrever no DartPad"><code class="language-dart">void main() {
+  final List&lt;String&gt; cidades = ['Ponta Delgada', 'Angra do Heroísmo', 'Horta'];
+  final Map&lt;String, double&gt; temperaturas = {
+    'Ponta Delgada': 21.0,
+    'Angra do Heroísmo': 20.5,
+    'Horta': 19.0,
+  };
+  final Set&lt;String&gt; ilhas = {'São Miguel', 'Terceira', 'Faial', 'Terceira'};
+
+  cidades.add('Vila do Porto');
+  print(cidades.length);                     // 4
+  print(ilhas.length);                       // 3: um Set não guarda repetidos
+  print(ilhas.contains('Pico'));             // false
+  print(temperaturas['Horta']);              // 19.0; chave inexistente dá null
+
+  for (final c in cidades) {
+    print('$c → ${temperaturas[c] ?? 'sem dados'}');
+  }
+}</code></pre>
+  <aside class="notes">Perguntar antes de correr: quanto vale ilhas.length? A resposta errada (4) é a deixa para explicar o Set. O tipo está escrito de propósito nesta primeira vez; no slide "o que interessa" mostra-se que final cidades = [...] infere o mesmo.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Coleções: map, where e reduce em três linhas <span class="badge">só para ler</span></h2>
+  <p>As três recebem uma função e aplicam-na a cada elemento. Chamam-se funções de ordem superior, e resolvem quase tudo o que se faz com coleções.</p>
+  <table class="hof">
+    <tr><th>Chamada</th><th>Resultado</th><th>O que faz</th></tr>
+    <tr><td><code>[🌽, 🐮, 🐔].map(cozinhar)</code></td><td>[🍿, 🍔, 🍳]</td><td>Transforma cada elemento. Sai com o mesmo tamanho.</td></tr>
+    <tr><td><code>[🍿, 🍔, 🍳].where(vegetariano)</code></td><td>[🍿, 🍳]</td><td>Fica só com os que passam no teste. Pode encolher.</td></tr>
+    <tr><td><code>[🍿, 🍔, 🍳].reduce(comer)</code></td><td>💩</td><td>Junta tudo num só valor.</td></tr>
+  </table>
+  <p>Em Dart, o <em>filter</em> de outras linguagens chama-se <code>where</code>. As três existem em qualquer <code>Iterable</code>: listas, sets, e <code>entries</code>, <code>keys</code> ou <code>values</code> de um Map.</p>
+  <p class="muted">Adaptado do exemplo em JavaScript de Steven Luscher.</p>
+  <aside class="notes">Nada para escrever aqui. A função passada é o "cozinhar", o "vegetariano" e o "comer"; no slide seguinte são as lambdas (e) => .... Insistir: map não muda o tamanho, where pode, reduce devolve um só valor.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Coleções (2 de 3): where, map e reduce</h2>
+<pre class="ler" data-title="Só para ler: a mesma coisa com ciclos"><code class="language-dart">// Cidades com 20 °C ou mais
+final quentes = &lt;String&gt;[];
+for (final e in temperaturas.entries) {
+  if (e.value >= 20) quentes.add(e.key);
+}
+
+// Soma das temperaturas
+var soma = 0.0;
+for (final t in temperaturas.values) {
+  soma += t;
+}</code></pre>
+<pre data-title="Escrever no DartPad, dentro do main do bloco anterior"><code class="language-dart">  // ...continua dentro do main
+  final quentes = temperaturas.entries
+      .where((e) => e.value >= 20)           // fica com as entradas que passam no teste
+      .map((e) => e.key)                     // de cada entrada, só a chave
+      .toList();
+  print(quentes);                            // [Ponta Delgada, Angra do Heroísmo]
+
+  final soma = temperaturas.values.reduce((a, b) => a + b);
+  print((soma / temperaturas.length).toStringAsFixed(1));   // 20.2
+}</code></pre>
+  <aside class="notes">Ler o bloco de cima em voz alta e depois mostrar que o de baixo faz exatamente o mesmo. No reduce, a é o acumulado e b o próximo elemento. É o que o exercício 4 pede sobre entries.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Coleções (3 de 3): spread, if e for dentro do literal</h2>
+<pre class="ler" data-title="Só para ler: a mesma coisa com ciclo"><code class="language-dart">final tudo = &lt;String&gt;[];
+tudo.addAll(cidades);
+if (ilhas.length > 3) tudo.add('Lajes');
+for (final i in ilhas) tudo.add('Ilha $i');</code></pre>
+<pre data-title="Escrever no DartPad, dentro do main"><code class="language-dart">  // ...continua dentro do main
+  final tudo = [
+    ...cidades,                              // spread: todos os elementos de cidades
+    if (ilhas.length > 3) 'Lajes',           // só entra se a condição for verdadeira
+    for (final i in ilhas) 'Ilha $i',        // um elemento por ilha
+  ];
+  print(tudo.length);                        // 7
+}</code></pre>
+  <aside class="notes">Ligar ao lib/main.dart do início da aula: o children de um Column é uma lista normal, por isso aceita if e for lá dentro. É assim que se mostra um widget só quando há dados.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Coleções: o que interessa</h2>
+  <ul>
+    <li><code>List</code>, <code>Map</code> e <code>Set</code> são genéricos: <code>List&lt;String&gt;</code>, <code>Map&lt;String, double&gt;</code>. Com <code>final cidades = [...]</code> o tipo é inferido e é o mesmo. Escreve-se quando a coleção começa vazia: <code>&lt;String&gt;[]</code>, <code>&lt;String, double&gt;{}</code>, <code>&lt;String&gt;{}</code>. Um <code>{}</code> vazio sem tipo é um Map.</li>
+    <li><code>where</code>, <code>map</code>, <code>reduce</code>, <code>fold</code>, <code>any</code>, <code>every</code>, <code>firstWhere</code> vivem em qualquer <code>Iterable</code>. Devolvem iteráveis preguiçosos; <code>toList()</code> materializa. Tudo o que fazem também se escreve com um ciclo: são atalhos, não magia.</li>
+    <li>Spread <code>...</code>, <code>if</code> e <code>for</code> dentro de literais de coleção. Em Flutter, isto serve para construir listas de widgets condicionalmente.</li>
+  </ul>
+<pre class="ler" data-title="Só para ler: é para isto que existe. Uma lista de widgets em Flutter, com if e for lá dentro"><code class="language-dart">Column(
+  children: [
+    const Text('Previsão'),
+    if (chove) const Icon(Icons.umbrella),
+    for (final c in cidades) Text(c),
+  ],
+)</code></pre>
+  <div class="callout task"><strong>Exercício 4</strong> A partir do <code>temperaturas</code> do bloco, imprimir a cidade mais quente e a mais fria sem ordenar à mão (dica: <code>reduce</code> sobre <code>temperaturas.entries</code>, comparando <code>value</code>). Resultado esperado: <code>Mais quente: Ponta Delgada (21.0)</code> e <code>Mais fria: Horta (19.0)</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>5. Classes (1 de 2)</h2>
+<pre><code class="language-dart">enum TipoTempo { sol, nublado, chuva, trovoada }
+
+class Previsao {
+  final String cidade;
+  final DateTime dia;
+  final double tMin;
+  final double tMax;
+  final TipoTempo tipo;
+
+  const Previsao({
+    required this.cidade,
+    required this.dia,
+    required this.tMin,
+    required this.tMax,
+    this.tipo = TipoTempo.sol,
+  });
+
+  double get amplitude => tMax - tMin;
+  bool get chove => tipo == TipoTempo.chuva || tipo == TipoTempo.trovoada;
+  // continua no próximo slide
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>5. Classes (2 de 2)</h2>
+<pre><code class="language-dart">  // ...dentro de Previsao
+  Previsao copyWith({double? tMin, double? tMax, TipoTempo? tipo}) => Previsao(
+        cidade: cidade,
+        dia: dia,
+        tMin: tMin ?? this.tMin,
+        tMax: tMax ?? this.tMax,
+        tipo: tipo ?? this.tipo,
+      );
+
+  @override
+  String toString() => '$cidade ${dia.day}/${dia.month}: $tMin–$tMax °C, ${tipo.name}';
+}
+
+void main() {
+  final hoje = Previsao(cidade: 'Ponta Delgada', dia: DateTime(2026, 9, 22), tMin: 17, tMax: 23);
+  print(hoje);
+  print(hoje.amplitude);
+  final amanha = hoje.copyWith(tMax: 25, tipo: TipoTempo.chuva);
+  print('$amanha, chove: ${amanha.chove}');
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>5. Classes: o que interessa</h2>
+  <ul>
+    <li>Campos <code>final</code> + construtor <code>const</code> com <code>this.campo</code>: a forma idiomática de modelo de dados imutável. É o que será usado para os dados da API.</li>
+    <li><code>get</code> define propriedades calculadas. <code>copyWith</code> é o padrão para "uma cópia com uma alteração", central em gestão de estado.</li>
+    <li><code>enum</code> com <code>.name</code>. Amanhã: enums com valores e métodos.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 5</strong> No mesmo ficheiro, criar uma classe <code>Localidade</code> com <code>nome</code>, <code>ilha</code> e uma lista <code>previsoes</code> de <code>Previsao</code>. Adicionar um getter <code>tMaxSemana</code> com a maior <code>tMax</code> das previsões, e um método <code>diasComChuva()</code> com o número de previsões em que <code>chove</code> é verdadeiro. No <code>main</code>, com <code>hoje</code> e <code>amanha</code> já existentes: <code>Localidade(nome: 'Ponta Delgada', ilha: 'São Miguel', previsoes: [hoje, amanha])</code> deve dar <code>tMaxSemana</code> igual a <code>25.0</code> e <code>diasComChuva()</code> igual a <code>1</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>6. Controlo de fluxo e switch com padrões</h2>
+<pre><code class="language-dart">String icone(TipoTempo t) => switch (t) {
+      TipoTempo.sol => '☀️',
+      TipoTempo.nublado => '☁️',
+      TipoTempo.chuva => '🌧️',
+      TipoTempo.trovoada => '⛈️',
+    };
+
+String aviso(double vento) {
+  if (vento >= 90) return 'vermelho';
+  if (vento >= 70) return 'laranja';
+  if (vento >= 50) return 'amarelo';
+  return 'verde';
+}
+
+void main() {
+  for (final t in TipoTempo.values) {
+    print('${t.name}: ${icone(t)}');
+  }
+  var i = 0;
+  while (i &lt; 3) { print(aviso(40.0 + i * 25)); i++; }
+}</code></pre>
+  <p>O <code>switch</code> como expressão é exaustivo: se um valor novo entrar no enum sem ser tratado, o compilador avisa. Em mobile isto evita ecrãs em branco quando a API devolve um estado novo.</p>
+  <div class="callout task"><strong>Exercício 6</strong> No mesmo ficheiro dos blocos 5 e 6: acrescentar <code>nevoeiro</code> ao <code>TipoTempo</code> e observar o erro do compilador no <code>switch</code>; corrigir com um ícone à escolha. Depois usar <code>icone(tipo)</code> no <code>toString</code> de <code>Previsao</code>, para <code>print(amanha)</code> mostrar <code>🌧️ Ponta Delgada 22/9: 17.0–25.0 °C, chuva</code>.</div>
+</section>
+
+<section class="slide" data-part="Git">
+  <h2>Git e GitHub: primeiro repositório</h2>
+  <p>Objetivo: os exercícios de hoje guardados num repositório próprio no GitHub, com commit e push feitos a partir do VS Code. Passos completos na <a href="../guia-instalacao.html#git">secção Git do guia</a>.</p>
+  <ol class="steps">
+    <li>No GitHub: <strong>New repository</strong> → nome <code>pdm-dart</code> → marcar <em>Add a README file</em> → Create.</li>
+    <li>No VS Code: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <strong>Git: Clone</strong> → colar o URL do repositório → escolher a pasta de trabalho (<code>C:\dev</code>) → abrir o projeto. Se aparecer <em>Restricted Mode</em>, carregar em <strong>Trust</strong>.</li>
+    <li>Criar <code>exercicio1.dart</code> a <code>exercicio6.dart</code> com o código do DartPad (o 5 e o 6 podem ficar no mesmo ficheiro). Confirmar que correm: <code>dart run exercicio1.dart</code>.</li>
+    <li>Vista <em>Source Control</em> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd>): mensagem <code>Exercícios de Dart das aulas 2 e 3</code> → <strong>Commit</strong> → <strong>Sync Changes</strong>.</li>
+    <li>Na primeira vez, o browser abre para autorizar o acesso ao GitHub. Depois de autorizado, não volta a pedir password neste computador.</li>
+    <li>Abrir o repositório no GitHub e confirmar que os ficheiros lá estão.</li>
+  </ol>
+  <aside class="notes">Reserva os últimos 20 minutos. Erro típico: commit sem user.name e user.email configurados (o VS Code pede). Segundo erro típico: clonar para o OneDrive. Quem não tiver o Git instalado faz par com um colega e repete em casa.</aside>
+</section>
+
+<section class="slide">
+  <h2>Git: o que interessa</h2>
+  <ul>
+    <li><strong>Commit</strong> é uma fotografia de todo o projeto com legenda e data. Não se apaga nenhuma; pode-se voltar a qualquer uma.</li>
+    <li><strong>Push</strong> envia as fotografias para o GitHub; <strong>pull</strong> traz as que outros fizeram. O repositório local e o remoto são cópias completas.</li>
+    <li><strong>Mensagens de commit</strong> dizem o que mudou e porquê: "Adiciona exercício 3 (funções)" e não "coisas".</li>
+    <li>A partir de sexta-feira, cada aula começa com um <code>git clone</code>. Mais tarde, o projeto de grupo vive inteiro no GitHub, com branches e pull requests.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 7</strong> Fazer uma alteração a um exercício, novo commit com mensagem clara, push. Confirmar no GitHub que o histórico mostra dois commits.</div>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até sexta</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer até sexta</h3>
+      <ul class="checklist">
+        <li>Seis exercícios de Dart no repositório <code>pdm-dart</code>, com push feito.</li>
+        <li>Ler o <a href="https://dart.dev/language" target="_blank" rel="noopener">Dart language tour</a> até "Classes".</li>
+        <li>Setup: <code>flutter doctor</code> com ✓ em Flutter, Android toolchain e Android Studio; emulador criado (ou telemóvel com depuração USB). Confirma-se na sexta, na aula.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/learn/pathway/how-flutter-works" target="_blank" rel="noopener">How Flutter works</a>: percurso oficial pelas camadas, pelas três árvores e pelo que acontece em cada frame.</li>
+        <li><a href="https://docs.flutter.dev/resources/architectural-overview" target="_blank" rel="noopener">Flutter architectural overview</a>: as três camadas e as três árvores, com diagramas.</li>
+        <li><a href="https://docs.flutter.dev/tools/hot-reload" target="_blank" rel="noopener">Hot reload</a>: o que pode e não pode ser recarregado a quente.</li>
+        <li><a href="https://dart.dev/null-safety/understanding-null-safety" target="_blank" rel="noopener">Understanding null safety</a>: porquê e como.</li>
+        <li><a href="https://docs.github.com/get-started/start-your-journey/hello-world" target="_blank" rel="noopener">GitHub: Hello World</a>: repositório, branch, commit e pull request em dez minutos, no browser.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

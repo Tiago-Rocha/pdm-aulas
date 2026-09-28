@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 32 · Consolas das lojas e review da sprint 3 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="32">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 32 · Semana 13 · Quarta, 2 de dezembro de 2026 · 16:30 às 18:30</p>
+  <h1>Consolas das lojas e review da sprint 3</h1>
+  <p class="lead">Teoria (30 minutos): Play Console e App Store Connect: ficha da app, declarações de privacidade, tracks, rollout gradual e revisão. Prática: última review de sprint, retrospetiva final e lista de pendentes para o freeze de 09/12.</p>
+  <div class="meta"><span>Freeze: 09/12 às 18:30</span></div>
+  <aside class="notes">Abre a tua Play Console e o teu App Store Connect antes da aula, já com sessão iniciada, numa app tua real. A teoria de hoje é quase toda mostrada ao vivo: cada slide corresponde a um ecrã da consola. Confirma que todos os grupos trazem o telemóvel com o build de release instalado, não o de debug.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Descrever o que uma ficha de app precisa na Play Console e no App Store Connect, e o que as declarações de privacidade exigem.</li>
+    <li>Distinguir os tracks de teste e produção, e explicar para que serve um rollout gradual.</li>
+    <li>Responder a uma rejeição da revisão de forma metódica.</li>
+    <li>Ler ratings, reviews e vitals depois de publicar, e dizer o que fazem à visibilidade da app.</li>
+    <li>Apresentar a sprint 3 do teu grupo e sair com a lista de pendentes fechada para o freeze.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Play Console: ficha e data safety (1 de 2)</h2>
+  <ul>
+    <li><strong>Ficha da loja:</strong> nome (30 caracteres), descrição curta (80), descrição longa (4000), ícone 512×512, imagem de destaque 1024×500, pelo menos dois screenshots de telemóvel, categoria, e-mail de contacto e URL da política de privacidade. A política é obrigatória para todas as apps.</li>
+    <li><strong>Data safety form:</strong> que dados recolhes, quais partilhas, com que fim, se vão cifrados, se o utilizador pode pedir para apagar. Aparece na ficha antes de instalar. Tens de declarar também o que os SDKs recolhem: o Crashlytics recolhe identificadores de dispositivo e logs de crash.</li>
+    <li><strong>Classificação de conteúdo:</strong> questionário IARC que gera a classificação por região (PEGI na Europa). Sem ele a app não publica.</li>
+    <li><strong>Conta de programador:</strong> 25 USD uma vez; a Google verifica a identidade e, para contas pessoais, pode exigir uma fase de teste fechado com testers antes da produção.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> a data safety form declara o que a app <em>e os seus SDKs</em> recolhem; mentir nela é motivo de remoção.</p>
+</section>
+
+<section class="slide">
+  <h2>Play Console: tracks, rollout e pré-lançamento (2 de 2)</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 340" role="img" aria-label="Tracks da Play Console: internal testing com até 100 testers, closed testing, open testing e produção com rollout gradual de 1 a 100 por cento, que se pára se os vitals piorarem; em baixo, no iOS, TestFlight, revisão da App Store e phased release ao longo de 7 dias">
+    <text x="40" y="22" class="t s b">Google Play</text>
+    <rect x="40" y="34" width="182" height="84" rx="10" class="box"/>
+    <text x="56" y="58" class="t b">Internal testing</text>
+    <text x="56" y="80" class="t s">até 100 e-mails</text>
+    <text x="56" y="102" class="t s">sem revisão; minutos</text>
+    <path d="M222 76H250" class="arrow"/>
+    <rect x="252" y="34" width="182" height="84" rx="10" class="box"/>
+    <text x="268" y="58" class="t b">Closed testing</text>
+    <text x="268" y="80" class="t s">grupos Google; revisão</text>
+    <text x="268" y="102" class="t s">beta privada</text>
+    <path d="M434 76H462" class="arrow"/>
+    <rect x="464" y="34" width="182" height="84" rx="10" class="box"/>
+    <text x="480" y="58" class="t b">Open testing</text>
+    <text x="480" y="80" class="t s">beta pública</text>
+    <text x="480" y="102" class="t s">feedback em escala</text>
+    <path d="M646 76H674" class="arrow"/>
+    <rect x="676" y="34" width="184" height="84" rx="10" class="box accent"/>
+    <text x="692" y="58" class="t b">Production</text>
+    <text x="692" y="80" class="t s">todos os utilizadores</text>
+    <text x="692" y="102" class="t s">com rollout gradual</text>
+    <path d="M768 118V138" class="arrow"/>
+    <rect x="40" y="140" width="820" height="70" rx="10" class="box accent"/>
+    <text x="60" y="164" class="t b">Rollout gradual: 1 % → 5 % → 20 % → 50 % → 100 %</text>
+    <text x="60" y="185" class="t s">um crash aparece em 1 % dos utilizadores, não em todos; se os vitals piorarem, parar (halt)</text>
+    <text x="60" y="202" class="t s">não há rollback: a correção é um versionCode novo</text>
+    <text x="40" y="242" class="t s b">App Store (iOS)</text>
+    <rect x="40" y="254" width="250" height="70" rx="10" class="box"/>
+    <text x="60" y="278" class="t b">TestFlight</text>
+    <text x="60" y="299" class="t s">internos: sem revisão</text>
+    <text x="60" y="316" class="t s">externos: beta review</text>
+    <path d="M290 289H323" class="arrow"/>
+    <rect x="325" y="254" width="250" height="70" rx="10" class="box warn"/>
+    <text x="345" y="278" class="t b">App Store review</text>
+    <text x="345" y="299" class="t s">horas a dias; revisão humana</text>
+    <text x="345" y="316" class="t s">rejeição: responde e resubmete</text>
+    <path d="M575 289H608" class="arrow"/>
+    <rect x="610" y="254" width="250" height="70" rx="10" class="box ok"/>
+    <text x="630" y="278" class="t b">Phased release</text>
+    <text x="630" y="299" class="t s">1, 2, 5, 10, 20, 50, 100 %</text>
+    <text x="630" y="316" class="t s">em 7 dias; podes pausar</text>
+  </svg>
+  <figcaption>Do círculo pequeno ao grande: cada track apanha problemas antes do seguinte, e o rollout gradual limita o estrago em produção.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Track</th><th>Quem instala</th><th>Para quê</th></tr></thead>
+  <tbody>
+  <tr><td>Internal testing</td><td>Até 100 e-mails, sem revisão, disponível em minutos</td><td>A equipa e a turma</td></tr>
+  <tr><td>Closed testing</td><td>Listas ou grupos Google, com revisão</td><td>Beta privada; obrigatório para contas novas</td></tr>
+  <tr><td>Open testing</td><td>Qualquer pessoa pela ficha</td><td>Beta pública, feedback em escala</td></tr>
+  <tr><td>Production</td><td>Todos</td><td>Com rollout gradual: 1 %, 5 %, 20 %, 50 %, 100 %</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>O <strong>rollout gradual</strong> serve para apanhar um crash com 1 % dos utilizadores em vez de 100 %. Podes parar (<em>halt</em>), mas não voltar atrás: a correção é um <code>versionCode</code> novo.</li>
+    <li>O <strong>pré-lançamento</strong> corre a app em dispositivos reais da Google, tira screenshots e reporta crashes e problemas de acessibilidade antes de tu publicares.</li>
+    <li>A revisão da Play demora de horas a alguns dias; permissões sensíveis (localização em background, SMS) demoram mais e pedem vídeo.</li>
+  </ul>
+  <div class="callout"><strong>Analogia</strong> O rollout gradual é abrir a loja primeiro a 5 % dos clientes e olhar para as queixas antes de abrir a todos. Se os vitals piorarem, fecha-se a porta (halt) e corrige-se com um <code>versionCode</code> novo; os outros 95 % nunca chegaram a ver o problema.</div>
+  <aside class="notes">Mostra na tua consola: Release → Testing → Internal testing, com a lista de testers e o link de opt-in. Depois Production → Releases, com um rollout a 20 %. Se tiveres um pre-launch report antigo, mostra as screenshots automáticas: os alunos gostam de ver a app a ser usada por um robô.</aside>
+</section>
+
+<section class="slide">
+  <h2>App Store Connect: ficha, privacy labels e screenshots</h2>
+  <ul>
+    <li><strong>Ficha:</strong> nome (30), subtítulo (30), descrição (4000), palavras-chave (100 caracteres, separadas por vírgula), URL de suporte e de política de privacidade, categoria, questionário de idade.</li>
+    <li><strong>Screenshots por dispositivo:</strong> um conjunto para iPhone de 6,9 polegadas é obrigatório; iPad de 13 polegadas se a app corre em iPad. As imagens têm de ser da app real, não maquetes.</li>
+    <li><strong>Privacy nutrition labels:</strong> três caixas na ficha, "Data used to track you", "Data linked to you" e "Data not linked to you". Preenches por categoria de dados e finalidade, incluindo o que os SDKs fazem.</li>
+    <li><strong>Privacy manifest</strong> (<code>PrivacyInfo.xcprivacy</code>): desde 2024 os SDKs e a app declaram as APIs sensíveis que usam e porquê. Sem ele, o upload é rejeitado.</li>
+    <li>A ficha e o build são coisas separadas: podes ter a ficha pronta semanas antes do primeiro build.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> as privacy labels da Apple e a data safety da Google são a mesma pergunta em dois formulários: o que recolhes, para quê, e se está ligado à pessoa.</p>
+</section>
+
+<section class="slide">
+  <h2>App Store Connect: review notes e o que a revisão verifica</h2>
+  <ul>
+    <li><strong>Review notes:</strong> conta de demonstração com credenciais, como chegar a cada funcionalidade, o que é preciso para testar (uma tag NFC, uma localização nos Açores). Se precisa de hardware, junta um vídeo. Metade das rejeições evita-se aqui.</li>
+    <li><strong>O que verificam:</strong> crashes, funcionalidade incompleta ou conteúdo de teste, login obrigatório sem razão, metadata que não corresponde à app, privacidade, pagamentos fora do sistema da loja, apps que são "só um site".</li>
+    <li><strong>Tempo:</strong> a maioria das revisões fecha em 24 a 48 horas. A primeira submissão de uma app nova demora mais.</li>
+    <li><strong>Expedited review:</strong> pedido por formulário para correções críticas ou eventos com data. Funciona quando a razão é real; abusar fecha a porta.</li>
+    <li>A revisão da Google é mais automática, a da Apple é mais humana. Nas duas há guidelines numeradas: a rejeição cita o número.</li>
+  </ul>
+  <div class="callout"><strong>Analogia</strong> As duas lojas são alfândegas, mas com inspeções diferentes. A da Apple é humana: alguém abre a app, carrega nos botões e lê as review notes, por isso demora um ou dois dias e cita a regra que falhou. A da Google é sobretudo por máquina: mais rápida, mas apanha o que se mede automaticamente (data safety, target API level, permissões) e não perdoa formulários mal preenchidos.</div>
+</section>
+
+<section class="slide">
+  <h2>Responder a uma rejeição</h2>
+  <ol class="steps">
+    <li><strong>Lê a guideline citada</strong>, inteira, no site da Apple ou da Google. A mensagem da rejeição resume; a guideline explica.</li>
+    <li><strong>Responde no Resolution Center</strong> (Apple) ou no formulário de recurso (Google) se achas que o revisor não percebeu. Curto, factual, com screenshots ou vídeo. Muitas rejeições resolvem-se com uma explicação.</li>
+    <li><strong>Corrige e volta a submeter</strong> se o problema é real. Um build novo, com número de build novo, e notas a dizer o que mudou.</li>
+    <li><strong>Recorre</strong> ao App Review Board ou ao apoio da Play só quando a resposta e a correção não chegaram. É lento.</li>
+    <li><strong>Não</strong> faças upload do mesmo build à espera de outro revisor, e não discutas: o objetivo é publicar, não ter razão.</li>
+  </ol>
+  <div class="callout tip"><strong>Exemplo real</strong> "Guideline 2.1: we were unable to log in." A resposta certa não é discutir: é uma conta de demonstração que funciona e um vídeo de 30 segundos. Publicado no dia seguinte.</div>
+  <aside class="notes">Conta uma rejeição tua verdadeira, com a mensagem original e a resposta que deste. A que costuma render mais é uma de metadata (screenshot com um botão que já não existia) ou uma 4.2 de funcionalidade mínima. Sublinha que o revisor é uma pessoa com uma lista, não um inimigo.</aside>
+</section>
+
+<section class="slide">
+  <h2>Depois de publicar: ratings, reviews e vitals</h2>
+  <ul>
+    <li><strong>Ratings e reviews:</strong> responde em público, com educação, a todas as que dizem algo concreto. Pede avaliação dentro da app no momento certo (<code>in_app_review</code>), nunca ao arrancar. A Play pesa mais as avaliações recentes.</li>
+    <li><strong>Android vitals:</strong> a Play mede a taxa de crashes e de ANR percebidos pelo utilizador. Acima dos limiares (cerca de 1,1 % de crashes e 0,5 % de ANR) a app <em>perde visibilidade</em> na loja e ganha um aviso na ficha. Isto é uma sanção real, não uma sugestão.</li>
+    <li><strong>App Store:</strong> métricas de crashes, retenção e conversão da ficha em App Analytics; os crashes com símbolos aparecem no Xcode Organizer.</li>
+    <li><strong>Adoção por versão:</strong> quantos utilizadores ainda estão na versão anterior. Decide quando podes desligar uma API antiga (aula 28) ou forçar atualização (aula 30).</li>
+    <li>Rollout gradual + vitals é o ciclo: sobe a percentagem quando os números aguentam, pára quando não.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> as lojas penalizam a visibilidade de apps que ultrapassam os limiares de crash e ANR; publicar é o início da manutenção, não o fim.</p>
+</section>
+
+<section class="slide" data-part="Review">
+  <h2>Review da sprint 3: o formato</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Minuto</th><th>O que o grupo faz</th></tr></thead>
+  <tbody>
+  <tr><td>0 a 1</td><td>Objetivo da sprint em duas frases e o que ficou feito vs planeado (a partir do board de issues, não de memória).</td></tr>
+  <tr><td>1 a 4</td><td>Demo no telemóvel projetado, build de <em>release</em>: fluxo completo de utilizador, incluindo modo avião e um estado de erro.</td></tr>
+  <tr><td>4 a 5</td><td>Um problema técnico que resolveram esta sprint e como. Uma pessoa diferente da que fez a demo.</td></tr>
+  <tr><td>+2</td><td>Feedback do docente e dos colegas: uma coisa boa, uma coisa a corrigir antes do freeze.</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Ordem: a do sorteio de hoje ao chegar. Quem não está pronto quando é chamado passa para o fim.</li>
+    <li>É a última review antes das defesas. O que ouvires aqui é o que vais ouvir no dia 14 se não corrigires.</li>
+  </ul>
+  <aside class="notes">Cronómetro visível para todos. Corta aos 5 minutos sem exceções, é treino para a defesa. Anota por grupo os dois pontos de feedback numa folha partilhada com a turma; é a base da lista de pendentes do slide seguinte. Verifica que a demo é o build de release: se aparecer o banner de debug, pergunta porquê.</aside>
+</section>
+
+<section class="slide">
+  <h2>Retro final: se começassem de novo</h2>
+  <ol class="steps">
+    <li><strong>Cinco minutos em silêncio.</strong> Cada pessoa escreve num post-it (ou numa issue) uma coisa que faria diferente desde o kickoff e uma coisa que repetiria tal e qual.</li>
+    <li><strong>Cinco minutos no grupo.</strong> Leem-se, agrupam-se, escolhe-se uma de cada.</li>
+    <li><strong>Um minuto por grupo para a turma.</strong> A de "faria diferente" e a de "repetiria".</li>
+  </ol>
+  <ul>
+    <li>As que aparecem sempre: "começar os testes mais cedo", "PRs mais pequenos", "não deixar o offline para o fim", "combinar quem faz o quê antes de abrir o editor".</li>
+    <li>A retro não é para culpar ninguém. É para que a próxima equipa em que estiverem, na empresa, não repita o mesmo.</li>
+  </ul>
+  <div class="callout task"><strong>Tarefa</strong> Cada grupo cola as duas frases escolhidas no README, numa secção "Retrospetiva". Faz parte da entrega e diz muito sobre a equipa a quem ler o repositório.</div>
+</section>
+
+<section class="slide">
+  <h2>Lista de pendentes para o freeze de 09/12</h2>
+  <ul>
+    <li>Cria uma <em>milestone</em> "Freeze v1.0.0" no GitHub e mete lá só as issues que cabem em cinco dias úteis. O resto vai para uma milestone "Depois" e fica escrito no README como trabalho futuro.</li>
+    <li>Prioridade: <strong>requisitos mínimos</strong> a funcionar, depois <strong>estados de erro e offline</strong>, depois <strong>CI verde</strong>, depois <strong>README e distribuição</strong>, só depois extras. Corta funcionalidades, não qualidade.</li>
+    <li>Cada issue com um responsável e um PR associado. Uma issue sem dono na sexta é uma issue que não vai ser feita.</li>
+    <li>Sexta (aula 33) é o workshop de finalização: tragam a lista feita, não é para a fazer lá.</li>
+    <li>Quarta 09/12 às 18:30: tag <code>v1.0.0</code>. A partir daí só o README pode mudar.</li>
+  </ul>
+  <div class="callout task"><strong>Tarefa</strong> Antes de sair da sala, cada grupo mostra ao docente a milestone "Freeze v1.0.0" com as issues, os responsáveis e os dois pontos de feedback da review lá dentro.</div>
+  <aside class="notes">Passa por cada grupo nos últimos 20 minutos e vê a milestone com eles. O erro habitual é uma lista otimista: 15 issues para 5 dias com o teste 2 pelo meio. Ajuda a cortar. Um grupo que chega ao freeze com os mínimos a funcionar e um README honesto tem mais nota do que um com o mapa a meio e favoritos a falhar.</aside>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até à próxima aula</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Fechar os pendentes da milestone "Freeze v1.0.0" até sexta, com PRs revistos por um colega.</li>
+        <li>Secção "Retrospetiva" no README com as duas frases do grupo.</li>
+        <li>Sexta às 08:30: revisão para o teste 2 e workshop de finalização. Traz o portátil, o telemóvel e o keystore acessível.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://support.google.com/googleplay/android-developer/answer/9845334" target="_blank" rel="noopener">Set up an open, closed, or internal test</a> (Play Console): os tracks de teste, quem instala em cada um e como se promove um build ao seguinte.</li>
+        <li><a href="https://play.google.com/console/about/guides/releasewithconfidence/" target="_blank" rel="noopener">Release with confidence</a>: tracks, rollout gradual e pré-lançamento, pela Google.</li>
+        <li><a href="https://developer.apple.com/app-store/review/guidelines/" target="_blank" rel="noopener">App Store Review Guidelines</a>: lê a 2.1, a 4.2 e a 5.1.1, que são as que mais rejeitam.</li>
+        <li><a href="https://developer.apple.com/app-store/app-privacy-details/" target="_blank" rel="noopener">App privacy details on the App Store</a>: como preencher as privacy labels.</li>
+        <li><a href="https://capgo.app/blog/first-time-app-review-guide/" target="_blank" rel="noopener">First-time app review guide</a> (Capgo): o que uma primeira submissão precisa nas duas lojas, incluindo o teste fechado obrigatório na Play para contas novas.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

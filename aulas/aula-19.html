@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 19 · Push notifications, review da sprint 1 e revisão para o teste 1 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="19">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 19 · Semana 9 · Segunda, 2 de novembro de 2026 · 16:00 às 18:00</p>
+  <h1>Push notifications, review da sprint 1 e revisão para o teste 1</h1>
+  <p class="lead">Teoria (30 minutos): percurso de uma notificação push do servidor ao ecrã bloqueado. Review da sprint 1, retrospetiva e planeamento da sprint 2. Revisão para o teste 1: mapa da matéria e perguntas-tipo.</p>
+  <div class="meta"><span>Review da sprint 1</span><span>Teste 1 na quarta, 4/11</span></div>
+  <aside class="notes">Antes de começar, pede a cada grupo que ligue o telemóvel ao espelhamento e confirme que main corre. Enquanto o fazem, arranca a teoria. A ordem das demos é a ordem em que os grupos ficarem prontos; escreve-a no quadro. Diz também as regras do teste de quarta (40 perguntas, 75 minutos, sem consulta). Aula cheia: push em 30 minutos, review e retro em 40, revisão nos últimos 45.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Descrever o caminho de uma notificação push do servidor até à app, e o papel do token de dispositivo.</li>
+    <li>Distinguir mensagem de notificação de mensagem de dados, e o que acontece em foreground, background e com a app morta.</li>
+    <li>Explicar canais no Android, categorias no iOS e para que servem as notificações silenciosas.</li>
+    <li>Decidir quando pedir a permissão de notificações e como não a perder.</li>
+    <li>Apresentar uma review de sprint e sair com o backlog da sprint 2 planeado.</li>
+    <li>Situar cada tema das aulas 1 a 19 e dizer a ideia-chave de cada um numa frase.</li>
+    <li>Resolver uma pergunta de escolha múltipla por eliminação de opções, sem adivinhar.</li>
+    <li>Reconhecer os cinco erros clássicos que aparecem em todos os testes.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Como uma push chega ao ecrã</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 280" role="img" aria-label="Caminho de uma push: a app envia o token de dispositivo ao servidor; o servidor entrega o payload ao FCM ou APNs, que o entrega ao sistema operativo do dispositivo; no destino há três estados: app em primeiro plano trata a mensagem, em segundo plano a notificação vai para o tray, fechada o sistema mostra e o toque abre a app com o payload">
+    <path d="M740 50 V22 H130 V46" class="arrow dashed"/>
+    <text x="435" y="16" class="t s" text-anchor="middle">1 · a app envia o token de dispositivo ao servidor</text>
+    <rect x="40" y="50" width="180" height="60" rx="10" class="box"/>
+    <text x="60" y="74" class="t b">Servidor da app</text>
+    <text x="60" y="96" class="t s">token por utilizador</text>
+    <line x1="220" y1="80" x2="300" y2="80" class="arrow accent"/>
+    <text x="260" y="72" class="t s" text-anchor="middle">2 · payload</text>
+    <rect x="300" y="50" width="240" height="60" rx="10" class="box accent"/>
+    <text x="320" y="74" class="t b">FCM (Android) · APNs (iOS)</text>
+    <text x="320" y="96" class="t s">escolhe o dispositivo pelo token</text>
+    <line x1="540" y1="80" x2="620" y2="80" class="arrow accent"/>
+    <text x="580" y="72" class="t s" text-anchor="middle">3 · entrega</text>
+    <rect x="620" y="50" width="240" height="60" rx="10" class="box"/>
+    <text x="640" y="74" class="t b">Sistema operativo</text>
+    <text x="640" y="96" class="t s">mostra, acorda a app ou descarta</text>
+    <line x1="730" y1="110" x2="730" y2="132" class="box"/>
+    <line x1="170" y1="132" x2="730" y2="132" class="box"/>
+    <line x1="170" y1="132" x2="170" y2="158" class="arrow"/>
+    <line x1="450" y1="132" x2="450" y2="158" class="arrow"/>
+    <line x1="730" y1="132" x2="730" y2="158" class="arrow"/>
+    <rect x="40" y="160" width="260" height="96" rx="10" class="box ok"/>
+    <text x="60" y="184" class="t b">Em primeiro plano</text>
+    <text x="60" y="206" class="t s">a app recebe a mensagem (onMessage)</text>
+    <text x="60" y="224" class="t s">e decide o que mostrar: snackbar,</text>
+    <text x="60" y="242" class="t s">badge ou nada</text>
+    <rect x="320" y="160" width="260" height="96" rx="10" class="box"/>
+    <text x="340" y="184" class="t b">Em segundo plano</text>
+    <text x="340" y="206" class="t s">o SO mostra a notificação no tray</text>
+    <text x="340" y="224" class="t s">sem acordar a interface</text>
+    <text x="340" y="242" class="t s">toque → onMessageOpenedApp</text>
+    <rect x="600" y="160" width="260" height="96" rx="10" class="box muted"/>
+    <text x="620" y="184" class="t b">Fechada</text>
+    <text x="620" y="206" class="t s">o SO mostra a notificação</text>
+    <text x="620" y="224" class="t s">o toque abre a app com o payload</text>
+    <text x="620" y="242" class="t s">getInitialMessage() decide a rota</text>
+  </svg>
+  <figcaption>O servidor nunca fala com o telemóvel: entrega ao FCM ou APNs, e o sistema operativo decide o que fazer conforme o estado da app.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><strong>A app regista-se</strong> no serviço da plataforma: APNs (Apple Push Notification service) no iOS, FCM (Firebase Cloud Messaging) no Android. Recebe um <em>token de dispositivo</em>: uma string longa que identifica esta instalação neste telemóvel.</li>
+    <li><strong>A app envia o token ao teu servidor</strong>, associado ao utilizador. Sem isto, o servidor não sabe a quem enviar.</li>
+    <li><strong>O servidor envia o payload ao FCM/APNs</strong> (nunca diretamente ao telemóvel), autenticado com uma chave de servidor.</li>
+    <li><strong>O FCM/APNs entrega ao sistema operativo</strong>, que decide: mostrar, acordar a app, ou descartar.</li>
+  </ol>
+  <ul>
+    <li>O token <strong>muda</strong>: reinstalação, restauro de cópia de segurança, limpeza de dados. A app tem de ouvir <code>onTokenRefresh</code> e reenviar.</li>
+    <li>No iOS, o FCM também funciona: envolve o APNs, e precisa da chave APNs configurada no projeto Firebase.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> o teu servidor nunca fala com o telemóvel; fala com o FCM ou o APNs, que falam com o sistema operativo.</p>
+  <div class="callout"><strong>Analogia</strong> Os correios. A app não fica à porta à espera do carteiro: regista a sua morada, o token de dispositivo, nos correios da plataforma, o FCM ou o APNs. O servidor entrega a carta aos correios com essa morada, e os correios entregam-na quando o telemóvel estiver contactável. Uma única ligação do telemóvel aos correios serve todas as apps instaladas, e é por isso que a bateria aguenta.</div>
+  <aside class="notes">Desenha as quatro caixas no quadro: servidor → FCM/APNs → SO → app. Pergunta: "e se o utilizador tem a app em dois telemóveis?" Dois tokens, dois envios. "E se desinstalou?" O FCM devolve erro e o servidor deve apagar o token.</aside>
+</section>
+
+<section class="slide">
+  <h2>Permissões: pedir no momento certo</h2>
+  <ul>
+    <li><strong>iOS pede sempre</strong>, com um diálogo do sistema que só aparece <em>uma vez</em>. Se o utilizador diz não, só nas Definições se volta atrás.</li>
+    <li><strong>Android 13+</strong> (API 33) também pede em tempo de execução: <code>POST_NOTIFICATIONS</code>. Em versões anteriores as notificações vêm ligadas por defeito.</li>
+    <li>Pedir no arranque da app é a forma mais rápida de receber um "não": o utilizador ainda não sabe para que serve.</li>
+    <li>Pedir <strong>em contexto</strong>: depois de o utilizador marcar Ponta Delgada como favorita, "Queres ser avisado quando o IPMA emitir um aviso para Ponta Delgada?", e só então o diálogo do sistema.</li>
+    <li>O iOS tem <em>autorização provisória</em>: notificações silenciosas na central, sem diálogo, até o utilizador decidir.</li>
+    <li>Os estudos da indústria apontam para cerca de metade dos utilizadores a aceitar em iOS e bastante mais em Android; a diferença vem de quando e como se pede.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> um pedido de permissão explica-se antes de aparecer, e faz-se quando o utilizador já vê o benefício.</p>
+</section>
+
+<section class="slide">
+  <h2>Payload: notificação vs dados</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Estado da app</th><th>Mensagem de notificação (<code>notification</code>)</th><th>Mensagem de dados (<code>data</code>)</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Foreground</strong></td><td>Entregue ao teu código; por defeito não aparece nada. A app decide mostrar.</td><td>Entregue ao teu código.</td></tr>
+  <tr><td><strong>Background</strong></td><td>O sistema mostra-a na bandeja <em>sem correr a app</em>. Ao tocar, a app abre com os dados.</td><td>Acorda a app por instantes para processar (com limites).</td></tr>
+  <tr><td><strong>Morta</strong></td><td>Igual ao background: o sistema trata.</td><td>Android: pode acordar a app. iOS: só se for silenciosa e o sistema deixar.</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>O payload tem <code>title</code>, <code>body</code> e um mapa <code>data</code> de strings, por exemplo <code>{"tipo": "aviso", "localidadeId": "3"}</code>. É com o <code>data</code> que a app sabe que ecrã abrir.</li>
+    <li>Limite prático: 4 KB. Não se manda a previsão inteira; manda-se um identificador e a app vai buscar.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> com a app em background, uma mensagem só de notificação é mostrada pelo sistema sem executar código da app.</p>
+</section>
+
+<section class="slide">
+  <h2>Canais, categorias, som, badge e silêncio</h2>
+  <ul>
+    <li><strong>Canais (Android 8+)</strong>: cada notificação pertence a um canal com nome e importância. O utilizador desliga canais nas definições do sistema, um a um: "Avisos meteorológicos" ligado, "Novidades" desligado. Uma app com um único canal obriga a tudo ou nada.</li>
+    <li><strong>Categorias (iOS)</strong>: definem os botões de ação ("Ver previsão", "Silenciar 24h") e agrupamento.</li>
+    <li><strong>Som e badge</strong>: o número no ícone (badge) é gerido pela app no iOS e pelo launcher no Android. Sons personalizados têm de vir empacotados na app.</li>
+    <li><strong>Notificações silenciosas</strong> (<code>content-available</code> no iOS, mensagem de dados com prioridade no Android): não mostram nada; acordam a app para sincronizar. O iOS limita-as a poucas por hora e não garante entrega.</li>
+    <li>Exemplo: o WhatsApp usa uma silenciosa para descarregar a mensagem e depois mostra a notificação já com o texto.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> canais são do Android e servem para o utilizador escolher que tipos de notificação quer.</p>
+  <aside class="notes">Pede a alguém que abra as definições de notificações do Instagram ou do YouTube no telemóvel Android e leia a lista de canais em voz alta. É a melhor demonstração possível.</aside>
+</section>
+
+<section class="slide">
+  <h2>Locais vs remotas</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Local</th><th>Remota (push)</th></tr></thead>
+  <tbody>
+  <tr><td>Quem a cria</td><td>A própria app, no telemóvel</td><td>Um servidor, via FCM/APNs</td></tr>
+  <tr><td>Precisa de rede</td><td>Não</td><td>Sim, pelo menos no momento da entrega</td></tr>
+  <tr><td>Quando serve</td><td>Lembretes, agendadas ("previsão de amanhã às 20:00"), eventos que a app já conhece</td><td>Novidades que só o servidor sabe: aviso novo do IPMA, mensagem de outra pessoa</td></tr>
+  <tr><td>Aspeto para o utilizador</td><td colspan="2">Idêntico. O utilizador não distingue.</td></tr>
+  <tr><td>Package Flutter</td><td><code>flutter_local_notifications</code></td><td><code>firebase_messaging</code></td></tr>
+  </tbody></table></div>
+  <p>Na aula 22 fazemos notificações locais: a app deteta um aviso novo para um favorito quando atualiza, e agenda a previsão do dia seguinte. Push remoto exige um projeto Firebase por grupo; fica como extra do projeto.</p>
+  <div class="callout"><strong>Analogia</strong> Uma notificação local é um lembrete que a própria app deixa no frigorífico: escreve-o e agenda-o no telemóvel, sem passar pelos correios. Uma push remota é uma carta que vem de fora, e só os correios (FCM ou APNs) a sabem entregar. Para quem lê, o papel no frigorífico e a carta têm o mesmo aspeto.</div>
+</section>
+
+<section class="slide">
+  <h2>Boas práticas</h2>
+  <ul>
+    <li><strong>Não abusar.</strong> Uma notificação inútil custa a permissão para todas as seguintes. O Duolingo é personalizado e frequente, e mesmo assim muita gente o silencia.</li>
+    <li><strong>Personalizar.</strong> "Aviso laranja de vento forte para Angra do Heroísmo até às 18:00" em vez de "Há novos avisos".</li>
+    <li><strong>Deep link para o conteúdo.</strong> Tocar na notificação abre o ecrã da localidade, não a página inicial.</li>
+    <li><strong>Permitir desligar por tipo</strong> dentro da app, e respeitar horas de silêncio.</li>
+    <li><strong>Agrupar e substituir.</strong> Três avisos para a mesma localidade são uma notificação atualizada, não três.</li>
+    <li><strong>Funcionar sem elas.</strong> A app não pode depender de uma push chegar; o iOS descarta-as quando quer.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> uma notificação sem deep link para o conteúdo é uma notificação mal feita.</p>
+</section>
+
+<section class="slide" data-part="Review">
+  <h2>Review da sprint 1: 5 minutos por grupo</h2>
+  <div class="cols">
+    <div>
+      <h3>O que cada grupo mostra</h3>
+      <ol class="steps">
+        <li><strong>1 min</strong>: objetivo da sprint e o que entrou.</li>
+        <li><strong>3 min</strong>: demo no telemóvel, projetada, a partir de <code>main</code>. Percurso: abrir a app, lista, detalhe, um estado de erro (modo avião).</li>
+        <li><strong>1 min</strong>: o que ficou por fazer e porquê; o que muda na sprint 2.</li>
+      </ol>
+    </div>
+    <div>
+      <h3>O que o docente observa</h3>
+      <ul class="checklist">
+        <li>A app corre a partir de <code>main</code>, sem cabo do docente.</li>
+        <li>Cada membro tem commits e PRs revistos por outro.</li>
+        <li>Estados de loading, erro e vazio existem.</li>
+        <li>Token e segredos fora do repositório.</li>
+        <li>Cada membro consegue explicar a sua parte.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Cronómetro visível. Aos 5 minutos cortas, sem exceção; é treino para a defesa. Faz uma pergunta a cada membro sobre a parte que não apresentou. Anota por grupo dois pontos fortes e um a melhorar; entregas isso por escrito no Moodle até sexta.</aside>
+</section>
+
+<section class="slide">
+  <h2>Retrospetiva: 15 minutos</h2>
+  <p>Cada grupo, em conjunto, escreve três colunas num documento partilhado ou em post-its:</p>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Começar</th><th>Parar</th><th>Continuar</th></tr></thead>
+  <tbody>
+  <tr><td>O que não fizemos e devíamos ter feito. Ex.: rever PRs no próprio dia.</td><td>O que nos atrasou. Ex.: PRs de 800 linhas; trabalhar todos no mesmo ficheiro.</td><td>O que funcionou. Ex.: reunião de 10 min ao início de cada aula.</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Fala-se do processo, não das pessoas. "Os PRs ficaram dias por rever", não "o X não reviu".</li>
+    <li>Cada coluna com um a três itens. Mais do que isso não se cumpre.</li>
+    <li>Um item de "Começar" vira uma issue na sprint 2, com dono.</li>
+  </ul>
+  <aside class="notes">Passa pelos grupos e lê as colunas. Os padrões repetem-se todos os anos: PRs grandes, um membro a fazer quase tudo, ninguém a testar no telemóvel do outro. Diz à turma quais foram os padrões, sem nomear grupos.</aside>
+</section>
+
+<section class="slide">
+  <h2>Planear a sprint 2 (3/11 a 18/11)</h2>
+  <ul>
+    <li><strong>Três semanas com um teste no meio</strong> (4/11). Contem com uma semana de produtividade mais baixa e planeiem menos do que na sprint 1.</li>
+    <li><strong>Candidatos ao backlog</strong>, pela ordem das aulas: favoritos sincronizados com o backend (aula 17), cache offline com indicação de antiguidade (aula 15), mapa com localidade mais próxima (workshop de 6/11), notificação de aviso e deep link (aula 22).</li>
+    <li><strong>Issues com critérios de aceitação</strong>: "Como utilizador, ao abrir a app sem rede vejo a última previsão e a hora em que foi obtida". Estimativa grosseira: P, M, G.</li>
+    <li><strong>Distribuição</strong>: cada membro dono de pelo menos uma issue M ou G. Quem fez UI na sprint 1 faz dados na sprint 2, e vice-versa.</li>
+    <li><strong>Definição de pronto</strong> não muda: corre no telemóvel, sem avisos, PR revisto, estados de erro tratados.</li>
+  </ul>
+  <div class="callout task"><strong>Até sexta, 6/11</strong> Backlog da sprint 2 fechado no board do repositório, com issues atribuídas. O docente comenta as issues no fim de semana.</div>
+</section>
+
+<section class="slide" data-part="Revisão">
+  <h2>Mapa da matéria (1 de 3): fundações</h2>
+  <ul>
+    <li><strong>Aula 1 · Panorama mobile.</strong> Ecrã pequeno, bateria, rede intermitente, ciclo de vida imposto, sandbox, lojas. Cinco abordagens: nativo, Flutter, React Native/KMP, híbrido, PWA. O Flutter desenha cada pixel.</li>
+    <li><strong>Aulas 2 e 3 · Flutter e Dart.</strong> Framework (Dart), engine (C++), embedder. Widget imutável; <code>build</code> descreve, não desenha. Hot reload mantém estado; hot restart não. JIT em desenvolvimento, AOT em release.</li>
+    <li><strong>Aula 4 · Ciclo de vida e assincronia.</strong> Foreground, background, suspensa, morta; <code>AppLifecycleState</code>. Uma thread de UI, event loop, 16 ms por frame. <code>Future</code>, <code>async</code>/<code>await</code>, <code>Stream</code>.</li>
+    <li><strong>Aula 5 · Projeto Flutter.</strong> <code>lib/</code>, <code>pubspec.yaml</code>, <code>^</code> nas versões, <code>pubspec.lock</code>. Debug, profile, release. DevTools.</li>
+    <li><strong>Aula 6 · UX e layouts.</strong> Material 3 vs HIG, 48 dp de toque, gestos esperados. Constraints descem, tamanhos sobem, o pai posiciona. Adaptativo vs responsivo.</li>
+    <li><strong>Aula 7 · Estado.</strong> Efémero vs de aplicação. <code>setState</code> → Provider → BLoC/Riverpod conforme a escala. Fluxo unidirecional, imutabilidade, <code>copyWith</code>.</li>
+  </ul>
+  <aside class="notes">Não leias os slides do mapa; para cada aula pergunta "qual é a frase para os testes desta aula?" e deixa a turma responder antes de a mostrares. Dois minutos por slide de mapa.</aside>
+</section>
+
+<section class="slide">
+  <h2>Mapa da matéria (2 de 3): construir</h2>
+  <ul>
+    <li><strong>Aula 8 · Navegação e temas.</strong> Pilha push/pop; <code>go</code> substitui, <code>push</code> empilha. URL como estado (go_router). <code>ColorScheme.fromSeed</code>, <code>ThemeMode</code>.</li>
+    <li><strong>Aula 9 · Acessibilidade e i18n.</strong> TalkBack e VoiceOver leem a árvore de <code>Semantics</code>. Contraste, <code>textScaler</code>, layouts que não partem. Ficheiros <code>.arb</code>, plurais, <code>intl</code>.</li>
+    <li><strong>Aula 10 · Qualidade.</strong> Lints em <code>analysis_options.yaml</code>. Organização por feature. Widgets pequenos e <code>const</code>. Branch por tarefa, PR pequeno, ninguém faz push para <code>main</code>.</li>
+    <li><strong>Aula 11 · Rede.</strong> Códigos 2xx, 4xx, 5xx, 429 com <code>Retry-After</code>. REST, GraphQL, gRPC, WebSockets. OpenAPI. Timeouts, retries com backoff, um cliente HTTP único com interceptors.</li>
+    <li><strong>Aula 12 · Arquitetura.</strong> UI → Notifier → Repository → DataSource. Dependências só para dentro. Injeção por construtor; nada de singletons escondidos.</li>
+    <li><strong>Aula 13 · Resiliência.</strong> Tudo falha. Estados Loading, Erro, Vazio, Dados como <code>sealed class</code>. Offline-first. ETag e 304. Backoff exponencial com jitter; nunca repetir POST não idempotente.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Mapa da matéria (3 de 3): pôr em produção</h2>
+  <ul>
+    <li><strong>Aula 14 · Metodologia.</strong> MVP corta funcionalidades, não qualidade. Backlog em issues com critérios de aceitação. Definição de pronto. Sprints de duas semanas com review.</li>
+    <li><strong>Aula 15 · Persistência.</strong> Chave-valor, SQLite, documentos, ficheiros, segredos: cada coisa no seu sítio. Sandbox. Keychain e Keystore. Cache-first com antiguidade visível.</li>
+    <li><strong>Aula 16 · Segurança.</strong> OWASP Mobile Top 10. Segredos nunca no repositório; um APK abre-se em 5 minutos. HTTPS sempre; pinning é caro de manter. Permissões mínimas. RGPD e App Tracking Transparency.</li>
+    <li><strong>Aula 17 · Autenticação.</strong> Autenticar ≠ autorizar. JWT é assinado, não cifrado. OAuth2 com PKCE: a app nunca vê a password. Access curto, refresh longo, ambos no armazenamento seguro. Biometria desbloqueia localmente.</li>
+    <li><strong>Aula 18 · Performance.</strong> Isolates para cálculo; <code>async</code> só para espera. <code>const</code> e widgets pequenos contra rebuilds. <code>ListView.builder</code>, imagens redimensionadas. Medir em profile.</li>
+    <li><strong>Aula 19 · Push.</strong> Servidor → FCM/APNs → SO → app. Token de dispositivo muda. Notificação vs dados. Canais no Android. Pedir permissão em contexto.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Perguntas-tipo (1 de 3)</h2>
+  <div class="callout tip"><strong>Método</strong> Lê a pergunta até ao fim. Risca as duas opções claramente erradas. Entre as duas que sobram, escolhe a que usa o vocabulário exato das aulas; a outra costuma ser "quase verdade".</div>
+  <p><strong>1.</strong> Alteraste o corpo de <code>main()</code> e carregaste em <kbd>r</kbd>. A app não reflete a alteração. Porquê?</p>
+  <ol type="a">
+    <li>O hot reload só funciona em modo release.</li>
+    <li>O hot reload não volta a executar <code>main()</code>; é preciso hot restart.</li>
+    <li>Faltou correr <code>flutter pub get</code>.</li>
+    <li>O telemóvel está em modo avião.</li>
+  </ol>
+  <p><strong>2.</strong> Um cálculo de 2 segundos dentro de <code>build</code> faz a app…</p>
+  <ol type="a">
+    <li>continuar fluida, porque o Dart é multithread por defeito.</li>
+    <li>congelar, porque a interface corre numa única thread.</li>
+    <li>ser terminada de imediato pelo sistema operativo.</li>
+    <li>falhar a compilação.</li>
+  </ol>
+  <p><strong>3.</strong> Onde vive o estado de um <code>StatefulWidget</code>?</p>
+  <ol type="a">
+    <li>No próprio widget, que por isso é mutável.</li>
+    <li>No objeto <code>State</code>, que sobrevive aos rebuilds do widget.</li>
+    <li>No <code>BuildContext</code>.</li>
+    <li>No <code>MaterialApp</code>.</li>
+  </ol>
+  <aside class="notes">Para cada pergunta: 30 segundos em silêncio, votação de braço no ar por opção, e só depois a resposta. Pede a quem votou na errada que diga o que o atraiu; é aí que se aprende a eliminar.</aside>
+</section>
+
+<section class="slide">
+  <h2>Perguntas-tipo (2 de 3)</h2>
+  <p><strong>4.</strong> Com go_router, qual é a diferença entre <code>context.go('/x')</code> e <code>context.push('/x')</code>?</p>
+  <ol type="a">
+    <li><code>go</code> substitui a pilha pela rota; <code>push</code> empilha por cima da atual.</li>
+    <li>São equivalentes; <code>push</code> é o nome antigo.</li>
+    <li><code>push</code> só funciona na web.</li>
+    <li><code>go</code> só funciona com <code>Navigator.push</code>.</li>
+  </ol>
+  <p><strong>5.</strong> A API do curso devolve 429. O que deve a app fazer?</p>
+  <ol type="a">
+    <li>Repetir imediatamente até obter 200.</li>
+    <li>Esperar o tempo indicado em <code>Retry-After</code> e repetir com backoff.</li>
+    <li>Mostrar um erro fatal e fechar a app.</li>
+    <li>Trocar o método POST por GET.</li>
+  </ol>
+  <p><strong>6.</strong> Qual destes pedidos <em>não</em> deves repetir automaticamente depois de um timeout?</p>
+  <ol type="a">
+    <li><code>GET /v1/locations</code></li>
+    <li><code>GET /v1/forecast/3</code></li>
+    <li><code>POST /v1/me/favorites</code></li>
+    <li><code>GET /v1/warnings</code></li>
+  </ol>
+  <p><strong>7.</strong> Onde se guarda o token de acesso da API?</p>
+  <ol type="a">
+    <li>Em <code>shared_preferences</code>, porque é rápido.</li>
+    <li>Num ficheiro em <code>getApplicationDocumentsDirectory()</code>.</li>
+    <li>Em <code>flutter_secure_storage</code>, que usa o Keychain e o Keystore.</li>
+    <li>Numa constante no código, para não se perder.</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>Perguntas-tipo (3 de 3)</h2>
+  <p><strong>8.</strong> Um JWT…</p>
+  <ol type="a">
+    <li>é cifrado; ninguém consegue ler o conteúdo.</li>
+    <li>é assinado; qualquer pessoa lê o conteúdo, mas não o altera sem invalidar a assinatura.</li>
+    <li>nunca expira.</li>
+    <li>deve conter a password do utilizador para renovar a sessão.</li>
+  </ol>
+  <p><strong>9.</strong> Para fazer o parse de uma resposta JSON de 5 MB sem jank, usas…</p>
+  <ol type="a">
+    <li><code>setState</code> depois do parse.</li>
+    <li><code>Future.delayed</code> para dar tempo à interface.</li>
+    <li><code>compute()</code> ou <code>Isolate.run</code>.</li>
+    <li><code>async</code>/<code>await</code>, que liberta a thread durante o parse.</li>
+  </ol>
+  <p><strong>10.</strong> Uma push só com campo <code>notification</code>, sem <code>data</code>, chega com a app em background. O que acontece?</p>
+  <ol type="a">
+    <li>A app é acordada e decide o que mostrar.</li>
+    <li>O sistema operativo mostra-a na bandeja sem executar código da app.</li>
+    <li>É descartada.</li>
+    <li>Fica guardada até a app ser aberta manualmente.</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>Respostas e porquê</h2>
+  <div class="cols">
+    <div>
+      <ol>
+        <li><strong>b.</strong> O hot reload injeta código e volta a chamar <code>build</code>; <code>main</code> e variáveis globais só com <kbd>R</kbd>.</li>
+        <li><strong>b.</strong> Uma thread de UI, um event loop. Cálculo pesado bloqueia até acabar.</li>
+        <li><strong>b.</strong> O widget é imutável; o <code>State</code> é o objeto que persiste.</li>
+        <li><strong>a.</strong> <code>go</code> é navegação declarativa para uma localização; <code>push</code> empilha um ecrã que se pode fechar com voltar.</li>
+        <li><strong>b.</strong> 429 é "abranda"; repetir de imediato piora e pode levar a bloqueio.</li>
+      </ol>
+    </div>
+    <div>
+      <ol start="6">
+        <li><strong>c.</strong> POST não é idempotente: repetir pode criar o favorito duas vezes. GETs repetem-se sem risco.</li>
+        <li><strong>c.</strong> <code>shared_preferences</code> é um ficheiro legível num telemóvel com root; segredos vão para o armazenamento seguro do sistema.</li>
+        <li><strong>b.</strong> Base64 não é cifra. A assinatura garante integridade, não confidencialidade. Expira via <code>exp</code>.</li>
+        <li><strong>c.</strong> <code>await</code> só cede a thread em operações de espera; <code>jsonDecode</code> é cálculo puro.</li>
+        <li><strong>b.</strong> Mensagens de notificação em background são tratadas pelo sistema; só ao tocar é que a app recebe os dados.</li>
+      </ol>
+    </div>
+  </div>
+  <aside class="notes">Sítios onde a turma costuma falhar: a 6 (acham que timeout é sempre seguro repetir) e a 9 (acham que async resolve cálculo). Gasta mais tempo nestas duas. Se houver dúvidas na 8, mostra um JWT descodificado em jwt.io ao vivo.</aside>
+</section>
+
+<section class="slide">
+  <h2>Erros frequentes no teste</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Erro</th><th>Porque está errado</th></tr></thead>
+  <tbody>
+  <tr><td>Confundir hot reload com hot restart</td><td>Reload mantém estado e não re-executa <code>main</code>; restart recomeça a app e perde o estado. Rebuild completo é outra coisa: <code>flutter run</code> de novo.</td></tr>
+  <tr><td>Widget "mutável" com campos que mudam</td><td>Widgets são imutáveis e recriados a cada build; o que muda é o <code>State</code> ou o estado de aplicação num notifier.</td></tr>
+  <tr><td><code>!</code> como solução para o null safety</td><td>Força um valor que pode ser null e transfere o erro do compilador para um crash em produção. Usa <code>?.</code>, <code>??</code>, <code>if</code> ou padrões.</td></tr>
+  <tr><td>Token em <code>shared_preferences</code></td><td>Texto legível no disco; num telemóvel com root ou numa cópia de segurança fica exposto. Keychain e Keystore existem para isto.</td></tr>
+  <tr><td>Retry automático em POST</td><td>Um POST não idempotente repetido cria duplicados. Retry só em operações seguras de repetir, com backoff e limite.</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> quando duas opções parecem certas, a certa é a que não tem uma palavra a mais ("sempre", "nunca", "só em iOS").</p>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até quarta, dia do teste</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Estudar a componente teórica das aulas 1 a 19: os slides de teoria de cada aula e as frases "Para os testes".</li>
+        <li>Refazer as dez perguntas desta aula sem ver as respostas, e escrever uma pergunta nova por aula.</li>
+        <li>Backlog da sprint 2 fechado até sexta: issues com critérios de aceitação, estimativa e dono, organizadas no board.</li>
+        <li>Sprint 2: a branch de cada membro com o primeiro commit até sexta.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/learn/pathway/how-flutter-works" target="_blank" rel="noopener">How Flutter works</a>: widgets, elements e render objects, o que <code>build</code> faz e porque o hot reload é possível (aulas 2 e 18).</li>
+        <li><a href="https://docs.flutter.dev/perf/isolates" target="_blank" rel="noopener">Concurrency and isolates</a>: event loop, isolate principal e quando usar isolates; explica porque <code>await</code> não resolve cálculo pesado (aulas 4 e 18).</li>
+        <li><a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Flutter app architecture</a>: camadas e regras de dependência, tal como na aula 12.</li>
+        <li><a href="https://firebase.google.com/docs/cloud-messaging/fcm-architecture" target="_blank" rel="noopener">FCM architecture</a>: os componentes do FCM e o percurso de uma mensagem do servidor ao dispositivo.</li>
+        <li><a href="https://firebase.google.com/docs/cloud-messaging/concept-options" target="_blank" rel="noopener">FCM: about messages</a>: notification vs data, prioridades, tempo de vida.</li>
+        <li><a href="https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications" target="_blank" rel="noopener">Asking permission to use notifications</a>: a autorização provisória e o diálogo único do iOS.</li>
+        <li><a href="https://developer.android.com/develop/ui/views/notifications/channels" target="_blank" rel="noopener">Notification channels</a>: os canais no Android, a importância e o que o utilizador controla.</li>
+        <li><a href="https://firebase.flutter.dev/docs/messaging/overview" target="_blank" rel="noopener">firebase_messaging</a>: o plugin Flutter, com o token, <code>onMessage</code>, <code>onMessageOpenedApp</code> e o handler de background.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 14 · Kickoff do projeto Tempo Açores · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="14">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 14 · Semana 7 · Terça, 20 de outubro de 2026 · 08:30 às 10:30</p>
+  <h1>Kickoff do projeto Tempo Açores</h1>
+  <p class="lead">Teoria (30 minutos): método de projeto: MVP, backlog, definição de pronto e fluxo de trabalho por pull requests. Prática: formação dos grupos, criação dos repositórios no GitHub Classroom, atribuição do client-id da API e planeamento da sprint 1.</p>
+  <div class="meta"><span>Projeto: Tempo Açores</span></div>
+  <aside class="notes">Traz os client-ids e segredos impressos, um envelope por grupo. Confirma que o assignment do GitHub Classroom está aberto e que o template compila. Começa por perguntar quem já tem grupo: os que não têm formam-se nos primeiros cinco minutos da parte prática, não agora.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Definir o MVP do Tempo Açores e distinguir cortar funcionalidades de cortar qualidade.</li>
+    <li>Escrever issues com título, critérios de aceitação e estimativa grosseira.</li>
+    <li>Aplicar a definição de pronto a cada pull request do grupo.</li>
+    <li>Seguir o fluxo issue → branch → PR → revisão → merge sem ninguém fazer push para <code>main</code>.</li>
+    <li>Sair da aula com grupo, repositório, client-id da API e backlog da sprint 1.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>MVP: o mínimo que se instala e se usa</h2>
+  <ul>
+    <li>O <strong>produto mínimo viável</strong> é a versão mais pequena que alguém instala e usa com proveito. Não é um protótipo, nem uma demo.</li>
+    <li>No Tempo Açores: lista de localidades, previsão de uma localidade, favoritos, e continuar a funcionar sem rede com dados antigos.</li>
+    <li><strong>Cortar funcionalidades, não qualidade.</strong> Um ecrã com os quatro estados tratados vale mais do que três ecrãs meio feitos.</li>
+    <li>Pergunta por funcionalidade: "se isto não existir, a app é inútil?" Se a resposta é não, vai para a lista "depois".</li>
+    <li>Exemplos reais: o Instagram v1 só tinha fotos com filtro e um feed; o WhatsApp v1 era uma app de estados. Cresceram depois.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> o MVP corta âmbito, nunca qualidade; cada funcionalidade que fica, fica completa.</p>
+</section>
+
+<section class="slide">
+  <h2>Backlog em issues</h2>
+  <ul>
+    <li><strong>Título:</strong> verbo + objeto. "Mostrar previsão a 5 dias da localidade", não "Previsão".</li>
+    <li><strong>Corpo:</strong> contexto em uma frase e critérios de aceitação em checklist, no formato "dado X, quando Y, então Z".</li>
+    <li><strong>Estimativa grosseira:</strong> P (meio dia), M (um dia), G (dois ou mais). Uma issue G divide-se em duas M antes de entrar na sprint.</li>
+    <li><strong>Labels e responsável:</strong> <code>sprint-1</code>, <code>ui</code>, <code>dados</code>, <code>bug</code>; uma pessoa por issue; ligada ao board do projeto.</li>
+    <li>Exemplo de critério: "Sem rede, o ecrã mostra a última previsão guardada e a hora a que foi obtida."</li>
+  </ul>
+  <p><strong>Para os testes:</strong> uma issue boa tem título com verbo, critérios de aceitação verificáveis e uma estimativa.</p>
+  <aside class="notes">Escreve uma issue má no quadro ("Fazer o ecrã de detalhe") e pede à turma para a corrigir em voz alta. Dois minutos. Depois mostra uma issue real de um projeto open source em Flutter com critérios de aceitação.</aside>
+</section>
+
+<section class="slide">
+  <h2>Definição de pronto</h2>
+  <p>Uma issue está pronta quando o PR que a fecha cumpre tudo isto. Se falha um ponto, não está pronta, por muito que "funcione no meu portátil".</p>
+  <ul class="checklist">
+    <li>Corre no telemóvel, não só no emulador.</li>
+    <li><code>flutter analyze</code> sem avisos e <code>flutter test</code> verde.</li>
+    <li>PR revisto e aprovado por outro membro do grupo.</li>
+    <li>Estados loading, erro, vazio e dados tratados em cada ecrã tocado.</li>
+    <li>Sem segredos no código (aula 16) e a issue fechada pelo PR (<code>Closes #12</code>).</li>
+  </ul>
+  <p><strong>Para os testes:</strong> "pronto" é uma lista objetiva, não uma opinião.</p>
+</section>
+
+<section class="slide">
+  <h2>Fluxo: issue → branch → PR → revisão → merge</h2>
+  <ol class="steps">
+    <li><strong>Issue atribuída</strong> a uma pessoa, na coluna "Em curso" do board.</li>
+    <li><strong>Branch a partir de <code>main</code> atualizado:</strong> <code>git switch -c feat/12-previsao-5-dias</code>. O número da issue no nome.</li>
+    <li><strong>Commits pequenos</strong> com conventional commits: <code>feat(previsao): mostrar 5 dias</code>, <code>fix(api): tratar 429</code>.</li>
+    <li><strong>PR pequeno</strong> (menos de 300 linhas), com descrição, screenshot do telemóvel e <code>Closes #12</code>.</li>
+    <li><strong>Revisão por um colega:</strong> pelo menos um comentário útil; o autor responde ou corrige.</li>
+    <li><strong>Merge</strong> (squash) feito pelo revisor; branch apagada. <code>main</code> está protegido: ninguém faz push direto.</li>
+  </ol>
+  <p><strong>Para os testes:</strong> <code>main</code> protegido, PR pequeno e revisão de um colega é o fluxo mínimo de uma equipa.</p>
+</section>
+
+<section class="slide">
+  <h2>Sprints e reviews</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Sprint</th><th>Datas</th><th>Review em aula</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Sprint 1</strong></td><td>19/10 a 02/11</td><td>Aula 19, segunda 02/11</td></tr>
+  <tr><td><strong>Sprint 2</strong></td><td>02/11 a 18/11 (com o teste 1 pelo meio)</td><td>Aula 26, quarta 18/11</td></tr>
+  <tr><td><strong>Sprint 3</strong></td><td>18/11 a 02/12</td><td>Aula 32, quarta 02/12</td></tr>
+  <tr><td><strong>Freeze e defesas</strong></td><td>Tag <code>v1.0.0</code> a 09/12</td><td>Defesas a 14 e 16/12</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li><strong>O que se mostra numa review:</strong> 5 minutos por grupo, a app no telemóvel projetado, o que ficou por fazer e porquê. Sem slides.</li>
+    <li><strong>Retrospetiva</strong> de 15 minutos: começar, parar, continuar. Muda-se o processo, não se procuram culpados.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> a review mostra software a funcionar no dispositivo; a retro melhora o processo da sprint seguinte.</p>
+  <aside class="notes">Sublinha que a sprint 2 é mais longa por causa do teste e do feriado: espera-se menos trabalho nessa semana, não mais. Diz agora as regras da review para não haver surpresas na aula 19: sem slides, telemóvel projetado com scrcpy.</aside>
+</section>
+
+<section class="slide" data-part="Sprint">
+  <h2>Hoje: enunciado, grupos, repositórios, backlog</h2>
+  <ul>
+    <li><strong>Objetivo da aula:</strong> cada grupo sai com repositório criado, app template a correr no telemóvel com dados da API, e backlog da sprint 1 no board.</li>
+    <li><strong>Enunciado e rubrica</strong> (15 min): leitura em conjunto da página <a href="../projeto.html">Projeto</a>. Requisitos mínimos, extras, o que a rubrica valoriza na app, no processo e na defesa. Perguntas no fim de cada secção.</li>
+    <li><strong>Sprint 1</strong> (até 02/11): lista de localidades da API, detalhe com 5 dias, navegação e tema, estados tratados em todos os ecrãs, favoritos locais.</li>
+    <li>O que não entra na sprint 1: cache em disco (aula 15), autenticação com renovação (aula 17), mapa e notificações (sprints 2 e 3).</li>
+  </ul>
+  <div class="callout tip"><strong>Regra de ouro</strong> Os mínimos primeiro, completos. Um extra só entra no backlog quando todos os mínimos estão na coluna "Feito".</div>
+  <aside class="notes">Lê a rubrica em voz alta, secção a secção, e para nas perguntas. As dúvidas do costume: "podemos usar package X?" (sim, se souberem explicar), "podemos mudar o design?" (sim, se respeitar os estados e a acessibilidade), "e se um membro não trabalhar?" (a defesa é individual e os PRs têm autor).</aside>
+</section>
+
+<section class="slide">
+  <h2>Grupos, GitHub Classroom e client-id</h2>
+  <ol class="steps">
+    <li><strong>Grupos de 2 a 3.</strong> Nome do grupo e membros no formulário do Moodle. Sem grupos de 1 nem de 4.</li>
+    <li><strong>Aceitar o assignment</strong> no GitHub Classroom (link no Moodle). O primeiro membro cria a equipa, os outros juntam-se. O repositório nasce a partir do template <code>tempo-acores-template</code>.</li>
+    <li><strong>Clonar e correr.</strong> O template já tem <code>ApiClient</code>, tema, navegação e os widgets de estado das aulas 11 a 13.
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/tempo-acores-grupo-07.git
+cd tempo-acores-grupo-07
+flutter pub get
+flutter run --dart-define=PDM_CLIENT_ID=grupo-07 --dart-define=PDM_SECRET=segredo-do-envelope</code></pre></li>
+    <li><strong>Receber o client-id e o segredo</strong> do grupo, em mão. O segredo nunca entra no repositório: passa por <code>--dart-define</code> ou por um <code>.env.json</code> ignorado pelo git.</li>
+    <li><strong>Primeiro pedido:</strong> a app template mostra a lista de localidades vinda de <code>GET /v1/locations</code> com o token do grupo. Se aparecer 401, o segredo está mal escrito.</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>Backlog da sprint 1 e board</h2>
+  <ul class="checklist">
+    <li>Board do projeto com as colunas Backlog, Sprint 1, Em curso, Em revisão, Feito.</li>
+    <li>Entre 6 e 10 issues na sprint 1, cada uma com critérios de aceitação e estimativa P/M/G. Os mínimos primeiro.</li>
+    <li>Sugestão de divisão: lista de localidades e pesquisa · detalhe com 5 dias · navegação, tema e definições · favoritos locais · estados de erro e mensagens · README e CI básico.</li>
+    <li>Cada membro responsável por 2 a 3 issues. Ninguém fica só com "UI" nem só com "dados": todos tocam nas duas camadas.</li>
+    <li>Uma issue "Auditoria de segurança" vazia, para a aula 16.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 1</strong> Backlog da sprint 1 escrito e organizado no board até ao fim da aula. O docente passa por cada grupo e valida três coisas: títulos com verbo, critérios verificáveis, mínimos antes de extras.</div>
+</section>
+
+<section class="slide">
+  <h2>Primeira PR e o que o docente faz</h2>
+  <ul>
+    <li><strong>Primeira PR do grupo:</strong> <code>README.md</code> com nomes, divisão inicial de trabalho e um screenshot do template a correr no telemóvel. Aberta por um membro, revista e feita merge por outro. Serve para testar o fluxo antes de haver código.</li>
+    <li><strong>Branch protection</strong> em <code>main</code>: o docente ativa em todos os repositórios até amanhã. A partir daí só entra código por PR aprovado.</li>
+    <li><strong>O docente hoje:</strong> valida grupos e repositórios, entrega client-ids, passa por cada grupo para ver o backlog e o primeiro pedido à API no telemóvel.</li>
+    <li><strong>O docente durante a sprint:</strong> comenta PRs, acompanha a telemetria da API por grupo, responde no fórum do Moodle. Não faz código pelo grupo.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 2</strong> Primeira PR aberta, revista e com merge antes de sair da sala. Confirma que o revisor deixou pelo menos um comentário, mesmo que seja "LGTM, falta o screenshot".</div>
+  <aside class="notes">Reserva os últimos 15 minutos para circular: cada grupo mostra o board e a app no telemóvel. Grupos sem primeiro pedido à API ficam com prioridade amanhã, antes da matéria. Anota quem ainda não tem grupo para resolver por email hoje.</aside>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até amanhã</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Backlog da sprint 1 fechado até quarta: issues com critérios, estimativas e responsáveis, no board.</li>
+        <li>Cada membro com pelo menos um PR aberto até sexta, ligado a uma issue.</li>
+        <li>Segredo do grupo guardado fora do repositório; <code>.env.json</code> no <code>.gitignore</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/app-architecture/case-study" target="_blank" rel="noopener">Architecture case study</a>: uma app Flutter organizada como o template do projeto, camada a camada.</li>
+        <li><a href="https://docs.github.com/en/get-started/using-github/hello-world" target="_blank" rel="noopener">GitHub Docs: Hello World</a>: branch, commit, pull request, revisão e merge em 10 minutos; é o fluxo desta aula.</li>
+        <li><a href="https://developer.android.com/quality" target="_blank" rel="noopener">Android app quality guidelines</a>: a lista que as lojas usam; serve de inspiração para critérios de aceitação.</li>
+        <li><a href="https://developer.apple.com/design/human-interface-guidelines" target="_blank" rel="noopener">Human Interface Guidelines</a>: para quem vai fazer iOS.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 13 · Resiliência: estados de UI, retry e modo caos · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="13">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 13 · Semana 7 · Segunda, 19 de outubro de 2026 · 16:00 às 18:00</p>
+  <h1>Resiliência: estados de UI, retry e modo caos</h1>
+  <p class="lead">Teoria: falhas de rede, respostas 500 e 429, JSON inesperado; offline-first, cache HTTP e paginação. Prática: modelação dos quatro estados de cada ecrã, retry com backoff, pull-to-refresh e teste da app com o modo caos da API ligado.</p>
+  <div class="meta"><span>Repositório: pdm-aula-13</span></div>
+  <aside class="notes">Abre a aula com o telemóvel em modo avião e a app de quarta: ecrã vermelho com uma exceção crua. É o "antes". Anuncia já que o modo caos vai ser ligado por volta das 17:30 e que é anunciado, não uma partida.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Enumerar as formas como um pedido falha em mobile e o que a app deve fazer em cada uma.</li>
+    <li>Explicar offline-first, cache HTTP com <code>ETag</code> e <code>Cache-Control</code>, paginação e rate limiting.</li>
+    <li>Modelar o estado de um ecrã como <code>sealed class</code> e tratá-lo com um <code>switch</code> exaustivo.</li>
+    <li>Implementar retry com backoff exponencial e jitter, e saber quando não repetir.</li>
+    <li>Construir ecrãs de erro, vazio e loading que o utilizador percebe, com pull-to-refresh e idade dos dados.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Tudo falha</h2>
+  <ul>
+    <li><strong>Sem rede:</strong> modo avião, túnel, garagem. <code>SocketException</code> em milissegundos.</li>
+    <li><strong>Rede lenta:</strong> 3G fraco, Wi-Fi do café com portal de login. Um pedido de 20 segundos, ou um <code>TimeoutException</code>.</li>
+    <li><strong>Servidor em baixo:</strong> 500, 502, 503. Ou 429 porque a app pediu demais.</li>
+    <li><strong>JSON inesperado:</strong> campo a <code>null</code>, string onde devia estar um número, lista vazia. <code>FormatException</code> ou <code>TypeError</code>.</li>
+    <li>Exemplos: o Spotify em modo offline continua a tocar o que descarregou; o Google Maps mostra o mapa em cache; a app do banco diz "sem ligação" mas mostra o último saldo.</li>
+    <li>O pior resultado possível: ecrã em branco ou crash. O segundo pior: "Error: SocketException…".</li>
+  </ul>
+  <p><strong>Para os testes:</strong> em mobile a falha de rede não é uma exceção, é um caso normal; desenha-se a app para ela.</p>
+  <div class="callout"><strong>Analogia</strong> Um balcão tem sempre um de quatro cartazes à vista: "a preparar", "não há nada", "avariado, tente de novo", ou o prato em cima do balcão. Nunca fica sem cartaz. Um ecrã é igual: está a carregar, está vazio, falhou ou tem dados; o ecrã em branco é o balcão sem cartaz nenhum.</div>
+</section>
+
+<section class="slide">
+  <h2>Offline-first</h2>
+  <ul>
+    <li><strong>Mostrar primeiro o que há.</strong> Se já houve dados alguma vez, nunca mostrar um ecrã vazio: mostra a cache, depois atualiza.</li>
+    <li><strong>Marcar como antigo.</strong> "Atualizado há 12 min", um ícone, uma cor. O utilizador decide se confia.</li>
+    <li><strong>Sincronizar quando der.</strong> Ao abrir a app, ao voltar a ter rede, ao puxar a lista. Não a cada segundo.</li>
+    <li><strong>Escritas offline:</strong> um favorito marcado sem rede vai para uma fila e sobe quando houver ligação. Conflitos resolvem-se com regras (o último ganha, ou o servidor ganha).</li>
+    <li>Detetar ligação: <code>connectivity_plus</code> diz se há Wi-Fi ou dados, não se há Internet. A única prova é um pedido que responde.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> offline-first é cache primeiro, rede depois, e dizer sempre ao utilizador a idade dos dados.</p>
+  <aside class="notes">Pergunta: "que apps usam sem rede?" Spotify, Maps, Notas, Kindle. Depois: "e o que vos irrita quando não há rede?" Normalmente: spinners infinitos. Usa isso para justificar o slide.</aside>
+</section>
+
+<section class="slide">
+  <h2>Cache HTTP: <code>ETag</code>, <code>Cache-Control</code>, 304</h2>
+  <ul>
+    <li><strong>ETag</strong> é uma impressão digital da resposta. O cliente guarda-a e envia <code>If-None-Match: "abc"</code> no pedido seguinte. Se nada mudou, o servidor responde <strong>304 Not Modified</strong> sem corpo.</li>
+    <li><strong>Cache-Control: max-age=600</strong> autoriza o cliente a reutilizar a resposta durante 10 minutos sem perguntar. <code>no-store</code> proíbe guardar (dados sensíveis).</li>
+    <li>304 poupa dados e bateria, mas ainda há um pedido. <code>max-age</code> evita o pedido de todo.</li>
+    <li>Cache no cliente (a app guarda) e cache no servidor ou CDN (guardado para todos os utilizadores) coexistem.</li>
+    <li>O package <code>http</code> não faz cache sozinho. Opções: <code>dio</code> + <code>dio_cache_interceptor</code>, ou a nossa base de dados local (aula 15).</li>
+  </ul>
+  <p><strong>Para os testes:</strong> <code>ETag</code> + <code>If-None-Match</code> dão 304 "não mudou"; <code>Cache-Control</code> diz durante quanto tempo a resposta é válida.</p>
+</section>
+
+<section class="slide">
+  <h2>Paginação e rate limiting</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Paginação</th><th>Como</th><th>Prós e contras</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Offset</strong></td><td><code>?page=3&amp;size=20</code></td><td>Simples; salta ou repete itens quando a lista muda entre pedidos</td></tr>
+  <tr><td><strong>Cursor</strong></td><td><code>?after=eyJpZCI6NDJ9</code></td><td>Estável (Twitter, Instagram); não permite saltar para a página 7</td></tr>
+  <tr><td><strong>Infinite scroll</strong></td><td>Pedir a página seguinte quando o scroll se aproxima do fim</td><td>Natural em mobile; precisa de loader no fim da lista e de tratar o erro a meio</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li><strong>Rate limiting:</strong> o servidor limita pedidos por cliente (por exemplo 100 por minuto) e responde <strong>429 Too Many Requests</strong> com <code>Retry-After: 30</code>.</li>
+    <li>A app respeita o <code>Retry-After</code>. Repetir logo piora e pode levar a bloqueio do token.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> 429 pede espera, não retry imediato; <code>Retry-After</code> diz quanto tempo.</p>
+</section>
+
+<section class="slide">
+  <h2>Retry com backoff exponencial e jitter</h2>
+  <ul>
+    <li><strong>Backoff exponencial:</strong> espera 1 s, 2 s, 4 s, 8 s entre tentativas. Máximo de tentativas (3) e teto de espera (30 s).</li>
+    <li><strong>Jitter:</strong> uma parte aleatória em cada espera. Sem isto, mil telemóveis que falharam ao mesmo tempo repetem ao mesmo tempo e deitam o servidor abaixo outra vez (thundering herd).</li>
+    <li><strong>Repetir:</strong> timeouts, falhas de ligação, 5xx, 429 (respeitando <code>Retry-After</code>).</li>
+    <li><strong>Não repetir:</strong> 4xx (o pedido está errado, vai falhar outra vez) e <code>POST</code> não idempotente: criar dois favoritos, pagar duas vezes.</li>
+    <li>Se um <code>POST</code> tem mesmo de ser repetido, usa uma chave de idempotência (<code>Idempotency-Key</code>), como o Stripe: o servidor ignora a repetição.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> repetir só falhas transitórias, só pedidos idempotentes, com backoff exponencial e jitter.</p>
+  <aside class="notes">Faz a conta no quadro: 3 tentativas com 1, 2, 4 s são 7 s de espera no pior caso, mais 3 timeouts de 10 s. É demasiado? Depende: para uma previsão sim, por isso o timeout do retry deve ser menor que o do primeiro pedido.</aside>
+</section>
+
+<section class="slide" data-part="Prática">
+  <h2>Repositório da aula</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-13.git
+cd pdm-aula-13/starter
+flutter pub get
+flutter run</code></pre>
+  <ul>
+    <li><code>starter/</code> é a app de quarta (repository + notifier + Provider) com TODOs numerados de 1 a 5 e testes a falhar para cada estado.</li>
+    <li><code>solucao/</code> é o estado final, e é o que vai aguentar o modo caos no fim da aula.</li>
+    <li>Novo no <code>pubspec.yaml</code>: <code>skeletonizer</code> para o loading. Já está instalado.</li>
+  </ul>
+  <div class="callout task"><strong>Aquecimento</strong> Liga o modo avião e abre a app do starter. Anota em duas linhas o que vês e o que devias ver. É o teste de aceitação do fim da aula.</div>
+</section>
+
+<section class="slide">
+  <h2>1. O estado como <code>sealed class</code></h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 320" role="img" aria-label="Máquina de estados do ecrã: de Carregando passa-se a Dados, Vazio ou Erro; de Erro, tentar de novo volta a Carregando; de Dados, o pull-to-refresh volta a Carregando mantendo os dados antigos visíveis">
+    <rect x="60" y="128" width="170" height="60" rx="10" class="box accent"/>
+    <text x="145" y="153" class="t b mono" text-anchor="middle">Carregando</text>
+    <text x="145" y="173" class="t s" text-anchor="middle">spinner, sem dados</text>
+    <rect x="560" y="38" width="170" height="60" rx="10" class="box ok"/>
+    <text x="645" y="63" class="t b mono" text-anchor="middle">Dados</text>
+    <text x="645" y="83" class="t s" text-anchor="middle">lista + obtidoEm</text>
+    <rect x="560" y="128" width="170" height="60" rx="10" class="box muted"/>
+    <text x="645" y="153" class="t b mono" text-anchor="middle">Vazio</text>
+    <text x="645" y="173" class="t s" text-anchor="middle">sem resultados</text>
+    <rect x="560" y="218" width="170" height="60" rx="10" class="box danger"/>
+    <text x="645" y="243" class="t b mono" text-anchor="middle">Erro</text>
+    <text x="645" y="263" class="t s" text-anchor="middle">mensagem, podeRepetir</text>
+    <path d="M230 158 L558 68" class="arrow"/>
+    <path d="M230 158 L558 158" class="arrow"/>
+    <path d="M230 158 L558 248" class="arrow"/>
+    <text x="548" y="62" class="t s" text-anchor="end">com itens</text>
+    <text x="548" y="150" class="t s" text-anchor="end">sem itens</text>
+    <text x="548" y="264" class="t s" text-anchor="end">falhou ou timeout</text>
+    <path d="M645 38 L645 10 L145 10 L145 126" class="arrow accent dashed"/>
+    <text x="395" y="28" class="t s" text-anchor="middle">pull-to-refresh: recarrega, mantém os dados antigos no ecrã</text>
+    <path d="M645 278 L645 306 L145 306 L145 190" class="arrow accent"/>
+    <text x="395" y="300" class="t s" text-anchor="middle">tentar de novo (se podeRepetir)</text>
+  </svg>
+  <figcaption>Um só campo de estado, quatro casos. O switch exaustivo na UI garante que nenhum fica por desenhar.</figcaption>
+  </figure>
+<pre data-title="lib/previsao/estado_previsao.dart"><code class="language-dart">sealed class EstadoPrevisao {
+  const EstadoPrevisao();
+}
+
+class Carregando extends EstadoPrevisao {
+  const Carregando();
+}
+
+class Erro extends EstadoPrevisao {
+  const Erro(this.mensagem, {this.podeRepetir = true});
+  final String mensagem;
+  final bool podeRepetir;
+}
+
+class Vazio extends EstadoPrevisao {
+  const Vazio();
+}
+
+class Dados extends EstadoPrevisao {
+  const Dados(this.localidades, {required this.obtidoEm});
+  final List&lt;Localidade&gt; localidades;
+  final DateTime obtidoEm;
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. O notifier passa a ter um só campo</h2>
+<pre data-title="lib/previsao/previsao_notifier.dart"><code class="language-dart">class PrevisaoNotifier extends ChangeNotifier {
+  PrevisaoNotifier(this._repo);
+  final PrevisaoRepository _repo;
+
+  EstadoPrevisao estado = const Carregando();
+
+  Future&lt;void&gt; carregar({bool silencioso = false}) async {
+    if (!silencioso) {
+      estado = const Carregando();
+      notifyListeners();
+    }
+    try {
+      final lista = await _repo.localidades();
+      estado = lista.isEmpty
+          ? const Vazio()
+          : Dados(lista, obtidoEm: DateTime.now());
+    } on ApiException catch (e) {
+      estado = Erro(mensagemPara(e), podeRepetir: e.transitoria);
+    } catch (e) {
+      estado = Erro(mensagemPara(e));
+    }
+    notifyListeners();
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. <code>switch</code> exaustivo na UI</h2>
+<pre data-title="lib/previsao/localidades_screen.dart"><code class="language-dart">@override
+Widget build(BuildContext context) {
+  final estado = context.watch&lt;PrevisaoNotifier&gt;().estado;
+
+  return switch (estado) {
+    Carregando() =&gt; const ListaSkeleton(),
+    Vazio() =&gt; EstadoVazio(
+        mensagem: 'Ainda não há localidades.',
+        acao: 'Atualizar',
+        aoAgir: () =&gt; context.read&lt;PrevisaoNotifier&gt;().carregar(),
+      ),
+    Erro(:final mensagem, :final podeRepetir) =&gt; EstadoErro(
+        mensagem: mensagem,
+        aoRepetir: podeRepetir
+            ? () =&gt; context.read&lt;PrevisaoNotifier&gt;().carregar()
+            : null,
+      ),
+    Dados(:final localidades, :final obtidoEm) =&gt; ListaLocalidades(
+        localidades: localidades,
+        obtidoEm: obtidoEm,
+      ),
+  };
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Estados: o que interessa</h2>
+  <ul>
+    <li><code>sealed</code> fecha a hierarquia: só estas quatro subclasses existem. O compilador sabe-o e obriga o <code>switch</code> a tratar todas.</li>
+    <li>Acrescenta um estado <code>Parcial</code> e o <code>build</code> deixa de compilar até o tratares. É impossível esquecer um caso.</li>
+    <li>Com três booleanos (<code>aCarregar</code>, <code>erro</code>, <code>lista</code>) havia oito combinações, quatro delas impossíveis. Agora há quatro estados, todos possíveis.</li>
+    <li><code>Erro(:final mensagem)</code> é um <em>object pattern</em>: extrai o campo no próprio <code>case</code>.</li>
+    <li>Os dados vivem dentro do estado (<code>Dados.localidades</code>): não há lista "pendurada" quando o estado é <code>Erro</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 1</strong> Migra o <code>DetalheNotifier</code> para <code>EstadoDetalhe</code> com os mesmos quatro casos e um <code>switch</code> exaustivo no ecrã de detalhe. O teste <code>test/estado_detalhe_test.dart</code> verifica cada transição.</div>
+  <aside class="notes">Dúvida frequente: "porque não um enum?" Porque um enum não transporta dados: Erro precisa da mensagem, Dados precisa da lista. Mostra o erro de compilação ao apagar um case do switch: é o argumento mais forte para sealed.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. Widgets de erro, vazio e loading</h2>
+<pre data-title="lib/core/widgets/estado_erro.dart"><code class="language-dart">class EstadoErro extends StatelessWidget {
+  const EstadoErro({super.key, required this.mensagem, this.aoRepetir});
+  final String mensagem;
+  final VoidCallback? aoRepetir;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.cloud_off, size: 48),
+          const SizedBox(height: 12),
+          Text(mensagem, textAlign: TextAlign.center),
+          if (aoRepetir != null) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: aoRepetir,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar de novo'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Estados visuais: o que interessa</h2>
+  <ul>
+    <li><strong>Erro:</strong> ícone, mensagem humana e um botão "Tentar de novo" só quando faz sentido (<code>aoRepetir</code> nulo esconde-o). Um 404 não se repete.</li>
+    <li><strong>Vazio:</strong> não é erro. "Ainda não há avisos" com um ícone calmo e, se possível, uma ação ("Atualizar", "Adicionar favorito").</li>
+    <li><strong>Loading:</strong> um skeleton em vez de um spinner ao centro: <code>Skeletonizer(enabled: true, child: ListaLocalidades(localidades: Localidade.exemplo))</code> desenha a forma da lista a cinzento.</li>
+    <li>Os três são widgets reutilizáveis em <code>lib/core/widgets/</code>: cada ecrã do projeto usa os mesmos.</li>
+    <li>Os estados fazem parte do design (aula 6): desenham-se com o mesmo cuidado que o ecrã com dados.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 2</strong> Cria <code>EstadoVazio</code> (ícone, mensagem, botão opcional) e <code>ListaSkeleton</code> com <code>skeletonizer</code>. Usa-os no ecrã de avisos: sem avisos ativos mostra o vazio com a ação "Atualizar".</div>
+</section>
+
+<section class="slide">
+  <h2>3. Retry com backoff no <code>ApiClient</code></h2>
+<pre data-title="lib/core/api_client.dart"><code class="language-dart">Future&lt;dynamic&gt; get(String caminho, {int tentativas = 3}) async {
+  var espera = const Duration(seconds: 1);
+  for (var i = 1; ; i++) {
+    try {
+      return await _getUmaVez(caminho);          // o get da aula 11
+    } on ApiException catch (e) {
+      if (!e.transitoria || i &gt;= tentativas) rethrow;
+      await Future.delayed(e.retryAfter ?? _comJitter(espera));
+    } on TimeoutException catch (_) {
+      if (i &gt;= tentativas) rethrow;
+      await Future.delayed(_comJitter(espera));
+    } on SocketException catch (_) {
+      if (i &gt;= tentativas) rethrow;
+      await Future.delayed(_comJitter(espera));
+    }
+    espera *= 2;                                   // 1 s, 2 s, 4 s
+  }
+}
+
+Duration _comJitter(Duration base) =&gt;
+    base + Duration(milliseconds: Random().nextInt(300));
+
+// Em ApiException: 429 e 5xx são transitórios; 4xx não
+bool get transitoria =&gt; statusCode == 429 || (statusCode ?? 0) &gt;= 500;</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Mensagens humanas por tipo de falha</h2>
+<pre data-title="lib/core/mensagens.dart"><code class="language-dart">String mensagemPara(Object erro) =&gt; switch (erro) {
+      SocketException() =&gt; 'Sem ligação. Verifica a rede e tenta de novo.',
+      TimeoutException() =&gt; 'O servidor está a demorar. Tenta daqui a pouco.',
+      ApiException(statusCode: 429) =&gt; 'Muitos pedidos seguidos. Espera uns segundos.',
+      ApiException(statusCode: 401) =&gt; 'A sessão expirou. Volta a entrar.',
+      ApiException(statusCode: final c?) when c &gt;= 500 =&gt;
+        'O serviço está com problemas. Mostramos os últimos dados que temos.',
+      FormatException() =&gt; 'Recebemos dados inesperados. Já estamos a tratar disso.',
+      _ =&gt; 'Algo correu mal. Tenta de novo.',
+    };</code></pre>
+  <ul>
+    <li>Só o <code>get</code> repete: <code>post</code> e <code>delete</code> falham à primeira, porque não são idempotentes.</li>
+    <li><code>retryAfter</code> vem do header <code>Retry-After</code> em segundos; o starter já o lê em <code>_getUmaVez</code>.</li>
+    <li>Uma mensagem por tipo de falha, sem jargão, e a dizer o que o utilizador pode fazer. A exceção original vai para o log.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 3</strong> Acrescenta um teste com <code>MockClient</code> que responde 503, 503 e depois 200: <code>get</code> tem de devolver os dados e ter feito exatamente três pedidos. Depois um que responde 404: um só pedido e <code>ApiException</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Pull-to-refresh e idade dos dados</h2>
+<pre data-title="lib/previsao/lista_localidades.dart"><code class="language-dart">class ListaLocalidades extends StatelessWidget {
+  const ListaLocalidades({super.key, required this.localidades, required this.obtidoEm});
+  final List&lt;Localidade&gt; localidades;
+  final DateTime obtidoEm;
+
+  @override
+  Widget build(BuildContext context) {
+    final minutos = DateTime.now().difference(obtidoEm).inMinutes;
+    return RefreshIndicator(
+      onRefresh: () =&gt; context.read&lt;PrevisaoNotifier&gt;().carregar(silencioso: true),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: localidades.length + 1,
+        itemBuilder: (_, i) {
+          if (i == 0) {
+            return ListTile(
+              dense: true,
+              leading: const Icon(Icons.schedule, size: 18),
+              title: Text(minutos == 0 ? 'Atualizado agora' : 'Dados de há $minutos min'),
+            );
+          }
+          return ListTile(title: Text(localidades[i - 1].nome), subtitle: Text(localidades[i - 1].ilha));
+        },
+      ),
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>4. Refresh: o que interessa</h2>
+  <ul>
+    <li><code>RefreshIndicator</code> chama <code>onRefresh</code> e mantém o círculo visível até o <code>Future</code> terminar. Por isso <code>carregar</code> devolve <code>Future&lt;void&gt;</code>.</li>
+    <li><code>silencioso: true</code> não passa por <code>Carregando</code>: a lista fica visível durante o refresh. Sem isto, o skeleton substituía a lista e o gesto parecia partido.</li>
+    <li><code>AlwaysScrollableScrollPhysics</code> permite puxar mesmo quando a lista cabe no ecrã.</li>
+    <li>"Dados de há 12 min" só faz sentido se <code>obtidoEm</code> viver no estado. É por isso que está em <code>Dados</code>, não no widget.</li>
+    <li>Um refresh que falha com dados no ecrã mostra um <code>SnackBar</code> e mantém os dados: nunca troca dados válidos por um ecrã de erro.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 4</strong> Quando <code>carregar(silencioso: true)</code> falha e o estado atual é <code>Dados</code>, mantém os dados e guarda a mensagem num campo <code>avisoRefresh</code>. O ecrã mostra-a num <code>SnackBar</code> uma só vez.</div>
+  <aside class="notes">A dúvida aqui é "onde ponho o SnackBar se o notifier não conhece o context?" Resposta: o ecrã observa o campo e mostra-o num listener (ou no onRefresh, com context.mounted). Mostra a solução da solucao/ se ninguém chegar lá em 10 minutos.</aside>
+</section>
+
+<section class="slide">
+  <h2>5. Modo caos: observar, corrigir, repetir</h2>
+  <ol class="steps">
+    <li><strong>O docente liga o modo caos ao teu grupo:</strong> latência de 3 s em metade dos pedidos, 20% de respostas 500, um 429 a cada dez pedidos com <code>Retry-After: 5</code>.</li>
+    <li><strong>Usa a app durante dois minutos</strong> como um utilizador: abre a lista, entra num detalhe, puxa para atualizar, volta. Anota tudo o que vês e não devias ver.</li>
+    <li><strong>Corrige por ordem de gravidade:</strong> crash ou ecrã em branco, depois mensagens cruas, depois retry a bater no 429, depois dados válidos substituídos por erro.</li>
+    <li><strong>Repete</strong> até a app aguentar cinco minutos de caos sem crash, sem ecrã em branco e sem mensagem técnica.</li>
+  </ol>
+  <div class="callout task"><strong>Exercício 5</strong> Regista no <code>README</code> do starter três coisas que corrigiste com o modo caos ligado e o que o utilizador via antes e depois. Traz esta lista para a aula de amanhã: é o padrão que vais aplicar a todos os ecrãs do projeto.</div>
+  <aside class="notes">Liga o modo caos a um grupo de cada vez, com 25 minutos de aula por fazer, e anuncia no projetor a que grupo. Circula: o erro mais comum é o retry a repetir 429 sem esperar (verifica se lêem o Retry-After) e o refresh a apagar a lista. Desliga o caos cinco minutos antes do fim para a demo final.</aside>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até amanhã</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Deixa todos os ecrãs da app (localidades, detalhe, avisos) com os quatro estados tratados por <code>switch</code> exaustivo.</li>
+        <li>Escreve três mensagens de erro humanas para três falhas diferentes (sem rede, 500, JSON inválido) e põe-nas em <code>mensagemPara</code>.</li>
+        <li>Amanhã arranca o projeto: vem com o grupo pensado (2 a 3 pessoas).</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/cookbook/networking/fetch-data" target="_blank" rel="noopener">Fetch data from the internet</a>: o cookbook oficial, em especial a secção sobre tratar erros e o que mostrar ao utilizador.</li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener">MDN: HTTP status codes</a>: cada código com o significado e o que o cliente deve fazer; 304, 429 e 5xx são os desta aula.</li>
+        <li><a href="https://dart.dev/language/class-modifiers#sealed" target="_blank" rel="noopener">Sealed classes</a> e <a href="https://dart.dev/language/patterns" target="_blank" rel="noopener">patterns</a> no dart.dev: o <code>sealed</code>, o <code>switch</code> exaustivo e os object patterns que usámos.</li>
+        <li><a href="https://pub.dev/packages/skeletonizer" target="_blank" rel="noopener">skeletonizer</a>: loading com a forma do conteúdo, em vez de um spinner ao centro.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

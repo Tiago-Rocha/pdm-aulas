@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula 26 · Observabilidade e review da sprint 2 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="26">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendario">Calendário</a>
+    <a href="../guia-instalacao.html">Instalação</a>
+    <a href="../projeto.html">Projeto</a>
+    <a href="../avaliacao.html">Avaliação</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Início">
+  <p class="kicker">Aula 26 · Semana 11 · Quarta, 18 de novembro de 2026 · 16:00 às 18:00</p>
+  <h1>Observabilidade e review da sprint 2</h1>
+  <p class="lead">Teoria (30 minutos): observabilidade em produção: relatórios de crashes, analytics, feature flags e remote config, métricas a acompanhar. Prática: review da sprint 2, retrospetiva e planeamento da sprint 3.</p>
+  <div class="meta"><span>Sprint 3: 19/11 a 02/12</span></div>
+  <aside class="notes">Prepara a ordem das demos (sorteio) e um cronómetro visível. Diz logo no início que a review começa às 16:35 em ponto, para que os grupos preparem os telemóveis durante a teoria. Testa o cabo de projeção ou o scrcpy antes de começar. Se houver mais de 7 grupos, corta a teoria para 25 minutos.</aside>
+</section>
+
+<section class="slide" data-part="Objetivos">
+  <h2>No fim desta aula consegues</h2>
+  <ul>
+    <li>Explicar o que um crash report contém e porque os símbolos e a versão da app são indispensáveis.</li>
+    <li>Comparar Crashlytics e Sentry e ligar os dois pontos de captura de erros do Flutter.</li>
+    <li>Definir eventos de analytics com sentido e dizer o que nunca se regista.</li>
+    <li>Usar feature flags e remote config para lançar desligado, desligar à distância e forçar atualização.</li>
+    <li>Apresentar a sprint 2 em 5 minutos e planear a sprint 3 com o que entra e o que fica de fora.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Teoria">
+  <h2>Sem observabilidade não sabes que a app está partida</h2>
+  <ul>
+    <li>Na web, o servidor tem logs e vês o erro em segundos. Em mobile, o código corre no telemóvel de um desconhecido, às vezes offline, numa versão que já não é a atual.</li>
+    <li>Um <strong>crash report</strong> traz: stack trace, versão e build number, modelo e versão do SO, memória livre, <em>breadcrumbs</em> (últimos ecrãs e ações) e se a app estava em primeiro plano.</li>
+    <li><strong>Símbolos:</strong> em release o código é AOT e pode ser ofuscado; sem os ficheiros de símbolos (dSYM no iOS, mapping no Android, e os do Flutter com <code>--split-debug-info</code>) o stack trace é uma lista de endereços. Enviam-se no momento do build.</li>
+    <li><strong>Agrupamento:</strong> o serviço junta crashes iguais numa issue, conta utilizadores afetados e diz "começou na 1.4.2". É isso que decide se fazes hotfix hoje ou na próxima versão.</li>
+    <li>Exemplo real: um crash só no Samsung A12 com Android 11 e o teclado da Samsung. Sem reports, nunca o reproduzias no teu telemóvel.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> sem símbolos um crash report de release é ilegível; sem a versão da app não sabes se o bug ainda existe.</p>
+  <div class="callout"><strong>Analogia</strong> Crash reports e métricas são a caixa negra e o painel de instrumentos do avião. Sem eles, só se sabe que o avião caiu quando alguém telefona, e sem os dados do voo (versão, dispositivo, breadcrumbs) não se sabe porquê. A caixa negra regista o que aconteceu; o painel mostra, em voo, se está tudo dentro dos limites.</div>
+  <aside class="notes">Pergunta: "quantos de vocês já deram 1 estrela a uma app por crashar?" Depois: "e quantos escreveram ao programador a explicar?" É o argumento inteiro da aula. Mostra um crash real do teu Crashlytics, com a lista de dispositivos.</aside>
+</section>
+
+<section class="slide">
+  <h2>Crashlytics vs Sentry, e os dois pontos de captura</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Firebase Crashlytics</th><th>Sentry</th></tr></thead>
+  <tbody>
+  <tr><td>Custo</td><td>Grátis, dentro do Firebase</td><td>Grátis até 5 mil erros por mês; self-hosted possível</td></tr>
+  <tr><td>Integração</td><td><code>firebase_crashlytics</code>, precisa do projeto Firebase e do <code>google-services.json</code></td><td><code>sentry_flutter</code>, só precisa de um DSN</td></tr>
+  <tr><td>Pontos fortes</td><td>Liga-se ao Analytics e ao Remote Config; deteta ANR no Android</td><td>Performance tracing, releases, breadcrumbs de navegação, backend na mesma conta</td></tr>
+  <tr><td>Erros não fatais</td><td><code>recordError</code></td><td><code>captureException</code></td></tr>
+  </tbody></table></div>
+<pre data-title="lib/main.dart"><code class="language-dart">FlutterError.onError = (details) {
+  FlutterError.presentError(details);                 // continua a aparecer na consola
+  crash.registar(details.exception, details.stack);   // erros de build, layout e paint
+};
+PlatformDispatcher.instance.onError = (error, stack) {
+  crash.registar(error, stack, fatal: true);          // Futures sem catch, fora da árvore
+  return true;                                        // tratado: a app não morre
+};</code></pre>
+  <p><strong>Para os testes:</strong> <code>FlutterError.onError</code> apanha erros do framework; <code>PlatformDispatcher.instance.onError</code> apanha os assíncronos. Os dois SDKs ligam ambos por ti.</p>
+</section>
+
+<section class="slide">
+  <h2>Analytics: eventos com sentido</h2>
+  <ul>
+    <li>Um evento é um nome e parâmetros: <code>previsao_aberta {localidade: "horta", origem: "favoritos"}</code>. Firebase Analytics, Mixpanel, Amplitude, PostHog.</li>
+    <li>Um evento com sentido responde a uma pergunta de produto: "quantos chegam ao detalhe?", "quantos adicionam um favorito na primeira sessão?". Se ninguém vai olhar para o gráfico, não registes.</li>
+    <li><strong>Funil:</strong> uma sequência de eventos (abrir → lista → detalhe → favorito) e a percentagem que desiste em cada passo. É assim que se decide o que melhorar a seguir.</li>
+    <li><strong>O que não registar:</strong> nome, email, localização exata, conteúdo de campos de texto, nada que identifique uma pessoa sem consentimento. RGPD, App Tracking Transparency no iOS e o data safety form do Play (aula 16).</li>
+    <li>O Spotify sabe em que segundo saltas a música. A tua app precisa de saber se alguém abre o mapa. Escala diferente, mesma lógica.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> analytics regista eventos de produto, não dados pessoais; um funil mostra onde os utilizadores desistem.</p>
+  <aside class="notes">Exercício de 2 minutos: cada grupo diz um evento que registaria no Tempo Açores e a pergunta a que responde. Rejeita eventos sem pergunta ("botão_carregado") e eventos com dados pessoais ("pesquisa_texto" com o texto).</aside>
+</section>
+
+<section class="slide">
+  <h2>Feature flags e remote config</h2>
+  <ul>
+    <li>Uma <strong>feature flag</strong> é um valor que a app lê no arranque e que decide se mostra a funcionalidade. Firebase Remote Config, LaunchDarkly, ou um endpoint teu <code>/config</code>.</li>
+    <li><strong>Lançar desligado:</strong> o código do mapa vai na 1.5 com a flag a <code>false</code>. Ligas para 10% dos utilizadores, vês os crashes, ligas para todos. Sem nova submissão à loja.</li>
+    <li><strong>Kill switch:</strong> a funcionalidade partida desliga-se em minutos; uma correção pela loja demora dias, e há quem nunca atualize.</li>
+    <li><strong>A/B:</strong> metade vê o botão azul, metade o verde, e o analytics diz qual converte. Só faz sentido com volume; com 50 utilizadores é ruído.</li>
+    <li><strong>Forced update:</strong> a config diz "versão mínima 1.4.0"; versões abaixo mostram um ecrã de bloqueio com link para a loja. Obrigatório quando mudas a API de forma incompatível (aula 28).</li>
+    <li>Regra: a app funciona com os valores por defeito se a config não chegar. O primeiro arranque pode ser offline.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> uma feature flag liga ou desliga funcionalidades sem passar pela loja; o forced update bloqueia versões abaixo da mínima.</p>
+  <div class="callout"><strong>Analogia</strong> Uma feature flag é um interruptor no painel de instrumentos que se pode desligar em voo, sem aterrar. Uma correção pela loja é aterrar, reparar e voltar a descolar: demora dias, e há passageiros que nunca apanham o voo seguinte. O interruptor desliga a funcionalidade partida em minutos, na versão que já está instalada.</div>
+</section>
+
+<section class="slide">
+  <h2>Métricas, alertas e logs</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Métrica</th><th>O que é</th><th>Valor saudável</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Crash-free users</strong></td><td>Percentagem de utilizadores sem nenhum crash no período</td><td>Acima de 99,5%</td></tr>
+  <tr><td><strong>ANR</strong> (Android)</td><td>"App Not Responding": a UI thread bloqueada 5 segundos</td><td>Abaixo de 0,47% das sessões, o limiar do Play</td></tr>
+  <tr><td><strong>Tempo de arranque</strong></td><td>Do toque no ícone ao primeiro frame útil</td><td>Abaixo de 2 s a frio (aula 30)</td></tr>
+  <tr><td><strong>Adoção por versão</strong></td><td>Percentagem de utilizadores em cada versão</td><td>Maioria na última ao fim de duas semanas</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>As lojas vigiam isto: o Play baixa a visibilidade de apps acima dos limiares (Android vitals); a App Store mostra crashes no Xcode Organizer.</li>
+    <li>Um alerta útil: "crash-free caiu abaixo de 99% na versão nova" → mensagem no Slack. Um alerta que ninguém lê é ruído.</li>
+    <li>Logs: <code>dart:developer</code> ou o package <code>logging</code> em vez de <code>print</code>; níveis; nunca tokens nem dados pessoais.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> crash-free users e ANR são as métricas que as lojas vigiam; acima dos limiares, a visibilidade da app cai.</p>
+</section>
+
+<section class="slide" data-part="Review">
+  <h2>Review da sprint 2</h2>
+  <ul>
+    <li><strong>5 minutos por grupo</strong>, com cronómetro. Demo no telemóvel projetado (scrcpy ou espelhamento), nunca no emulador.</li>
+    <li>Estrutura: 30 s o que prometeram na sprint; 3 min de demo; 1 min o que ficou por fazer; 30 s de perguntas.</li>
+    <li>Mostrar: a app a correr a partir de <code>main</code>, o modo avião ligado a meio, favoritos sincronizados entre dois telemóveis, o CI verde no README.</li>
+    <li>Quem assiste: cada grupo aponta uma coisa boa e faz uma pergunta ao grupo seguinte. O docente anota para a rubrica.</li>
+  </ul>
+  <div class="callout tip"><strong>Se a demo falhar</strong> Diz o que devia acontecer e passa à frente. Ninguém é penalizado por um crash na demo; é penalizado por não o saber explicar.</div>
+  <aside class="notes">Ordem sorteada. Corta aos 5 minutos sem exceções: é uma competência. Anota por grupo: offline funciona? favoritos? estados de erro? CI? e um comentário de UX. Com 6 a 8 grupos, reserva 45 minutos e mantém a retro e o planeamento nos últimos 40.</aside>
+</section>
+
+<section class="slide">
+  <h2>Retro e planeamento da sprint 3</h2>
+  <div class="cols">
+    <div>
+      <h3>Retro (15 min)</h3>
+      <ul>
+        <li>Cada membro escreve três post-its: <strong>começar</strong>, <strong>parar</strong>, <strong>continuar</strong>.</li>
+        <li>O grupo escolhe um de cada e partilha com a turma em um minuto.</li>
+        <li>Tema típico: "parar de deixar PRs abertos três dias"; "começar a testar no telemóvel do colega".</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Sprint 3, a última (19/11 a 02/12)</h3>
+      <ul>
+        <li><strong>Entra:</strong> os requisitos mínimos em falta, no máximo um extra por grupo, testes e CI, o polish e a distribuição de sexta.</li>
+        <li><strong>Fica de fora:</strong> funcionalidades novas sem os mínimos feitos, refactors grandes, trocar de arquitetura.</li>
+        <li><strong>Pronto</strong> na sprint 3: instalável por um tester fora do grupo, README com screenshots, CI verde.</li>
+      </ul>
+    </div>
+  </div>
+  <p>Backlog da sprint 3 em issues até sexta. Review da sprint 3 a 02/12; freeze a 09/12.</p>
+  <aside class="notes">O erro típico neste planeamento é ambição: grupos com favoritos a meio a planear sismos e mapa. Passa por cada grupo e pergunta "o que acontece se só fizerem metade disto?". A resposta tem de ser "temos os mínimos na mesma".</aside>
+</section>
+
+<section class="slide">
+  <h2>Demo do docente: Sentry num projeto Flutter em 5 minutos</h2>
+  <ol class="steps">
+    <li><strong>Projeto no sentry.io</strong> do tipo Flutter; copia o DSN. Depois <code>flutter pub add sentry_flutter</code>.</li>
+    <li><strong>Inicialização</strong> a envolver o <code>runApp</code>:
+<pre data-title="lib/main.dart"><code class="language-dart">Future&lt;void&gt; main() async {
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = const String.fromEnvironment('SENTRY_DSN');
+      options.environment = kReleaseMode ? 'production' : 'dev';
+      options.tracesSampleRate = 0.2;   // 20% das sessões com performance
+    },
+    appRunner: () => runApp(const TempoApp()),
+  );
+}</code></pre></li>
+    <li><strong>Correr</strong> com <code>flutter run --dart-define=SENTRY_DSN=https://...</code> e carregar num botão que faz <code>throw StateError('teste de crash')</code>.</li>
+    <li><strong>Ver a issue</strong> no Sentry: stack trace legível, dispositivo, breadcrumbs com os ecrãs visitados. Marcar como resolvida na versão seguinte.</li>
+  </ol>
+  <div class="callout"><strong>O DSN não é um segredo crítico</strong> Só permite enviar eventos, mas vai por <code>--dart-define</code> na mesma: o que fica no repositório é a ausência dele.</div>
+  <aside class="notes">Faz isto na tua app de demonstração, não na de um grupo. Se a rede da sala falhar, tens o screenshot da issue. Termina com o slide seguinte e com o lembrete de que sexta são 4 horas e começam às 08:30.</aside>
+</section>
+
+<section class="slide" data-part="Fim">
+  <h2>Até sexta</h2>
+  <div class="cols">
+    <div>
+      <h3>Para fazer</h3>
+      <ul class="checklist">
+        <li>Backlog da sprint 3 fechado até sexta: issues com critérios de aceitação, quem faz o quê, e o que fica de fora escrito no README.</li>
+        <li>Sexta é workshop de 4 horas (08:30): traz o telemóvel com espaço livre, cabo, e uma conta Google para receber o build dos colegas.</li>
+        <li>Opcional: liga o Sentry ou o Crashlytics ao projeto num PR de um membro. É um extra barato e conta.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Para ler</h3>
+      <ul>
+        <li><a href="https://firebase.google.com/docs/crashlytics/get-started?platform=flutter" target="_blank" rel="noopener">Crashlytics para Flutter</a>: instalação e os dois handlers de erro.</li>
+        <li><a href="https://docs.sentry.io/platforms/flutter/" target="_blank" rel="noopener">Sentry para Flutter</a>: instalação, captura de erros, breadcrumbs, releases e performance tracing.</li>
+        <li><a href="https://pub.dev/packages/sentry_flutter" target="_blank" rel="noopener">sentry_flutter</a>: o package no pub.dev, com o DSN, as opções e a referência da API.</li>
+        <li><a href="https://firebase.google.com/docs/remote-config" target="_blank" rel="noopener">Firebase Remote Config</a>: feature flags, valores por defeito e rollout por percentagem de utilizadores.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

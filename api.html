@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API do curso · PDM · DAW 2 · 2026/27</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="index.html#calendario">Calendário</a>
+    <a href="guia-instalacao.html">Instalação</a>
+    <a href="projeto.html">Projeto</a>
+    <a href="avaliacao.html">Avaliação</a>
+    <a href="api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Tema</button><button id="proj-toggle" type="button">Projeção</button></div>
+</div></header>
+
+<div class="wrap layout">
+<aside class="toc" id="toc"></aside>
+<main class="content">
+
+<p class="kicker">API do curso · disponível a partir da aula 11 (12/10)</p>
+<h1>API Tempo Açores</h1>
+<p class="lead">Uma API REST mantida pelo docente que envolve os dados abertos do IPMA, acrescenta autenticação por grupo, favoritos e telemetria, e serve de base ao projeto.</p>
+
+<div class="callout warn"><strong>Em preparação</strong> A API entra em produção antes da aula 11. Esta página passará a mostrar a documentação OpenAPI interativa (Swagger UI), o endereço base, e como obter o token do teu grupo.</div>
+
+<h2>O que vai ter</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Endpoint</th><th>Descrição</th><th>Auth</th></tr></thead>
+<tbody>
+<tr><td><code>POST /v1/auth/token</code></td><td>Troca o client-id e o segredo do grupo por um token JWT.</td><td>não</td></tr>
+<tr><td><code>GET /v1/locations</code></td><td>Ilhas e localidades dos Açores com coordenadas.</td><td>sim</td></tr>
+<tr><td><code>GET /v1/forecast/{locationId}</code></td><td>Previsão a 5 dias, normalizada (números como números, datas ISO, tipo de tempo resolvido).</td><td>sim</td></tr>
+<tr><td><code>GET /v1/warnings</code></td><td>Avisos meteorológicos ativos.</td><td>sim</td></tr>
+<tr><td><code>GET /v1/seismic</code></td><td>Sismos recentes na região dos Açores.</td><td>sim</td></tr>
+<tr><td><code>GET/POST/DELETE /v1/me/favorites</code></td><td>Favoritos do grupo.</td><td>sim</td></tr>
+<tr><td><code>GET /icons/{weatherType}.svg</code></td><td>Ícones de estado do tempo.</td><td>não</td></tr>
+</tbody></table></div>
+
+<h2>Regras de uso</h2>
+<ul>
+  <li>Cada grupo tem um client-id. Não o partilhes com outros grupos; os pedidos ficam registados por grupo.</li>
+  <li>Envia sempre os headers <code>X-Platform</code> (android, ios ou web) e <code>X-App-Version</code>.</li>
+  <li>Há limite de pedidos por minuto. Faz cache do lado da app: previsões não mudam a cada segundo.</li>
+  <li>O docente pode ligar o <em>modo caos</em> para o teu grupo: latência, respostas 429 e 500 aleatórias. A tua app deve continuar utilizável.</li>
+</ul>
+
+<nav class="pager" id="pager"></nav>
+</main>
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="assets/app.js"></script>
+</body>
+</html>
