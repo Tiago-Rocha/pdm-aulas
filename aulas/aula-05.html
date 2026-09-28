@@ -79,13 +79,13 @@ version: 1.0.0+1                # versionName + versionCode (aula 31)
 environment:
   sdk: ^3.11.0
 
-dependencies:                   # vai para dentro da app
+dependencies:                   # ships inside the app
   flutter:
     sdk: flutter
   google_fonts: ^8.2.1
   intl: ^0.20.3
 
-dev_dependencies:               # só em desenvolvimento e testes
+dev_dependencies:               # development and tests only
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
@@ -180,11 +180,11 @@ flutter run</code></pre>
 <pre data-title="lib/main.dart"><code class="language-dart">import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const TempoApp());
+  runApp(const WeatherApp());
 }
 
-class TempoApp extends StatelessWidget {
-  const TempoApp({super.key});
+class WeatherApp extends StatelessWidget {
+  const WeatherApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +206,7 @@ class TempoApp extends StatelessWidget {
   <h2>1. <code>main.dart</code>: o que interessa</h2>
   <ul>
     <li><code>import 'package:flutter/material.dart'</code> traz o Material Design inteiro. Quase todos os ficheiros de UI começam assim.</li>
-    <li><code>TempoApp</code> é um <code>StatelessWidget</code>: não tem estado próprio, só descreve. O <code>build</code> devolve a árvore.</li>
+    <li><code>WeatherApp</code> é um <code>StatelessWidget</code>: não tem estado próprio, só descreve. O <code>build</code> devolve a árvore.</li>
     <li><code>colorSchemeSeed</code> gera uma paleta Material 3 inteira a partir de uma cor. Muda para <code>Colors.deepOrange</code> e faz hot reload.</li>
     <li><code>const</code> à frente de um widget diz ao Flutter que aquela subárvore nunca muda: pode reutilizá-la em vez de reconstruir. Usa sempre que o compilador deixar.</li>
     <li><code>Center</code> centra o filho; <code>Text</code> desenha texto. São os dois widgets mais simples que existem.</li>
@@ -221,9 +221,9 @@ class TempoApp extends StatelessWidget {
   children: [
     Text(
       'Ponta Delgada',
-      style: Theme.of(context).textTheme.headlineSmall,   // tamanho do tema, não fixo
+      style: Theme.of(context).textTheme.headlineSmall,   // theme size, not fixed
     ),
-    const SizedBox(height: 8),                            // espaço em branco
+    const SizedBox(height: 8),                            // blank space
     const Icon(Icons.wb_sunny, size: 48, color: Colors.orange),
     Image.asset('assets/img/sao_miguel.jpg', height: 120, fit: BoxFit.cover),
     Padding(
@@ -256,15 +256,15 @@ class TempoApp extends StatelessWidget {
 
 <section class="slide">
   <h2>3. O cartão da localidade</h2>
-<pre data-title="lib/cartao_localidade.dart"><code class="language-dart">class CartaoLocalidade extends StatelessWidget {
-  const CartaoLocalidade({super.key, required this.nome, required this.temperatura});
+<pre data-title="lib/location_card.dart"><code class="language-dart">class LocationCard extends StatelessWidget {
+  const LocationCard({super.key, required this.name, required this.temperature});
 
-  final String nome;
-  final double temperatura;
+  final String name;
+  final double temperature;
 
   @override
   Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
+    final textTheme = Theme.of(context).textTheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -272,9 +272,9 @@ class TempoApp extends StatelessWidget {
           children: [
             const Icon(Icons.wb_sunny, size: 40, color: Colors.orange),
             const SizedBox(width: 16),
-            Text(nome, style: texto.titleLarge),
+            Text(name, style: textTheme.titleLarge),
             const Spacer(),
-            Text('${temperatura.round()} °C', style: texto.headlineMedium),
+            Text('${temperature.round()} °C', style: textTheme.headlineMedium),
           ],
         ),
       ),
@@ -288,11 +288,11 @@ class TempoApp extends StatelessWidget {
   <h2>3. O cartão: o que interessa</h2>
   <ul>
     <li>Um widget próprio é uma classe com campos <code>final</code>, construtor <code>const</code> com parâmetros nomeados e um <code>build</code>. É exatamente o modelo de dados da aula 2 com um método a mais.</li>
-    <li>Usa-se como qualquer outro: <code>const CartaoLocalidade(nome: 'Horta', temperatura: 19.4)</code>. O <code>const</code> só é possível porque o construtor é <code>const</code> e os argumentos são literais.</li>
+    <li>Usa-se como qualquer outro: <code>const LocationCard(name: 'Horta', temperature: 19.4)</code>. O <code>const</code> só é possível porque o construtor é <code>const</code> e os argumentos são literais.</li>
     <li><code>Card</code> dá elevação e cantos redondos do tema. <code>Row</code> põe os filhos lado a lado; <code>Spacer</code> empurra o resto para a direita.</li>
-    <li>Um ficheiro por widget quando passa de 20 linhas. O <code>main.dart</code> importa com <code>import 'cartao_localidade.dart';</code>.</li>
+    <li>Um ficheiro por widget quando passa de 20 linhas. O <code>main.dart</code> importa com <code>import 'location_card.dart';</code>.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: cria <code>lib/cartao_localidade.dart</code>, usa-o no <code>body</code> com três localidades numa <code>Column</code>, e acrescenta um parâmetro opcional <code>IconData icone</code> com valor por defeito. <code>flutter test</code> deve ficar verde no teste do cartão.</div>
+  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: cria <code>lib/location_card.dart</code>, usa-o no <code>body</code> com três localidades numa <code>Column</code>, e acrescenta um parâmetro opcional <code>IconData icon</code> com valor por defeito. <code>flutter test</code> deve ficar verde no teste do cartão.</div>
 </section>
 
 <section class="slide">
@@ -312,18 +312,18 @@ class TempoApp extends StatelessWidget {
 <pre class="term"><code class="language-bash">flutter pub add google_fonts</code></pre>
 <pre data-title="lib/main.dart"><code class="language-dart">import 'package:google_fonts/google_fonts.dart';
 
-// dentro do MaterialApp
+// inside MaterialApp
 theme: ThemeData(
   colorSchemeSeed: Colors.teal,
   useMaterial3: true,
-  textTheme: GoogleFonts.interTextTheme(),   // toda a app passa a usar Inter
+  textTheme: GoogleFonts.interTextTheme(),   // the whole app now uses Inter
 ),</code></pre>
   <ul>
     <li><code>pub add</code> escreve no <code>pubspec.yaml</code>, faz o <code>pub get</code> e atualiza o <code>pubspec.lock</code>. Depois de uma dependência nova, para a app e volta a correr <code>flutter run</code>.</li>
     <li>Antes de adicionar um package, olha para o pub.dev: pontos, popularidade, data da última versão, se suporta as plataformas que precisas. Aprofundamos na aula 28.</li>
     <li>Alternativa: <code>intl</code> com <code>DateFormat('EEEE, d MMMM').format(DateTime.now())</code>. Para datas em português precisa de <code>initializeDateFormatting('pt_PT')</code>; vemos na aula 9.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: adiciona <code>google_fonts</code>, aplica uma fonte à app e usa <code>intl</code> para mostrar a data de hoje por baixo do título. Faz commit com a mensagem <code>feat: cartão de localidade e fontes</code>.</div>
+  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: adiciona <code>google_fonts</code>, aplica uma fonte à app e usa <code>intl</code> para mostrar a data de hoje por baixo do título. Faz commit com a mensagem <code>feat: location card and fonts</code>.</div>
 </section>
 
 <section class="slide" data-part="Fim">
