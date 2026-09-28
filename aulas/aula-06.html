@@ -38,7 +38,7 @@
     <li>Listar os gestos e tamanhos de toque que os utilizadores esperam, e o custo de os ignorar.</li>
     <li>Explicar o modelo de layout do Flutter: constraints go down, sizes go up, parent sets position.</li>
     <li>Construir ecrãs com <code>Row</code>, <code>Column</code>, <code>Expanded</code>, <code>Stack</code>, <code>ListView</code> e <code>GridView</code>.</li>
-    <li>Adaptar um ecrã ao tamanho disponível com <code>SafeArea</code>, <code>MediaQuery</code> e <code>LayoutBuilder</code>.</li>
+    <li>Extrair um widget próprio a partir de código que já existe, dar-lhe um ficheiro e reutilizá-lo.</li>
   </ul>
 </section>
 
@@ -103,22 +103,6 @@
     <li><strong>Modal:</strong> fluxo que interrompe (login, criar novo item, filtros) e volta ao ponto de partida ao fechar.</li>
   </ul>
   <p>Na terça, 6 de outubro, implementamos os três primeiros com <code>go_router</code>. Hoje só o layout.</p>
-</section>
-
-<section class="slide">
-  <h2>Adaptive vs responsive</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Classe de largura (Material)</th><th>Dispositivos</th><th>O que muda</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Compact</strong> &lt; 600 dp</td><td>Telemóveis em portrait</td><td>Uma coluna, bottom navigation, lista → detalhe em ecrãs separados</td></tr>
-  <tr><td><strong>Medium</strong> 600 a 840 dp</td><td>Telemóveis em landscape, tablets pequenos, foldables abertos</td><td>Navigation rail à esquerda, duas colunas possíveis</td></tr>
-  <tr><td><strong>Expanded</strong> &gt; 840 dp</td><td>Tablets, desktop, web</td><td>Lista e detalhe lado a lado, drawer permanente</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li><strong>Responsive:</strong> o mesmo layout estica e encolhe. <strong>Adaptive:</strong> layouts diferentes para classes diferentes. Precisas dos dois.</li>
-    <li>Não decidas pelo tipo de dispositivo ("é um tablet"); decide pelo espaço disponível. Um foldable muda de classe ao abrir.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> 600 dp é a fronteira entre telemóvel e tablet; a decisão faz-se pela largura disponível, não pelo modelo.</p>
 </section>
 
 <section class="slide">
@@ -302,7 +286,7 @@ Positioned(
 ),
 
 // Os dados que precisas, em lib/data.dart
-island.name                          // 'São Miguel'
+currentIsland.name                   // 'São Miguel'
 forecasts.first.type.description     // 'Parcialmente nublado'</code></pre>
   <div class="callout task"><strong>Faz</strong> Acrescenta os dois <code>Positioned</code> ao fim da lista de filhos do <code>Stack</code>, com o nome da ilha e a descrição do tempo. Repara que <code>textTheme</code> ainda não existe nesse <code>build</code>: cria-o como no <code>CurrentConditions</code>.</div>
   <p><strong>No telemóvel:</strong> o nome da ilha em branco em baixo à esquerda, por cima do gradiente, e o chip em cima à direita. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 2</em> fica verde.</p>
@@ -383,71 +367,26 @@ itemBuilder: (_, i) => DayChip(forecast: forecasts[i]),</code></pre>
 </section>
 
 <section class="slide">
-  <h2>5. SafeArea, MediaQuery e LayoutBuilder</h2>
-<pre><code class="language-dart">Widget build(BuildContext context) {
-  final size = MediaQuery.sizeOf(context);                // tamanho do ecrã; sizeOf evita rebuilds a mais
-  return Scaffold(
-    body: SafeArea(                                     // fora do notch e da barra de gestos
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final twoColumns = constraints.maxWidth >= 600;
-          if (twoColumns) {
-            return const Row(
-              children: [
-                SizedBox(width: 320, child: LocationsList()),
-                VerticalDivider(width: 1),
-                Expanded(child: ForecastDetail()),
-              ],
-            );
-          }
-          return Column(
-            children: [
-              SizedBox(height: size.height * 0.3, child: const IslandHeader()),
-              const Expanded(child: LocationsList()),
-            ],
-          );
-        },
+  <h2>Passo 4: extrair o IslandCard (opcional, trabalho de casa)</h2>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-3 &amp;&amp; flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · IslandsGrid, o que já lá está"><code class="language-dart">children: [
+  for (final i in islands)
+    Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: Image.asset(i.image, fit: BoxFit.cover)),
+          Padding(padding: const EdgeInsets.all(8), child: Text(i.name, textAlign: TextAlign.center)),
+        ],
       ),
     ),
-  );
-}</code></pre>
-  <div class="callout"><strong>Pergunta à turma</strong> Se rodar o telemóvel, qual dos dois layouts aparece, e porquê? Um <code>LayoutBuilder</code> dentro de um <code>SizedBox(width: 300)</code> vê que largura? Porque não decidir só com o <code>MediaQuery</code>?</div>
-</section>
+],
 
-<section class="slide">
-  <h2>5. Adaptar ao espaço: o que interessa</h2>
-  <ul>
-    <li><code>SafeArea</code> acrescenta padding para o notch, a barra de estado e a barra de gestos. Sem ele, o primeiro item da lista fica atrás do relógio.</li>
-    <li><code>MediaQuery.sizeOf(context)</code> dá o tamanho do ecrã inteiro. Serve para decisões globais (orientação, altura de um cabeçalho). <code>MediaQuery.of</code> reconstrói o widget a cada mudança de qualquer propriedade; prefere os métodos específicos.</li>
-    <li><code>LayoutBuilder</code> dá as constraints do <em>pai</em>, não do ecrã. É a ferramenta certa para um widget que se adapta ao espaço que lhe dão, esteja onde estiver.</li>
-    <li><code>OrientationBuilder</code> para landscape vs portrait. Mas a largura em dp diz mais do que a orientação.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> <code>MediaQuery</code> é o ecrã; <code>LayoutBuilder</code> é o espaço que o pai dá. Para layout adaptativo usa o segundo.</p>
-  </section>
-
-<section class="slide">
-  <h2>Passo 4: duas colunas em landscape (opcional, trabalho de casa)</h2>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-3 &amp;&amp; flutter pub get</code></pre>
-<pre data-title="lib/forecast_screen.dart · ForecastScreen"><code class="language-dart">// Pista: LayoutBuilder dá a largura que o pai oferece
-body: SafeArea(
-  child: LayoutBuilder(
-    builder: (context, constraints) {
-      final twoColumns = constraints.maxWidth >= 600;
-      if (twoColumns) {
-        return Row(
-          children: [
-            SizedBox(width: 360, child: ListView(children: const [/* cabeçalho e condições */])),
-            const VerticalDivider(width: 1),
-            Expanded(child: ListView(children: const [/* dias, detalhe, grelha */])),
-          ],
-        );
-      }
-      return ListView(children: const [/* o que já lá está */]);
-    },
-  ),
-),</code></pre>
-  <div class="callout task"><strong>Faz</strong> Embrulha o <code>body</code> como na pista e distribui os cinco widgets pelas duas colunas. Roda o telemóvel para testar. No fim compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</div>
-  <p><strong>No telemóvel:</strong> em landscape, cabeçalho à esquerda e o resto à direita; em portrait, tudo como antes. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 4</em> fica verde.</p>
+// Pista: o objetivo é a grelha ficar assim
+children: [for (final i in islands) IslandCard(island: i)],</code></pre>
+  <div class="callout task"><strong>Faz</strong> Cria <code>lib/island_card.dart</code> com <code>IslandCard(island: ...)</code>, como fizeste com o <code>DayChip</code>: um campo <code>final Island island</code>, construtor <code>const</code>, e o <code>Card</code> de cima no <code>build</code>. Importa-o e usa-o na grelha. O ecrã não muda nada: é isso mesmo.</div>
+  <p><strong>No telemóvel:</strong> a grelha igual ao que estava. <strong>No terminal:</strong> <code>flutter test</code>, os dois testes <em>Passo 4</em> ficam verdes. No fim compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</p>
 </section>
 
 <section class="slide">
@@ -457,7 +396,7 @@ body: SafeArea(
     <li><code>CurrentConditions</code>: nome e temperatura numa <code>Row</code>, mínima, máxima e chuva com <code>Expanded</code> (passo 1).</li>
     <li><code>DaysRow</code>: <code>ListView.separated</code> horizontal com cinco <code>DayChip</code> (passo 3).</li>
     <li><code>DetailCard</code> e <code>IslandsGrid</code>: já vinham feitos. Um <code>GridView</code> dentro de um <code>ListView</code> precisa de <code>shrinkWrap</code> e de não fazer scroll ele próprio.</li>
-    <li>Tudo dentro de um <code>ListView</code> vertical; com <code>SafeArea</code> e duas colunas no passo 4.</li>
+    <li>Tudo dentro de um <code>ListView</code> vertical. No passo 4, o <code>Card</code> da grelha passa a ser um <code>IslandCard</code> com ficheiro próprio.</li>
   </ol>
   <p>O branch <code>passo-4</code> é o estado final. Compara o teu código com ele. Ainda não há toque nem estado: isso é amanhã.</p>
   <aside class="notes">Os erros típicos de hoje: esquecer o Expanded no passo 1 e pôr um width fixo; no passo 2, Positioned fora do Stack; no passo 3, esquecer o import do day_chip.dart no forecast_screen.dart.</aside>
@@ -469,7 +408,7 @@ body: SafeArea(
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>Faz o passo 4: o ecrã adaptativo em landscape com <code>LayoutBuilder</code>, até o teste <em>Passo 4</em> ficar verde. Depois compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</li>
+        <li>Faz o passo 4: extrai o <code>IslandCard</code> da grelha, até os dois testes <em>Passo 4</em> ficarem verdes. Depois compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</li>
         <li>Lê <a href="https://docs.flutter.dev/ui/layout/constraints" target="_blank" rel="noopener">Understanding constraints</a>. Tem 29 exemplos; corre pelo menos os primeiros dez no DartPad.</li>
         <li>Amanhã às 16:00: estado, formulários e pesquisa. O ecrã de hoje vai ganhar vida.</li>
       </ul>
@@ -478,7 +417,6 @@ body: SafeArea(
       <h3>Para ler</h3>
       <ul>
         <li><a href="https://docs.flutter.dev/ui/layout" target="_blank" rel="noopener">Layouts in Flutter</a>: os widgets de layout com imagens.</li>
-        <li><a href="https://docs.flutter.dev/ui/adaptive-responsive" target="_blank" rel="noopener">Adaptive and responsive design</a>: classes de largura e exemplos.</li>
         <li><a href="https://m3.material.io/foundations/accessible-design/overview" target="_blank" rel="noopener">Material 3: accessible design</a>: alvos de toque, contraste e tamanho de texto, com os números que usámos hoje.</li>
         <li><a href="https://developer.apple.com/design/human-interface-guidelines" target="_blank" rel="noopener">Human Interface Guidelines</a>: o que a Apple espera de uma app.</li>
       </ul>
