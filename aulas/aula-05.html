@@ -48,13 +48,13 @@
   <thead><tr><th>Pasta ou ficheiro</th><th>Para que serve</th></tr></thead>
   <tbody>
   <tr><td><code>lib/</code></td><td>O teu código Dart. Tudo o que escreves vive aqui, a começar por <code>main.dart</code>.</td></tr>
-  <tr><td><code>test/</code></td><td>Testes automatizados. <code>flutter test</code> corre tudo o que aqui estiver (aula 25).</td></tr>
+  <tr><td><code>test/</code></td><td>Testes automatizados. <code>flutter test</code> corre tudo o que aqui estiver (testes numa aula mais à frente).</td></tr>
   <tr><td><code>android/</code> e <code>ios/</code></td><td>Os projetos nativos que embrulham a app: Gradle e Kotlin de um lado, Xcode e Swift do outro. Só lá vais para permissões, ícones, assinatura.</td></tr>
   <tr><td><code>web/</code>, <code>macos/</code>, <code>linux/</code>, <code>windows/</code></td><td>O mesmo para as outras plataformas. Podes apagar as que não usas.</td></tr>
   <tr><td><code>pubspec.yaml</code></td><td>O bilhete de identidade do projeto: nome, versão, dependências, assets, fontes.</td></tr>
   </tbody></table></div>
   <p><strong>Para os testes:</strong> o código da app está em <code>lib/</code>; <code>android/</code> e <code>ios/</code> são projetos nativos gerados que o Flutter embrulha.</p>
-  <aside class="notes">Abre um projeto acabado de criar no VS Code e percorre as pastas ao vivo. Mostra o tamanho da pasta android/ vs lib/. Pergunta: porque é que há um projeto Android inteiro se nós escrevemos Dart? Resposta: o embedder da aula 2.</aside>
+  <aside class="notes">Abre um projeto acabado de criar no VS Code e percorre as pastas ao vivo. Mostra o tamanho da pasta android/ vs lib/. Pergunta: porque é que há um projeto Android inteiro se nós escrevemos Dart? Resposta: o embedder de que falámos na semana passada.</aside>
 </section>
 
 <section class="slide">
@@ -64,7 +64,7 @@
     <li><strong>Nunca no repositório:</strong> <code>build/</code> (binários, centenas de MB), <code>.dart_tool/</code> (cache do compilador), <code>.idea/</code> e <code>*.iml</code> (IDE), <code>android/local.properties</code> (caminhos do teu portátil).</li>
     <li><strong>Sempre no repositório:</strong> <code>lib/</code>, <code>test/</code>, <code>pubspec.yaml</code>, <code>pubspec.lock</code>, <code>analysis_options.yaml</code>, as pastas nativas, <code>assets/</code>.</li>
     <li><code>pubspec.lock</code> commita-se em apps (todos compilam com as mesmas versões) e não se commita em packages publicados.</li>
-    <li>Segredos (chaves de API, <code>key.properties</code> da assinatura) nunca entram no git. Voltamos a isto na aula 16.</li>
+    <li>Segredos (chaves de API, <code>key.properties</code> da assinatura) nunca entram no git. Voltamos a isto numa aula mais à frente.</li>
   </ul>
   <div class="callout warn"><strong>Sinal de alarme</strong> Se o <code>git status</code> mostrar centenas de ficheiros em <code>build/</code>, o <code>.gitignore</code> não está a funcionar. Corrige antes do primeiro commit.</div>
 </section>
@@ -114,7 +114,7 @@ flutter:
   <thead><tr><th>Modo</th><th>Como compila</th><th>Para quê</th></tr></thead>
   <tbody>
   <tr><td><strong>Debug</strong></td><td>JIT na Dart VM. Asserts ligados, hot reload, DevTools, banner "DEBUG" no canto.</td><td>Desenvolver. Lento e grande; nunca serve para medir desempenho.</td></tr>
-  <tr><td><strong>Profile</strong></td><td>AOT, como release, mas mantém a telemetria para o DevTools.</td><td>Medir desempenho num telemóvel real (aula 18).</td></tr>
+  <tr><td><strong>Profile</strong></td><td>AOT, como release, mas mantém a telemetria para o DevTools.</td><td>Medir desempenho num telemóvel real (mais à frente).</td></tr>
   <tr><td><strong>Release</strong></td><td>AOT otimizado, sem asserts, sem DevTools, tree shaking.</td><td>O que vai para a loja e para os testers.</td></tr>
   </tbody></table></div>
   <p>Uma app que parece lenta em debug pode ser perfeitamente rápida em release. O contrário nunca acontece.</p>
@@ -142,7 +142,7 @@ flutter:
     <li>Um conjunto de ferramentas no browser, ligado à app em debug ou profile. Com <code>flutter run</code> aparece um link no terminal; no VS Code, comando "Flutter: Open DevTools".</li>
     <li><strong>Widget Inspector:</strong> a árvore de widgets ao vivo. "Select widget mode" deixa tocar no ecrã e ver que widget é. O <em>Layout Explorer</em> mostra as constraints (amanhã).</li>
     <li><strong>Performance:</strong> gráfico de frames; cada barra acima da linha dos 16 ms é jank. Mostra rebuilds a mais.</li>
-    <li><strong>Network:</strong> todos os pedidos HTTP com headers, corpo e tempos. Vais usar a partir da aula 11.</li>
+    <li><strong>Network:</strong> todos os pedidos HTTP com headers, corpo e tempos. Vais usar quando a app falar com a API.</li>
     <li><strong>Memory</strong> e <strong>Logging:</strong> fugas de memória e a saída de <code>debugPrint</code>.</li>
   </ul>
   <p><strong>Para os testes:</strong> o inspector é para layout, o separador Performance é para jank, e nenhum dos dois funciona em release.</p>
@@ -251,7 +251,7 @@ class WeatherApp extends StatelessWidget {
     <li><code>Container</code> junta cor, padding, borda, raio e tamanho num só widget. <code>Padding</code> e <code>SizedBox</code> são versões leves para quando só precisas de espaço.</li>
     <li><code>Column</code> empilha filhos na vertical; amanhã vemos layout a fundo.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: substitui o texto do <code>body</code> por esta <code>Column</code>. Depois troca o ícone à mão, por exemplo para <code>Icons.cloud</code> ou <code>Icons.umbrella</code>, e a cor da borda. Confirma no telemóvel a cada hot reload. O ícone passa a depender dos dados na aula 6.</div>
+  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: substitui o texto do <code>body</code> por esta <code>Column</code>. Depois troca o ícone à mão, por exemplo para <code>Icons.cloud</code> ou <code>Icons.umbrella</code>, e a cor da borda. Confirma no telemóvel a cada hot reload. O ícone passa a depender dos dados amanhã.</div>
 </section>
 
 <section class="slide">
@@ -287,7 +287,7 @@ class WeatherApp extends StatelessWidget {
 <section class="slide">
   <h2>3. O cartão: o que interessa</h2>
   <ul>
-    <li>Um widget próprio é uma classe com campos <code>final</code>, construtor <code>const</code> com parâmetros nomeados e um <code>build</code>. É exatamente o modelo de dados da aula 2 com um método a mais.</li>
+    <li>Um widget próprio é uma classe com campos <code>final</code>, construtor <code>const</code> com parâmetros nomeados e um <code>build</code>. É exatamente o modelo de dados que escreveste no DartPad com um método a mais.</li>
     <li>Usa-se como qualquer outro: <code>const LocationCard(name: 'Horta', temperature: 19.4)</code>. O <code>const</code> só é possível porque o construtor é <code>const</code> e os argumentos são literais.</li>
     <li><code>Card</code> dá elevação e cantos redondos do tema. <code>Row</code> põe os filhos lado a lado; <code>Spacer</code> empurra o resto para a direita.</li>
     <li>Um ficheiro por widget quando passa de 20 linhas. O <code>main.dart</code> importa com <code>import 'location_card.dart';</code>.</li>
@@ -304,7 +304,7 @@ class WeatherApp extends StatelessWidget {
     <li>Acrescenta uma imagem nova a <code>assets/img/</code> e ao <code>pubspec.yaml</code>. Nem <kbd>r</kbd> nem <kbd>R</kbd> chegam: <kbd>q</kbd> e <code>flutter run</code> outra vez.</li>
   </ol>
   <p><strong>Para os testes:</strong> hot reload mantém o estado e volta a chamar <code>build</code>; hot restart reinicia a app; mudar o <code>pubspec.yaml</code> exige um novo <code>flutter run</code>.</p>
-  <aside class="notes">Deixa-os fazer os quatro passos sozinhos: 8 minutos. A dúvida típica: "mudei e não aconteceu nada". Quase sempre é o ficheiro por gravar, ou uma mudança no main. Pergunta à turma o que é que o hot reload preserva e porquê (resposta: os objetos State, aula 7).</aside>
+  <aside class="notes">Deixa-os fazer os quatro passos sozinhos: 8 minutos. A dúvida típica: "mudei e não aconteceu nada". Quase sempre é o ficheiro por gravar, ou uma mudança no main. Pergunta à turma o que é que o hot reload preserva e porquê (resposta: os objetos State, que vemos numa aula mais à frente).</aside>
 </section>
 
 <section class="slide">
@@ -320,8 +320,8 @@ theme: ThemeData(
 ),</code></pre>
   <ul>
     <li><code>pub add</code> escreve no <code>pubspec.yaml</code>, faz o <code>pub get</code> e atualiza o <code>pubspec.lock</code>. Depois de uma dependência nova, para a app e volta a correr <code>flutter run</code>.</li>
-    <li>Antes de adicionar um package, olha para o pub.dev: pontos, popularidade, data da última versão, se suporta as plataformas que precisas. Aprofundamos na aula 28.</li>
-    <li>Alternativa: <code>intl</code> com <code>DateFormat('EEEE, d MMMM').format(DateTime.now())</code>. Para datas em português precisa de <code>initializeDateFormatting('pt_PT')</code>; vemos na aula 9.</li>
+    <li>Antes de adicionar um package, olha para o pub.dev: pontos, popularidade, data da última versão, se suporta as plataformas que precisas. Aprofundamos numa aula mais à frente.</li>
+    <li>Alternativa: <code>intl</code> com <code>DateFormat('EEEE, d MMMM').format(DateTime.now())</code>. Para datas em português precisa de <code>initializeDateFormatting('pt_PT')</code>; vemos numa aula mais à frente.</li>
   </ul>
   <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: adiciona <code>google_fonts</code>, aplica uma fonte à app e usa <code>intl</code> para mostrar a data de hoje por baixo do título. Faz commit com a mensagem <code>feat: location card and fonts</code>.</div>
 </section>
