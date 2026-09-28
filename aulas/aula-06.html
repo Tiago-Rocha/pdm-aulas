@@ -28,7 +28,7 @@
   <h1>UX mobile e layouts</h1>
   <p class="lead">Teoria: o que os utilizadores esperam de uma app móvel: gestos, tamanhos de toque, padrões de navegação e diferenças entre Android e iOS. Prática: o modelo de layout do Flutter e os widgets Row, Column, Expanded, Stack, ListView, GridView, SafeArea e LayoutBuilder.</p>
   <div class="meta"><span>Repositório: pdm-aula-06</span></div>
-  <aside class="notes">Pergunta quem trouxe dúvidas da comparação com solucao/ da aula 5. Recolhe três e responde em 5 minutos, no máximo. Depois pede a todos que abram uma app que usem muito (Instagram, banco, Uber) e a deixem no telemóvel: vais usá-la nos slides de gestos e navegação.</aside>
+  <aside class="notes">Pergunta quem acabou os TODOs da aula 5 e quem comparou com solucao/. Não importa: o main de hoje já é a aula 5 terminada. Recolhe três e responde em 5 minutos, no máximo. Depois pede a todos que abram uma app que usem muito (Instagram, banco, Uber) e a deixem no telemóvel: vais usá-la nos slides de gestos e navegação.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -136,14 +136,15 @@
 
 <section class="slide" data-part="Prática">
   <h2>Layout na Tempo Açores</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-06.git
-cd pdm-aula-06/starter
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-06.git
+cd pdm-aula-06
 flutter pub get
 flutter run</code></pre>
-  <p>Como ontem: <code>starter/</code> tem os <code>TODO</code>s numerados e testes de widget a falhar; <code>solucao/</code> é o estado final. O starter já traz <code>lib/dados.dart</code> com previsões estáticas para cinco dias e imagens das ilhas em <code>assets/img/</code>.</p>
+  <p>Um único projeto na raiz: abre a pasta <code>pdm-aula-06</code> no VS Code. É a app da aula 5 já terminada, mais o ecrã de previsão em <code>lib/forecast_screen.dart</code>, onde vais trabalhar. <code>lib/data.dart</code> tem os dados estáticos e não se altera.</p>
+  <p>A aula tem quatro passos. Cada passo tem um branch no repositório com o código feito: <code>passo-1</code> a <code>passo-4</code>. No fim de cada passo, quer tenhas acabado quer não, corres a linha de sincronização que está no slide e ficas com o código desse passo. Ninguém fica para trás.</p>
   <ol class="steps">
-    <li>Corre e vê o ecrã de partida: um <code>Scaffold</code> com um texto. Abre o DevTools e liga o "Select widget mode".</li>
-    <li>Abre <code>lib/ecra_previsao.dart</code>: é onde vais trabalhar. <code>lib/dados.dart</code> não se altera.</li>
+    <li>Corre e olha para o telemóvel: por baixo da temperatura há riscas amarelas e pretas. É um overflow, e é o passo 1.</li>
+    <li>Corre <code>flutter test</code>: quatro testes vermelhos, um por passo.</li>
   </ol>
   <aside class="notes">Enquanto compilam, abre o Layout Explorer do DevTools na tua máquina e deixa-o visível no projetor: vais usá-lo no slide seguinte para mostrar constraints ao vivo.</aside>
 </section>
@@ -190,6 +191,7 @@ Scaffold(
     child: Container(color: Colors.teal, width: 100, height: 100),   // o Center deixa escolher
   ),
 )</code></pre>
+  <div class="callout"><strong>Pergunta à turma</strong> Se trocar o <code>Center</code> por <code>Align(alignment: Alignment.topRight)</code>, onde fica o quadrado? E se tirar o <code>width</code> e o <code>height</code> ao <code>Container</code> que está dentro do <code>Center</code>?</div>
   <ul>
     <li>Um widget não sabe onde está nem pode escolher a posição. Só sabe os limites que recebeu.</li>
     <li>O <code>width: 100</code> do primeiro <code>Container</code> seria ignorado: o <code>Scaffold</code> dá limites apertados (tight) do tamanho do ecrã.</li>
@@ -204,7 +206,7 @@ Scaffold(
 <pre><code class="language-dart">Column(
   crossAxisAlignment: CrossAxisAlignment.start,   // alinha à esquerda
   children: [
-    Text('Ponta Delgada', style: texto.headlineSmall),
+    Text('Ponta Delgada', style: textTheme.headlineSmall),
     const Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,   // um a cada ponta
       children: [Text('Hoje'), Text('21 °C')],
@@ -221,6 +223,7 @@ Scaffold(
     ),
   ],
 )</code></pre>
+  <div class="callout"><strong>Pergunta à turma</strong> O que muda se trocar <code>spaceBetween</code> por <code>spaceEvenly</code>? Se o <code>Container</code> cinzento tivesse <code>Expanded</code> em vez de <code>Flexible</code>, que largura ficava? Como fazia para o teal ocupar três partes e o laranja uma?</div>
 </section>
 
 <section class="slide">
@@ -231,7 +234,9 @@ Scaffold(
     <li>Uma <code>Row</code> não faz scroll nem quebra linha. Se os filhos não cabem, vês as riscas amarelas e pretas de overflow. Usa <code>Expanded</code>, <code>Wrap</code> ou um <code>ListView</code> horizontal.</li>
     <li><code>mainAxisSize: MainAxisSize.min</code> faz a coluna encolher para o conteúdo em vez de ocupar toda a altura.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: constrói o cabeçalho do ecrã com o nome da localidade, a temperatura atual grande à direita e, por baixo, uma <code>Row</code> com mínima, máxima e probabilidade de chuva igualmente espaçadas. Provoca um overflow de propósito e corrige-o.</div>
+  <div class="callout task"><strong>Passo 1</strong> Em <code>CurrentConditions</code>, a <code>Row</code> da mínima, máxima e chuva tem três <code>SizedBox</code> de 160 e rebenta. Antes de tocar no código, diz o que vai acontecer quando trocares os <code>SizedBox</code> por <code>Expanded</code>. Depois faz e confirma no telemóvel. O teste <em>Passo 1</em> fica verde.</div>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-1 &amp;&amp; flutter pub get</code></pre>
+  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 1, e o que fizeste fica guardado no stash.</p>
 </section>
 
 <section class="slide">
@@ -254,16 +259,19 @@ Scaffold(
       Positioned(
         left: 16,
         bottom: 16,
-        child: Text('São Miguel', style: texto.headlineMedium?.copyWith(color: Colors.white)),
+        child: Text('São Miguel', style: textTheme.headlineMedium?.copyWith(color: Colors.white)),
       ),
     ],
   ),
 )</code></pre>
+  <div class="callout"><strong>Pergunta à turma</strong> Se tirar o <code>fit: StackFit.expand</code>, o que acontece à imagem? Como punha o texto em cima à direita? E se trocasse a ordem da imagem e do gradiente na lista?</div>
   <ul>
     <li><code>Stack</code> sobrepõe filhos pela ordem da lista: o último fica por cima. <code>Positioned</code> ancora a uma ou mais margens.</li>
     <li>O gradiente por cima da imagem é uma técnica comum em apps de viagens para garantir contraste no texto.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: cabeçalho com a imagem da ilha, nome da localidade em baixo à esquerda e um <em>chip</em> com o estado do tempo em cima à direita.</div>
+  <div class="callout task"><strong>Passo 2</strong> Em <code>IslandHeader</code>, o <code>Stack</code> com a imagem e o gradiente já lá está. Acrescenta o nome da ilha em baixo à esquerda com <code>Positioned</code>, e um <code>Chip</code> com <code>forecasts.first.type.description</code> em cima à direita. O teste <em>Passo 2</em> fica verde.</div>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-2 &amp;&amp; flutter pub get</code></pre>
+  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 2, e o que fizeste fica guardado no stash.</p>
 </section>
 
 <section class="slide">
@@ -275,14 +283,14 @@ ListView(
 
 // Lista longa: constrói só os itens visíveis, à medida do scroll
 ListView.separated(
-  itemCount: previsoes.length,
-  separatorBuilder: (_, __) => const Divider(height: 1),
+  itemCount: forecasts.length,
+  separatorBuilder: (_, _) => const Divider(height: 1),
   itemBuilder: (context, i) {
-    final p = previsoes[i];
+    final f = forecasts[i];
     return ListTile(
-      leading: Text(p.tipo.icone, style: const TextStyle(fontSize: 24)),
-      title: Text(p.dia.curta),
-      trailing: Text('${p.tMin.round()}° / ${p.tMax.round()}°'),
+      leading: Icon(f.type.icon),
+      title: Text(f.weekday),
+      trailing: Text('${f.tMin.round()}° / ${f.tMax.round()}°'),
     );
   },
 )
@@ -290,8 +298,9 @@ ListView.separated(
 // Grelha para as nove ilhas
 GridView.count(
   crossAxisCount: 3,
-  children: [for (final ilha in ilhas) Card(child: Center(child: Text(ilha)))],
+  children: [for (final i in islands) Card(child: Center(child: Text(i.name)))],
 )</code></pre>
+  <div class="callout"><strong>Pergunta à turma</strong> Se a lista tivesse mil dias, qual das duas versões congelava a app? Como ponho a lista dos dias na horizontal? Como faço a grelha ter duas colunas num telemóvel e quatro num tablet sem escrever dois layouts?</div>
 </section>
 
 <section class="slide">
@@ -304,31 +313,33 @@ GridView.count(
     <li><code>scrollDirection: Axis.horizontal</code> transforma qualquer lista numa fila deslizante.</li>
   </ul>
   <p><strong>Para os testes:</strong> <code>ListView.builder</code> constrói os itens sob demanda; <code>ListView</code> com <code>children</code> constrói todos.</p>
-  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: a lista dos 5 dias com <code>ListView.separated</code> e um <code>GridView.extent</code> com as nove ilhas, cada uma num <code>Card</code> com a imagem e o nome.</div>
+  <div class="callout task"><strong>Passo 3</strong> Cria <code>lib/day_chip.dart</code> com o widget <code>DayChip(forecast: ...)</code>: um <code>Card</code> de 72 de largura com o dia da semana, o ícone e a máxima, como o <code>LocationCard</code> de ontem. Usa-o no <code>itemBuilder</code> de <code>DaysRow</code>. Os dois testes <em>Passo 3</em> ficam verdes. A grelha das ilhas já está feita em <code>IslandsGrid</code>: lê-a.</div>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-3 &amp;&amp; flutter pub get</code></pre>
+  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 3, e o que fizeste fica guardado no stash.</p>
 </section>
 
 <section class="slide">
   <h2>5. SafeArea, MediaQuery e LayoutBuilder</h2>
 <pre><code class="language-dart">Widget build(BuildContext context) {
-  final tamanho = MediaQuery.sizeOf(context);          // tamanho do ecrã; sizeOf evita rebuilds a mais
+  final size = MediaQuery.sizeOf(context);                // tamanho do ecrã; sizeOf evita rebuilds a mais
   return Scaffold(
     body: SafeArea(                                     // fora do notch e da barra de gestos
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final duasColunas = constraints.maxWidth >= 600;
-          if (duasColunas) {
+          final twoColumns = constraints.maxWidth >= 600;
+          if (twoColumns) {
             return const Row(
               children: [
-                SizedBox(width: 320, child: ListaLocalidades()),
+                SizedBox(width: 320, child: LocationsList()),
                 VerticalDivider(width: 1),
-                Expanded(child: DetalhePrevisao()),
+                Expanded(child: ForecastDetail()),
               ],
             );
           }
           return Column(
             children: [
-              SizedBox(height: tamanho.height * 0.3, child: const CabecalhoIlha()),
-              const Expanded(child: ListaLocalidades()),
+              SizedBox(height: size.height * 0.3, child: const IslandHeader()),
+              const Expanded(child: LocationsList()),
             ],
           );
         },
@@ -336,6 +347,7 @@ GridView.count(
     ),
   );
 }</code></pre>
+  <div class="callout"><strong>Pergunta à turma</strong> Se rodar o telemóvel, qual dos dois layouts aparece, e porquê? Um <code>LayoutBuilder</code> dentro de um <code>SizedBox(width: 300)</code> vê que largura? Porque não decidir só com o <code>MediaQuery</code>?</div>
 </section>
 
 <section class="slide">
@@ -347,29 +359,22 @@ GridView.count(
     <li><code>OrientationBuilder</code> para landscape vs portrait. Mas a largura em dp diz mais do que a orientação.</li>
   </ul>
   <p><strong>Para os testes:</strong> <code>MediaQuery</code> é o ecrã; <code>LayoutBuilder</code> é o espaço que o pai dá. Para layout adaptativo usa o segundo.</p>
-  <div class="callout task"><strong>Exercício 4</strong> Resolve o <code>TODO 4</code>: embrulha o ecrã em <code>SafeArea</code> e usa <code>LayoutBuilder</code> para mostrar a lista dos dias ao lado do cabeçalho quando a largura passa de 600 dp. Testa rodando o telemóvel.</div>
+  <div class="callout task"><strong>Passo 4 (opcional, trabalho de casa)</strong> Em <code>ForecastScreen</code>, embrulha o <code>body</code> em <code>SafeArea</code> e usa <code>LayoutBuilder</code> para mostrar o cabeçalho à esquerda e os dias, o detalhe e a grelha à direita quando a largura chega a 600 dp. Testa rodando o telemóvel. O teste <em>Passo 4</em> fica verde.</div>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-4 &amp;&amp; flutter pub get</code></pre>
+  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 4, e o que fizeste fica guardado no stash.</p>
 </section>
 
 <section class="slide">
-  <h2>6. Exercício final: previsão a 5 dias</h2>
-<pre><code class="language-dart">SizedBox(
-  height: 96,
-  child: ListView.separated(
-    scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    itemCount: previsoes.length,
-    separatorBuilder: (_, __) => const SizedBox(width: 8),
-    itemBuilder: (_, i) => DiaChip(previsao: previsoes[i]),   // TODO 5: cria este widget
-  ),
-)</code></pre>
+  <h2>6. Onde ficámos</h2>
   <ol class="steps">
-    <li>Cabeçalho com <code>Stack</code> (exercício 2) no topo.</li>
-    <li>Fila horizontal de dias: cada <code>DiaChip</code> é um <code>Card</code> com o dia da semana, o ícone e a máxima.</li>
-    <li>Por baixo, um <code>CartaoDetalhe</code> com o primeiro dia: mínima, máxima, vento, chuva, em duas colunas de <code>Row</code>s.</li>
-    <li>Tudo dentro de um <code>ListView</code> vertical para caber em qualquer ecrã, com <code>SafeArea</code>.</li>
+    <li><code>IslandHeader</code>: <code>Stack</code> com a imagem, o gradiente, o nome e o chip (passo 2).</li>
+    <li><code>CurrentConditions</code>: nome e temperatura numa <code>Row</code>, mínima, máxima e chuva com <code>Expanded</code> (passo 1).</li>
+    <li><code>DaysRow</code>: <code>ListView.separated</code> horizontal com cinco <code>DayChip</code> (passo 3).</li>
+    <li><code>DetailCard</code> e <code>IslandsGrid</code>: já vinham feitos. Um <code>GridView</code> dentro de um <code>ListView</code> precisa de <code>shrinkWrap</code> e de não fazer scroll ele próprio.</li>
+    <li>Tudo dentro de um <code>ListView</code> vertical; com <code>SafeArea</code> e duas colunas no passo 4.</li>
   </ol>
-  <div class="callout task"><strong>Exercício 5</strong> Termina o ecrã com dados estáticos até os testes de <code>test/ecra_previsao_test.dart</code> ficarem verdes. Ainda não há toque nem estado: isso é amanhã.</div>
-  <aside class="notes">Reserva 25 minutos para este exercício. Circula: os erros típicos são a Row com overflow no CartaoDetalhe e o ListView dentro da Column sem Expanded. Quem acabar cedo faz o TODO 6 (landscape) que é o trabalho de casa.</aside>
+  <p>O branch <code>passo-4</code> é o estado final. Compara o teu código com ele. Ainda não há toque nem estado: isso é amanhã.</p>
+  <aside class="notes">Os erros típicos de hoje: esquecer o Expanded no passo 1 e pôr um width fixo; no passo 2, Positioned fora do Stack; no passo 3, esquecer o import do day_chip.dart no forecast_screen.dart.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -378,7 +383,7 @@ GridView.count(
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>Torna o ecrã de previsão adaptativo em landscape: cabeçalho à esquerda, dias e detalhe à direita, com <code>LayoutBuilder</code>. É o <code>TODO 6</code> do starter.</li>
+        <li>Faz o passo 4: o ecrã adaptativo em landscape com <code>LayoutBuilder</code>, até o teste <em>Passo 4</em> ficar verde. Depois compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</li>
         <li>Lê <a href="https://docs.flutter.dev/ui/layout/constraints" target="_blank" rel="noopener">Understanding constraints</a>. Tem 29 exemplos; corre pelo menos os primeiros dez no DartPad.</li>
         <li>Amanhã às 16:00: estado, formulários e pesquisa. O ecrã de hoje vai ganhar vida.</li>
       </ul>

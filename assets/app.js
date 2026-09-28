@@ -186,7 +186,7 @@
   });
 
   // ----- Links para repositórios da organização -----
-  var ORG = "pdm-daw-2026"; // TODO: nome real da organização no GitHub
+  var ORG = "Tiago-Rocha";
   document.querySelectorAll("a.repo[data-repo]").forEach(function (a) {
     a.href = "https://github.com/" + ORG + "/" + a.getAttribute("data-repo");
     a.target = "_blank"; a.rel = "noopener";
