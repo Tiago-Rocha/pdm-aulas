@@ -127,7 +127,7 @@ flutter:
   <div class="table-wrap"><table>
   <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
   <tbody>
-  <tr><td><code>flutter run</code></td><td>Compila em debug e instala no dispositivo escolhido. No terminal: <kbd>r</kbd> hot reload, <kbd>R</kbd> hot restart, <kbd>q</kbd> sair. <code>-d</code> escolhe o dispositivo, <code>--release</code> o modo.</td></tr>
+  <tr><td><code>flutter run</code></td><td>Compila em debug e instala no dispositivo escolhido. No VS Code é o <kbd>F5</kbd>, com o dispositivo escolhido na barra inferior; guardar um ficheiro faz hot reload e o botão ↻ faz hot restart. No terminal: <kbd>r</kbd> hot reload, <kbd>R</kbd> hot restart, <kbd>q</kbd> sair. <code>-d</code> escolhe o dispositivo, <code>--release</code> o modo.</td></tr>
   <tr><td><code>flutter build apk</code> / <code>appbundle</code> / <code>ipa</code></td><td>Gera o binário de release. O <code>.aab</code> é o que vai para o Google Play.</td></tr>
   <tr><td><code>flutter analyze</code></td><td>Corre o analisador estático e os lints sem compilar. Zero avisos é a regra do projeto.</td></tr>
   <tr><td><code>flutter test</code></td><td>Corre os testes em <code>test/</code>.</td></tr>
@@ -164,11 +164,10 @@ flutter:
   <h2>O primeiro repositório da UC</h2>
 <pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-05.git
 cd pdm-aula-05/starter
-flutter pub get
-flutter run</code></pre>
+flutter pub get</code></pre>
   <p>Todos os repositórios das aulas têm a mesma forma: <code>starter/</code> é o projeto por onde começas, com <code>TODO</code>s numerados no código e testes a falhar em <code>test/</code>; <code>solucao/</code> é o estado final, para comparares no fim, não antes.</p>
   <ol class="steps">
-    <li>Clona, entra em <code>starter/</code>, corre. A app tem de aparecer no teu telemóvel com um texto no centro.</li>
+    <li>Clona. Abre a pasta <code>starter/</code> no VS Code. Na barra inferior, à direita, escolhe o dispositivo: o teu telemóvel. Depois <kbd>F5</kbd> (Run → Start Debugging). A app tem de aparecer no teu telemóvel com um texto no centro.</li>
     <li>Abre <code>lib/main.dart</code> no VS Code e procura <code>TODO 1</code>.</li>
     <li>Corre <code>flutter test</code> uma vez: vê os testes vermelhos. O objetivo da aula é pô-los verdes.</li>
   </ol>
@@ -298,10 +297,10 @@ class WeatherApp extends StatelessWidget {
 <section class="slide">
   <h2>4. Hot reload e hot restart na prática</h2>
   <ol class="steps">
-    <li>Com a app a correr, muda <code>Colors.teal</code> para <code>Colors.indigo</code> e carrega em <kbd>r</kbd>. A cor muda, o resto fica igual. Isto é hot reload: código novo, estado antigo.</li>
+    <li>Com a app a correr, muda <code>Colors.teal</code> para <code>Colors.indigo</code> e guarda o ficheiro: o VS Code faz hot reload ao guardar. A cor muda, o resto fica igual. Isto é hot reload: código novo, estado antigo.</li>
     <li>Muda a temperatura de um cartão e faz hot reload. Muda. O <code>build</code> foi chamado outra vez com o código novo.</li>
-    <li>Muda o <code>main()</code> para <code>runApp(const OutraApp())</code> (cria uma <code>OutraApp</code> que só tem um <code>Text</code>). Hot reload não chega: o <code>main</code> só corre no arranque. Carrega em <kbd>R</kbd>.</li>
-    <li>Acrescenta uma imagem nova a <code>assets/img/</code> e ao <code>pubspec.yaml</code>. Nem <kbd>r</kbd> nem <kbd>R</kbd> chegam: <kbd>q</kbd> e <code>flutter run</code> outra vez.</li>
+    <li>Muda o <code>main()</code> para <code>runApp(const OutraApp())</code> (cria uma <code>OutraApp</code> que só tem um <code>Text</code>). Hot reload não chega: o <code>main</code> só corre no arranque. Hot restart: o botão ↻ da barra de depuração.</li>
+    <li>Acrescenta uma imagem nova a <code>assets/img/</code> e ao <code>pubspec.yaml</code>. Nem guardar nem o botão ↻ chegam: pára a app (■) e <kbd>F5</kbd> outra vez.</li>
   </ol>
   <p><strong>Para os testes:</strong> hot reload mantém o estado e volta a chamar <code>build</code>; hot restart reinicia a app; mudar o <code>pubspec.yaml</code> exige um novo <code>flutter run</code>.</p>
   <aside class="notes">Deixa-os fazer os quatro passos sozinhos: 8 minutos. A dúvida típica: "mudei e não aconteceu nada". Quase sempre é o ficheiro por gravar, ou uma mudança no main. Pergunta à turma o que é que o hot reload preserva e porquê (resposta: os objetos State, que vemos numa aula mais à frente).</aside>
@@ -319,7 +318,7 @@ theme: ThemeData(
   textTheme: GoogleFonts.interTextTheme(),   // the whole app now uses Inter
 ),</code></pre>
   <ul>
-    <li><code>pub add</code> escreve no <code>pubspec.yaml</code>, faz o <code>pub get</code> e atualiza o <code>pubspec.lock</code>. Depois de uma dependência nova, para a app e volta a correr <code>flutter run</code>.</li>
+    <li><code>pub add</code> escreve no <code>pubspec.yaml</code>, faz o <code>pub get</code> e atualiza o <code>pubspec.lock</code>. Depois de uma dependência nova, pára a app (■) e <kbd>F5</kbd> outra vez.</li>
     <li>Antes de adicionar um package, olha para o pub.dev: pontos, popularidade, data da última versão, se suporta as plataformas que precisas. Aprofundamos numa aula mais à frente.</li>
     <li>Alternativa: <code>intl</code> com <code>DateFormat('EEEE, d MMMM').format(DateTime.now())</code>. Para datas em português precisa de <code>initializeDateFormatting('pt_PT')</code>; vemos numa aula mais à frente.</li>
   </ul>
