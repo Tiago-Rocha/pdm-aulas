@@ -141,7 +141,7 @@ cd pdm-aula-06
 flutter pub get
 flutter run</code></pre>
   <p>Um único projeto na raiz: abre a pasta <code>pdm-aula-06</code> no VS Code. É a app da aula 5 já terminada, mais o ecrã de previsão em <code>lib/forecast_screen.dart</code>, onde vais trabalhar. <code>lib/data.dart</code> tem os dados estáticos e não se altera.</p>
-  <p>A aula tem quatro passos. Cada passo tem um branch no repositório com o código feito: <code>passo-1</code> a <code>passo-4</code>. No fim de cada passo, quer tenhas acabado quer não, corres a linha de sincronização que está no slide e ficas com o código desse passo. Ninguém fica para trás.</p>
+  <p>A aula tem quatro passos, um slide cada. Cada slide de passo começa com uma linha <code>git checkout</code> que te põe no ponto de partida desse passo, quer tenhas acabado o anterior quer não. Depois mostra o código que vais usar, e o que tens de fazer. O branch <code>passo-N</code> é o passo N feito; <code>passo-4</code> é o estado final.</p>
   <ol class="steps">
     <li>Corre e olha para o telemóvel: por baixo da temperatura há riscas amarelas e pretas. É um overflow, e é o passo 1.</li>
     <li>Corre <code>flutter test</code>: quatro testes vermelhos, um por passo.</li>
@@ -234,9 +234,24 @@ Scaffold(
     <li>Uma <code>Row</code> não faz scroll nem quebra linha. Se os filhos não cabem, vês as riscas amarelas e pretas de overflow. Usa <code>Expanded</code>, <code>Wrap</code> ou um <code>ListView</code> horizontal.</li>
     <li><code>mainAxisSize: MainAxisSize.min</code> faz a coluna encolher para o conteúdo em vez de ocupar toda a altura.</li>
   </ul>
-  <div class="callout task"><strong>Passo 1</strong> Em <code>CurrentConditions</code>, a <code>Row</code> da mínima, máxima e chuva tem três <code>SizedBox</code> de 160 e rebenta. Antes de tocar no código, diz o que vai acontecer quando trocares os <code>SizedBox</code> por <code>Expanded</code>. Depois faz e confirma no telemóvel. O teste <em>Passo 1</em> fica verde.</div>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-1 &amp;&amp; flutter pub get</code></pre>
-  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 1, e o que fizeste fica guardado no stash.</p>
+  </section>
+
+<section class="slide">
+  <h2>Passo 1: corrigir o overflow</h2>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout main &amp;&amp; flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · CurrentConditions"><code class="language-dart">// Está assim: três larguras fixas, 3 × 160 = 480, e o telemóvel tem 360
+Row(
+  children: [
+    SizedBox(width: 160, child: _Measure('Mín', '${today.tMin.round()} °C')),
+    SizedBox(width: 160, child: _Measure('Máx', '${today.tMax.round()} °C')),
+    SizedBox(width: 160, child: _Measure('Chuva', '${today.rainChance} %')),
+  ],
+)
+
+// Pista: Expanded dá a cada filho uma parte igual do que sobra
+Expanded(child: _Measure('Mín', '${today.tMin.round()} °C')),</code></pre>
+  <div class="callout task"><strong>Faz</strong> Antes de tocar no código, diz o que vai acontecer quando trocares os três <code>SizedBox</code> por <code>Expanded</code>. Depois faz e carrega em <kbd>r</kbd>.</div>
+  <p><strong>No telemóvel:</strong> as riscas amarelas e pretas desaparecem e os três valores ficam igualmente espaçados. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 1</em> fica verde.</p>
 </section>
 
 <section class="slide">
@@ -269,9 +284,28 @@ Scaffold(
     <li><code>Stack</code> sobrepõe filhos pela ordem da lista: o último fica por cima. <code>Positioned</code> ancora a uma ou mais margens.</li>
     <li>O gradiente por cima da imagem é uma técnica comum em apps de viagens para garantir contraste no texto.</li>
   </ul>
-  <div class="callout task"><strong>Passo 2</strong> Em <code>IslandHeader</code>, o <code>Stack</code> com a imagem e o gradiente já lá está. Acrescenta o nome da ilha em baixo à esquerda com <code>Positioned</code>, e um <code>Chip</code> com <code>forecasts.first.type.description</code> em cima à direita. O teste <em>Passo 2</em> fica verde.</div>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-2 &amp;&amp; flutter pub get</code></pre>
-  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 2, e o que fizeste fica guardado no stash.</p>
+  </section>
+
+<section class="slide">
+  <h2>Passo 2: nome e chip sobre a imagem</h2>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-1 &amp;&amp; flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · IslandHeader, dentro do Stack"><code class="language-dart">// Pista: um filho com Positioned fica onde disseres; os outros ficam por baixo
+Positioned(
+  left: 16,
+  bottom: 16,
+  child: Text('...', style: textTheme.headlineMedium?.copyWith(color: Colors.white)),
+),
+Positioned(
+  top: 12,
+  right: 12,
+  child: Chip(label: Text('...')),
+),
+
+// Os dados que precisas, em lib/data.dart
+island.name                          // 'São Miguel'
+forecasts.first.type.description     // 'Parcialmente nublado'</code></pre>
+  <div class="callout task"><strong>Faz</strong> Acrescenta os dois <code>Positioned</code> ao fim da lista de filhos do <code>Stack</code>, com o nome da ilha e a descrição do tempo. Repara que <code>textTheme</code> ainda não existe nesse <code>build</code>: cria-o como no <code>CurrentConditions</code>.</div>
+  <p><strong>No telemóvel:</strong> o nome da ilha em branco em baixo à esquerda, por cima do gradiente, e o chip em cima à direita. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 2</em> fica verde.</p>
 </section>
 
 <section class="slide">
@@ -313,9 +347,39 @@ GridView.count(
     <li><code>scrollDirection: Axis.horizontal</code> transforma qualquer lista numa fila deslizante.</li>
   </ul>
   <p><strong>Para os testes:</strong> <code>ListView.builder</code> constrói os itens sob demanda; <code>ListView</code> com <code>children</code> constrói todos.</p>
-  <div class="callout task"><strong>Passo 3</strong> Cria <code>lib/day_chip.dart</code> com o widget <code>DayChip(forecast: ...)</code>: um <code>Card</code> de 72 de largura com o dia da semana, o ícone e a máxima, como o <code>LocationCard</code> de ontem. Usa-o no <code>itemBuilder</code> de <code>DaysRow</code>. Os dois testes <em>Passo 3</em> ficam verdes. A grelha das ilhas já está feita em <code>IslandsGrid</code>: lê-a.</div>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-3 &amp;&amp; flutter pub get</code></pre>
-  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 3, e o que fizeste fica guardado no stash.</p>
+  </section>
+
+<section class="slide">
+  <h2>Passo 3: escrever o DayChip</h2>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-2 &amp;&amp; flutter pub get</code></pre>
+<pre data-title="lib/day_chip.dart (novo) e lib/forecast_screen.dart · DaysRow"><code class="language-dart">// Pista: a mesma forma do LocationCard de ontem
+class DayChip extends StatelessWidget {
+  const DayChip({super.key, required this.forecast});
+
+  final DayForecast forecast;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      child: Card(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // dia da semana: forecast.weekday
+            // ícone: forecast.type.icon
+            // máxima: '${forecast.tMax.round()}°'
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Em DaysRow, troca o Card provisório por:
+itemBuilder: (_, i) => DayChip(forecast: forecasts[i]),</code></pre>
+  <div class="callout task"><strong>Faz</strong> Cria o ficheiro, completa os três filhos da <code>Column</code> com <code>Text</code> e <code>Icon</code>, importa-o em <code>forecast_screen.dart</code> e usa-o no <code>itemBuilder</code>. A grelha das ilhas em <code>IslandsGrid</code> já está feita: lê-a.</div>
+  <p><strong>No telemóvel:</strong> cinco cartões na fila horizontal, cada um com o dia, o ícone e a máxima. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 3 (os dois)</em> fica verde.</p>
 </section>
 
 <section class="slide">
@@ -359,9 +423,31 @@ GridView.count(
     <li><code>OrientationBuilder</code> para landscape vs portrait. Mas a largura em dp diz mais do que a orientação.</li>
   </ul>
   <p><strong>Para os testes:</strong> <code>MediaQuery</code> é o ecrã; <code>LayoutBuilder</code> é o espaço que o pai dá. Para layout adaptativo usa o segundo.</p>
-  <div class="callout task"><strong>Passo 4 (opcional, trabalho de casa)</strong> Em <code>ForecastScreen</code>, embrulha o <code>body</code> em <code>SafeArea</code> e usa <code>LayoutBuilder</code> para mostrar o cabeçalho à esquerda e os dias, o detalhe e a grelha à direita quando a largura chega a 600 dp. Testa rodando o telemóvel. O teste <em>Passo 4</em> fica verde.</div>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-4 &amp;&amp; flutter pub get</code></pre>
-  <p class="small">Acabaste ou ficaste preso? Corre esta linha e carrega em <kbd>R</kbd> na app. Ficas com o código do passo 4, e o que fizeste fica guardado no stash.</p>
+  </section>
+
+<section class="slide">
+  <h2>Passo 4: duas colunas em landscape (opcional, trabalho de casa)</h2>
+<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-3 &amp;&amp; flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · ForecastScreen"><code class="language-dart">// Pista: LayoutBuilder dá a largura que o pai oferece
+body: SafeArea(
+  child: LayoutBuilder(
+    builder: (context, constraints) {
+      final twoColumns = constraints.maxWidth >= 600;
+      if (twoColumns) {
+        return Row(
+          children: [
+            SizedBox(width: 360, child: ListView(children: const [/* cabeçalho e condições */])),
+            const VerticalDivider(width: 1),
+            Expanded(child: ListView(children: const [/* dias, detalhe, grelha */])),
+          ],
+        );
+      }
+      return ListView(children: const [/* o que já lá está */]);
+    },
+  ),
+),</code></pre>
+  <div class="callout task"><strong>Faz</strong> Embrulha o <code>body</code> como na pista e distribui os cinco widgets pelas duas colunas. Roda o telemóvel para testar. No fim compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</div>
+  <p><strong>No telemóvel:</strong> em landscape, cabeçalho à esquerda e o resto à direita; em portrait, tudo como antes. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 4</em> fica verde.</p>
 </section>
 
 <section class="slide">
