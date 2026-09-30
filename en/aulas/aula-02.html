@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 02 · How Flutter works, and Dart I · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* This lesson only: in projector mode use the width of the screen, so the code needs no horizontal scrolling.
+   If a line still does not fit, it wraps instead of being hidden (the Copy button copies the whole line anyway). */
+html.proj.deck, html.proj header.site .wrap, html.proj .deckbar .inner, html.proj .deck { max-width: min(1600px, 100vw - 48px); }
+html.proj .deck .slide pre, html.proj .deck .slide pre code { white-space: pre-wrap; overflow-wrap: normal; word-break: normal; }
+html.proj .deck .slide pre { font-size: clamp(.7rem, 1.4vw, .8rem); } /* on narrow projectors (1280 px) it shrinks a little instead of wrapping */
+/* Section 4: read-only blocks (yellow bar) and the table of higher-order functions */
+pre.ler { box-shadow: inset 5px 0 0 var(--warn); }
+pre.ler[data-title]::before { color: var(--warn); }
+.deck .slide table.hof { font-size: 1.05rem; }
+.deck .slide table.hof td:nth-child(2) { font-size: 1.5em; white-space: nowrap; }
+.deck .slide table.hof code { font-size: 1em; white-space: nowrap; }
+</style>
+</head>
+<body data-aula="2">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 02 · Week 3 · Tuesday, 22 September 2026 · 08:30 to 10:30</p>
+  <h1>How Flutter works, and Dart I</h1>
+  <p class="lead">Warm-up: the setup continues, with the emulator installing in the background. Theory: what happens between the code and the pixels on the screen, and why hot reload is possible. Practice: Dart in DartPad, with nothing to install, and the first repository on GitHub.</p>
+    <aside class="notes">Start by asking who ended up with a clean flutter doctor yesterday. Those who did not sort it out in the last 15 minutes of the lesson, not now.</aside>
+</section>
+
+<section class="slide" data-part="Warm-up">
+  <h2>Continuing the setup: what runs during the theory</h2>
+  <p>Yesterday we did the base installation. Today the slow part starts: the emulator. If you have an Android phone with a cable you can skip this step.</p>
+  <ol class="steps">
+    <li>Android Studio → welcome screen → three-dot menu → <strong>Virtual Device Manager</strong> → <strong>+</strong>.</li>
+    <li><strong>Medium Phone</strong> → Next → accept the suggested system image → Finish. It downloads about 1 GB: it runs during the theory.</li>
+    <li>On Windows, if it asks to enable the <em>Windows Hypervisor Platform</em>: accept; it forces a restart, so do it at the end of the lesson or at home.</li>
+  </ol>
+  <div class="shots-2">
+    <figure class="shot"><img src="../../assets/img/instalacao/as-device-manager.png" alt="Android Studio Device Manager with the + button to add a virtual device"><figcaption><strong>Device Manager:</strong> the <strong>+</strong> creates the emulator; the triangle starts it.</figcaption></figure>
+    <figure class="shot"><img src="../../assets/img/instalacao/as-add-device.png" alt="Add Device window with the list of phones, Medium Phone and Pixel"><figcaption><strong>Add Device:</strong> Medium Phone is the lightest; any Pixel will do.</figcaption></figure>
+  </div>
+  <aside class="notes">Those who have not finished yesterday's installation carry on with the guide while the others create the emulator; go case by case (folders, PATH, licences) in the first 15 minutes and during the practice. The emulator only needs to be ready on Friday.</aside>
+</section>
+
+<section class="slide">
+  <h2>Status check</h2>
+  <ul class="checklist">
+    <li><code>flutter --version</code> answers in a new terminal.</li>
+    <li>Android Studio installed, Command-line Tools ticked, licences accepted (<code>flutter doctor --android-licenses</code>).</li>
+    <li><code>flutter doctor</code>: ✓ on Flutter, Android toolchain and Android Studio.</li>
+    <li>Emulator downloading, or an Android phone with USB debugging.</li>
+    <li>GitHub account created and email confirmed (it is needed in the last half hour today).</li>
+  </ul>
+  <p>Whatever is missing is left for home, with the <a href="../guia-instalacao.html">guide</a>; today's practice runs in the browser and does not depend on any of this.</p>
+  <aside class="notes">Show of hands per item. Today's practice is in DartPad on purpose: nobody is stuck because of the installation. The push at the end only needs Git, VS Code and a GitHub account.</aside>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Three layers</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="The three layers of Flutter: framework in Dart, engine in C++, embedder per platform; underneath, the operating system">
+    <rect x="40" y="20" width="820" height="62" rx="10" class="box accent"/>
+    <text x="60" y="46" class="t b">Framework · Dart</text>
+    <text x="60" y="68" class="t s">Material and Cupertino · widgets · layout · animations · gestures · theme. Open source inside the SDK.</text>
+    <rect x="40" y="100" width="820" height="62" rx="10" class="box"/>
+    <text x="60" y="126" class="t b">Engine · C++</text>
+    <text x="60" y="148" class="t s">Impeller draws · Dart VM (JIT in debug) or AOT code (release) · text and images · channels to the platform</text>
+    <rect x="40" y="180" width="820" height="62" rx="10" class="box"/>
+    <text x="60" y="206" class="t b">Embedder · Kotlin/Java, Swift/Objective-C, C++</text>
+    <text x="60" y="228" class="t s">Creates the Activity or the window · delivers touches and lifecycle · accessibility · platform channels</text>
+    <rect x="40" y="262" width="820" height="28" rx="8" class="box muted"/>
+    <text x="450" y="281" class="t s" text-anchor="middle">Operating system: a surface to draw on and touch events</text>
+    <text x="840" y="46" class="t s" text-anchor="end">the app lives here</text>
+  </svg>
+  <figcaption>The app runs in the framework. The system only hands over a surface and the touches; Flutter does the rest.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Layer</th><th>Written in</th><th>What it does</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Framework</strong></td><td>Dart</td><td>What you use day to day: widgets (Material, Cupertino), layout, animations, gestures, theme. Open Dart code, inside the SDK.</td></tr>
+  <tr><td><strong>Engine</strong></td><td>C++</td><td>Draws (Impeller), runs the Dart code (Dart VM in development, AOT code in release), handles text and images, and talks to the platform.</td></tr>
+  <tr><td><strong>Embedder</strong></td><td>Kotlin/Java, Swift/Objective-C, C++</td><td>Specific to each system: creates the window or the Activity, delivers touch events, lifecycle, accessibility, and channels to native code.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide">
+  <h2>The system provides a surface and the touches. The rest is Flutter.</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="Three cards: the operating system lends a blank rectangle and delivers the touches; Flutter paints every pixel on it; hardware such as the camera, GPS and notifications is only reached over a bridge called a platform channel, which plugins hide">
+    <rect x="20" y="16" width="270" height="240" rx="12" class="box muted"/>
+    <rect x="95" y="46" width="120" height="110" rx="6" class="box"/>
+    <text x="155" y="106" class="t s" text-anchor="middle" style="font-size:12px">blank surface</text>
+    <ellipse cx="220" cy="150" rx="14" ry="20" class="box warn"/>
+    <text x="155" y="196" class="t b" text-anchor="middle">Operating system</text>
+    <text x="155" y="217" class="t s" text-anchor="middle">Lends a rectangle</text>
+    <text x="155" y="235" class="t s" text-anchor="middle">and delivers the touches.</text>
+
+    <rect x="315" y="16" width="270" height="240" rx="12" class="box muted"/>
+    <g>
+      <rect x="392" y="46" width="24" height="24" class="box accent"/><rect x="418" y="46" width="24" height="24" class="box accent"/><rect x="444" y="46" width="24" height="24" class="box"/><rect x="470" y="46" width="24" height="24" class="box"/>
+      <rect x="392" y="72" width="24" height="24" class="box"/><rect x="418" y="72" width="24" height="24" class="box ok"/><rect x="444" y="72" width="24" height="24" class="box ok"/><rect x="470" y="72" width="24" height="24" class="box"/>
+      <rect x="392" y="98" width="24" height="24" class="box"/><rect x="418" y="98" width="24" height="24" class="box"/><rect x="444" y="98" width="24" height="24" class="box ok"/><rect x="470" y="98" width="24" height="24" class="box"/>
+      <rect x="392" y="124" width="24" height="24" class="box"/><rect x="418" y="124" width="24" height="24" class="box"/><rect x="444" y="124" width="24" height="24" class="box"/><rect x="470" y="124" width="24" height="24" class="box"/>
+    </g>
+    <text x="450" y="196" class="t b" text-anchor="middle">Flutter</text>
+    <text x="450" y="217" class="t s" text-anchor="middle">Paints every pixel: the same on a</text>
+    <text x="450" y="235" class="t s" text-anchor="middle">2019 Samsung and a 2026 iPhone.</text>
+
+    <rect x="610" y="16" width="270" height="240" rx="12" class="box muted"/>
+    <rect x="660" y="56" width="44" height="34" rx="6" class="box"/><circle cx="682" cy="73" r="9" class="box accent"/>
+    <path d="M745 92 a14 14 0 1 1 28 0 c0 12 -14 22 -14 30 c0 -8 -14 -18 -14 -30 z" class="box ok"/>
+    <path d="M822 60 a12 12 0 0 1 12 12 v10 l6 8 h-36 l6 -8 v-10 a12 12 0 0 1 12 -12 z" class="box warn"/>
+    <line x1="590" y1="120" x2="612" y2="120" class="arrow dashed"/>
+    <text x="745" y="132" class="t s" text-anchor="middle" style="font-size:12px">camera · GPS · notifications</text>
+    <text x="745" y="196" class="t b" text-anchor="middle">Hardware and services</text>
+    <text x="745" y="217" class="t s" text-anchor="middle">Only over a bridge (platform channel),</text>
+    <text x="745" y="235" class="t s" text-anchor="middle">which the pub.dev plugins hide.</text>
+    <text x="450" y="284" class="t s" text-anchor="middle">A native map or video comes in over the same bridge, as a platform view.</text>
+  </svg>
+  <figcaption>The system does not know what the app draws; it only sees the painted rectangle.</figcaption>
+  </figure>
+  <aside class="notes">Draw it on the board if it helps: "OS" box → surface + touches → "Flutter" box → app; arrows back to the hardware with the word "bridge". Today it is enough to know that the bridge exists.</aside>
+</section>
+
+<section class="slide">
+  <h2>Everything is a widget</h2>
+  <p>A widget is an immutable Dart object that describes a piece of interface. They are composed one inside another in a tree.</p>
+<pre data-title="lib/main.dart"><code class="language-dart">import 'package:flutter/material.dart';
+
+void main() => runApp(const TempoApp());
+
+class TempoApp extends StatelessWidget {
+  const TempoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Tempo Açores')),
+        body: const Center(child: Text('Ponta Delgada · 21 °C')),
+      ),
+    );
+  }
+}</code></pre>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 270" role="img" aria-label="On the left, the widget tree of the code: MaterialApp contains Scaffold, which contains AppBar with Text and Center with Text. On the right, the three trees in parallel: widgets create elements, which create render objects">
+    <text x="40" y="18" class="t s">Widget tree of the code above</text>
+    <rect x="40" y="32" width="140" height="34" rx="8" class="box accent"/>
+    <text x="110" y="54" class="t mono" text-anchor="middle">MaterialApp</text>
+    <rect x="40" y="92" width="140" height="34" rx="8" class="box"/>
+    <text x="110" y="114" class="t mono" text-anchor="middle">Scaffold</text>
+    <rect x="40" y="152" width="140" height="34" rx="8" class="box"/>
+    <text x="110" y="174" class="t mono" text-anchor="middle">AppBar</text>
+    <rect x="230" y="152" width="140" height="34" rx="8" class="box"/>
+    <text x="300" y="174" class="t mono" text-anchor="middle">Center</text>
+    <rect x="30" y="212" width="184" height="34" rx="8" class="box"/>
+    <text x="122" y="234" class="t mono" text-anchor="middle">Text('Tempo Açores')</text>
+    <rect x="230" y="212" width="244" height="34" rx="8" class="box"/>
+    <text x="352" y="234" class="t mono" text-anchor="middle">Text('Ponta Delgada · 21 °C')</text>
+    <line x1="110" y1="68" x2="110" y2="90" class="arrow"/>
+    <line x1="110" y1="128" x2="110" y2="150" class="arrow"/>
+    <polyline points="110,128 110,139 300,139 300,150" class="arrow"/>
+    <line x1="110" y1="188" x2="110" y2="210" class="arrow"/>
+    <line x1="300" y1="188" x2="300" y2="210" class="arrow"/>
+    <text x="480" y="18" class="t s">Three trees in parallel</text>
+    <rect x="480" y="32" width="390" height="56" rx="10" class="box accent"/>
+    <text x="500" y="56" class="t b">Widgets</text>
+    <text x="500" y="76" class="t s">immutable description of what to show; cheap to recreate</text>
+    <line x1="675" y1="90" x2="675" y2="110" class="arrow"/>
+    <text x="686" y="104" class="t s">creates</text>
+    <rect x="480" y="112" width="390" height="56" rx="10" class="box"/>
+    <text x="500" y="136" class="t b">Elements</text>
+    <text x="500" y="156" class="t s">live instance in the tree; survives rebuilds</text>
+    <line x1="675" y1="170" x2="675" y2="190" class="arrow"/>
+    <text x="686" y="184" class="t s">creates</text>
+    <rect x="480" y="192" width="390" height="56" rx="10" class="box"/>
+    <text x="500" y="216" class="t b">RenderObjects</text>
+    <text x="500" y="236" class="t s">layout and painting; they know size and position</text>
+  </svg>
+  <figcaption>Each widget in the code produces an element and, if it takes up space, a render object; the three trees move together.</figcaption>
+  </figure>
+  <div class="callout"><strong>Analogy</strong> The widget is the blueprint of a building: immutable and cheap to redraw. The element is the building site, which follows the blueprint and knows where it is in the tree. The render object is the finished building, with dimensions and a position. Changing the blueprint does not knock the building down: the site compares the new blueprint with the old one and only touches what changed.</div>
+</section>
+
+<section class="slide">
+  <h2><code>build</code> does not draw anything</h2>
+  <p>It returns the <em>description</em> of what should exist. The framework compares the new description with the previous one and only touches what changed. Calling <code>build</code> many times is normal and cheap; that is how Flutter was designed.</p>
+  <div class="callout"><strong>Three trees, one idea</strong>
+    <ul>
+      <li><strong>Widgets</strong> are the description: cheap, immutable, recreated on every build.</li>
+      <li><strong>Elements</strong> are the live instance that ties a description to a position in the tree.</li>
+      <li><strong>RenderObjects</strong> do layout and painting.</li>
+    </ul>
+    The programmer writes widgets; the framework manages the other two.
+  </div>
+  <p><strong>For the tests:</strong> a widget is immutable; what changes is the state, and the state lives somewhere else.</p>
+  <div class="callout"><strong>Analogy</strong> <code>build</code> is a shopping list, not the shopping trip. Writing the list many times is cheap; the framework is the one that goes to the shop, and it only buys what changed since the previous list.</div>
+</section>
+
+<section class="slide">
+  <h2>Hot reload, hot restart, rebuild</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 240" role="img" aria-label="Three rows: hot reload injects the changed code into the Dart VM and calls build again, keeping the state in under a second; hot restart restarts the app keeping the build and loses the state; rebuild recompiles everything when the pubspec or native code changes">
+    <rect x="30" y="24" width="150" height="52" rx="10" class="box accent"/>
+    <text x="105" y="46" class="t b" text-anchor="middle">Hot reload</text>
+    <text x="105" y="65" class="t s" text-anchor="middle">r key</text>
+    <line x1="182" y1="50" x2="204" y2="50" class="arrow"/>
+    <rect x="206" y="24" width="200" height="52" rx="10" class="box"/>
+    <text x="306" y="46" class="t" text-anchor="middle">changed code</text>
+    <text x="306" y="65" class="t s" text-anchor="middle">you save the file</text>
+    <line x1="408" y1="50" x2="430" y2="50" class="arrow"/>
+    <rect x="432" y="24" width="200" height="52" rx="10" class="box"/>
+    <text x="532" y="46" class="t" text-anchor="middle">Dart VM on the phone</text>
+    <text x="532" y="65" class="t s" text-anchor="middle">injects code, calls build()</text>
+    <line x1="634" y1="50" x2="656" y2="50" class="arrow"/>
+    <rect x="658" y="24" width="212" height="52" rx="10" class="box ok"/>
+    <text x="764" y="46" class="t b" text-anchor="middle">state kept</text>
+    <text x="764" y="65" class="t s" text-anchor="middle">under 1 second</text>
+    <rect x="30" y="96" width="150" height="52" rx="10" class="box"/>
+    <text x="105" y="118" class="t b" text-anchor="middle">Hot restart</text>
+    <text x="105" y="137" class="t s" text-anchor="middle">R key</text>
+    <line x1="182" y1="122" x2="204" y2="122" class="arrow"/>
+    <rect x="206" y="96" width="200" height="52" rx="10" class="box"/>
+    <text x="306" y="118" class="t" text-anchor="middle">main() or global state</text>
+    <text x="306" y="137" class="t s" text-anchor="middle">or the type of a state</text>
+    <line x1="408" y1="122" x2="430" y2="122" class="arrow"/>
+    <rect x="432" y="96" width="200" height="52" rx="10" class="box"/>
+    <text x="532" y="118" class="t" text-anchor="middle">restarts from scratch</text>
+    <text x="532" y="137" class="t s" text-anchor="middle">build kept</text>
+    <line x1="634" y1="122" x2="656" y2="122" class="arrow"/>
+    <rect x="658" y="96" width="212" height="52" rx="10" class="box warn"/>
+    <text x="764" y="118" class="t b" text-anchor="middle">state lost</text>
+    <text x="764" y="137" class="t s" text-anchor="middle">a few seconds</text>
+    <rect x="30" y="168" width="150" height="52" rx="10" class="box"/>
+    <text x="105" y="190" class="t b" text-anchor="middle">Rebuild</text>
+    <text x="105" y="209" class="t s" text-anchor="middle">flutter run</text>
+    <line x1="182" y1="194" x2="204" y2="194" class="arrow"/>
+    <rect x="206" y="168" width="200" height="52" rx="10" class="box"/>
+    <text x="306" y="190" class="t" text-anchor="middle">pubspec.yaml or native</text>
+    <text x="306" y="209" class="t s" text-anchor="middle">dependencies, assets</text>
+    <line x1="408" y1="194" x2="430" y2="194" class="arrow"/>
+    <rect x="432" y="168" width="200" height="52" rx="10" class="box"/>
+    <text x="532" y="190" class="t" text-anchor="middle">recompiles everything</text>
+    <text x="532" y="209" class="t s" text-anchor="middle">installs the app again</text>
+    <line x1="634" y1="194" x2="656" y2="194" class="arrow"/>
+    <rect x="658" y="168" width="212" height="52" rx="10" class="box danger"/>
+    <text x="764" y="190" class="t b" text-anchor="middle">cold start</text>
+    <text x="764" y="209" class="t s" text-anchor="middle">tens of seconds</text>
+  </svg>
+  <figcaption>The further down, the slower it is and the more you lose: hot reload by default; go up a level only when it is not enough.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Hot reload</strong> (<kbd>r</kbd>): injects the changed code into the Dart VM running on the phone and calls <code>build</code> again. The state is kept: a half-filled form on the third screen is still there. Under a second.</li>
+    <li><strong>Hot restart</strong> (<kbd>R</kbd>): restarts the app from scratch, keeping the build. Needed when <code>main</code>, a global variable, or the type of a state changes.</li>
+    <li><strong>Full rebuild</strong>: when dependencies in <code>pubspec.yaml</code>, native code, or assets change. Run <code>flutter run</code> again.</li>
+  </ul>
+  <div class="callout"><strong>Analogy</strong> Hot reload is swapping the recipe halfway through cooking without throwing away what is already in the pan: the code changes, the state stays. Hot restart throws the pan away and starts over, but with the kitchen already set up (the build). The full rebuild is setting up the kitchen again.</div>
+</section>
+
+<section class="slide">
+  <h2>Why Dart</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 230" role="img" aria-label="Two paths from the same Dart code: in development it runs in a virtual machine with JIT, which allows hot reload in under a second; in release it is compiled AOT to ARM machine code, with no interpreter">
+    <rect x="20" y="70" width="170" height="90" rx="10" class="box accent"/>
+    <text x="105" y="105" class="t b" text-anchor="middle">Dart code</text>
+    <text x="105" y="130" class="t s" text-anchor="middle">the same file</text>
+    <line x1="190" y1="95" x2="298" y2="55" class="arrow"/>
+    <line x1="190" y1="135" x2="298" y2="175" class="arrow accent"/>
+    <rect x="300" y="20" width="270" height="70" rx="10" class="box"/>
+    <text x="435" y="48" class="t b" text-anchor="middle">In development: JIT</text>
+    <text x="435" y="72" class="t s" text-anchor="middle">runs in a virtual machine on the phone</text>
+    <rect x="300" y="140" width="270" height="70" rx="10" class="box"/>
+    <text x="435" y="168" class="t b" text-anchor="middle">In release: AOT</text>
+    <text x="435" y="192" class="t s" text-anchor="middle">compiled to ARM machine code</text>
+    <line x1="570" y1="55" x2="678" y2="55" class="arrow"/>
+    <line x1="570" y1="175" x2="678" y2="175" class="arrow accent"/>
+    <rect x="680" y="20" width="200" height="70" rx="10" class="box ok"/>
+    <text x="780" y="48" class="t b" text-anchor="middle">Hot reload</text>
+    <text x="780" y="72" class="t s" text-anchor="middle">changes in under 1 s</text>
+    <rect x="680" y="140" width="200" height="70" rx="10" class="box ok"/>
+    <text x="780" y="168" class="t b" text-anchor="middle">Fast app</text>
+    <text x="780" y="192" class="t s" text-anchor="middle">no interpreter running</text>
+  </svg>
+  <figcaption>Few languages do both things well: fast to develop with and fast to run.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Null safety:</strong> the compiler knows whether a variable can be <code>null</code>. A whole family of crashes disappears before the app runs.</li>
+    <li><strong>Familiar syntax:</strong> anyone who knows JavaScript, Java, Kotlin or modern PHP can read Dart on day one.</li>
+    <li><strong>Made for interfaces:</strong> a garbage collector tuned for many small objects (the widgets), <code>async</code>/<code>await</code> in the language, isolates for heavy work without blocking the screen.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Dart I in DartPad</h2>
+  <p>Open <a href="https://dartpad.dev" target="_blank" rel="noopener">dartpad.dev</a>. Today you do not need Flutter: only Dart, in the browser.</p>
+  <p>Step by step, you build the data model that the project app will use. Six blocks, each with a short exercise at the end.</p>
+  <div class="callout task"><strong>Type the code instead of copying it</strong> Typing practises the syntax; copying does not. The compiler errors are part of the exercise: read them. The blocks marked "read only" are not to be typed: they are there for comparison.</div>
+</section>
+
+<section class="slide">
+  <h2>1. Variables and types</h2>
+<pre><code class="language-dart">void main() {
+  var city = 'Ponta Delgada';     // inferred type: String
+  int day = 21;
+  double temperature = 21.5;
+  bool isRaining = false;
+  final island = 'São Miguel';    // assigned once, at runtime
+  const maxDays = 5;              // compile-time constant
+
+  print('$city, $island: $temperature °C, rain: $isRaining');
+  print('Day ${day + 1} of $maxDays');
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Variables and types: what matters</h2>
+  <ul>
+    <li><code>var</code> infers the type and fixes it. <code>city = 3;</code> is a compile error.</li>
+    <li><code>final</code> for values that do not change once assigned. It is the default choice; <code>var</code> only when you need to reassign.</li>
+    <li><code>const</code> is for constants known at compile time. In Flutter, <code>const</code> appears on many widgets, for a performance reason.</li>
+    <li>Interpolation: <code>$name</code> or <code>${expression}</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> In the same <code>main</code>, add <code>double tMin = 17.0;</code> and <code>double tMax = 23.0;</code>, compute the range (<code>tMax - tMin</code>) and print, with interpolation and one decimal place (<code>toStringAsFixed(1)</code>), exactly: <code>Range: 6.0 °C</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>2. Null safety</h2>
+<pre><code class="language-dart">void main() {
+  String name = 'Horta';
+  String? nickname;           // can be null; has to be declared with ?
+
+  // name = null;             // compile error
+  print(nickname ?? 'no nickname');       // ?? gives a default value
+  print(nickname?.length);                // ?. only calls if it is not null → null
+  nickname = 'City of the Sea';
+  print(nickname.length);                 // the compiler already knows it is not null here
+
+  late String description;    // I promise to initialise it before use
+  description = '$name, $nickname';
+  print(description);
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Null safety: what matters</h2>
+  <ul>
+    <li>By default nothing can be <code>null</code>. <code>String?</code> is a different type from <code>String</code>.</li>
+    <li><code>??</code>, <code>?.</code> and <code>??=</code> are the everyday operators.</li>
+    <li><code>!</code> forces it ("trust me, it is not null") and is a frequent source of crashes. Best avoided.</li>
+    <li>This matters on mobile because almost everything that comes from the network or the disk can be missing.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> In the same <code>main</code>, add <code>int? humidity;</code> and a line that prints <code>Humidity: n/a</code> when it is null and <code>Humidity: 80%</code> when it has a value, without using <code>!</code> (hint: <code>humidity == null ? 'n/a' : '$humidity%'</code>, or <code>??</code>). Test both situations: once before and once after <code>humidity = 80;</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>3. Functions</h2>
+<pre><code class="language-dart">double celsiusToFahrenheit(double c) => c * 9 / 5 + 32;
+
+String describe(String city, {required double tMax, double? tMin, bool rain = false}) {
+  final min = tMin == null ? '' : ', min $tMin';
+  return '$city: max $tMax$min${rain ? ', rain' : ''}';
+}
+
+void main() {
+  print(celsiusToFahrenheit(21));
+  print(describe('Angra', tMax: 24));
+  print(describe('Horta', tMax: 22, tMin: 17, rain: true));
+
+  final format = (double t) => '${t.round()} °C';   // function as a value
+  print(format(21.6));
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Functions: what matters</h2>
+  <ul>
+    <li><strong>Named</strong> parameters go between braces: <code>{required double tMax, bool rain = false}</code>. In Flutter almost everything uses named parameters.</li>
+    <li><code>required</code> makes it mandatory; a default value makes it optional; <code>?</code> allows null.</li>
+    <li><code>=></code> syntax for single-expression functions. Functions are values: they can be stored and passed around.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Write <code>String classify({required double t})</code> that returns <code>'cold'</code> below 15, <code>'mild'</code> up to 25 and <code>'hot'</code> above. Then use it inside <code>describe</code>, so that <code>describe('Horta', tMax: 22, tMin: 17, rain: true)</code> now returns <code>Horta: max 22.0, min 17.0, rain (mild)</code>.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do by tomorrow</h3>
+      <ul class="checklist">
+        <li>Exercises 1 to 3 saved (in DartPad or in a file): tomorrow you carry on from them.</li>
+        <li>Read the <a href="https://dart.dev/language" target="_blank" rel="noopener">Dart language tour</a> up to "Functions".</li>
+        <li>Setup: <code>flutter doctor</code> with ✓ on Flutter, Android toolchain and Android Studio; emulator created (or a phone with USB debugging). We check it tomorrow in the lesson.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/learn/pathway/how-flutter-works" target="_blank" rel="noopener">How Flutter works</a>: the official walk through the layers, the three trees and what happens on each frame.</li>
+        <li><a href="https://docs.flutter.dev/resources/architectural-overview" target="_blank" rel="noopener">Flutter architectural overview</a>: the three layers and the three trees, with diagrams.</li>
+        <li><a href="https://docs.flutter.dev/tools/hot-reload" target="_blank" rel="noopener">Hot reload</a>: what can and cannot be hot reloaded.</li>
+        <li><a href="https://dart.dev/null-safety/understanding-null-safety" target="_blank" rel="noopener">Understanding null safety</a>: why and how.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

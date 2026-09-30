@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 30 · Size, startup and updates, and sprint 3 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="30">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 30 · Week 12 · Wednesday, 25 November 2026 · 16:00 to 18:00</p>
+  <h1>Size, startup and updates, and sprint 3</h1>
+  <p class="lead">Theory (30 minutes): app size, startup time, OTA updates and code push, forced update and compatibility with old versions. Practice: sprint 3, measuring the size of each group's app. The sprint closes the following Wednesday.</p>
+  <div class="meta"><span>Sprint 3 closes Wednesday 02/12 at 16:30</span></div>
+  <aside class="notes">Before the lesson run <code>flutter build apk --analyze-size --target-platform android-arm64</code> on your production app and keep the output: it is the example on the practice slide and it takes two to three minutes you do not want to spend in class. Ask on the way in "how many MB does your installed app take?": nobody knows, and that is the point. In the first five minutes, a status check in one sentence per group, and confirm that yesterday's issue (rejection reason) has an owner.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Explain why the size of an app costs installs and what limits the stores impose.</li>
+    <li>Reduce the size with an app bundle, split per ABI, tree shaking and the right images and fonts, and measure with <code>--analyze-size</code>.</li>
+    <li>Describe what happens between the tap on the icon and the first frame, and defer the work that does not need to be on that path.</li>
+    <li>Say what code push can and cannot change, and what rules Apple imposes.</li>
+    <li>Design a forced update with a minimum version in remote config and a blocking screen that fails open.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Why size matters</h2>
+  <ul>
+    <li>A Google study with Play data (2017) measured it: for every extra 6 MB in the APK, 1% fewer completed installs. In markets with expensive data and full 32 GB phones, the first app to be deleted is the biggest one.</li>
+    <li><strong>Store limits:</strong> Play accepts AABs up to 200 MB of compressed download (plus Play Asset Delivery for games); the App Store accepts up to 4 GB, but above 200 MB iOS asks for confirmation before downloading over mobile data. Many people never confirm.</li>
+    <li><strong>Updates:</strong> Play sends deltas, but each release is a download for everyone. A 100 MB app with a weekly release uses up 400 MB a month for each user, and some people turn off automatic updates because of that.</li>
+    <li><strong>Flutter:</strong> an empty app in release weighs 4 to 5 MB per architecture, most of which is the engine. The rest grows with packages, the plugins' native code, images and fonts. Tempo Açores with a map, fonts and background images reaches 20 to 30 MB if nobody is looking.</li>
+    <li><strong>Two measures:</strong> download size (compressed, what the store shows) and installed size (uncompressed, what the user sees in the settings). The installed size is almost always double.</li>
+  </ul>
+  <p><strong>For the tests:</strong> size costs installs and updates; Play limits the AAB to 200 MB of download and iOS asks for confirmation on mobile data above 200 MB.</p>
+  <aside class="notes">Ask two students to open their phone's settings and read out the installed size of WhatsApp and Instagram; it usually comes out at 200 to 500 MB, and nobody knew. Then ask how many apps they have already deleted for lack of space. Do not spend more than three minutes on this slide.</aside>
+</section>
+
+<section class="slide">
+  <h2>AAB and split per ABI</h2>
+  <ul>
+    <li>The <strong>universal APK</strong> (<code>flutter build apk</code>) carries the engine and the compiled Dart code for the three Android architectures: <code>armeabi-v7a</code>, <code>arm64-v8a</code> and <code>x86_64</code>. All of it goes to the phone, which only uses one.</li>
+    <li><code>flutter build apk --split-per-abi</code> generates three APKs, one per architecture, each about a third of the size. It is the right format for Firebase App Distribution (lesson 27) and for installing with <code>adb</code>.</li>
+    <li><code>flutter build appbundle</code> generates an <strong>AAB</strong>: Play receives the bundle and generates, signs and delivers the right APK for each phone (architecture, screen density, language). Mandatory for new apps on Play since 2021. Typical download: half of the universal APK.</li>
+    <li>On <strong>iOS</strong>, App Store Connect does the equivalent with App Thinning: each iPhone receives only its own architecture and the <code>@2x</code> or <code>@3x</code> assets it uses. There is nothing to configure.</li>
+    <li><strong>Deferred components</strong> (Android only, via Play Feature Delivery): parts of the app in Dart and assets downloaded on demand. Worth it in large apps with rarely used modules (augmented reality, an editor); for Tempo Açores it is too much complexity.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the AAB lets Play deliver only what each phone needs; the universal APK carries the three architectures; the split per ABI is the middle ground for distributing outside the store.</p>
+</section>
+
+<section class="slide">
+  <h2>Tree shaking, images and fonts</h2>
+  <ul>
+    <li><strong>Code tree shaking:</strong> the AOT compiler in release leaves out the Dart code that is never called. A large package from which you use one function weighs little; a package with native code (Kotlin, Swift) always weighs, because native code does not go through the Dart compiler.</li>
+    <li><strong>Icon tree shaking:</strong> in release Flutter rebuilds <code>MaterialIcons</code> with only the icons used as <code>const</code>. <code>Icons.wb_sunny</code> costs bytes; the whole font would cost 1.6 MB. If you build icons dynamically with <code>IconData(codePoint)</code> the build fails and asks for <code>--no-tree-shake-icons</code>, which turns the optimisation off.</li>
+    <li><strong>Images</strong> are the biggest contributor in most apps. A 4000 px PNG for a 300 px card is waste; WebP at quality 80 comes to a third; <code>2.0x</code> and <code>3.0x</code> variants only when the screen shows them; SVG for icons and logos; background photos served over the network with a cache. <code>flutter build</code> does not compress images for you.</li>
+    <li><strong>Fonts:</strong> each weight of a family is 100 to 300 KB. Include only the weights you use (Regular and Bold, not all nine). <code>google_fonts</code> downloads at runtime by default: good for size, bad offline and at startup; for production bundle the fonts in <code>pubspec.yaml</code>.</li>
+    <li><strong>Assets:</strong> everything under <code>flutter: assets:</code> goes into the bundle, referenced or not. Test JSON, design files, the whole <code>assets/</code> folder declared out of laziness.</li>
+  </ul>
+  <p><strong>For the tests:</strong> unused Dart code and the Material icons drop out by themselves in release through tree shaking; images, fonts and assets do not: those you cut yourself.</p>
+</section>
+
+<section class="slide">
+  <h2>Startup: up to the first frame</h2>
+  <ul>
+    <li><strong>Cold</strong>, in order: the OS creates the process → shows the native splash (<code>LaunchScreen.storyboard</code> on iOS, the launch theme on Android) → the embedder initialises the engine and the Dart VM (100 to 300 ms in release) → <code>main()</code> → <code>runApp</code> → first <code>build</code> → first frame → data. Warm, the process already exists and the OS only brings the app to the front.</li>
+    <li><strong>Reference values:</strong> Android Vitals flags a cold start above 5 s as excessive; iOS kills the app if startup takes more than about 20 s (watchdog). The target from lesson 26: under 2 s cold, measured on a mid-range phone, not on yours.</li>
+    <li>The <strong>native splash</strong> (<code>flutter_native_splash</code>, lesson 27) covers the gap between the tap and Flutter's first frame; without it there is a white screen. Do not prolong it with a second, 3 s animated splash inside Flutter: you double the perceived time.</li>
+    <li><strong>Deferred work:</strong> in <code>main()</code> before <code>runApp</code> only the indispensable (<code>WidgetsFlutterBinding.ensureInitialized()</code>, reading small preferences). Firebase, database, Remote Config and HTTP requests start after the first frame, in parallel, with the UI showing the cache or a skeleton. An <code>await http.get</code> before <code>runApp</code> is the classic mistake.</li>
+    <li><strong>Measuring:</strong> <code>flutter run --profile --trace-startup</code> writes <code>build/start_up_info.json</code> with <code>timeToFirstFrameMicros</code>; the Performance tab in DevTools shows the startup timeline; <code>adb shell am start -W</code> gives the total time on Android; on iOS, Instruments with the App Launch template. Never in debug.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a cold start includes the engine and the Dart VM before <code>main</code>; the native splash covers that gap; the heavy work goes after the first frame.</p>
+  <aside class="notes">Show live the <code>start_up_info.json</code> of your app in profile on your phone and then the same with an <code>await Future.delayed(2 s)</code> before runApp: the number goes up 2 seconds and the splash hangs there. Ask: "what is in your main before runApp?" Whoever answers "the token and the preferences" is fine; whoever answers "loading the locations" has a TODO.</aside>
+</section>
+
+<section class="slide">
+  <h2>OTA and code push: Shorebird</h2>
+  <ul>
+    <li><strong>Through the store:</strong> build, upload, review (hours to days), rollout, and the user has to update; most take weeks. A critical bug released on a Tuesday can be live until the end of the following week.</li>
+    <li><strong>Code push:</strong> the app downloads new Dart code and applies it on the next launch, without going through the store. <strong>Shorebird</strong> is the implementation for Flutter, created by former members of the Flutter team: <code>shorebird release android</code> publishes the base build, <code>shorebird patch android</code> sends the fix for that release. Expo Updates does the same in React Native; Microsoft's CodePush shut down in 2025.</li>
+    <li><strong>What can change:</strong> Dart code, that is, logic, parsers, texts, layout. <strong>What cannot:</strong> native code (Kotlin, Swift, plugins with a native part), permissions, icon, Flutter version. For those, a new release through the store. A patch always belongs to one specific release.</li>
+    <li><strong>Apple's rules:</strong> guideline 2.5.2 forbids downloading code that changes the app's features; the developer agreement allows interpreted code as long as it does not change the primary purpose. Shorebird complies because on iOS the patch runs in a Dart interpreter; you comply if you use patches for fixes, not for features hidden from review. Google has an equivalent rule.</li>
+    <li><strong>Limits:</strong> the patch only reaches those who open the app with network; you can roll it back in the dashboard, but it has already run for those who received it; on iOS interpreted code is slower than AOT. It does not replace tests or the forced update.</li>
+  </ul>
+  <p><strong>For the tests:</strong> code push only changes Dart code, never native code or permissions; Apple allows it as long as it does not change the app's purpose.</p>
+  <div class="callout"><strong>Analogy</strong> Code push is swapping the contents of the newspaper without reprinting the front page. Only the Dart (the text on the pages) changes; the native "paper", the permissions and the icon stay the same, and that is why it does not go through a new review. Apple only accepts the swap if the newspaper's rules, its declared purpose, do not change.</div>
+</section>
+
+<section class="slide">
+  <h2>Forced update and minimum versions</h2>
+  <ul>
+    <li><strong>Why:</strong> v1 of the API is switched off on 09/12 (lesson 28) and anyone left on a version of the app that only speaks v1 starts seeing errors. Banks and Revolut force updates; WhatsApp expires old versions on a set date.</li>
+    <li><strong>Mechanism:</strong> a value in remote config (Firebase Remote Config, lesson 26, or a <code>/config</code> endpoint of your own) with <code>min_version</code>, <code>latest_version</code> and a message. At startup the app reads its own version with <code>package_info_plus</code> and compares using version semantics (<code>pub_semver</code>), never as strings: as strings, <code>"1.10.0"</code> is less than <code>"1.9.0"</code>.</li>
+    <li><strong>Two levels:</strong> below <code>latest_version</code>, a dismissible notice ("update when you can"); below <code>min_version</code>, a blocking screen that does not close, with a button to the store (<code>url_launcher</code> to <code>market://details?id=...</code> or the App Store link). On Android, <code>in_app_update</code> uses Play to update without leaving the app; on iOS there is no API, only the link.</li>
+    <li><strong>Fails open:</strong> if the config does not load (no network, server down), the app lets the user in. A user in airplane mode cannot be locked out by a bug of yours. And never set <code>min_version</code> above the version that is already approved in the store: you lock out every user with no alternative.</li>
+    <li><strong>Supporting those who do not update:</strong> the backend keeps the old API during the deprecation window, the app ignores unknown fields, and the <code>X-App-Version</code> header (lesson 12) tells the backend who is still behind. Forcing is the last resort, once or twice a year; overused, it leads the user to uninstall.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a forced update is a minimum version in remote config with a blocking screen; it fails open without network and never points to a version that is not in the store yet.</p>
+  <aside class="notes">Tell a real case of an app that pointed the forced update to a version still in review and locked its users out for a day; if you do not have one of your own, one from a Portuguese bank will do. Ask: "does Tempo Açores need a forced update on 09/12?" Yes, if there is any tester with the v1 build installed; it is the example that this is not theoretical.</aside>
+</section>
+
+<section class="slide" data-part="Sprint">
+  <h2>Sprint 3: status check</h2>
+  <ul>
+    <li>Each group, one minute: what is in <code>main</code>, what is in a PR, what is blocked. Does yesterday's rejection reason already have an open PR?</li>
+    <li><strong>Sprint 3 closes next Wednesday, 02/12, at 16:30</strong>, with the review in lesson 32. Before that, Monday is build and signing: bring the project compiling in release.</li>
+    <li>Done, nothing new: installable by a tester outside the group, README with screenshots, green CI, API v2 with green tests.</li>
+    <li>Priority: closing open issues. Extras only go in if the minimums are already in <code>main</code>.</li>
+    <li>Today, besides going round the groups: a 15-minute exercise on the size of the app, on a single laptop per group.</li>
+  </ul>
+  <div class="callout tip"><strong>Last week of the sprint</strong> Freeze the scope today: whatever is not in an issue with an owner does not get done. Each day until Wednesday is for closing, testing on someone else's phone and writing the README.</div>
+  <aside class="notes">Ten minutes for the status check and then launch the exercise straight away; while the builds run you go round. The release build takes two to five minutes on the class's laptops: whoever is short on disk will fail with "no space left"; tell them to delete the build/ folder of the old projects from earlier lessons.</aside>
+</section>
+
+<section class="slide">
+  <h2>Exercise: <code>flutter build apk --analyze-size</code></h2>
+<pre class="term"><code class="language-bash">flutter build apk --analyze-size --target-platform android-arm64</code></pre>
+<pre data-title="Abridged output (teacher's reference build)"><code class="language-bash">✓ Built build/app/outputs/flutter-apk/app-release.apk (18.4MB)
+app-release.apk (total compressed)                              18 MB
+  lib/
+    arm64-v8a/
+      libapp.so                                                  3 MB
+      libflutter.so                                              4 MB
+  assets/
+    flutter_assets/
+      assets/images/azores_background.png                        5 MB
+      assets/images/islands/                                     2 MB
+      packages/google_fonts/Inter-*.ttf                          1 MB
+      fonts/MaterialIcons-Regular.otf                            6 KB
+  classes.dex                                                    2 MB
+  res/                                                           1 MB
+Dart AOT symbols accounted decompressed size                     9 MB
+  package:flutter                                                4 MB
+  package:flutter_map                                            1 MB
+  package:tempo_acores                                         487 KB
+A summary of your APK analysis can be found at: build/apk-code-size-analysis_01.json
+To analyze your app size in Dart DevTools, run the following command:
+dart devtools --appSizeBase=apk-code-size-analysis_01.json</code></pre>
+  <ul>
+    <li><code>--analyze-size</code> requires a single architecture, hence <code>--target-platform android-arm64</code>; it cannot be combined with <code>--split-per-abi</code>.</li>
+    <li><code>libflutter.so</code> is the engine, fixed; <code>libapp.so</code> is your compiled Dart with the packages; <code>classes.dex</code> is the plugins' Kotlin and Java; <code>flutter_assets/</code> is what you declared in <code>pubspec.yaml</code>. The "Dart AOT symbols" section says which packages weigh inside <code>libapp.so</code>.</li>
+    <li>In this example, a 5 MB background image is 27% of the app. As WebP at 1080 px it comes to 300 KB. <code>google_fonts</code> bundling nine weights of Inter is the second target.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Exercise: what to do with the number</h2>
+  <ul class="checklist">
+    <li>Command run on the group's project, in release, for <code>android-arm64</code>, with no errors.</li>
+    <li>The biggest contributor that is not the engine identified: a file or a package, with its size and percentage of the total.</li>
+    <li>Decision made: compress, remove, replace with network plus cache, or accept with a written justification.</li>
+    <li>If it is an image or a font: fixed now, in a 10-minute PR, and measured again.</li>
+    <li>If it is a package: decided whether it is worth its weight, with the table from lesson 28.</li>
+    <li>README with an "App size" section: size before, biggest contributor, what you changed, size after.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise</strong> Fifteen minutes. Run <code>flutter build apk --analyze-size --target-platform android-arm64</code> on the group's project and find the biggest contributor that is not <code>libflutter.so</code>. Say in one sentence what you would do with it. If it is an image or a font, fix it right away and measure again: both numbers go into the README. If you want to see the treemap: <code>dart devtools --appSizeBase=build/apk-code-size-analysis_01.json</code> and the App Size tab.</div>
+  <aside class="notes">Typical results: a background or splash image as a 3000 px PNG, the whole assets/ folder declared with test files in it, and google_fonts with every weight. Whoever has a heavy package (for example a native maps SDK) uses it as the lesson 28 discussion: is it worth its weight? At 12 minutes ask each group for its numbers out loud and write them on the board; the group with the smallest number wins the right to go first in the review.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Monday</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Sprint 3 closes next Wednesday, 02/12, at 16:30: everything in <code>main</code> by Tuesday night, a rehearsed 5-minute demo, installable by a tester outside the group, README with screenshots, green CI.</li>
+        <li>The size PR merged, with both numbers in the "App size" section of the README.</li>
+        <li>For Monday (build and signing): the project compiles with <code>flutter build appbundle</code> with no errors and one member of the group brings a laptop with Android Studio up to date.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/perf/app-size" target="_blank" rel="noopener">Measuring your app's size</a> (docs.flutter.dev): what counts towards the size and how to read <code>--analyze-size</code> in DevTools.</li>
+        <li><a href="https://developer.android.com/topic/performance/vitals/launch-time" target="_blank" rel="noopener">App startup time</a> (developer.android.com): cold start, warm start and the Android Vitals thresholds.</li>
+        <li><a href="https://firebase.google.com/docs/remote-config" target="_blank" rel="noopener">Firebase Remote Config</a>: the mechanism behind the forced update and feature flags, with default values for when the network fails.</li>
+        <li><a href="https://docs.shorebird.dev/" target="_blank" rel="noopener">Shorebird docs</a>: what a patch can change and where it stands with store review.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

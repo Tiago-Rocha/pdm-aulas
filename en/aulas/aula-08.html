@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 08 · State: from setState to architectures · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="8">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 08 · Week 5 · Tuesday, 6 October 2026 · 08:30 to 11:30</p>
+  <h1>State: from setState to architectures</h1>
+  <p class="lead">Theory: what state is in an app, where it should live, and a comparison of setState, Provider, BLoC and Riverpod. Practice: StatefulWidget, the State lifecycle, text fields, forms with validation and searching a list.</p>
+  <div class="meta"><span>Repository: pdm-aula-08</span></div>
+  <aside class="notes">Three-hour lesson: take a 10-minute break at 10:00. Ask who finished step 4 of the last lesson (the <code>IslandCard</code>) and ask one student to show it. If nobody did, show the <code>passo-4</code> branch in 2 minutes and move on. Write the question of the day on the board: "when the user flips the switch from °C to °F, who needs to know?" You will come back to it on the five levels slide.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Tell ephemeral state from app state and say where each one should live.</li>
+    <li>Compare <code>setState</code>, Provider, BLoC and Riverpod and choose with clear criteria.</li>
+    <li>Explain unidirectional data flow and why state should be immutable.</li>
+    <li>Write a <code>StatefulWidget</code> with correct <code>initState</code>, <code>setState</code> and <code>dispose</code>.</li>
+    <li>Build a validated form and a search that filters a list in real time.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Ephemeral state vs app state</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Ephemeral (one widget's)</th><th>App state (shared)</th></tr></thead>
+  <tbody>
+  <tr><td>Examples</td><td>Selected tab, half-typed text, scroll position, whether a card is expanded</td><td>Signed-in user, favourites, temperature unit, loaded forecasts, shopping cart</td></tr>
+  <tr><td>Who needs it</td><td>One widget and its children</td><td>Several screens, with no parent-child relationship</td></tr>
+  <tr><td>Survives</td><td>Rebuilds; dies with the widget</td><td>Navigation between screens; often the app being closed (persistence, lesson 16)</td></tr>
+  <tr><td>Where it lives</td><td>In the widget's <code>State</code>, with <code>setState</code></td><td>In an object outside the widget tree, observed by whoever needs it</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> ephemeral state stays in the widget with <code>setState</code>; app state stays outside the tree and is shared.</p>
+  <aside class="notes">Go back to the question on the board: the °C/°F switch. Is it ephemeral? No: the forecast screen, the detail and the home screen widget all need it. Practical example: ask where the "cart" lives in a shopping app. Everyone sees that it cannot be in the "add" button.</aside>
+</section>
+
+<section class="slide">
+  <h2>The five levels problem</h2>
+  <ul>
+    <li>The temperature unit is chosen in <code>SettingsScreen</code> and used in <code>LocationCard</code>, which is inside <code>LocationList</code>, inside <code>ForecastScreen</code>, inside <code>Shell</code>, inside <code>TempoApp</code>.</li>
+    <li>With <code>setState</code> alone, the variable has to move up to the common ancestor (<code>TempoApp</code>) and come down as a parameter through five constructors that have no use for it. This is called <em>prop drilling</em>.</li>
+    <li>Every widget in between now depends on something that is not its own. Adding a new field means touching five files.</li>
+    <li>And when the unit changes, <code>setState</code> in <code>TempoApp</code> rebuilds the whole app, not just the cards.</li>
+  </ul>
+  <p>The answer to this problem is the reason state management libraries exist. They all solve the same thing: put the state somewhere reachable and rebuild only those who read it.</p>
+</section>
+
+<section class="slide">
+  <h2><code>setState</code>: when it is enough and when it stops being enough</h2>
+  <ul>
+    <li><strong>It is enough</strong> when the state belongs to one screen or one widget and nobody else needs it: a counter, a form, a panel that opens and closes, a local search filter.</li>
+    <li><strong>It is enough</strong> for prototypes and for isolated screens. It is not "bad practice"; it is the simplest tool and Flutter was designed for it.</li>
+    <li><strong>It stops being enough</strong> when two unrelated screens need the same data, when the state has to survive navigation, or when you want to test the logic without building widgets.</li>
+    <li><strong>It stops being enough</strong> when <code>build</code> rebuilds a large tree because of one boolean.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>setState</code> marks the widget as dirty and schedules a rebuild of its subtree on the next frame. It does not rebuild the whole app, but it rebuilds everything below.</p>
+</section>
+
+<section class="slide">
+  <h2>ChangeNotifier, Provider and InheritedWidget</h2>
+  <ul>
+    <li><code>InheritedWidget</code> is Flutter's own mechanism for putting a value in the tree and letting any descendant read it with <code>context</code>. <code>Theme.of(context)</code> and <code>MediaQuery.of(context)</code> are this.</li>
+    <li><code>ChangeNotifier</code> is a class with <code>notifyListeners()</code>. Your state extends it: <code>class Settings extends ChangeNotifier { bool fahrenheit = false; void toggle() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
+    <li><code>Provider</code> joins the two: it puts the notifier in the tree, and <code>context.watch&lt;Settings&gt;()</code> rebuilds only the widget that called it when there is a <code>notifyListeners</code>.</li>
+    <li>It solves the five levels: <code>LocationCard</code> reads the unit directly; the widgets in between do not even know it exists.</li>
+    <li>It is recommended by the Flutter team as a starting point and it is what we will use in the project.</li>
+  </ul>
+  <p><strong>For the tests:</strong> Provider is an <code>InheritedWidget</code> with sugar; <code>ChangeNotifier</code> notifies the listeners; <code>watch</code> rebuilds, <code>read</code> does not.</p>
+</section>
+
+<section class="slide">
+  <h2>BLoC, Cubit and Riverpod</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Approach</th><th>How it works</th><th>When it makes sense</th></tr></thead>
+  <tbody>
+  <tr><td><strong>setState</strong></td><td>The <code>State</code> holds the state and rebuilds the subtree</td><td>Isolated screen, few widgets, prototypes</td></tr>
+  <tr><td><strong>Provider</strong> + ChangeNotifier</td><td>Observable object in the tree; <code>watch</code> rebuilds only those who read it</td><td>Several screens share state; small teams; our project</td></tr>
+  <tr><td><strong>BLoC</strong> / Cubit</td><td>Events go in, immutable states come out through a <code>Stream</code>; every transition is predictable and testable; more files</td><td>Large teams, strong testing requirements, banking apps</td></tr>
+  <tr><td><strong>Riverpod</strong></td><td>Global, typed providers that do not depend on <code>BuildContext</code>; errors caught at compile time</td><td>Those who already master Provider and want more safety and composition</td></tr>
+  </tbody></table></div>
+  <p>They all do the same thing underneath: an object that holds state and notifies whoever observes it. The difference is in the ceremony and in the guarantees.</p>
+  <div class="callout"><strong>Analogy</strong> Where the shopping list is kept. A sticky note on the fridge in one room: only those who walk into that room see it (<code>setState</code>). A board in the kitchen that the whole house checks and that tells everyone when it changes (<code>ChangeNotifier</code> with Provider). A logbook with every change, dated and signed (BLoC: events and states). The board is enough for most houses.</div>
+</section>
+
+<section class="slide">
+  <h2>Unidirectional flow and immutability</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 280" role="img" aria-label="Unidirectional flow cycle: the UI triggers a user action, the action produces a new, immutable state in the notifier, notifyListeners tells the observers and the UI is rebuilt. Beside it, where state lives: ephemeral in a widget's State, app state in a shared notifier above the screens">
+    <rect x="40" y="40" width="200" height="56" rx="10" class="box accent"/>
+    <text x="140" y="64" class="t b" text-anchor="middle">UI (widget)</text>
+    <text x="140" y="84" class="t s" text-anchor="middle">function of current state</text>
+    <rect x="340" y="40" width="200" height="56" rx="10" class="box"/>
+    <text x="440" y="64" class="t b" text-anchor="middle">User action</text>
+    <text x="440" y="84" class="t s" text-anchor="middle">tap, text, gesture</text>
+    <rect x="340" y="200" width="200" height="56" rx="10" class="box"/>
+    <text x="440" y="224" class="t b" text-anchor="middle">New state (notifier)</text>
+    <text x="440" y="244" class="t s" text-anchor="middle">immutable: copyWith</text>
+    <rect x="40" y="200" width="200" height="56" rx="10" class="box"/>
+    <text x="140" y="224" class="t b" text-anchor="middle">notifyListeners()</text>
+    <text x="140" y="244" class="t s" text-anchor="middle">tells the observers</text>
+    <line x1="242" y1="68" x2="338" y2="68" class="arrow accent"/>
+    <text x="290" y="60" class="t s" text-anchor="middle">triggers</text>
+    <line x1="440" y1="98" x2="440" y2="198" class="arrow accent"/>
+    <text x="452" y="152" class="t s">changes state</text>
+    <line x1="338" y1="228" x2="242" y2="228" class="arrow accent"/>
+    <text x="290" y="220" class="t s" text-anchor="middle">notifies</text>
+    <line x1="140" y1="198" x2="140" y2="98" class="arrow accent"/>
+    <text x="152" y="152" class="t s">UI rebuild</text>
+    <text x="290" y="152" class="t s" text-anchor="middle">one direction</text>
+    <text x="600" y="52" class="t b">Where state lives</text>
+    <rect x="600" y="66" width="270" height="76" rx="10" class="box"/>
+    <text x="620" y="90" class="t b">Ephemeral</text>
+    <text x="620" y="110" class="t s">a widget's State, with setState</text>
+    <text x="620" y="128" class="t s">scroll, half-typed text, tab</text>
+    <line x1="760" y1="144" x2="760" y2="174" class="arrow"/>
+    <text x="750" y="163" class="t s" text-anchor="end">moves up if screens share it</text>
+    <rect x="600" y="176" width="270" height="76" rx="10" class="box accent"/>
+    <text x="620" y="200" class="t b">App state</text>
+    <text x="620" y="220" class="t s">shared notifier above the screens</text>
+    <text x="620" y="238" class="t s">favourites, unit, user</text>
+  </svg>
+  <figcaption>The UI never touches the state and the state never touches the UI: everything goes through the action and the notification.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>One direction:</strong> the UI triggers an action (tap, text) → the action changes the state → the UI rebuilds from the new state. The UI never changes the state directly and the state never touches the UI.</li>
+    <li>With one direction, any screen is a function of the state: given the same state, you see the same screen. This is what makes testing and debugging possible.</li>
+    <li><strong>Immutable:</strong> instead of changing a field of <code>Forecast</code>, you create a new one with <code>copyWith</code>. An object that nobody modifies can be shared, compared and kept in a history without surprises.</li>
+    <li>The <code>Settings</code> class from the previous slide is mutable inside (it is a <code>ChangeNotifier</code>), but what it exposes are values. BLoC and Riverpod take immutability all the way.</li>
+  </ul>
+  <p><strong>For the tests:</strong> unidirectional flow is action → state → UI; immutability means creating copies with <code>copyWith</code> instead of modifying objects.</p>
+  <div class="callout"><strong>Analogy</strong> You do not scribble on the kitchen board. You write a new board with the change (<code>copyWith</code>) and replace the old one. Whoever was looking at the old one notices that it changed, because the object is a different one; and the old one can be kept in a history.</div>
+</section>
+
+<section class="slide">
+  <h2>Criteria for choosing, and what we will use</h2>
+  <ul>
+    <li><strong>How many screens share the state?</strong> One: <code>setState</code>. Several: Provider or above.</li>
+    <li><strong>Do you need to test the logic without widgets?</strong> Then the logic has to live outside the widgets: Provider, BLoC or Riverpod.</li>
+    <li><strong>Size of the team and of the project.</strong> Three people and 10 screens: Provider. Twenty people and 200 screens: BLoC or Riverpod, for the rules they enforce.</li>
+    <li><strong>What the team already knows</strong> weighs more than what is in fashion.</li>
+    <li>In the project we use <code>setState</code> for ephemeral state and <strong>Provider with ChangeNotifier</strong> for the rest: it is simple, it is what the Flutter architecture guide recommends, and you can move to BLoC later without rewriting everything.</li>
+  </ul>
+  <div class="callout">Today only <code>setState</code>. Provider comes in lesson 13, when we have API data to share.</div>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>The screen comes to life</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-08.git
+cd pdm-aula-08/starter
+flutter pub get
+flutter run</code></pre>
+  <p><code>starter/</code> starts from the screen of the last lesson and adds an empty settings screen, with numbered <code>TODO</code>s and failing widget tests; <code>solucao/</code> is the final state.</p>
+  <ol class="steps">
+    <li>Run it and confirm that you see the forecast screen and a settings button in the <code>AppBar</code> that does nothing yet.</li>
+    <li>Open <code>lib/settings_screen.dart</code> and <code>lib/location_search.dart</code>: this is where you will work.</li>
+  </ol>
+  <aside class="notes">While they compile, open DevTools on your machine and turn on "Track widget rebuilds" in the Widget Inspector. You will need it in the setState block to show live what gets rebuilt on each tap. Give 8 minutes for the clone and first run.</aside>
+</section>
+
+<section class="slide">
+  <h2>1. StatelessWidget vs StatefulWidget</h2>
+<pre data-title="lib/unit_selector.dart"><code class="language-dart">class UnitSelector extends StatefulWidget {
+  const UnitSelector({super.key});
+
+  @override
+  State&lt;UnitSelector&gt; createState() => _UnitSelectorState();
+}
+
+class _UnitSelectorState extends State&lt;UnitSelector&gt; {
+  bool _fahrenheit = false;                     // the state lives here, not in the widget
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _fahrenheit ? 21.0 * 9 / 5 + 32 : 21.0;
+    return Column(
+      children: [
+        Text('${t.toStringAsFixed(0)} ${_fahrenheit ? '°F' : '°C'}'),
+        Switch(
+          value: _fahrenheit,
+          onChanged: (v) => setState(() => _fahrenheit = v),   // change, ask for rebuild
+        ),
+      ],
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Stateful: what matters</h2>
+  <ul>
+    <li>The widget is still immutable. What changes is the <code>State</code> object, which Flutter creates once and keeps alive between rebuilds. That is why hot reload preserves what you typed.</li>
+    <li><code>setState(() { ... })</code> does two things: it runs the change and marks the widget to rebuild on the next frame. Changing the variable without <code>setState</code> changes the value, but the screen does not follow.</li>
+    <li>Only this widget's subtree is rebuilt. The lower the <code>StatefulWidget</code> sits, the less work.</li>
+    <li>The <code>Switch</code> stores nothing: it shows <code>value</code> and reports in <code>onChanged</code>. All Material controls work like this: <em>controlled widgets</em>.</li>
+    <li>Shortcut in VS Code: type <code>stful</code> and press <kbd>Tab</kbd>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Solve <code>TODO 1</code>: turn <code>DetailCard</code> into a <code>StatefulWidget</code> with a boolean <code>_expanded</code>; on tap, show or hide the wind and humidity row. Turn on "Track widget rebuilds" in DevTools and see what gets rebuilt on each tap.</div>
+</section>
+
+<section class="slide">
+  <h2>2. The State lifecycle</h2>
+<pre data-title="lib/location_search.dart"><code class="language-dart">class _SearchState extends State&lt;Search&gt; {
+  late final TextEditingController _controller;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();                       // 1. once, before the first build
+    _controller = TextEditingController();
+    _controller.addListener(_onChanged);
+  }
+
+  void _onChanged() {                        // 2. each key: wait 300 ms before filtering
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();                   // 4. release; without this, a memory leak
+    super.dispose();
+  }
+
+  // 3. build runs between initState and dispose, as many times as needed
+}</code></pre>
+  <aside class="notes">Call setState after dispose (a Timer that fires after leaving the screen) and show the error that appears. It is the most common crash in the projects of previous years. Give this block 10 minutes.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. Lifecycle: what matters</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Method</th><th>When it runs</th><th>What for</th></tr></thead>
+  <tbody>
+  <tr><td><code>initState</code></td><td>Once, when the State is created</td><td>Create controllers, subscribe to streams, fire the first request</td></tr>
+  <tr><td><code>didChangeDependencies</code></td><td>After initState and whenever an <code>InheritedWidget</code> you depend on changes (theme, locale)</td><td>Read <code>Theme.of</code> or <code>MediaQuery.of</code>, which cannot be read in initState</td></tr>
+  <tr><td><code>build</code></td><td>Whenever something needs drawing</td><td>Only describe the UI. No network requests here</td></tr>
+  <tr><td><code>didUpdateWidget</code></td><td>When the parent rebuilds with new parameters</td><td>React to a parameter that changed (a new location selected)</td></tr>
+  <tr><td><code>dispose</code></td><td>Once, when the widget leaves the tree</td><td>Release controllers, timers, subscriptions, focus nodes</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> everything you create in <code>initState</code> you release in <code>dispose</code>; <code>build</code> can run many times and must have no side effects.</p>
+</section>
+
+<section class="slide">
+  <h2>3. TextField and searching a list</h2>
+<pre data-title="lib/location_search.dart"><code class="language-dart">String _filter = '';                          // state: what the user typed
+
+List&lt;String&gt; get _filtered => locations      // from lib/data.dart
+    .where((l) => l.toLowerCase().contains(_filter.toLowerCase()))
+    .toList();
+
+@override
+Widget build(BuildContext context) {
+  return Column(
+    children: [
+      TextField(
+        decoration: const InputDecoration(
+          prefixIcon: Icon(Icons.search),
+          hintText: 'Search location',
+          border: OutlineInputBorder(),
+        ),
+        onChanged: (text) => setState(() => _filter = text),
+      ),
+      Expanded(
+        child: ListView(
+          children: [for (final l in _filtered) ListTile(title: Text(l))],
+        ),
+      ),
+    ],
+  );
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Search: what matters</h2>
+  <ul>
+    <li>To react to the text, <code>onChanged</code> is enough. You need a <code>TextEditingController</code> when you want to read the text somewhere else, clear it (X button) or set an initial value. And then, <code>dispose</code>.</li>
+    <li>The filtered list is a <em>getter</em> computed from the state. Do not store the filtered list as state: those are two values that can get out of sync.</li>
+    <li>Filtering 100 locations on each key is instant. Filtering 100,000, or asking the API, needs the <em>debounce</em> from the previous slide.</li>
+    <li>The <code>Expanded</code> around the <code>ListView</code> is mandatory: without it, infinite height inside the <code>Column</code>.</li>
+    <li><code>InputDecoration</code> controls the look: icon, hint, label, border, helper text and error text.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> Solve <code>TODO 2</code>: search with a <code>TextEditingController</code>, a clear button (<code>suffixIcon</code>) that only shows when there is text, and an empty state "No location found" when the filter returns nothing.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Form, TextFormField and validation</h2>
+<pre data-title="lib/settings_screen.dart"><code class="language-dart">final _key = GlobalKey&lt;FormState&gt;();
+
+Form(
+  key: _key,
+  child: Column(
+    children: [
+      TextFormField(
+        decoration: const InputDecoration(labelText: 'Location name'),
+        validator: (v) {
+          if (v == null || v.trim().isEmpty) return 'Required';
+          if (v.trim().length &lt; 3) return 'At least 3 letters';
+          return null;                                  // null means valid
+        },
+      ),
+      FilledButton(
+        onPressed: () {
+          final form = _key.currentState!;
+          if (form.validate()) {                        // runs every validator
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Form is valid')),
+            );
+          }
+        },
+        child: const Text('Save'),
+      ),
+    ],
+  ),
+)</code></pre>
+</section>
+
+<section class="slide">
+  <h2>4. Forms: what matters</h2>
+  <ul>
+    <li><code>Form</code> groups fields; <code>GlobalKey&lt;FormState&gt;</code> gives access to the form's state from the button. It is one of the few legitimate uses of <code>GlobalKey</code>.</li>
+    <li>Each <code>TextFormField</code> has a <code>validator</code> that returns an error message or <code>null</code>. <code>validate()</code> runs them all, shows the errors below the fields and returns <code>true</code> if everything is fine.</li>
+    <li><code>autovalidateMode: AutovalidateMode.onUserInteraction</code> validates while the user types, after the first attempt. Without it, validation only happens on submit.</li>
+    <li><code>keyboardType: TextInputType.number</code> and <code>textInputAction: TextInputAction.next</code> change the phone's keyboard. On mobile, this is UX.</li>
+    <li><code>onSaved</code> and <code>form.save()</code> copy the values into variables when you do not want one controller per field.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a <code>validator</code> returns <code>null</code> when the value is valid and a <code>String</code> with the error when it is not.</p>
+  <div class="callout task"><strong>Exercise 3</strong> Solve <code>TODO 3</code>: a form with name and postcode (format <code>9500-123</code>, validate with a <code>RegExp</code>), a suitable keyboard, <code>autovalidateMode</code>, and a <code>SnackBar</code> with the values on save.</div>
+</section>
+
+<section class="slide">
+  <h2>5. Switch, Checkbox and Slider bound to state</h2>
+<pre data-title="lib/settings_screen.dart"><code class="language-dart">bool _notifications = true;
+double _radius = 25;
+bool _fahrenheit = false;
+
+SwitchListTile(
+  title: const Text('Weather warnings'),
+  value: _notifications,
+  onChanged: (v) => setState(() => _notifications = v),
+),
+CheckboxListTile(
+  title: const Text('Show in Fahrenheit'),
+  value: _fahrenheit,
+  onChanged: (v) => setState(() => _fahrenheit = v ?? false),
+),
+ListTile(
+  title: Text('Search radius: ${_radius.round()} km'),
+  subtitle: Slider(
+    value: _radius,
+    min: 5,
+    max: 100,
+    divisions: 19,
+    label: '${_radius.round()} km',
+    onChanged: (v) => setState(() => _radius = v),
+  ),
+),</code></pre>
+  <p>They all follow the same contract: <code>value</code> comes from the state, <code>onChanged</code> changes the state with <code>setState</code>. The widget never stores anything.</p>
+  <div class="callout task"><strong>Exercise 4</strong> Solve <code>TODO 4</code>: the three controls on the settings screen, with the °C/°F <code>SegmentedButton</code> instead of the checkbox. Pass the chosen unit to the forecast screen as a parameter and see what it costs (it is the five levels problem).</div>
+</section>
+
+<section class="slide">
+  <h2>6. Final exercise: settings screen</h2>
+  <ol class="steps">
+    <li><code>SettingsScreen</code> is a <code>StatefulWidget</code> with the form, the controls and the favourite location search, all in a <code>ListView</code>.</li>
+    <li>The search uses the <code>Search</code> widget from step 3; tapping a location puts its name in the form field (you need the controller).</li>
+    <li>"Save" validates, shows the <code>SnackBar</code> and goes back to the previous screen with <code>Navigator.pop(context)</code>. Tomorrow we look at what this does.</li>
+    <li>Confirm that all controllers and timers are released in <code>dispose</code>. The test <code>test/settings_test.dart</code> checks it.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise 5</strong> Finish the screen until <code>flutter test</code> goes green. Then do a hot reload with the form half filled in, and a hot restart: what is lost in each one, and why?</div>
+  <aside class="notes">Set aside 25 minutes. Typical questions: the GlobalKey created inside build (it creates a new key on every rebuild and the form "forgets" the errors); setState after pop. Finish with the hot reload question: the State survives a reload, not a restart.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <p>Tomorrow, Wednesday, 7 October, the lesson is at the usual time: 16:00 to 18:00.</p>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Add an "e-mail for warnings" field to the form with its own validation (it has an <code>@</code> and a dot after it) and the <code>emailAddress</code> keyboard. This is <code>TODO 5</code>.</li>
+        <li>Read <a href="https://docs.flutter.dev/data-and-backend/state-mgmt/options" target="_blank" rel="noopener">State management options</a> and write down one advantage and one disadvantage of each approach. It comes up in the tests.</li>
+        <li>Tomorrow at 16:00: navigation between screens and themes. Today's settings screen will be connected to the rest.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/simple" target="_blank" rel="noopener">Simple app state management</a>: Provider explained by the Flutter team.</li>
+        <li><a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Flutter architecture guide</a>: where the Flutter team recommends putting state and logic; we go deeper in lesson 13.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/forms/validation" target="_blank" rel="noopener">Build a form with validation</a>: the official recipe.</li>
+        <li><a href="https://pub.dev/packages/provider" target="_blank" rel="noopener">provider</a> on pub.dev: the package we will use from lesson 13 onwards.</li>
+        <li><a href="https://codewithandrea.com/videos/flutter-state-management-basics/" target="_blank" rel="noopener">Flutter state management basics</a> (Code With Andrea): setState, ValueNotifier, ChangeNotifier, Provider and BLoC compared with short examples.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

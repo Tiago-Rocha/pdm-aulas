@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17 · Token authentication and synced favourites · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="17">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 17 · Week 8 · Tuesday, 27 October 2026 · 08:30 to 10:30</p>
+  <h1>Token authentication and synced favourites</h1>
+  <p class="lead">Theory: authentication on mobile: OAuth2 and OpenID Connect, JWT, access and refresh tokens, biometrics. Practice: token kept in secure storage, renewal on 401 by an interceptor, and favourites synced with the server across devices.</p>
+  <div class="meta"><span>Repository: pdm-aula-17</span></div>
+  <aside class="notes">Open jwt.io on the projector with a token from the course API pasted in: the payload shows up in plain text. It is the hook for the JWT slides. Confirm before the lesson that the /v1/me/favorites endpoint responds to the class token and that the expiry is short (15 min) so the 401 happens during the lesson.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Tell authentication apart from authorisation, and cookie sessions from Bearer tokens.</li>
+    <li>Read a JWT and explain header, payload, signature and expiry.</li>
+    <li>Describe the authorization code flow with PKCE and the role of the refresh token.</li>
+    <li>Obtain, store and use the course API token with automatic renewal on 401.</li>
+    <li>Sync favourites with the backend with optimistic UI and rollback in case of error.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Authentication vs authorisation; cookies vs tokens</h2>
+  <ul>
+    <li><strong>Authentication:</strong> who you are (login, biometrics, key). <strong>Authorisation:</strong> what you can do (read your group's favourites, not those of the others).</li>
+    <li><strong>401 Unauthorized</strong> = I do not know who you are: token missing or expired. <strong>403 Forbidden</strong> = I know who you are, but you are not allowed.</li>
+    <li>On the web: a session stored on the server and a cookie that the browser sends by itself on every request. The typical risk is CSRF.</li>
+    <li>On mobile: there is no browser managing cookies. The app stores a token and sends it explicitly in <code>Authorization: Bearer …</code>.</li>
+    <li>A signed token is <em>stateless</em>: the server validates the signature without going to the database. It scales better; revoking is harder.</li>
+  </ul>
+  <p><strong>For the tests:</strong> 401 is authentication, 403 is authorisation; on mobile you use Bearer tokens, not cookies.</p>
+</section>
+
+<section class="slide">
+  <h2>JWT (1 of 2): what is inside</h2>
+  <ul>
+    <li>Three parts in base64url separated by dots: <code>header.payload.signature</code>.</li>
+    <li><strong>Header:</strong> <code>{"alg":"HS256","typ":"JWT"}</code>. <strong>Payload:</strong> the <em>claims</em>: <code>sub</code> (who), <code>iss</code> (who issued it), <code>iat</code> and <code>exp</code> (when), and custom claims such as <code>group</code> or <code>scope</code>.</li>
+    <li><strong>Signature:</strong> HMAC (shared key) or RSA/ECDSA (key pair) over the header and the payload.</li>
+  </ul>
+<pre data-title="payload of a course API token"><code class="language-json">{
+  "sub": "group-07",
+  "iss": "api.pdm.example",
+  "iat": 1761494400,
+  "exp": 1761495300,
+  "scope": "forecast warnings favorites"
+}</code></pre>
+  <ul>
+    <li>Base64 is not encryption: anyone can read the payload. The app can read <code>exp</code> to know it is about to expire without making a request.</li>
+  </ul>
+  <p><strong>For the tests:</strong> JWT = header.payload.signature; the payload is readable by everyone, it is not secret.</p>
+</section>
+
+<section class="slide">
+  <h2>JWT (2 of 2): signature, expiry and what never goes in it</h2>
+  <ul>
+    <li>The signature guarantees <strong>integrity</strong>: if someone changes <code>"sub": "group-07"</code> to <code>"group-01"</code>, the signature no longer matches and the server rejects it.</li>
+    <li>Only the server validates. With HS256 the client does not have the key; with RS256 it could validate with the public key, but it does not need to.</li>
+    <li>A short <code>exp</code> (15 min to 1 h): a stolen token is worth little time. Without <code>exp</code> it is an eternal token, and that is a security bug.</li>
+    <li><strong>Never in the JWT:</strong> passwords, sensitive personal data, secrets. It travels in plain text, on every request, and ends up in logs.</li>
+    <li>Real attacks from the past: <code>"alg":"none"</code> accepted by the server, and weak HS256 keys broken by brute force. Current libraries reject both.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the signature gives integrity, not confidentiality; you never put sensitive data in a JWT.</p>
+  <div class="callout"><strong>Analogy</strong> A festival wristband. It says who you are and until when it is valid, and it carries the organiser's signature; any doorman checks it at the door without phoning the ticket office (the server validates the signature without going to the database). Anyone who tries to change the date ruins the signature. And you do not write on it anything you do not want everyone to read: the wristband is in plain sight of everybody.</div>
+  <aside class="notes">Question: "if the payload is readable, why can't I change exp to a year from now?" Let them get to the signature by themselves. Then: "and what if the server does not check the signature?" That is the alg none attack.</aside>
+</section>
+
+<section class="slide">
+  <h2>OAuth2 and OIDC in broad strokes: authorization code + PKCE</h2>
+  <ul>
+    <li><strong>The problem:</strong> the app wants to access the user's Google calendar without ever knowing the Google password.</li>
+    <li><strong>OAuth2</strong> is delegated authorisation: the app opens the system browser, the user signs in to Google, Google returns a <code>code</code> through a deep link, and the app exchanges the <code>code</code> for tokens.</li>
+    <li><strong>PKCE:</strong> the app generates a random <code>code_verifier</code> and sends its hash (<code>code_challenge</code>). Only whoever has the verifier can exchange the code. Mandatory in mobile apps, because they have nowhere to keep a client secret.</li>
+    <li><strong>OIDC</strong> = OAuth2 + identity: it also returns an <code>id_token</code> (JWT) that says who the user is. It is "Sign in with Google".</li>
+    <li>In Flutter: <code>flutter_appauth</code> or each provider's SDK. Always Custom Tabs / <code>ASWebAuthenticationSession</code>, never your own webview (the user should not type the password inside your app).</li>
+  </ul>
+  <p><strong>For the tests:</strong> mobile apps do not store passwords or client secrets; they use authorization code with PKCE in the system browser.</p>
+</section>
+
+<section class="slide">
+  <h2>Short access token, long refresh token, logout</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 410" role="img" aria-label="Sequence between secure storage, app and API: the app obtains access and refresh tokens, saves them, sends Bearer on every request; on a 401 it asks for a new access token with the refresh token, saves it and repeats the original request once">
+    <rect x="60" y="12" width="200" height="32" rx="8" class="box"/>
+    <text x="160" y="33" class="t b" text-anchor="middle">Secure storage</text>
+    <rect x="350" y="12" width="200" height="32" rx="8" class="box accent"/>
+    <text x="450" y="33" class="t b" text-anchor="middle">App</text>
+    <rect x="640" y="12" width="200" height="32" rx="8" class="box"/>
+    <text x="740" y="33" class="t b" text-anchor="middle">API</text>
+    <line x1="160" y1="44" x2="160" y2="362" class="box muted"/>
+    <line x1="450" y1="44" x2="450" y2="362" class="box muted"/>
+    <line x1="740" y1="44" x2="740" y2="362" class="box muted"/>
+    <line x1="454" y1="74" x2="736" y2="74" class="arrow accent"/>
+    <text x="595" y="68" class="t s" text-anchor="middle">1 · POST /v1/auth/token (credentials)</text>
+    <line x1="736" y1="98" x2="454" y2="98" class="arrow"/>
+    <text x="595" y="92" class="t s" text-anchor="middle">2 · access (15 min) + refresh (30 days)</text>
+    <line x1="446" y1="122" x2="164" y2="122" class="arrow"/>
+    <text x="305" y="116" class="t s" text-anchor="middle">3 · save both (secure storage)</text>
+    <line x1="454" y1="154" x2="736" y2="154" class="arrow"/>
+    <text x="595" y="148" class="t s" text-anchor="middle">4 · GET /v1/me/favorites · Bearer access</text>
+    <line x1="736" y1="174" x2="454" y2="174" class="arrow"/>
+    <text x="595" y="168" class="t s" text-anchor="middle">200 OK</text>
+    <line x1="454" y1="204" x2="736" y2="204" class="arrow"/>
+    <text x="595" y="198" class="t s" text-anchor="middle">5 · another request · expired Bearer access</text>
+    <rect x="515" y="207" width="160" height="16" rx="4" class="box danger"/>
+    <line x1="736" y1="224" x2="454" y2="224" class="arrow"/>
+    <text x="595" y="219" class="t s" text-anchor="middle">6 · 401 Unauthorized</text>
+    <line x1="454" y1="254" x2="736" y2="254" class="arrow accent"/>
+    <text x="595" y="248" class="t s" text-anchor="middle">7 · POST /v1/auth/token with the refresh</text>
+    <line x1="736" y1="274" x2="454" y2="274" class="arrow"/>
+    <text x="595" y="268" class="t s" text-anchor="middle">8 · new access</text>
+    <line x1="446" y1="298" x2="164" y2="298" class="arrow"/>
+    <text x="305" y="292" class="t s" text-anchor="middle">9 · save the new access</text>
+    <line x1="454" y1="328" x2="736" y2="328" class="arrow"/>
+    <text x="595" y="322" class="t s" text-anchor="middle">10 · repeat the original request, once</text>
+    <line x1="736" y1="348" x2="454" y2="348" class="arrow"/>
+    <text x="595" y="342" class="t s" text-anchor="middle">200 OK</text>
+    <text x="450" y="384" class="t s" text-anchor="middle">short access: on every request · long refresh: only to renew</text>
+    <text x="450" y="402" class="t s" text-anchor="middle">If the refresh also fails: log out and delete both.</text>
+  </svg>
+  <figcaption>The access token goes on every request and lasts minutes; the refresh token lives in secure storage and is only used to ask for a new access token.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Access token</th><th>Refresh token</th></tr></thead>
+  <tbody>
+  <tr><td>Lifetime</td><td>Minutes to an hour</td><td>Days to months</td></tr>
+  <tr><td>Use</td><td>On every request, as <code>Bearer</code></td><td>Only to ask for a new access token</td></tr>
+  <tr><td>Where to store</td><td>Memory; secure storage if it has to survive a restart</td><td>Secure storage, always</td></tr>
+  <tr><td>If it is stolen</td><td>It is worth little time</td><td>Serious: revoke on the server</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li><strong>Renewal:</strong> on 401, ask for a new access token with the refresh token and repeat the original request <em>once</em>. If the refresh also fails, logout.</li>
+    <li><strong>Logout:</strong> delete both from the device, revoke the refresh token on the server, clear the cache that holds user data. The course API has a single token (per group), but the pattern is the same.</li>
+  </ul>
+  <p><strong>For the tests:</strong> short access on every request; long refresh in secure storage, only to renew; logout deletes both.</p>
+  <div class="callout"><strong>Analogy</strong> The access token is the festival wristband: you show it to every doorman and it is valid for a few hours. The refresh token is the ticket you exchange for a new wristband when the old one expires, without going back to the ticket office queue (without a new login). The ticket stays in your inside pocket (secure storage) and is only shown at the exchange desk; losing it is serious, because whoever has it can go and fetch new wristbands.</div>
+</section>
+
+<section class="slide">
+  <h2>Biometrics and Sign in with Apple</h2>
+  <ul>
+    <li><code>local_auth</code>: Face ID, Touch ID, fingerprint. It only returns "yes" or "no" to the app. It never talks to the server.</li>
+    <li><strong>Right use:</strong> local unlock. The bank app already has a session (refresh token stored); biometrics decide whether the app can use it now.</li>
+    <li><strong>Wrong use:</strong> "authenticating on the server with biometrics". The server never sees the biometrics; if the refresh token does not exist, biometrics do not create any session.</li>
+    <li><strong>Sign in with Apple</strong> is mandatory on the App Store if the app offers another social login (Google, Facebook). It includes a relay email for those who do not want to give their own.</li>
+    <li><strong>Passkeys</strong> (WebAuthn): the next step. No passwords, a private key on the device, unlocked by biometrics. Already supported on Android and iOS.</li>
+  </ul>
+  <p><strong>For the tests:</strong> biometrics unlock locally; authentication on the server is still done by the token.</p>
+  <aside class="notes">Frequent question: "can I keep the password in secure storage and use biometrics to resend it?" Technically yes, it is what some old apps do, but it violates the principle: the app should not have the password. The refresh token is the answer.</aside>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Lesson repository</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-17.git
+cd pdm-aula-17/starter
+flutter pub get
+flutter run --dart-define-from-file=.env.json</code></pre>
+  <ul>
+    <li><code>starter/</code> is the app from lesson 16 (cache and <code>TokenStorage</code>) with TODOs from 1 to 5 and failing tests. Create the <code>.env.json</code> with your group's <code>PDM_CLIENT_ID</code> and <code>PDM_SECRET</code>; it is already in <code>.gitignore</code>.</li>
+    <li><code>solucao/</code> is the final state: token renewed by itself, the same favourites on two phones, a logout that clears everything.</li>
+    <li>The starter's <code>ApiClient</code> already has <code>delete</code>, besides <code>get</code> and <code>post</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Before you start</strong> Ask for a token in Swagger, paste it into <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a> and read the <code>exp</code>. Convert it to local time (<code>DateTime.fromMillisecondsSinceEpoch(exp * 1000)</code>). How long from now is it?</div>
+</section>
+
+<section class="slide">
+  <h2>1. Obtain the token and store it securely</h2>
+<pre data-title="lib/auth/auth_service.dart"><code class="language-dart">class AuthService {
+  AuthService(this._api, this._storage);
+  final ApiClient _api;
+  final TokenStorage _storage;   // flutter_secure_storage, from lesson 16
+
+  static const _clientId = String.fromEnvironment('PDM_CLIENT_ID');
+  static const _secret = String.fromEnvironment('PDM_SECRET');
+
+  Future&lt;String&gt; fetchToken() async {
+    final json = await _api.post('/v1/auth/token', body: {
+      'client_id': _clientId,
+      'secret': _secret,
+    });
+    final token = json['access_token'] as String;
+    await _storage.save(token);
+    return token;
+  }
+
+  Future&lt;String&gt; currentToken() async =&gt;
+      await _storage.read() ?? await fetchToken();
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Token: what matters</h2>
+  <ul>
+    <li><code>currentToken()</code> returns what is stored or asks for a new one. There are never two paths to get a token: only this one.</li>
+    <li>The token goes into <code>TokenStorage</code> (Keychain/Keystore), never into <code>shared_preferences</code> nor into the database. That was the topic of lesson 16.</li>
+    <li><code>String.fromEnvironment</code> is resolved at compile time: the value ends up in the binary. For the course API that is acceptable (a group token, revocable); in production the login belongs to the user.</li>
+    <li>A stored token may already be expired when the app starts. That is fine: the interceptor in step 2 handles the 401.</li>
+    <li>Optional: read <code>exp</code> from the payload (base64url of the second segment) and renew before it expires. It saves one 401 per session.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Implement <code>bool expiresWithin(String token, Duration margin)</code>, which decodes the payload and compares <code>exp</code> with <code>DateTime.now()</code>. Use it in <code>currentToken()</code> to renew when less than a minute is left. The test <code>test/auth_service_test.dart</code> comes with sample tokens.</div>
+</section>
+
+<section class="slide">
+  <h2>2. <code>AuthClient</code>: Bearer on every request, renewal on 401</h2>
+<pre data-title="lib/auth/auth_client.dart"><code class="language-dart">class AuthClient extends http.BaseClient {
+  AuthClient(this._inner, this._auth);
+  final http.Client _inner;
+  final AuthService _auth;
+
+  @override
+  Future&lt;http.StreamedResponse&gt; send(http.BaseRequest request) async {
+    if (request.url.path.endsWith('/auth/token')) return _inner.send(request);
+    var response = await _sendWith(await _auth.currentToken(), request);
+    if (response.statusCode == 401) {
+      response = await _sendWith(await _auth.fetchToken(), request);  // renews once
+    }
+    return response;
+  }
+
+  Future&lt;http.StreamedResponse&gt; _sendWith(String token, http.BaseRequest original) {
+    final request = http.Request(original.method, original.url)
+      ..headers.addAll(original.headers)
+      ..headers['Authorization'] = 'Bearer $token';
+    if (original is http.Request) request.bodyBytes = original.bodyBytes;
+    return _inner.send(request);
+  }
+}
+
+// main.dart: ApiClient now uses AuthClient underneath
+final api = ApiClient(baseUrl: baseUrl, client: AuthClient(http.Client(), auth));</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Interceptor: what matters</h2>
+  <ul>
+    <li><code>BaseClient.send</code> is the point every <code>http</code> request goes through. It is the interceptor from lesson 12, now with code.</li>
+    <li>The token request <strong>carries no token</strong>. Without the first line of <code>send</code>, <code>currentToken()</code> would call <code>fetchToken()</code>, which would go through <code>send</code>, which would call <code>currentToken()</code>: infinite recursion.</li>
+    <li>A <code>BaseRequest</code> can only be sent once. That is why <code>_sendWith</code> creates a new request with the same method, URL, headers and body.</li>
+    <li>It renews <strong>once</strong>. If the second request also gives 401, the problem is not the expired token: it is the wrong secret or the group revoked, and the app has to show that.</li>
+    <li>With <code>dio</code> it is a <code>QueuedInterceptor</code> with <code>onError</code>: the queue prevents ten parallel requests with 401 from asking for ten new tokens. Here, <code>AuthService</code> should keep the <code>Future</code> in progress for the same effect.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> Test with <code>MockClient</code>: the first response is 401, the second 200. Check that <code>AuthClient</code> made three requests in total (original, token, repetition) and that the last one has the <code>Authorization</code> header with the new token. Then: two 401s in a row have to result in <code>ApiException(statusCode: 401)</code>, not in a third request.</div>
+  <aside class="notes">The infinite recursion is the question of the day: delete the first line of send live and show the stack overflow. Second question: "why not put the token in ApiClient as before?" Because the renewal has to happen in the middle of a request, and that is the interceptor. Give this block 20 minutes.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. <code>FavoritesRepository</code> on top of <code>/v1/me/favorites</code></h2>
+<pre data-title="lib/favorites/favorites_repository.dart"><code class="language-dart">abstract class FavoritesRepository {
+  Future&lt;List&lt;int&gt;&gt; list();
+  Future&lt;void&gt; add(int locationId);
+  Future&lt;void&gt; remove(int locationId);
+}
+
+class FavoritesRepositoryApi implements FavoritesRepository {
+  FavoritesRepositoryApi(this._api);
+  final ApiClient _api;
+
+  @override
+  Future&lt;List&lt;int&gt;&gt; list() async {
+    final json = await _api.get('/v1/me/favorites') as List&lt;dynamic&gt;;
+    return json.map((e) =&gt; (e as Map&lt;String, dynamic&gt;)['locationId'] as int).toList();
+  }
+
+  @override
+  Future&lt;void&gt; add(int locationId) =&gt;
+      _api.post('/v1/me/favorites', body: {'locationId': locationId});
+
+  @override
+  Future&lt;void&gt; remove(int locationId) =&gt;
+      _api.delete('/v1/me/favorites/$locationId');
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. <code>FavoritesNotifier</code>: optimistic UI with rollback</h2>
+<pre data-title="lib/favorites/favorites_notifier.dart"><code class="language-dart">class FavoritesNotifier extends ChangeNotifier {
+  FavoritesNotifier(this._repo);
+  final FavoritesRepository _repo;
+  Set&lt;int&gt; _ids = {};
+  bool contains(int id) =&gt; _ids.contains(id);
+
+  Future&lt;void&gt; load() async {
+    _ids = (await _repo.list()).toSet();
+    notifyListeners();
+  }
+
+  /// Returns false if the server refused and the change was undone.
+  Future&lt;bool&gt; toggle(int id) async {
+    final before = {..._ids};
+    final adding = !_ids.contains(id);
+    adding ? _ids.add(id) : _ids.remove(id);           // 1. the UI changes right away
+    notifyListeners();
+    try {
+      await (adding ? _repo.add(id) : _repo.remove(id));   // 2. server
+      return true;
+    } catch (_) {
+      _ids = before;                                    // 3. rollback
+      notifyListeners();
+      return false;
+    }
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. The favourite button with feedback in case of error</h2>
+<pre data-title="lib/favorites/favorite_button.dart"><code class="language-dart">class FavoriteButton extends StatelessWidget {
+  const FavoriteButton({super.key, required this.locationId});
+  final int locationId;
+
+  @override
+  Widget build(BuildContext context) {
+    final marked = context.select&lt;FavoritesNotifier, bool&gt;((f) =&gt; f.contains(locationId));
+    return IconButton(
+      icon: Icon(marked ? Icons.star : Icons.star_border),
+      tooltip: marked ? 'Remove from favourites' : 'Add to favourites',
+      onPressed: () async {
+        final ok = await context.read&lt;FavoritesNotifier&gt;().toggle(locationId);
+        if (!ok &amp;&amp; context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not save the favourite. Try again.')),
+          );
+        }
+      },
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Synced favourites: what matters</h2>
+  <ul>
+    <li><strong>Optimistic UI:</strong> the star lights up the instant it is tapped, before the server's response. The user does not wait 800 ms for an icon.</li>
+    <li><strong>Rollback:</strong> the previous state is kept (<code>before</code>); if the server refuses, it is restored and the user is told. There is never a lit star that the server does not know about.</li>
+    <li><code>toggle</code> returns a <code>bool</code> instead of storing the message in the notifier: the widget that triggered the action is the one that shows the <code>SnackBar</code>, with <code>context.mounted</code> after the <code>await</code>.</li>
+    <li><code>context.select</code> rebuilds the button only when <em>this</em> favourite changes, not when any of them changes.</li>
+    <li>The <code>POST</code> is not retried by <code>ApiClient</code> (lesson 14); if it fails, the rollback is the right answer. A repeated <code>DELETE</code> does no harm: it is idempotent.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Register <code>FavoritesRepositoryApi</code> and the notifier in <code>main</code>, call <code>load()</code> at startup, and write the test "toggle rolls back when the repository fails" with a fake whose <code>add</code> throws.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Home screen with the same favourites on two phones</h2>
+<pre data-title="lib/favorites/favorites_screen.dart"><code class="language-dart">class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final favorites = context.watch&lt;FavoritesNotifier&gt;();
+    final all = context.watch&lt;ForecastNotifier&gt;().locations;
+    final items = all.where((l) =&gt; favorites.contains(l.id)).toList();
+
+    if (items.isEmpty) {
+      return const EmptyState(message: 'Mark a location with the star to see it here.');
+    }
+    return RefreshIndicator(
+      onRefresh: () =&gt; context.read&lt;FavoritesNotifier&gt;().load(),
+      child: ListView(
+        children: [
+          for (final l in items)
+            ListTile(
+              title: Text(l.name),
+              subtitle: Text(l.island),
+              trailing: FavoriteButton(locationId: l.id),
+              onTap: () =&gt; context.push('/location/${l.id}'),
+            ),
+        ],
+      ),
+    );
+  }
+}</code></pre>
+  <div class="callout task"><strong>Exercise 4</strong> Two phones of the group with the same client-id: mark a location on one, pull to refresh on the other. It has to appear. Then remove it on the second and confirm on the first. Record 20 seconds of video for the PR.</div>
+</section>
+
+<section class="slide">
+  <h2>5. Logout: delete token and cache</h2>
+<pre data-title="lib/auth/session_notifier.dart"><code class="language-dart">class SessionNotifier extends ChangeNotifier {
+  SessionNotifier(this._storage, this._db, this._favorites);
+  final TokenStorage _storage;
+  final AppDatabase _db;
+  final FavoritesNotifier _favorites;
+
+  Future&lt;void&gt; signOut() async {
+    await _storage.delete();            // 1. token out of the Keychain/Keystore
+    await _db.deleteAll();              // 2. cache that may hold the group's data
+    _favorites.clear();                 // 3. state in memory
+    notifyListeners();                  // 4. the router takes you to the sign-in screen
+  }
+}</code></pre>
+  <ul>
+    <li>Order: first what is sensitive (token), then what is large (cache), then memory. If the app is killed halfway through, the token no longer exists.</li>
+    <li>With a refresh token there would be a step 0: <code>POST /v1/auth/revoke</code> on the server. A token that is only deleted on the client stays valid until it expires.</li>
+    <li><code>go_router</code> observes <code>SessionNotifier</code> via <code>refreshListenable</code> and the <code>redirect</code> sends you to <code>/sign-in</code> when there is no session.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 5</strong> A "Sign out" button in the settings. After pressing it: no token in secure storage, forecasts table empty, sign-in screen. On signing in again, the favourites come back from the server. Compare with <code>solucao/</code>.</div>
+  <aside class="notes">Keep the last 10 minutes for the two-phone demo on the projector: one group marks, another phone of the same group refreshes. It is the proof that the favourites live on the server. Remind them that today's pattern (repository + optimistic notifier + rollback) is what goes into the project by Monday's review, 2/11.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Favourites in the project with the same pattern: <code>FavoritesRepositoryApi</code>, optimistic notifier with rollback, favourites screen with pull-to-refresh.</li>
+        <li>Read the <a href="https://jwt.io/introduction" target="_blank" rel="noopener">introduction to JWT</a> and decode a course API token by hand (base64url of the second segment).</li>
+        <li>Sprint 1 closes on Monday, 2/11: PRs in review this week, not on Sunday night.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://jwt.io/introduction" target="_blank" rel="noopener">JSON Web Token introduction</a>: structure, claims and signature, with the debugger to paste a course API token into.</li>
+        <li><a href="https://datatracker.ietf.org/doc/html/rfc8252" target="_blank" rel="noopener">RFC 8252: OAuth 2.0 for Native Apps</a>: the standard that explains why mobile apps use the system browser and PKCE, and never their own webview.</li>
+        <li><a href="https://www.orbittest.dev/blog/access-token-vs-refresh-token-explained" target="_blank" rel="noopener">Access token vs refresh token explained</a>: the two tokens in plain language, with the renewal flow step by step.</li>
+        <li><a href="https://pub.dev/packages/flutter_appauth" target="_blank" rel="noopener">flutter_appauth</a>: authorization code with PKCE in Flutter, for when the login belongs to users.</li>
+        <li><a href="https://developer.apple.com/sign-in-with-apple/" target="_blank" rel="noopener">Sign in with Apple</a> and <a href="https://developer.android.com/identity/sign-in/credential-manager" target="_blank" rel="noopener">Credential Manager</a> (Android): social login and passkeys.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

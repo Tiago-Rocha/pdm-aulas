@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 07 · Layouts (continued): Stack, lists and custom widgets · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="7">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 07 · Week 4 · Wednesday, 30 September 2026 · 16:00 to 18:00</p>
+  <h1>Layouts (continued): Stack, lists and custom widgets</h1>
+  <p class="lead">Continues yesterday's lesson, in the same repository. Practice: the name and the chip over the image with Stack and Positioned, the row of days with ListView, the grid of islands with GridView, and two custom widgets, DayChip and IslandCard.</p>
+  <div class="meta"><span>Repository: pdm-aula-06</span></div>
+  <aside class="notes">Yesterday we stopped at step 2, with the Stack slide already shown. Start by getting everyone to the same point with the checkout on the "Recap" slide and only move on when everyone has the app running on the phone. The Stack slide comes back as a recap: two minutes, with the questions. Today there is time for steps 2, 3 and 4 in class.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Overlay widgets with <code>Stack</code> and <code>Positioned</code>, and make sure text is readable on top of an image.</li>
+    <li>Choose between <code>ListView</code> with <code>children</code> and <code>ListView.builder</code> or <code>.separated</code>, and make a list horizontal.</li>
+    <li>Build a grid with <code>GridView</code>.</li>
+    <li>Write a custom widget with its own file, a <code>const</code> constructor and a <code>final</code> field.</li>
+    <li>Extract a custom widget from code that already exists and reuse it.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Recap">
+  <h2>Recap: where we got to yesterday</h2>
+  <ul>
+    <li>Constraints go down, sizes go up, the parent sets the position. A child never chooses where it goes.</li>
+    <li><code>Row</code> and <code>Column</code> lay out their children along one axis; <code>Expanded</code> shares out the remaining space according to <code>flex</code>.</li>
+    <li>Step 1 done: the three <code>SizedBox</code> of 160 became <code>Expanded</code> and the overflow went away.</li>
+  </ul>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-1
+flutter pub get</code></pre>
+  <ol class="steps">
+    <li>Open the <code>pdm-aula-06</code> folder in VS Code and run the three commands above in the terminal, one at a time: you land on step 1 done, whether you finished it yesterday or not.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → your Android. Then <kbd>F5</kbd>. On the phone, the three values below the temperature now fit, with no stripes.</li>
+    <li>Run <code>flutter test</code>: the <em>Passo 1</em> test is green, the others are not yet.</li>
+  </ol>
+  <p>Were you not here yesterday? Before the commands above: <code>git clone https://github.com/Tiago-Rocha/pdm-aula-06.git</code> and <code>cd pdm-aula-06</code>.</p>
+  <aside class="notes"><code>git stash -u</code> puts away what each student wrote yesterday without losing it; anyone who wants it back later uses <code>git stash pop</code> on the branch they were on. Anyone who missed yesterday clones and carries on from here: the <code>passo-1</code> branch already has the overflow fixed. Ask a student to explain step 1 in one sentence before moving on.</aside>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>3. Stack and Positioned: image with text on top <span class="badge">recap</span></h2>
+<pre><code class="language-dart">SizedBox(
+  height: 200,
+  child: Stack(
+    fit: StackFit.expand,                          // children with no position fill everything
+    children: [
+      Image.asset('assets/img/sao_miguel.jpg', fit: BoxFit.cover),
+      const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.transparent, Colors.black54],   // darkens so the text is readable
+          ),
+        ),
+      ),
+      Positioned(
+        left: 16,
+        bottom: 16,
+        child: Text('São Miguel', style: textTheme.headlineMedium?.copyWith(color: Colors.white)),
+      ),
+    ],
+  ),
+)</code></pre>
+  <div class="callout"><strong>Ask the class</strong> If I remove <code>fit: StackFit.expand</code>, what happens to the image? How would I put the text at the top right? And if I swapped the order of the image and the gradient in the list?</div>
+  <ul>
+    <li><code>Stack</code> overlays its children in list order: the last one ends up on top. <code>Positioned</code> anchors a child to one or more edges.</li>
+    <li>A gradient on top of the image is a common technique in travel apps to guarantee contrast for the text.</li>
+  </ul>
+  <aside class="notes"><strong>Answers to the questions.</strong> Without <code>StackFit.expand</code> the children with no <code>Positioned</code> are no longer forced to fill the <code>Stack</code>: the image takes whatever size fits while keeping its aspect ratio, pinned to the top left, and an empty strip may be left beside it; the gradient, which has no child, shrinks to zero and disappears. Text at the top right: <code>Positioned(top: 16, right: 16)</code>. With the order swapped, the gradient ends up under the image and can no longer be seen: the last one in the list is the one on top.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 2: name and chip over the image</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-1
+flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · IslandHeader, inside the Stack"><code class="language-dart">// Hint: a child with Positioned goes where you say; the others stay underneath
+Positioned(
+  left: 16,
+  bottom: 16,
+  child: Text('...', style: textTheme.headlineMedium?.copyWith(color: Colors.white)),
+),
+Positioned(
+  top: 12,
+  right: 12,
+  child: Chip(label: Text('...')),
+),
+
+// The data you need, in lib/data.dart
+currentIsland.name                   // 'São Miguel'
+forecasts.first.type.description     // 'Parcialmente nublado'</code></pre>
+  <div class="callout task"><strong>Do</strong> Add the two <code>Positioned</code> at the end of the <code>Stack</code>'s list of children, with the island name and the weather description. Notice that <code>textTheme</code> does not exist yet in that <code>build</code>: create it as in <code>CurrentConditions</code>.</div>
+  <p><strong>On the phone:</strong> the island name in white at the bottom left, on top of the gradient, and the chip at the top right. <strong>In the terminal:</strong> <code>flutter test</code>, the <em>Passo 2</em> test turns green.</p>
+  <aside class="notes">Anyone already on <code>passo-1</code> from the previous slide does not need to repeat the checkout. The line almost everyone is missing is <code>final textTheme = Theme.of(context).textTheme;</code> at the start of the <code>build</code> of <code>IslandHeader</code>. The other typical mistake is putting the <code>Positioned</code> outside the <code>Stack</code>'s list of children: the error says "Incorrect use of ParentDataWidget".</aside>
+</section>
+
+<section class="slide">
+  <h2>4. ListView and GridView</h2>
+<pre><code class="language-dart">// A few known items: builds them all at once
+ListView(
+  children: const [ListTile(title: Text('Ponta Delgada')), ListTile(title: Text('Horta'))],
+)
+
+// Long list: builds only the visible items, as you scroll
+ListView.separated(
+  itemCount: forecasts.length,
+  separatorBuilder: (_, _) => const Divider(height: 1),
+  itemBuilder: (context, i) {
+    final f = forecasts[i];
+    return ListTile(
+      leading: Icon(f.type.icon),
+      title: Text(f.weekday),
+      trailing: Text('${f.tMin.round()}° / ${f.tMax.round()}°'),
+    );
+  },
+)
+
+// Grid for the nine islands
+GridView.count(
+  crossAxisCount: 3,
+  children: [for (final i in islands) Card(child: Center(child: Text(i.name)))],
+)</code></pre>
+  <div class="callout"><strong>Ask the class</strong> If the list had a thousand days, which of the two versions would freeze the app? How do I make the list of days horizontal? How do I make the grid have two columns on a phone and four on a tablet without writing two layouts?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> The first one would freeze: <code>ListView(children: [...])</code> has to create the thousand widgets before showing the first; <code>.builder</code> and <code>.separated</code> only call the <code>itemBuilder</code> for the ones on screen. Horizontal: <code>scrollDirection: Axis.horizontal</code>, and the list needs a height given by the parent (a <code>SizedBox</code>), because inside another vertical list the height is infinite. Two or four columns without two layouts: <code>GridView.extent(maxCrossAxisExtent: 200)</code>, which fixes the maximum width of a cell and works out the columns from the available width. All three answers are on the next slide: let the class answer first.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Lists: what matters</h2>
+  <ul>
+    <li><code>ListView(children: [...])</code> builds all the children, even the ones you cannot see. For 10 items it is fine; for 1000, it freezes the app.</li>
+    <li><code>ListView.builder</code> and <code>.separated</code> call the <code>itemBuilder</code> only for the visible items and recycle them as you scroll. That is how the Instagram feed copes with thousands of posts.</li>
+    <li><code>ListTile</code> is the ready-made Material list row: <code>leading</code>, <code>title</code>, <code>subtitle</code>, <code>trailing</code>, <code>onTap</code>. Use it before inventing your own.</li>
+    <li><code>GridView.count</code> fixes the number of columns; <code>GridView.extent</code> fixes the maximum width of each cell and works out the columns, which is better for tablets.</li>
+    <li><code>scrollDirection: Axis.horizontal</code> turns any list into a sliding row.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>ListView.builder</code> builds the items on demand; <code>ListView</code> with <code>children</code> builds them all.</p>
+</section>
+
+<section class="slide">
+  <h2>Step 3: writing the DayChip</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-2
+flutter pub get</code></pre>
+<pre data-title="lib/day_chip.dart (new) and lib/forecast_screen.dart · DaysRow"><code class="language-dart">// Hint: the same shape as Monday's LocationCard
+class DayChip extends StatelessWidget {
+  const DayChip({super.key, required this.forecast});
+
+  final DayForecast forecast;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      child: Card(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // day of the week: forecast.weekday
+            // icon: forecast.type.icon
+            // maximum: '${forecast.tMax.round()}°'
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// In DaysRow, replace the placeholder Card with:
+itemBuilder: (_, i) => DayChip(forecast: forecasts[i]),</code></pre>
+  <div class="callout task"><strong>Do</strong> Create the file, fill in the three children of the <code>Column</code> with <code>Text</code> and <code>Icon</code>, import it in <code>forecast_screen.dart</code> and use it in the <code>itemBuilder</code>. The grid of islands in <code>IslandsGrid</code> is already done: read it.</div>
+  <p><strong>On the phone:</strong> five cards in the horizontal row, each with the day, the icon and the maximum. <strong>In the terminal:</strong> <code>flutter test</code>, the <em>Passo 3</em> tests (both of them) turn green.</p>
+  <aside class="notes">A new file does not come in through hot reload if nobody imports it yet: first the <code>import 'day_chip.dart';</code> in <code>forecast_screen.dart</code>, then save. <code>day_chip.dart</code> needs to import <code>package:flutter/material.dart</code> and <code>data.dart</code>, because of <code>DayForecast</code>. When they finish, ask why <code>DaysRow</code> has a <code>SizedBox</code> with a height around the <code>ListView</code>: it is the horizontal list answer from the previous slide.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 4: extracting the IslandCard</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-3
+flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · IslandsGrid, what is already there"><code class="language-dart">children: [
+  for (final i in islands)
+    Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: Image.asset(i.image, fit: BoxFit.cover)),
+          Padding(padding: const EdgeInsets.all(8), child: Text(i.name, textAlign: TextAlign.center)),
+        ],
+      ),
+    ),
+],
+
+// Hint: the goal is for the grid to end up like this
+children: [for (final i in islands) IslandCard(island: i)],</code></pre>
+  <div class="callout task"><strong>Do</strong> Create <code>lib/island_card.dart</code> with <code>IslandCard(island: ...)</code>, as you did with <code>DayChip</code>: a <code>final Island island</code> field, a <code>const</code> constructor, and the <code>Card</code> above in the <code>build</code>. Import it and use it in the grid. The screen does not change at all: that is the point.</div>
+  <p><strong>On the phone:</strong> the grid exactly as it was. <strong>In the terminal:</strong> <code>flutter test</code>, the two <em>Passo 4</em> tests turn green. At the end compare with <code>git stash -u</code> and then <code>git checkout passo-4</code>.</p>
+  <aside class="notes">The tests for this step are called "Passo 4 (opcional)" in the repository: it was planned as homework and moved into the lesson. Inside <code>IslandCard</code>, the <code>i</code> from the <code>for</code> becomes the <code>island</code> field: it is the only place where the pasted code does not compile. Ask what was gained if the screen stayed the same: a name, a file, a widget that can be tested on its own and reused.</aside>
+</section>
+
+<section class="slide">
+  <h2>Where we got to</h2>
+  <ol class="steps">
+    <li><code>IslandHeader</code>: <code>Stack</code> with the image, the gradient, the name and the chip (step 2).</li>
+    <li><code>CurrentConditions</code>: name and temperature in a <code>Row</code>, minimum, maximum and rain with <code>Expanded</code> (step 1).</li>
+    <li><code>DaysRow</code>: horizontal <code>ListView.separated</code> with five <code>DayChip</code> (step 3).</li>
+    <li><code>DetailCard</code> and <code>IslandsGrid</code>: these came ready-made. A <code>GridView</code> inside a <code>ListView</code> needs <code>shrinkWrap</code> and must not scroll by itself.</li>
+    <li>Everything inside a vertical <code>ListView</code>. In step 4, the <code>Card</code> in the grid becomes an <code>IslandCard</code> with its own file.</li>
+  </ol>
+  <p>The <code>passo-4</code> branch is the final state. Compare your code with it. There is no touch or state yet: that is on Tuesday.</p>
+  <aside class="notes">The typical mistakes in these steps: in step 2, <code>Positioned</code> outside the <code>Stack</code>; in step 3, forgetting the import of <code>day_chip.dart</code> in <code>forecast_screen.dart</code>; in step 4, leaving the <code>i</code> from the <code>for</code> inside <code>IslandCard</code>. Monday, 5 October, is a public holiday: the next lesson is on Tuesday, 08:30 to 11:30.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Tuesday</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>If you did not finish step 4, finish it until the two <em>Passo 4</em> tests turn green. Then compare with <code>git stash -u</code> and then <code>git checkout passo-4</code>.</li>
+        <li>If you have not yet read <a href="https://docs.flutter.dev/ui/layout/constraints" target="_blank" rel="noopener">Understanding constraints</a>: it has 29 examples; run at least the first ten in DartPad.</li>
+        <li>Monday, 5 October, is a public holiday. Tuesday, 6 October, 08:30 to 11:30: state, forms and search. Today's screen will come to life.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/ui/layout" target="_blank" rel="noopener">Layouts in Flutter</a>: the layout widgets, with pictures.</li>
+        <li><a href="https://docs.flutter.dev/ui/layout/scrolling" target="_blank" rel="noopener">Scrolling</a>: lists, grids and what to do when one list lives inside another.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/lists/long-lists" target="_blank" rel="noopener">Work with long lists</a>: <code>ListView.builder</code> step by step.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

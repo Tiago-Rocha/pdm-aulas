@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 05 · Anatomy of a Flutter project and first app · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="5">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 05 · Week 4 · Monday, 28 September 2026 · 16:00 to 18:00</p>
+  <h1>Anatomy of a Flutter project and first app</h1>
+  <p class="lead">Theory: what the flutter create command generates, the role of each folder, pubspec.yaml and the differences between debug and release. Practice: cloning the course's first repository and building the first screen of the Tempo Açores app on the phone.</p>
+  <div class="meta"><span>Repository: pdm-aula-05</span></div>
+  <aside class="notes">Before anything else: who has the phone connected and showing up in flutter devices? Do a count. Anyone who does not starts sorting it out right away while you give the theory, with a classmate's help. Ask two students for Friday's DartPad link and show the fromJson validation in 2 minutes.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Explain what each folder of a Flutter project is for and what is never committed.</li>
+    <li>Read and change a <code>pubspec.yaml</code>: dependencies, versions with <code>^</code>, assets, and the role of <code>pubspec.lock</code>.</li>
+    <li>Tell the debug, profile and release modes apart and choose the right one for each situation.</li>
+    <li>Describe the chain <code>main</code> → <code>runApp</code> → <code>MaterialApp</code> → <code>Scaffold</code> → widgets.</li>
+    <li>Build a screen with <code>Text</code>, <code>Icon</code>, <code>Image</code>, <code>Container</code> and <code>Padding</code>, and add a package from pub.dev.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>What <code>flutter create</code> generates</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Folder or file</th><th>What it is for</th></tr></thead>
+  <tbody>
+  <tr><td><code>lib/</code></td><td>Your Dart code. Everything you write lives here, starting with <code>main.dart</code>.</td></tr>
+  <tr><td><code>test/</code></td><td>Automated tests. <code>flutter test</code> runs everything in here (tests in a later lesson).</td></tr>
+  <tr><td><code>android/</code> and <code>ios/</code></td><td>The native projects that wrap the app: Gradle and Kotlin on one side, Xcode and Swift on the other. You only go there for permissions, icons, signing.</td></tr>
+  <tr><td><code>web/</code>, <code>macos/</code>, <code>linux/</code>, <code>windows/</code></td><td>The same for the other platforms. You can delete the ones you do not use.</td></tr>
+  <tr><td><code>pubspec.yaml</code></td><td>The project's identity card: name, version, dependencies, assets, fonts.</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> the app's code is in <code>lib/</code>; <code>android/</code> and <code>ios/</code> are generated native projects that Flutter wraps.</p>
+  <aside class="notes">Open a freshly created project in VS Code and walk through the folders live. Show the size of the android/ folder vs lib/. Ask: why is there a whole Android project if we write Dart? Answer: the embedder we talked about last week.</aside>
+</section>
+
+<section class="slide">
+  <h2>What gets committed and what does not</h2>
+  <ul>
+    <li><code>flutter create</code> already generates a correct <code>.gitignore</code>. Do not delete it.</li>
+    <li><strong>Never in the repository:</strong> <code>build/</code> (binaries, hundreds of MB), <code>.dart_tool/</code> (compiler cache), <code>.idea/</code> and <code>*.iml</code> (IDE), <code>android/local.properties</code> (paths on your laptop).</li>
+    <li><strong>Always in the repository:</strong> <code>lib/</code>, <code>test/</code>, <code>pubspec.yaml</code>, <code>pubspec.lock</code>, <code>analysis_options.yaml</code>, the native folders, <code>assets/</code>.</li>
+    <li><code>pubspec.lock</code> is committed in apps (everyone builds with the same versions) and is not committed in published packages.</li>
+    <li>Secrets (API keys, the signing <code>key.properties</code>) never go into git. We come back to this in a later lesson.</li>
+  </ul>
+  <div class="callout warn"><strong>Warning sign</strong> If <code>git status</code> shows hundreds of files in <code>build/</code>, the <code>.gitignore</code> is not working. Fix it before the first commit.</div>
+</section>
+
+<section class="slide">
+  <h2><code>pubspec.yaml</code></h2>
+<pre data-title="pubspec.yaml"><code class="language-yaml">name: tempo_acores
+description: Previsão meteorológica para os Açores.
+publish_to: 'none'
+version: 1.0.0+1                # versionName + versionCode (class 31)
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:                   # ships inside the app
+  flutter:
+    sdk: flutter
+  google_fonts: ^8.2.1
+  intl: ^0.20.3
+
+dev_dependencies:               # development and tests only
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/img/</code></pre>
+</section>
+
+<section class="slide">
+  <h2><code>pubspec.yaml</code>: what matters</h2>
+  <ul>
+    <li><code>dependencies</code> go into the final binary; <code>dev_dependencies</code> (lints, tests, code generators) do not.</li>
+    <li><code>^6.2.1</code> means "any 6.x.y from 6.2.1 onwards, but not 7". This is semver: the major version changes when the API breaks compatibility.</li>
+    <li><code>flutter pub get</code> resolves and downloads; <code>flutter pub add name</code> adds to the pubspec and does the get; <code>flutter pub upgrade</code> moves up to the newest versions allowed; <code>flutter pub outdated</code> shows what is behind.</li>
+    <li><code>pubspec.lock</code> pins the exact version that was resolved. With it, you and your classmates build exactly the same code.</li>
+    <li>The <code>flutter:</code> section declares assets and fonts. An image that is not listed here does not exist for the app.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>^1.2.3</code> accepts up to <code>&lt;2.0.0</code>; <code>pubspec.lock</code> pins exact versions.</p>
+</section>
+
+<section class="slide">
+  <h2>Build modes</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Mode</th><th>How it compiles</th><th>What it is for</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Debug</strong></td><td>JIT on the Dart VM. Asserts on, hot reload, DevTools, "DEBUG" banner in the corner.</td><td>Developing. Slow and large; never any good for measuring performance.</td></tr>
+  <tr><td><strong>Profile</strong></td><td>AOT, like release, but keeps the telemetry for DevTools.</td><td>Measuring performance on a real phone (later on).</td></tr>
+  <tr><td><strong>Release</strong></td><td>Optimised AOT, no asserts, no DevTools, tree shaking.</td><td>What goes to the store and to the testers.</td></tr>
+  </tbody></table></div>
+  <p>An app that seems slow in debug can be perfectly fast in release. The opposite never happens.</p>
+  <p><strong>For the tests:</strong> debug uses JIT and allows hot reload; release uses AOT and is the only mode that gets distributed.</p>
+  <aside class="notes">Run flutter run --release on your phone live and show the difference in startup. Stress this: a DEBUG banner in the README screenshots earns a comment in the assessment.</aside>
+</section>
+
+<section class="slide">
+  <h2>The command line</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+  <tbody>
+  <tr><td><code>flutter run</code></td><td>Builds in debug and installs on the chosen device. In VS Code it is <kbd>F5</kbd>, with the device chosen in <em>Flutter: Select Device</em>; saving a file does a hot reload and the ↻ button does a hot restart. In the terminal: <kbd>r</kbd> hot reload, <kbd>R</kbd> hot restart, <kbd>q</kbd> quit. <code>-d</code> chooses the device, <code>--release</code> the mode.</td></tr>
+  <tr><td><code>flutter build apk</code> / <code>appbundle</code> / <code>ipa</code></td><td>Generates the release binary. The <code>.aab</code> is what goes to Google Play.</td></tr>
+  <tr><td><code>flutter analyze</code></td><td>Runs the static analyser and the lints without compiling. Zero warnings is the rule for the project.</td></tr>
+  <tr><td><code>flutter test</code></td><td>Runs the tests in <code>test/</code>.</td></tr>
+  <tr><td><code>flutter doctor</code> / <code>flutter devices</code></td><td>State of the environment / connected devices and available emulators.</td></tr>
+  </tbody></table></div>
+  <p>VS Code and Android Studio call exactly these commands underneath their buttons.</p>
+</section>
+
+<section class="slide">
+  <h2>DevTools</h2>
+  <ul>
+    <li>A set of tools in the browser, connected to the app in debug or profile. With <code>flutter run</code> a link appears in the terminal; in VS Code, the "Flutter: Open DevTools" command.</li>
+    <li><strong>Widget Inspector:</strong> the widget tree, live. "Select widget mode" lets you tap the screen and see which widget it is. The <em>Layout Explorer</em> shows the constraints (tomorrow).</li>
+    <li><strong>Performance:</strong> frame chart; every bar above the 16 ms line is jank. It shows excess rebuilds.</li>
+    <li><strong>Network:</strong> all HTTP requests with headers, body and timings. You will use it when the app talks to the API.</li>
+    <li><strong>Memory</strong> and <strong>Logging:</strong> memory leaks and the output of <code>debugPrint</code>.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the inspector is for layout, the Performance tab is for jank, and neither of them works in release.</p>
+</section>
+
+<section class="slide">
+  <h2>Anatomy of an app</h2>
+  <ul>
+    <li><code>main()</code> is the entry point. It calls <code>runApp(widget)</code>, which attaches the widget to the root of the screen and starts the engine.</li>
+    <li><code>MaterialApp</code> is the root of almost every app: it defines the theme, routes, localisation and title. There is one per app.</li>
+    <li><code>Scaffold</code> is the structure of a screen: <code>appBar</code> at the top, <code>body</code> in the middle, <code>floatingActionButton</code>, <code>drawer</code>, <code>bottomNavigationBar</code>. There is one per screen.</li>
+    <li>Inside the <code>body</code>, your widgets: text, icons, images, lists, cards.</li>
+    <li>Every screen in Gmail or Spotify follows exactly this structure: bar at the top, content, navigation at the bottom.</li>
+  </ul>
+  <p><strong>For the tests:</strong> one <code>MaterialApp</code> per app, one <code>Scaffold</code> per screen, and <code>runApp</code> is called only once.</p>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>The course's first repository</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-05.git
+cd pdm-aula-05/starter
+flutter pub get</code></pre>
+  <p>All the lesson repositories have the same shape: <code>starter/</code> is the project you start from, with numbered <code>TODO</code>s in the code and failing tests in <code>test/</code>; <code>solucao/</code> is the final state, for you to compare at the end, not before.</p>
+  <ol class="steps">
+    <li>Clone. Open the <code>starter/</code> folder in VS Code. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → your Android. Then <kbd>F5</kbd>: it runs the "Tempo Açores (debug)" configuration that already comes with the project. The app has to appear on your phone with a text in the centre.</li>
+    <li>Open <code>lib/main.dart</code> in VS Code and look for <code>TODO 1</code>.</li>
+    <li>Run <code>flutter test</code> once: see the red tests. The goal of the lesson is to turn them green.</li>
+  </ol>
+  <aside class="notes">Give this step 10 minutes. The usual problems: git not installed on Windows, phone not authorised, Gradle downloading for the first time (warn them it takes a while). Whoever finishes early helps their neighbour.</aside>
+</section>
+
+<section class="slide">
+  <h2>1. Reading <code>main.dart</code> together</h2>
+<pre data-title="lib/main.dart"><code class="language-dart">import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const WeatherApp());
+}
+
+class WeatherApp extends StatelessWidget {
+  const WeatherApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Tempo Açores',
+      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Tempo Açores')),
+        body: const Center(
+          child: Text('TODO 1: substitui por um cartão'),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. <code>main.dart</code>: what matters</h2>
+  <ul>
+    <li><code>import 'package:flutter/material.dart'</code> brings in the whole of Material Design. Almost every UI file starts like this.</li>
+    <li><code>WeatherApp</code> is a <code>StatelessWidget</code>: it has no state of its own, it only describes. <code>build</code> returns the tree.</li>
+    <li><code>colorSchemeSeed</code> generates a whole Material 3 palette from one colour. Change it to <code>Colors.deepOrange</code> and hot reload.</li>
+    <li><code>const</code> in front of a widget tells Flutter that this subtree never changes: it can reuse it instead of rebuilding. Use it whenever the compiler lets you.</li>
+    <li><code>Center</code> centres its child; <code>Text</code> draws text. They are the two simplest widgets there are.</li>
+  </ul>
+  <div class="callout tip"><strong>Shortcut</strong> In VS Code, <kbd>Ctrl</kbd>+<kbd>.</kbd> (or <kbd>Cmd</kbd>+<kbd>.</kbd>) on a widget gives you "Wrap with Padding", "Wrap with Center", "Remove this widget".</div>
+</section>
+
+<section class="slide">
+  <h2>2. Basic widgets</h2>
+<pre><code class="language-dart">Column(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Text(
+      'Ponta Delgada',
+      style: Theme.of(context).textTheme.headlineSmall,   // theme size, not fixed
+    ),
+    const SizedBox(height: 8),                            // blank space
+    const Icon(Icons.wb_sunny, size: 48, color: Colors.orange),
+    Image.asset('assets/img/sao_miguel.jpg', height: 120, fit: BoxFit.cover),
+    Padding(
+      padding: const EdgeInsets.all(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.teal.shade50,
+          border: Border.all(color: Colors.teal),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text('21 °C'),
+      ),
+    ),
+  ],
+)</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Basic widgets: what matters</h2>
+  <ul>
+    <li><code>Text</code> with a <code>style</code> from the <code>textTheme</code> respects the theme and the user's font size. Avoid a fixed <code>fontSize: 24</code>.</li>
+    <li><code>Icon</code> uses the built-in Material icons (<code>Icons.*</code>). You do not need to download anything.</li>
+    <li><code>Image.asset</code> reads a file declared in <code>pubspec.yaml</code> under the <code>assets:</code> section. If you forget, the error is at runtime, not at compile time.</li>
+    <li><code>Container</code> combines colour, padding, border, radius and size in one widget. <code>Padding</code> and <code>SizedBox</code> are lightweight versions for when you only need space.</li>
+    <li><code>Column</code> stacks children vertically; tomorrow we look at layout in depth.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Solve <code>TODO 1</code>: replace the text in the <code>body</code> with this <code>Column</code>. Then change the icon by hand, for example to <code>Icons.cloud</code> or <code>Icons.umbrella</code>, and the colour of the border. Check on the phone at every hot reload. The icon will depend on the data from tomorrow.</div>
+</section>
+
+<section class="slide">
+  <h2>3. The location card</h2>
+<pre data-title="lib/location_card.dart"><code class="language-dart">class LocationCard extends StatelessWidget {
+  const LocationCard({super.key, required this.name, required this.temperature});
+
+  final String name;
+  final double temperature;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(Icons.wb_sunny, size: 40, color: Colors.orange),
+            const SizedBox(width: 16),
+            Text(name, style: textTheme.titleLarge),
+            const Spacer(),
+            Text('${temperature.round()} °C', style: textTheme.headlineMedium),
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+  <aside class="notes">Write this widget live, from scratch, with the stless shortcut in VS Code. Show the compiler error when the required is missing and when you try to put const on a Text with a variable. Give this block 20 minutes; it is the heart of the lesson.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. The card: what matters</h2>
+  <ul>
+    <li>A custom widget is a class with <code>final</code> fields, a <code>const</code> constructor with named parameters and a <code>build</code>. It is exactly the data model you wrote in DartPad with one extra method.</li>
+    <li>You use it like any other: <code>const LocationCard(name: 'Horta', temperature: 19.4)</code>. The <code>const</code> is only possible because the constructor is <code>const</code> and the arguments are literals.</li>
+    <li><code>Card</code> gives elevation and the theme's rounded corners. <code>Row</code> puts the children side by side; <code>Spacer</code> pushes the rest to the right.</li>
+    <li>One file per widget once it goes past 20 lines. <code>main.dart</code> imports it with <code>import 'location_card.dart';</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> Solve <code>TODO 2</code>: create <code>lib/location_card.dart</code>, use it in the <code>body</code> with three locations in a <code>Column</code>, and add an optional parameter <code>IconData icon</code> with a default value. <code>flutter test</code> should turn green on the card test.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Hot reload and hot restart in practice</h2>
+  <ol class="steps">
+    <li>With the app running, change <code>Colors.teal</code> to <code>Colors.indigo</code> and save the file: VS Code hot reloads on save. The colour changes, the rest stays the same. This is hot reload: new code, old state.</li>
+    <li>Change the temperature of a card and hot reload. It changes. <code>build</code> was called again with the new code.</li>
+    <li>Change <code>main()</code> to <code>runApp(const OtherApp())</code> (create an <code>OtherApp</code> that only has a <code>Text</code>). Hot reload is not enough: <code>main</code> only runs at startup. Hot restart: the ↻ button on the debug toolbar.</li>
+    <li>Add a new image to <code>assets/img/</code> and to <code>pubspec.yaml</code>. Neither saving nor the ↻ button is enough: stop the app (■) and <kbd>F5</kbd> again.</li>
+  </ol>
+  <p><strong>For the tests:</strong> hot reload keeps the state and calls <code>build</code> again; hot restart restarts the app; changing <code>pubspec.yaml</code> requires a new <code>flutter run</code>.</p>
+  <aside class="notes">Let them do the four steps on their own: 8 minutes. The typical question: "I changed it and nothing happened". It is almost always an unsaved file, or a change in main. Ask the class what hot reload preserves and why (answer: the State objects, which we see in a later lesson).</aside>
+</section>
+
+<section class="slide">
+  <h2>5. Adding a package</h2>
+<pre class="term"><code class="language-bash">flutter pub add google_fonts</code></pre>
+<pre data-title="lib/main.dart"><code class="language-dart">import 'package:google_fonts/google_fonts.dart';
+
+// inside MaterialApp
+theme: ThemeData(
+  colorSchemeSeed: Colors.teal,
+  useMaterial3: true,
+  textTheme: GoogleFonts.interTextTheme(),   // the whole app now uses Inter
+),</code></pre>
+  <ul>
+    <li><code>pub add</code> writes to <code>pubspec.yaml</code>, does the <code>pub get</code> and updates <code>pubspec.lock</code>. After a new dependency, stop the app (■) and <kbd>F5</kbd> again.</li>
+    <li>Before adding a package, look at pub.dev: points, popularity, date of the latest version, whether it supports the platforms you need. We go deeper in a later lesson.</li>
+    <li>Alternative: <code>intl</code> with <code>DateFormat('EEEE, d MMMM').format(DateTime.now())</code>. For dates in Portuguese it needs <code>initializeDateFormatting('pt_PT')</code>; we see that in a later lesson.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Solve <code>TODO 3</code>: add <code>google_fonts</code>, apply a font to the app and use <code>intl</code> to show today's date below the title. Commit with the message <code>feat: location card and fonts</code>.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Complete all the <code>TODO</code>s in <code>starter/</code> until <code>flutter test</code> turns green. If you get stuck, post on the Moodle forum with the error message.</li>
+        <li>Only then open <code>solucao/</code>, compare it with what you did and note down the differences you do not understand. Bring them to tomorrow's lesson.</li>
+        <li>Check that your <code>.gitignore</code> is excluding <code>build/</code> and <code>.dart_tool/</code> before you push.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/tools/pubspec" target="_blank" rel="noopener">The pubspec file</a>: every key explained.</li>
+        <li><a href="https://docs.flutter.dev/testing/build-modes" target="_blank" rel="noopener">Flutter's build modes</a>: debug, profile and release.</li>
+        <li><a href="https://docs.flutter.dev/tools/devtools" target="_blank" rel="noopener">DevTools</a>: what each tab does.</li>
+        <li><a href="https://pub.dev/help/scoring" target="_blank" rel="noopener">pub.dev: package scoring</a>: what the points, the popularity and the likes mean, before you add a package.</li>
+        <li><a href="https://code.visualstudio.com/docs/sourcecontrol/overview" target="_blank" rel="noopener">VS Code: source control</a>: commit, push and history from the editor, without a terminal.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

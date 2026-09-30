@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16 · Local persistence and offline cache · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="16">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 16 · Week 8 · Monday, 26 October 2026 · 16:00 to 18:00</p>
+  <h1>Local persistence and offline cache</h1>
+  <p class="lead">Theory: persistence options on mobile: key-value, SQLite, local NoSQL, files and secure storage; criteria for choosing. Practice: preferences with shared_preferences, a forecast cache in a local database with a cache-first strategy, and the token in secure storage.</p>
+  <div class="meta"><span>Repository: pdm-aula-16</span></div>
+  <aside class="notes">Five minutes for groups that did not manage the first request to the API on Wednesday: sort that out before the new material. Then open with a question: "where does the Spotify app keep the downloaded songs, and why can't you see them in the file explorer?" It is the sandbox, slide 4.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Choose where to store each kind of data: preferences, database, files or secure storage.</li>
+    <li>Explain the app sandbox, what survives updates and what goes into the backup.</li>
+    <li>Justify why a token never goes into <code>shared_preferences</code>.</li>
+    <li>Implement a cache-first repository with <code>drift</code> and show the age of the data.</li>
+    <li>Leave the app working in airplane mode with the data it already had.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Where to store what</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 200" role="img" aria-label="Four kinds of storage with examples: key-value with shared_preferences, SQLite with drift, files with path_provider and secure storage with flutter_secure_storage for the token, which never goes into shared_preferences">
+    <rect x="30" y="20" width="190" height="160" rx="10" class="box"/>
+    <text x="44" y="46" class="t b">Key-value</text>
+    <text x="44" y="70" class="t mono">shared_preferences</text>
+    <text x="44" y="98" class="t s">unit °C/°F</text>
+    <text x="44" y="118" class="t s">light/dark theme</text>
+    <text x="44" y="138" class="t s">last location</text>
+    <text x="44" y="164" class="t s">small values</text>
+    <rect x="232" y="20" width="190" height="160" rx="10" class="box"/>
+    <text x="246" y="46" class="t b">SQLite</text>
+    <text x="246" y="70" class="t mono">drift</text>
+    <text x="246" y="98" class="t s">cached forecasts</text>
+    <text x="246" y="118" class="t s">warnings</text>
+    <text x="246" y="138" class="t s">history</text>
+    <text x="246" y="164" class="t s">data you query</text>
+    <rect x="434" y="20" width="190" height="160" rx="10" class="box"/>
+    <text x="448" y="46" class="t b">Files</text>
+    <text x="448" y="70" class="t mono">path_provider</text>
+    <text x="448" y="98" class="t s">images</text>
+    <text x="448" y="118" class="t s">exports, logs</text>
+    <text x="448" y="138" class="t s">in the app sandbox</text>
+    <text x="448" y="164" class="t s">large bytes</text>
+    <rect x="636" y="20" width="230" height="160" rx="10" class="box danger"/>
+    <text x="650" y="46" class="t b">Secure</text>
+    <text x="650" y="70" class="t mono">flutter_secure_storage</text>
+    <text x="650" y="98" class="t s">access token</text>
+    <text x="650" y="118" class="t s">refresh token</text>
+    <text x="650" y="138" class="t s">Keychain / Keystore</text>
+    <text x="650" y="164" class="t s b">never in shared_preferences</text>
+  </svg>
+  <figcaption>Small values in preferences, data you query in SQLite, bytes in files, secrets in secure storage.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Kind of data</th><th>Example in Tempo Açores</th><th>Tool</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Key-value preferences</strong></td><td>Unit °C/°F, theme, last location</td><td><code>shared_preferences</code> (SharedPreferences on Android, NSUserDefaults on iOS)</td></tr>
+  <tr><td><strong>Structured data with queries</strong></td><td>Cache of forecasts and warnings, history</td><td>SQLite: <code>sqflite</code> (SQL by hand) or <code>drift</code> (typed, reactive)</td></tr>
+  <tr><td><strong>Documents and objects</strong></td><td>Lists of objects with no relations</td><td><code>hive</code>, <code>isar</code> (local NoSQL, very fast)</td></tr>
+  <tr><td><strong>Files</strong></td><td>Images, exports, logs</td><td><code>path_provider</code> + <code>dart:io</code></td></tr>
+  <tr><td><strong>Secrets</strong></td><td>Access token, refresh token</td><td><code>flutter_secure_storage</code> (Keychain on iOS, Keystore on Android)</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> preferences for small values, SQLite for data you query, secure storage for secrets.</p>
+  <div class="callout"><strong>Analogy</strong> Three places in a house. The kitchen drawer (<code>shared_preferences</code>) holds small, unimportant things, close at hand. The filing cabinet with folders (SQLite) holds many records that you look up by name or date. The safe (Keychain and Keystore) holds the token. Leaving the token in the drawer is leaving the house key under the doormat.</div>
+</section>
+
+<section class="slide">
+  <h2>Sandbox: where the app's files live</h2>
+  <ul>
+    <li>Each app has its own private folder. Another app cannot read it; the user cannot see it without root. Android: <code>/data/data/&lt;package&gt;/</code>; iOS: <code>Documents/</code>, <code>Library/</code>, <code>tmp/</code>.</li>
+    <li><code>path_provider</code> abstracts this: <code>getApplicationDocumentsDirectory()</code> persists and goes into the backup; <code>getApplicationSupportDirectory()</code> persists without being shown to the user; <code>getTemporaryDirectory()</code> can be cleared by the system.</li>
+    <li><strong>Updates</strong> keep everything except the temporary folder. <strong>Uninstalling</strong> deletes everything, with one exception: the iOS Keychain stays.</li>
+    <li><strong>Backup:</strong> iCloud copies <code>Documents/</code>; Android Auto Backup copies up to 25 MB. Cache and tokens should be left out (<code>android:fullBackupContent</code>, <code>isExcludedFromBackup</code>).</li>
+    <li>Example: a game stores progress in Documents (it goes into the backup) and the downloaded textures in Support (they do not, it downloads them again).</li>
+  </ul>
+  <p><strong>For the tests:</strong> Documents persists and goes into the backup; tmp can disappear at any moment.</p>
+</section>
+
+<section class="slide">
+  <h2>Keychain and Keystore: why a token never goes into preferences</h2>
+  <ul>
+    <li><code>shared_preferences</code> is an XML file (Android) or a plist (iOS) in plain text. On a rooted phone you read it with <code>cat</code>; in backups it goes unencrypted.</li>
+    <li><strong>Keychain (iOS):</strong> encrypted with a key tied to the hardware (Secure Enclave). It can require the device to be unlocked. It survives uninstalling: watch out for ghost sessions.</li>
+    <li><strong>Keystore (Android):</strong> the keys live in hardware (TEE or StrongBox) and never leave it. <code>flutter_secure_storage</code> encrypts the values with AES and keeps the AES key in the Keystore.</li>
+    <li>Rule: token, refresh token and the user's keys go into secure storage. Never into preferences, never into the database unencrypted.</li>
+    <li>Limit: whoever has the phone unlocked has access to the app. It protects against backups, other apps, and extraction tools.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a token never goes into <code>shared_preferences</code>; it goes into Keychain or Keystore via <code>flutter_secure_storage</code>.</p>
+  <aside class="notes">A 2-minute demonstration that is worth the whole topic: with adb on an emulator, `adb shell run-as com.example.app cat shared_prefs/FlutterSharedPreferences.xml` and everything shows up in plain text. Then the same for the secure storage file: encrypted rubbish.</aside>
+</section>
+
+<section class="slide">
+  <h2>Cache-first, network-first, invalidation and migrations</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 385" role="img" aria-label="Cache-first sequence: the screen asks for data, the repository reads the local cache and shows it right away with the age of the data, asks the network in the background, writes to the cache and notifies the screen; with no network, it keeps the cache marked as old">
+    <rect x="25" y="16" width="170" height="40" rx="8" class="box accent"/>
+    <text x="110" y="41" class="t b" text-anchor="middle">Screen</text>
+    <rect x="245" y="16" width="170" height="40" rx="8" class="box"/>
+    <text x="330" y="41" class="t b" text-anchor="middle">Repository</text>
+    <rect x="475" y="16" width="170" height="40" rx="8" class="box"/>
+    <text x="560" y="41" class="t b" text-anchor="middle">Local cache (drift)</text>
+    <rect x="705" y="16" width="170" height="40" rx="8" class="box"/>
+    <text x="790" y="41" class="t b" text-anchor="middle">Network (API)</text>
+    <line x1="110" y1="56" x2="110" y2="372" class="box muted"/>
+    <line x1="330" y1="56" x2="330" y2="372" class="box muted"/>
+    <line x1="560" y1="56" x2="560" y2="372" class="box muted"/>
+    <line x1="790" y1="56" x2="790" y2="372" class="box muted"/>
+    <path d="M110 90 L328 90" class="arrow"/>
+    <text x="220" y="84" class="t s" text-anchor="middle">1 · asks for the forecast</text>
+    <path d="M330 126 L558 126" class="arrow"/>
+    <text x="445" y="120" class="t s" text-anchor="middle">2 · reads the local cache</text>
+    <path d="M560 162 L332 162" class="arrow dashed"/>
+    <text x="445" y="156" class="t s" text-anchor="middle">3 · data + fetchedAt</text>
+    <path d="M330 198 L112 198" class="arrow accent"/>
+    <text x="220" y="192" class="t s" text-anchor="middle">4 · shows now: "12 min ago"</text>
+    <path d="M330 234 L788 234" class="arrow"/>
+    <text x="675" y="228" class="t s" text-anchor="middle">5 · GET /v1/forecast, background</text>
+    <path d="M790 270 L332 270" class="arrow dashed"/>
+    <text x="675" y="264" class="t s" text-anchor="middle">6 · fresh data</text>
+    <path d="M330 306 L558 306" class="arrow"/>
+    <text x="445" y="300" class="t s" text-anchor="middle">7 · writes to the cache</text>
+    <path d="M330 342 L112 342" class="arrow accent"/>
+    <text x="220" y="336" class="t s" text-anchor="middle">8 · notifies: new data</text>
+    <rect x="600" y="290" width="275" height="50" rx="8" class="box danger"/>
+    <text x="612" y="311" class="t b">No network: step 5 fails</text>
+    <text x="612" y="330" class="t s">keeps the cache, marked as old</text>
+  </svg>
+  <figcaption>Cache-first: the screen first gets what is in the cache and only then the fresh data. With no network, it stays with the cache.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Strategy</th><th>Flow</th><th>When</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Cache-first</strong></td><td>Shows the cache, asks the network in the background, updates</td><td>Forecasts, lists: perceived speed</td></tr>
+  <tr><td><strong>Network-first</strong></td><td>Asks the network; if it fails, shows the cache</td><td>Critical data that changes: balance, stock</td></tr>
+  <tr><td><strong>Cache-only / Network-only</strong></td><td>Never goes to the network / never stores</td><td>Downloaded maps / payments</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li><strong>Time-based invalidation:</strong> store <code>fetchedAt</code> and compare: forecast valid for 30 min, warnings 5 min, locations 24 h.</li>
+    <li><strong>Migrations:</strong> version 1.2 of the app changes the table, but there are users on 1.0 with the old database. <code>schemaVersion</code> + <code>MigrationStrategy</code> in drift; never delete the user's data without warning.</li>
+  </ul>
+  <p><strong>For the tests:</strong> cache-first shows quickly and updates afterwards; network-first guarantees fresh data; time-based invalidation decides when the cache expires.</p>
+  <div class="callout"><strong>Analogy</strong> The fridge. You show what is in the fridge right away, with the date on the label (<code>fetchedAt</code>), and in the meantime you go shopping (the network request in the background); when you come back, you replace what was there. With no network, you eat what there is, and the label says how old it is. The use-by date on the label is time-based invalidation: while it is in date you do not go shopping.</div>
+</section>
+
+<section class="slide">
+  <h2>Size, clean-up and the "Clear data" button</h2>
+  <ul>
+    <li>There is no fixed limit, but the system shows "Storage: 480 MB" in the settings and the user clears it. On iOS, <code>tmp/</code> is deleted when space runs low.</li>
+    <li>Order of magnitude: preferences in KB, database in MB, cached images with a limit (<code>cached_network_image</code>: 200 items or 7 days).</li>
+    <li>Your own clean-up: delete forecasts older than 7 days, a "Clear cache" option in the settings.</li>
+    <li>"Clear data" on Android deletes everything, including secure storage. On iOS only by uninstalling, and the Keychain stays.</li>
+    <li>The app has to start properly with everything empty: it is the first launch all over again. If it fails with no cache, the fault is in the app.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the app has to work after the user clears the data, exactly as on the first launch.</p>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Lesson repository</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-16.git
+cd pdm-aula-16/starter
+flutter pub get
+flutter run</code></pre>
+  <ul>
+    <li><code>starter/</code> is the resilient app from lesson 14 with <code>shared_preferences</code>, <code>drift</code>, <code>drift_flutter</code> and <code>flutter_secure_storage</code> already in <code>pubspec.yaml</code>, TODOs from 1 to 5 and failing tests.</li>
+    <li><code>solucao/</code> is the final state: the app works in airplane mode and says how long ago the data was fetched.</li>
+    <li><code>drift</code> generates code: <code>dart run build_runner build</code> after changing the tables. The starter already includes the generated file.</li>
+  </ul>
+  <div class="callout task"><strong>Before you start</strong> In the phone's settings, see how much space the starter app takes up. Look again at the end of the lesson.</div>
+</section>
+
+<section class="slide">
+  <h2>1. <code>shared_preferences</code>: unit, theme, last location</h2>
+<pre data-title="lib/settings/settings.dart"><code class="language-dart">class Settings {
+  Settings(this._prefs);
+  final SharedPreferences _prefs;
+
+  static Future&lt;Settings&gt; load() async =&gt;
+      Settings(await SharedPreferences.getInstance());
+
+  bool get useFahrenheit =&gt; _prefs.getBool('useFahrenheit') ?? false;
+  ThemeMode get theme =&gt; ThemeMode.values.byName(_prefs.getString('theme') ?? 'system');
+  int? get lastLocationId =&gt; _prefs.getInt('lastLocationId');
+
+  Future&lt;void&gt; saveUnit({required bool fahrenheit}) =&gt;
+      _prefs.setBool('useFahrenheit', fahrenheit);
+  Future&lt;void&gt; saveTheme(ThemeMode mode) =&gt; _prefs.setString('theme', mode.name);
+  Future&lt;void&gt; saveLastLocation(int id) =&gt; _prefs.setInt('lastLocationId', id);
+}
+
+// main.dart: load before runApp, so the theme is right on the first frame
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final settings = await Settings.load();
+  runApp(Provider.value(value: settings, child: const TempoApp()));
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Preferences: what matters</h2>
+  <ul>
+    <li>Key-value with simple types: <code>bool</code>, <code>int</code>, <code>double</code>, <code>String</code>, <code>List&lt;String&gt;</code>. No large JSON here.</li>
+    <li>Reading is synchronous after <code>getInstance()</code>; writing is asynchronous. That is why we load before <code>runApp</code>: the theme has to be right on the first frame.</li>
+    <li><code>WidgetsFlutterBinding.ensureInitialized()</code> is mandatory before any plugin in <code>main</code>.</li>
+    <li>Enums are stored by <code>name</code> and read with <code>values.byName</code>. Never by index: reordering the enum would break the stored preferences.</li>
+    <li>In the starter, <code>SettingsNotifier</code> wraps this class and calls <code>notifyListeners</code> so the UI reacts. Version 2.3+ of the package also has <code>SharedPreferencesWithCache</code>; the old API still works.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Connect the °C/°F switch and the theme selector of the settings screen to the preferences. Close the app (swipe, not just home) and open it: they have to be as you left them. Then save the last location opened and open the app directly on it.</div>
+</section>
+
+<section class="slide">
+  <h2>2. <code>drift</code>: the forecasts table</h2>
+<pre data-title="lib/core/database.dart"><code class="language-dart">import 'package:drift/drift.dart';
+import 'package:drift_flutter/drift_flutter.dart';
+
+part 'database.g.dart';
+
+class Forecasts extends Table {
+  IntColumn get locationId =&gt; integer()();
+  TextColumn get json =&gt; text()();
+  DateTimeColumn get fetchedAt =&gt; dateTime()();
+
+  @override
+  Set&lt;Column&gt; get primaryKey =&gt; {locationId};
+}
+
+@DriftDatabase(tables: [Forecasts])
+class AppDatabase extends _$AppDatabase {
+  AppDatabase() : super(driftDatabase(name: 'tempo_acores'));
+
+  @override
+  int get schemaVersion =&gt; 1;
+}</code></pre>
+<pre class="term"><code class="language-bash">dart run build_runner build --delete-conflicting-outputs</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. <code>drift</code>: insert, read, delete</h2>
+<pre data-title="lib/core/forecast_cache.dart"><code class="language-dart">extension ForecastCache on AppDatabase {
+  Future&lt;Forecast?&gt; readForecast(int locationId) async {
+    final row = await (select(forecasts)
+          ..where((f) =&gt; f.locationId.equals(locationId)))
+        .getSingleOrNull();
+    if (row == null) return null;
+    return Forecast.fromJson(jsonDecode(row.json) as Map&lt;String, dynamic&gt;)
+        .copyWith(fetchedAt: row.fetchedAt);
+  }
+
+  Future&lt;void&gt; saveForecast(Forecast f) =&gt;
+      into(forecasts).insertOnConflictUpdate(ForecastsCompanion.insert(
+        locationId: f.locationId,
+        json: jsonEncode(f.toJson()),
+        fetchedAt: DateTime.now(),
+      ));
+
+  Future&lt;int&gt; deleteOld({Duration maxAge = const Duration(days: 7)}) =&gt;
+      (delete(forecasts)
+            ..where((f) =&gt; f.fetchedAt.isSmallerThanValue(DateTime.now().subtract(maxAge))))
+          .go();
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Database: what matters</h2>
+  <ul>
+    <li>One table per kind of cache, with the natural key (<code>locationId</code>) as the primary key and <code>insertOnConflictUpdate</code> for "save or replace".</li>
+    <li>Storing the whole JSON in one column is pragmatic for a cache: the structure of the forecast does not matter to SQL, only the key and the date.</li>
+    <li><code>drift</code> generates <code>forecasts</code>, <code>ForecastsCompanion</code> and the column types. A wrong column name is a compile error, not a runtime one as in <code>sqflite</code>.</li>
+    <li><code>fetchedAt</code> is what lets you say "from 12 min ago" and invalidate: without it the cache is eternal.</li>
+    <li>When you change the table: <code>schemaVersion: 2</code> and a <code>MigrationStrategy</code> with <code>onUpgrade</code>. Never delete the database to "fix it".</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> Create the <code>Warnings</code> table (<code>id</code>, <code>json</code>, <code>fetchedAt</code>) and the <code>WarningsCache</code> extension with <code>readAll</code>, <code>replaceAll(List&lt;Warning&gt;)</code> and <code>deleteOld</code>. Run <code>build_runner</code> again. The test <code>test/warnings_cache_test.dart</code> uses an in-memory database (<code>NativeDatabase.memory()</code>).</div>
+  <aside class="notes">If build_runner fails for someone, it is almost always the `part` with the wrong name or an old generated file. `--delete-conflicting-outputs` fixes the second. Give this block 20 minutes.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. Cache-first repository</h2>
+<pre data-title="lib/forecast/forecast_repository_cache.dart"><code class="language-dart">class ForecastRepositoryCache implements ForecastRepository {
+  ForecastRepositoryCache(this._api, this._db);
+  final ForecastApiDataSource _api;   // Future&lt;Forecast&gt; forecast(int id), from lesson 12
+  final AppDatabase _db;
+  static const validity = Duration(minutes: 30);
+
+  @override
+  Stream&lt;Forecast&gt; forecast(int locationId) async* {
+    final cached = await _db.readForecast(locationId);
+    if (cached != null) yield cached;                         // 1. show what there is right away
+
+    final valid = cached != null &amp;&amp;
+        DateTime.now().difference(cached.fetchedAt) &lt; validity;
+    if (valid) return;                                        // 2. still fresh: stop here
+
+    try {
+      final fresh = await _api.forecast(locationId);          // 3. go to the network
+      await _db.saveForecast(fresh);
+      yield fresh.copyWith(fetchedAt: DateTime.now());
+    } catch (_) {
+      if (cached == null) rethrow;                            // no cache and no network: error
+    }
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Cache-first: what matters</h2>
+  <ul>
+    <li>The repository returns a <code>Stream</code> because it can emit <strong>twice</strong>: the cache straight away, the fresh data later. With a <code>Future</code> there was only one answer.</li>
+    <li><code>async*</code> and <code>yield</code> make this readable: it is sequential code that emits values along the way.</li>
+    <li>If the cache is recent, there is no network request. This is where time-based invalidation lives, not in the UI.</li>
+    <li>Network failure with cache: it is swallowed and the user is left with old data and the time. Network failure with no cache: error, as in lesson 14.</li>
+    <li>The notifier consumes the stream with <code>await for</code> and notifies on each emission:</li>
+  </ul>
+<pre data-title="lib/forecast/detail_notifier.dart"><code class="language-dart">Future&lt;void&gt; load(int id) async {
+  try {
+    await for (final f in _repo.forecast(id)) {
+      state = Data(f, fetchedAt: f.fetchedAt);
+      notifyListeners();
+    }
+  } catch (e) {
+    if (state is! Data) state = Failure(messageFor(e));
+    notifyListeners();
+  }
+}</code></pre>
+  <div class="callout task"><strong>Exercise 3</strong> Register <code>ForecastRepositoryCache</code> in <code>main</code> instead of the <code>…Api</code> one, without touching the screen. Show "Updated X min ago" in the detail with the warning colour when it goes past 30 min.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Airplane mode on: the app keeps showing data</h2>
+  <ol class="steps">
+    <li><strong>With network,</strong> open the forecast of two locations. Confirm in the log that they were saved (<code>saveForecast</code> called twice).</li>
+    <li><strong>Switch on airplane mode.</strong> Close the app with a swipe (not just the home button) and open it again.</li>
+    <li><strong>The two locations</strong> show the data with "from X min ago". A third one, never opened, shows the human error "No connection", not a crash.</li>
+    <li><strong>Switch off airplane mode</strong> and pull to refresh: "Updated just now". After 30 minutes, the next <code>load</code> goes to the network by itself.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise 4</strong> Do the four steps and record a 30-second video of the phone (it is the kind of evidence that goes in the project PR). Then: call <code>deleteOld()</code> when the app starts and confirm that a forecast from 8 days ago disappears (change the date in <code>sqlite</code> through DevTools or through a test).</div>
+  <aside class="notes">This is the "wow" moment of the lesson: give it 15 minutes and let them see the app of the colleague next to them. Common mistake: closing only with home and thinking they tested the cold start. Explain the difference between background and a killed process (lesson 4).</aside>
+</section>
+
+<section class="slide">
+  <h2>5. <code>flutter_secure_storage</code> for the token</h2>
+<pre data-title="lib/auth/token_storage.dart"><code class="language-dart">class TokenStorage {
+  TokenStorage([FlutterSecureStorage? storage])
+      : _storage = storage ??
+            const FlutterSecureStorage(
+              iOptions: IOSOptions(
+                accessibility: KeychainAccessibility.first_unlock_this_device,
+              ),
+            );
+  final FlutterSecureStorage _storage;
+  static const _key = 'access_token';
+
+  Future&lt;String?&gt; read() =&gt; _storage.read(key: _key);
+  Future&lt;void&gt; save(String token) =&gt; _storage.write(key: _key, value: token);
+  Future&lt;void&gt; delete() =&gt; _storage.delete(key: _key);
+}</code></pre>
+  <ul>
+    <li>An API like an asynchronous map: <code>read</code>, <code>write</code>, <code>delete</code>. Underneath, Keychain on iOS and Keystore + AES on Android.</li>
+    <li><code>first_unlock_this_device</code>: accessible after the first unlock and it does not migrate to another phone via backup. It is what you want for a token.</li>
+    <li>Tomorrow, <code>AuthClient</code> reads from here, renews on 401 and saves again. Today only the token from startup is kept.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 5</strong> Save the token obtained at startup with <code>TokenStorage</code> and, at the next startup, use it without asking for another one. Confirm with <code>adb shell run-as</code> that there is no file with the token in plain text in the app's folder.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Warnings cache with the same pattern: table, extension, <code>WarningsRepositoryCache</code> with a validity of 5 minutes, and "Updated X min ago" on the screen.</li>
+        <li>Read the comparison <a href="https://pub.dev/packages/drift" target="_blank" rel="noopener">drift</a> vs <a href="https://pub.dev/packages/sqflite" target="_blank" rel="noopener">sqflite</a> vs <a href="https://pub.dev/packages/hive_ce" target="_blank" rel="noopener">hive</a> and note down which one you would choose for the project and why.</li>
+        <li>On Wednesday we talk about security and about secrets in the group's repository: confirm today that <code>.env.json</code> is in <code>.gitignore</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/cookbook/persistence" target="_blank" rel="noopener">Persistence cookbook</a>: the official recipes for key-value, SQLite (with <code>sqflite</code>, to compare with <code>drift</code>) and files.</li>
+        <li><a href="https://drift.simonbinder.eu" target="_blank" rel="noopener">drift</a>: the package documentation, with tables, typed queries, reactive streams and migrations.</li>
+        <li><a href="https://pub.dev/packages/flutter_secure_storage" target="_blank" rel="noopener">flutter_secure_storage</a>: the API, the Keychain accessibility options and what is done on each platform.</li>
+        <li><a href="https://developer.android.com/privacy-and-security/keystore" target="_blank" rel="noopener">Android Keystore</a> and <a href="https://developer.apple.com/documentation/security/keychain-services" target="_blank" rel="noopener">Keychain Services</a>: what each system does underneath <code>flutter_secure_storage</code>.</li>
+        <li><a href="https://developer.android.com/training/data-storage" target="_blank" rel="noopener">Data and file storage overview</a>: the Android sandbox, backup and what is deleted when.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

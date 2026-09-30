@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 03 · Dart I (continued) and first GitHub repository · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* This lesson only: in projector mode use the width of the screen, so the code needs no horizontal scrolling.
+   If a line still does not fit, it wraps instead of being hidden (the Copy button copies the whole line anyway). */
+html.proj.deck, html.proj header.site .wrap, html.proj .deckbar .inner, html.proj .deck { max-width: min(1600px, 100vw - 48px); }
+html.proj .deck .slide pre, html.proj .deck .slide pre code { white-space: pre-wrap; overflow-wrap: normal; word-break: normal; }
+html.proj .deck .slide pre { font-size: clamp(.7rem, 1.4vw, .8rem); } /* on narrow projectors (1280 px) it shrinks a little instead of wrapping */
+/* Section 4: read-only blocks (yellow bar) and the table of higher-order functions */
+pre.ler { box-shadow: inset 5px 0 0 var(--warn); }
+pre.ler[data-title]::before { color: var(--warn); }
+.deck .slide table.hof { font-size: 1.05rem; }
+.deck .slide table.hof td:nth-child(2) { font-size: 1.5em; white-space: nowrap; }
+.deck .slide table.hof code { font-size: 1em; white-space: nowrap; }
+</style>
+</head>
+<body data-aula="3">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 03 · Week 3 · Wednesday, 23 September 2026 · 16:00 to 18:00</p>
+  <h1>Dart I (continued) and first GitHub repository</h1>
+  <p class="lead">Continuation of yesterday's lesson. Practice: Dart blocks 4 to 6 in DartPad (collections, classes, control flow) and the first repository on GitHub, with the exercises saved.</p>
+  <div class="meta"><span>DartPad: dartpad.dev</span></div>
+  <aside class="notes">Ask a student to show yesterday's exercise 3 (classify inside describe) in two minutes: today's blocks start from there. Confirm that everyone has dartpad.dev open with yesterday's code.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Use List, Map and Set in Dart and transform them with <code>where</code>, <code>map</code> and <code>reduce</code>.</li>
+    <li>Write a class with a named constructor, <code>final</code> fields and <code>toString</code>.</li>
+    <li>Use enums and an exhaustive <code>switch</code> with patterns.</li>
+    <li>Create a repository on GitHub, clone it in VS Code and commit and push.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>4. Collections (1 of 3): List, Map and Set</h2>
+<pre data-title="Type in DartPad"><code class="language-dart">void main() {
+  final List&lt;String&gt; cities = ['Ponta Delgada', 'Angra do Heroísmo', 'Horta'];
+  final Map&lt;String, double&gt; temperatures = {
+    'Ponta Delgada': 21.0,
+    'Angra do Heroísmo': 20.5,
+    'Horta': 19.0,
+  };
+  final Set&lt;String&gt; islands = {'São Miguel', 'Terceira', 'Faial', 'Terceira'};
+
+  cities.add('Vila do Porto');
+  print(cities.length);                      // 4
+  print(islands.length);                     // 3: a Set does not keep duplicates
+  print(islands.contains('Pico'));           // false
+  print(temperatures['Horta']);              // 19.0; a missing key gives null
+
+  for (final c in cities) {
+    print('$c → ${temperatures[c] ?? 'no data'}');
+  }
+}</code></pre>
+  <aside class="notes">Ask before running: what is islands.length? The wrong answer (4) is the cue to explain the Set. The type is written out on purpose this first time; the "what matters" slide shows that final cities = [...] infers the same.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Collections: map, where and reduce in three lines <span class="badge">read only</span></h2>
+  <p>All three take a function and apply it to each element. They are called higher-order functions, and they solve almost everything you do with collections.</p>
+  <table class="hof">
+    <tr><th>Call</th><th>Result</th><th>What it does</th></tr>
+    <tr><td><code>[🌽, 🐮, 🐔].map(cook)</code></td><td>[🍿, 🍔, 🍳]</td><td>Transforms each element. Comes out the same size.</td></tr>
+    <tr><td><code>[🍿, 🍔, 🍳].where(isVegetarian)</code></td><td>[🍿, 🍳]</td><td>Keeps only the ones that pass the test. Can shrink.</td></tr>
+    <tr><td><code>[🍿, 🍔, 🍳].reduce(eat)</code></td><td>💩</td><td>Combines everything into a single value.</td></tr>
+  </table>
+  <p>In Dart, the <em>filter</em> of other languages is called <code>where</code>. All three exist on any <code>Iterable</code>: lists, sets, and the <code>entries</code>, <code>keys</code> or <code>values</code> of a Map.</p>
+  <p class="muted">Adapted from Steven Luscher's JavaScript example.</p>
+  <aside class="notes">Nothing to type here. The function passed in is the "cook", the "isVegetarian" and the "eat"; on the next slide they are the lambdas (e) => .... Insist: map does not change the size, where can, reduce returns a single value.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Collections (2 of 3): where, map and reduce</h2>
+<pre class="ler" data-title="Read only: the same thing with loops"><code class="language-dart">// Cities at 20 °C or more
+final hot = &lt;String&gt;[];
+for (final e in temperatures.entries) {
+  if (e.value >= 20) hot.add(e.key);
+}
+
+// Sum of the temperatures
+var sum = 0.0;
+for (final t in temperatures.values) {
+  sum += t;
+}</code></pre>
+<pre data-title="Type in DartPad, inside the main of the previous block"><code class="language-dart">  // ...continues inside main
+  final hot = temperatures.entries
+      .where((e) => e.value >= 20)           // keeps the entries that pass the test
+      .map((e) => e.key)                     // from each entry, only the key
+      .toList();
+  print(hot);                                // [Ponta Delgada, Angra do Heroísmo]
+
+  final sum = temperatures.values.reduce((a, b) => a + b);
+  print((sum / temperatures.length).toStringAsFixed(1));   // 20.2
+}</code></pre>
+  <aside class="notes">Read the top block aloud and then show that the bottom one does exactly the same. In reduce, a is the accumulated value and b the next element. It is what exercise 4 asks for over entries.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Collections (3 of 3): spread, if and for inside the literal</h2>
+<pre class="ler" data-title="Read only: the same thing with a loop"><code class="language-dart">final all = &lt;String&gt;[];
+all.addAll(cities);
+if (islands.length > 3) all.add('Lajes');
+for (final i in islands) all.add('Island $i');</code></pre>
+<pre data-title="Type in DartPad, inside main"><code class="language-dart">  // ...continues inside main
+  final all = [
+    ...cities,                               // spread: every element of cities
+    if (islands.length > 3) 'Lajes',         // only goes in if the condition is true
+    for (final i in islands) 'Island $i',    // one element per island
+  ];
+  print(all.length);                         // 7
+}</code></pre>
+  <aside class="notes">Link it to the lib/main.dart from the start of the lesson: the children of a Column is an ordinary list, so it accepts if and for inside it. That is how you show a widget only when there is data.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Collections: what matters</h2>
+  <ul>
+    <li><code>List</code>, <code>Map</code> and <code>Set</code> are generic: <code>List&lt;String&gt;</code>, <code>Map&lt;String, double&gt;</code>. With <code>final cities = [...]</code> the type is inferred and it is the same. You write it out when the collection starts empty: <code>&lt;String&gt;[]</code>, <code>&lt;String, double&gt;{}</code>, <code>&lt;String&gt;{}</code>. An empty <code>{}</code> with no type is a Map.</li>
+    <li><code>where</code>, <code>map</code>, <code>reduce</code>, <code>fold</code>, <code>any</code>, <code>every</code>, <code>firstWhere</code> live on any <code>Iterable</code>. They return lazy iterables; <code>toList()</code> materialises them. Everything they do can also be written with a loop: they are shortcuts, not magic.</li>
+    <li>Spread <code>...</code>, <code>if</code> and <code>for</code> inside collection literals. In Flutter, this is used to build lists of widgets conditionally.</li>
+  </ul>
+<pre class="ler" data-title="Read only: this is what it exists for. A list of widgets in Flutter, with if and for inside"><code class="language-dart">Column(
+  children: [
+    const Text('Forecast'),
+    if (isRaining) const Icon(Icons.umbrella),
+    for (final c in cities) Text(c),
+  ],
+)</code></pre>
+  <div class="callout task"><strong>Exercise 4</strong> Starting from the <code>temperatures</code> of the block, print the hottest city and the coldest one without sorting by hand (hint: <code>reduce</code> over <code>temperatures.entries</code>, comparing <code>value</code>). Expected result: <code>Hottest: Ponta Delgada (21.0)</code> and <code>Coldest: Horta (19.0)</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>5. Classes (1 of 2)</h2>
+<pre><code class="language-dart">enum WeatherType { sun, cloudy, rain, thunderstorm }
+
+class Forecast {
+  final String city;
+  final DateTime day;
+  final double tMin;
+  final double tMax;
+  final WeatherType type;
+
+  const Forecast({
+    required this.city,
+    required this.day,
+    required this.tMin,
+    required this.tMax,
+    this.type = WeatherType.sun,
+  });
+
+  double get range => tMax - tMin;
+  bool get isRaining => type == WeatherType.rain || type == WeatherType.thunderstorm;
+  // continues on the next slide
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>5. Classes (2 of 2)</h2>
+<pre><code class="language-dart">  // ...inside Forecast
+  Forecast copyWith({double? tMin, double? tMax, WeatherType? type}) => Forecast(
+        city: city,
+        day: day,
+        tMin: tMin ?? this.tMin,
+        tMax: tMax ?? this.tMax,
+        type: type ?? this.type,
+      );
+
+  @override
+  String toString() => '$city ${day.day}/${day.month}: $tMin–$tMax °C, ${type.name}';
+}
+
+void main() {
+  final today = Forecast(city: 'Ponta Delgada', day: DateTime(2026, 9, 22), tMin: 17, tMax: 23);
+  print(today);
+  print(today.range);
+  final tomorrow = today.copyWith(tMax: 25, type: WeatherType.rain);
+  print('$tomorrow, raining: ${tomorrow.isRaining}');
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>5. Classes: what matters</h2>
+  <ul>
+    <li><code>final</code> fields + a <code>const</code> constructor with <code>this.field</code>: the idiomatic form of an immutable data model. It is what will be used for the API data.</li>
+    <li><code>get</code> defines computed properties. <code>copyWith</code> is the pattern for "a copy with one change", central to state management.</li>
+    <li><code>enum</code> with <code>.name</code>. Tomorrow: enums with values and methods.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 5</strong> In the same file, create a class <code>Location</code> with <code>name</code>, <code>island</code> and a list <code>forecasts</code> of <code>Forecast</code>. Add a getter <code>weeklyMax</code> with the highest <code>tMax</code> of the forecasts, and a method <code>rainyDays()</code> with the number of forecasts where <code>isRaining</code> is true. In <code>main</code>, with the existing <code>today</code> and <code>tomorrow</code>: <code>Location(name: 'Ponta Delgada', island: 'São Miguel', forecasts: [today, tomorrow])</code> should give <code>weeklyMax</code> equal to <code>25.0</code> and <code>rainyDays()</code> equal to <code>1</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>6. Control flow and switch with patterns</h2>
+<pre><code class="language-dart">String icon(WeatherType t) => switch (t) {
+      WeatherType.sun => '☀️',
+      WeatherType.cloudy => '☁️',
+      WeatherType.rain => '🌧️',
+      WeatherType.thunderstorm => '⛈️',
+    };
+
+String warning(double wind) {
+  if (wind >= 90) return 'red';
+  if (wind >= 70) return 'orange';
+  if (wind >= 50) return 'yellow';
+  return 'green';
+}
+
+void main() {
+  for (final t in WeatherType.values) {
+    print('${t.name}: ${icon(t)}');
+  }
+  var i = 0;
+  while (i &lt; 3) { print(warning(40.0 + i * 25)); i++; }
+}</code></pre>
+  <p>The <code>switch</code> as an expression is exhaustive: if a new value enters the enum without being handled, the compiler warns you. On mobile this avoids blank screens when the API returns a new state.</p>
+  <div class="callout task"><strong>Exercise 6</strong> In the same file as blocks 5 and 6: add <code>fog</code> to <code>WeatherType</code> and watch the compiler error in the <code>switch</code>; fix it with an icon of your choice. Then use <code>icon(type)</code> in the <code>toString</code> of <code>Forecast</code>, so that <code>print(tomorrow)</code> shows <code>🌧️ Ponta Delgada 22/9: 17.0–25.0 °C, rain</code>.</div>
+</section>
+
+<section class="slide" data-part="Git">
+  <h2>Git and GitHub: first repository</h2>
+  <p>Goal: today's exercises saved in a repository of your own on GitHub, with commit and push done from VS Code. Full steps in the <a href="../guia-instalacao.html#git">Git section of the guide</a>.</p>
+  <ol class="steps">
+    <li>On GitHub: <strong>New repository</strong> → name <code>pdm-dart</code> → tick <em>Add a README file</em> → Create.</li>
+    <li>In VS Code: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <strong>Git: Clone</strong> → paste the repository URL → choose the working folder (<code>C:\dev</code>) → open the project. If <em>Restricted Mode</em> appears, click <strong>Trust</strong>.</li>
+    <li>Create <code>exercise1.dart</code> to <code>exercise6.dart</code> with the code from DartPad (5 and 6 can stay in the same file). Confirm that they run: <code>dart run exercise1.dart</code>.</li>
+    <li><em>Source Control</em> view (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd>): message <code>Dart exercises from lessons 2 and 3</code> → <strong>Commit</strong> → <strong>Sync Changes</strong>.</li>
+    <li>The first time, the browser opens to authorise access to GitHub. Once authorised, it does not ask for a password again on this computer.</li>
+    <li>Open the repository on GitHub and confirm that the files are there.</li>
+  </ol>
+  <aside class="notes">Keep the last 20 minutes for this. Typical mistake: commit without user.name and user.email configured (VS Code asks). Second typical mistake: cloning into OneDrive. Anyone who does not have Git installed pairs up with a classmate and repeats it at home.</aside>
+</section>
+
+<section class="slide">
+  <h2>Git: what matters</h2>
+  <ul>
+    <li>A <strong>commit</strong> is a photo of the whole project with a caption and a date. None is ever deleted; you can go back to any of them.</li>
+    <li><strong>Push</strong> sends the photos to GitHub; <strong>pull</strong> brings the ones others made. The local repository and the remote one are complete copies.</li>
+    <li><strong>Commit messages</strong> say what changed and why: "Add exercise 3 (functions)" and not "stuff".</li>
+    <li>From Friday, every lesson starts with a <code>git clone</code>. Later, the group project lives entirely on GitHub, with branches and pull requests.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 7</strong> Make a change to an exercise, a new commit with a clear message, push. Confirm on GitHub that the history shows two commits.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Friday</h2>
+  <div class="cols">
+    <div>
+      <h3>To do by Friday</h3>
+      <ul class="checklist">
+        <li>Six Dart exercises in the <code>pdm-dart</code> repository, pushed.</li>
+        <li>Read the <a href="https://dart.dev/language" target="_blank" rel="noopener">Dart language tour</a> up to "Classes".</li>
+        <li>Setup: <code>flutter doctor</code> with ✓ on Flutter, Android toolchain and Android Studio; emulator created (or a phone with USB debugging). We check it on Friday, in the lesson.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/learn/pathway/how-flutter-works" target="_blank" rel="noopener">How Flutter works</a>: the official walk through the layers, the three trees and what happens on each frame.</li>
+        <li><a href="https://docs.flutter.dev/resources/architectural-overview" target="_blank" rel="noopener">Flutter architectural overview</a>: the three layers and the three trees, with diagrams.</li>
+        <li><a href="https://docs.flutter.dev/tools/hot-reload" target="_blank" rel="noopener">Hot reload</a>: what can and cannot be hot reloaded.</li>
+        <li><a href="https://dart.dev/null-safety/understanding-null-safety" target="_blank" rel="noopener">Understanding null safety</a>: why and how.</li>
+        <li><a href="https://docs.github.com/get-started/start-your-journey/hello-world" target="_blank" rel="noopener">GitHub: Hello World</a>: repository, branch, commit and pull request in ten minutes, in the browser.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

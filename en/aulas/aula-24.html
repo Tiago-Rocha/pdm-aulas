@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 24 · Hardware and sensors, and sprint 2 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="24">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 24 · Week 10 · Wednesday, 11 November 2026 · 16:00 to 18:00</p>
+  <h1>Hardware and sensors, and sprint 2</h1>
+  <p class="lead">Theory (30 minutes): hardware access: camera, motion sensors, NFC, Bluetooth Low Energy, biometrics and haptics; permissions, power consumption and differences between iOS and Android. Practice: sprint 2, one week before the review.</p>
+  <div class="meta"><span>Sprint 2 review: Wednesday 18/11</span></div>
+  <aside class="notes">Bring an NFC tag written with an NDEF text (a 20-cent sticker is enough) for the demo. As they come in, ask who has NFC on their phone: almost every Android has it, the iPhone reads since the 7. In the first three minutes each group says in one sentence where they are in sprint 2; that decides where you start going round in the practical part.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Choose the right package for camera, sensors, NFC, BLE and biometrics, and say which permission each one requires on Android and iOS.</li>
+    <li>Explain the difference between reading an NDEF tag and emulating a card (HCE), and why iOS is more restrictive.</li>
+    <li>Tell the central role from the peripheral role in BLE and justify why Android asks for location in order to scan.</li>
+    <li>Use haptics and biometrics as quality details, not as core features.</li>
+    <li>Close the sprint 2 status check with the review demo already planned.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Camera and gallery</h2>
+  <ul>
+    <li><strong><code>image_picker</code></strong> opens the system camera or gallery and returns a file. It is enough for most cases: a profile photo, attaching an image to a form. It is what WhatsApp does when you attach a photo.</li>
+    <li><strong><code>camera</code></strong> gives you the live preview inside the app, control of focus, flash and video. You need it to read QR codes or apply filters. It costs more code and more permissions.</li>
+    <li><strong>Permissions:</strong> Android 13+ uses the Photo Picker and does not ask for permission to choose from the gallery; the camera requires <code>CAMERA</code>. iOS requires <code>NSCameraUsageDescription</code> and <code>NSPhotoLibraryUsageDescription</code> in <code>Info.plist</code>, with a justification text, or the app crashes.</li>
+    <li><strong>Size:</strong> a 12 MP photo is 4 to 6 MB. Before sending, shrink it with <code>maxWidth</code> and <code>imageQuality</code> from <code>image_picker</code> or with <code>flutter_image_compress</code>. A 6 MB upload on 3G fails; a 300 KB one does not.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>image_picker</code> delegates to the system and has no preview; <code>camera</code> has a preview and costs more permissions and code.</p>
+  <aside class="notes">Ask: for an app to report potholes in the road, image_picker or camera? Answer: image_picker, they only need the photo. Insist on compression: anyone who has had uploads fail on a weak network gets it straight away.</aside>
+</section>
+
+<section class="slide">
+  <h2>Motion sensors</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Sensor</th><th>Measures</th><th>Real uses</th></tr></thead>
+  <tbody>
+  <tr><td>Accelerometer</td><td>Acceleration in x, y, z, including gravity</td><td>Detecting a shake, screen orientation, counting steps roughly</td></tr>
+  <tr><td>Gyroscope</td><td>Angular velocity</td><td>Fine rotation, augmented reality, games</td></tr>
+  <tr><td>Magnetometer</td><td>Magnetic field</td><td>The compass arrow in Google Maps</td></tr>
+  <tr><td>Barometer</td><td>Atmospheric pressure</td><td>Relative altitude, floors climbed; it could give the local pressure in Tempo Açores</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li><code>sensors_plus</code> exposes each sensor as a <code>Stream</code>: <code>accelerometerEventStream()</code>, <code>gyroscopeEventStream()</code>, <code>magnetometerEventStream()</code>, <code>barometerEventStream()</code>. No permissions on either platform.</li>
+    <li>A stream at 100 Hz keeps the CPU awake. Choose the <code>samplingPeriod</code>, cancel the subscription in <code>dispose</code> and when the app goes to the background.</li>
+  </ul>
+  <p><strong>For the tests:</strong> motion sensors do not ask for permission, but they cost battery; cancel the stream when nobody is looking.</p>
+  <div class="callout"><strong>Analogy</strong> The sensors are the phone's senses. The accelerometer and the gyroscope are the inner ear: they give balance and movement without asking anyone's leave. The camera is sight. NFC is touch: it only works within centimetres and in an instant. BLE is the voice: it reaches tens of metres and holds a conversation. Each sense has its own permission and its own cost in battery.</div>
+</section>
+
+<section class="slide">
+  <h2>NFC</h2>
+  <ul>
+    <li><strong>NDEF tags</strong> are the common language of tags: text, URL, vCard, Wi-Fi configuration. Reading and writing with <code>nfc_manager</code>. Examples: tags in museums, business cards, stickers that open an app.</li>
+    <li><strong>Android:</strong> reads and writes tags in the background, with no system screen; it needs <code>android.permission.NFC</code> in the manifest, with no prompt to the user. It does <strong>HCE</strong> (Host Card Emulation): the phone pretends to be a card, with a native service.</li>
+    <li><strong>iOS:</strong> reads since iOS 11 and writes since 13, but always in a session with the system sheet visible ("Ready to Scan"); it needs <code>NFCReaderUsageDescription</code> and the capability in Xcode. HCE only since iOS 17.4, only in the EU and with Apple's authorisation.</li>
+    <li><strong>Payments</strong> (Apple Pay, Google Wallet) use NFC with a Secure Element. An ordinary app cannot imitate that; a home-made "transport card" is not possible.</li>
+  </ul>
+  <p><strong>For the tests:</strong> in NFC, Android does reading, writing and HCE; iOS reads and writes in a system session and HCE is a special case.</p>
+  <aside class="notes">Show the "Ready to Scan" sheet on your iPhone; Android users find it odd that there is no silent mode. Frequent question: "can I make a gym access card?" Only if the reader accepts NDEF or HCE; transport cards require a Secure Element and agreements with the operator.</aside>
+</section>
+
+<section class="slide">
+  <h2>Bluetooth Low Energy</h2>
+  <ul>
+    <li><strong>Central</strong> is whoever scans and connects (the phone). <strong>Peripheral</strong> is whoever advertises (the wristband, the temperature sensor, the lock). The phone can also be a peripheral, but it is rarely worth it.</li>
+    <li><strong>Flow:</strong> scan for advertisements → connect → discover services → read, write or subscribe to characteristics. Each characteristic is a UUID with bytes; the meaning comes from the standard (Heart Rate Service <code>0x180D</code>) or from the manufacturer.</li>
+    <li><code>flutter_blue_plus</code>: scan with filters, connection, <code>read()</code>, <code>write()</code> and <code>lastValueStream</code> per characteristic.</li>
+    <li><strong>Permissions:</strong> up to Android 11 the scan requires location permission, because beacons reveal where you are. Android 12+ has <code>BLUETOOTH_SCAN</code> and <code>BLUETOOTH_CONNECT</code>, with the <code>neverForLocation</code> flag. iOS asks for <code>NSBluetoothAlwaysUsageDescription</code>.</li>
+    <li>Examples: Mi Band, home weather stations, AirTags, the contact tracing system from the pandemic.</li>
+  </ul>
+  <p><strong>For the tests:</strong> BLE on old Android asks for location in order to scan; it is not a bug, it is privacy.</p>
+</section>
+
+<section class="slide">
+  <h2>Biometrics, haptics, home screen widgets</h2>
+  <ul>
+    <li><strong><code>local_auth</code></strong>: Face ID, Touch ID, fingerprint, with <code>authenticate(localizedReason: ...)</code>. It unlocks something local: showing the stored token, entering a sensitive screen. It does not replace authentication on the server (lesson 17).</li>
+    <li><strong>Haptics:</strong> <code>HapticFeedback.lightImpact()</code>, <code>mediumImpact()</code>, <code>heavyImpact()</code>, <code>selectionClick()</code>. No permission, no package, and it is one of the details that most make an app feel native. iOS has the Taptic engine; on Android it depends on the hardware.</li>
+    <li><strong>Home screen widgets:</strong> <code>home_widget</code> bridges to App Widgets (Android) and WidgetKit (iOS). The widget's UI is native; Flutter only writes the data. The perfect case: today's forecast for the favourite location.</li>
+    <li><strong>Live Activities</strong> (iOS 16.1+) and Dynamic Island in one sentence: a live notification whose data you update; Swift code is mandatory. Examples: deliveries, flights, sports results.</li>
+  </ul>
+  <p><strong>For the tests:</strong> biometrics is local unlocking; a home screen widget is drawn in native code and Flutter only gives it data.</p>
+  <aside class="notes">Ask the class where a haptic would make sense in Tempo Açores. Good answers: when adding a favourite, when completing the pull-to-refresh, when a red warning arrives. Common question: "does biometrics prove to the server who I am?" No: it proves it to the phone, and the server still only sees the token.</aside>
+</section>
+
+<section class="slide" data-part="Sprint">
+  <h2>Sprint 2: status check</h2>
+  <ul>
+    <li>Each group, one minute: what is in <code>main</code>, what is in a PR, what is blocked.</li>
+    <li>The review is on <strong>Wednesday 18/11</strong>. Whatever is not in <code>main</code> by Tuesday night does not go into the demo.</li>
+    <li>This week's priority: <strong>closing</strong> features, not starting new ones. Error states, airplane mode, synced favourites.</li>
+    <li>The teacher goes round the groups. Blockers are solved live, in your code, not in the abstract.</li>
+  </ul>
+  <div class="callout tip"><strong>Last-week rule</strong> A small merged PR is worth more than a big half-done feature. If an issue does not fit by Tuesday, split it or move it to sprint 3.</div>
+  <aside class="notes">Give the status check 10 minutes. Write down one blocker per group on a piece of paper and start going round the ones that are worst off. Groups that say "everything is fine" are the first to visit: ask to see the board.</aside>
+</section>
+
+<section class="slide">
+  <h2>Demo: read an NFC tag and vibrate</h2>
+  <p>On the teacher's phone. The code is short, and what matters is the sequence: check availability, open a session, handle the tag, close the session.</p>
+<pre data-title="lib/services/nfc_service.dart"><code class="language-dart">import 'package:flutter/services.dart';
+import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
+
+class NfcService {
+  Future&lt;void&gt; readTag({required void Function(String) onRead}) async {
+    if (!await NfcManager.instance.isAvailable()) {
+      throw StateError('NFC unavailable or turned off on this phone');
+    }
+    await NfcManager.instance.startSession(
+      pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
+      onDiscovered: (NfcTag tag) async {
+        final message = await Ndef.from(tag)?.read();
+        final record = message?.records.firstOrNull;
+        final text = record == null
+            ? 'tag with no NDEF content'
+            : String.fromCharCodes(record.payload.skip(3)); // skips the Text Record header
+        await HapticFeedback.heavyImpact();
+        onRead(text);
+        await NfcManager.instance.stopSession();
+      },
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Demo: what matters</h2>
+  <ul>
+    <li><code>isAvailable()</code> first: without NFC, or with NFC turned off in the settings, the session never opens. Show a message, not a crash.</li>
+    <li>On Android, <code>onDiscovered</code> fires silently. On iOS the system sheet appears and the session closes by itself after 60 seconds.</li>
+    <li>The payload of a Text Record starts with a status byte and the language code (<code>pt</code>, <code>en</code>): hence the <code>skip(3)</code>.</li>
+    <li>Configuration: <code>&lt;uses-permission android:name="android.permission.NFC"/&gt;</code> in <code>AndroidManifest.xml</code>; on iOS, <code>NFCReaderUsageDescription</code> in <code>Info.plist</code> and the "Near Field Communication Tag Reading" capability in Xcode.</li>
+    <li>The <code>HapticFeedback.heavyImpact()</code> is the feedback: the user feels that the read happened before reading the screen.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> If your project has a gesture that deserves feedback (adding a favourite, finishing the pull-to-refresh, receiving a red warning), open a five-line PR with <code>HapticFeedback.selectionClick()</code> or <code>mediumImpact()</code> at that point. Test on the phone, not on the emulator: the emulator does not vibrate.</div>
+  <aside class="notes">Write the tag before the lesson with the "NFC Tools" app (text "Tempo Açores"). If the read fails live, plan B is to show the 20-second video you recorded. Give the exercise 5 minutes and go back to supporting the groups.</aside>
+</section>
+
+<section class="slide">
+  <h2>Checklist for Wednesday's review</h2>
+  <ul class="checklist">
+    <li>App running on the phone of every group member, from Tuesday night's <code>main</code>.</li>
+    <li>A rehearsed 5-minute demo: who speaks, which screens, which location, what data shows up.</li>
+    <li>Airplane mode on during the demo: the app keeps showing data and says it is old.</li>
+    <li>Favourites synced between two of the group's phones, live.</li>
+    <li>A list of what was left undone, with no excuses. It is material for the retro, not a penalty.</li>
+    <li>Sprint 2 issues closed or moved to sprint 3 before the lesson.</li>
+  </ul>
+  <aside class="notes">In the last 10 minutes come back to this slide and ask each group which of these points is still not guaranteed. Remind them that Monday is the lesson on tests and CI, which they will want to use in the project before the review.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Monday</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Sprint 2 closes next Wednesday, 18/11: 5-minute demo prepared, with the checklist from the previous slide done.</li>
+        <li>Open PRs reviewed by a group colleague by Tuesday night; nothing goes into <code>main</code> without review.</li>
+        <li>If you did the haptics exercise: ask for the PR review and merge it today.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview" target="_blank" rel="noopener">Sensors overview</a> on Android: the sensor categories, the sampling rates and the cost in battery.</li>
+        <li><a href="https://developer.android.com/develop/connectivity/bluetooth/ble/ble-overview" target="_blank" rel="noopener">Bluetooth Low Energy overview</a> on Android: central, peripheral, GATT and the permissions per version.</li>
+        <li><a href="https://developer.apple.com/documentation/corenfc" target="_blank" rel="noopener">Core NFC</a> at Apple: reading sessions, NDEF and what iOS lets an app do.</li>
+        <li><a href="https://pub.dev/packages/sensors_plus" target="_blank" rel="noopener">sensors_plus</a>: the streams for each sensor and the <code>samplingPeriod</code>.</li>
+        <li><a href="https://pub.dev/packages/nfc_manager" target="_blank" rel="noopener">nfc_manager</a>: Android and iOS configuration, NDEF reading and writing.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

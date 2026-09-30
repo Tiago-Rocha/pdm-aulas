@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course API · PDM · DAW 2 · 2026/27</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="index.html#calendar">Calendar</a>
+    <a href="guia-instalacao.html">Setup</a>
+    <a href="projeto.html">Project</a>
+    <a href="avaliacao.html">Assessment</a>
+    <a href="api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="wrap layout">
+<aside class="toc" id="toc"></aside>
+<main class="content">
+
+<p class="kicker">Course API · available from lesson 12 (14/10)</p>
+<h1>Tempo Açores API</h1>
+<p class="lead">A REST API maintained by the teacher that wraps IPMA's open data, adds per-group authentication, favourites and telemetry, and is the base for the project.</p>
+
+<div class="callout warn"><strong>Coming soon</strong> The API goes into production before lesson 12. This page will then show the interactive OpenAPI documentation (Swagger UI), the base address, and how to get your group's token.</div>
+
+<h2>What it will have</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead>
+<tbody>
+<tr><td><code>POST /v1/auth/token</code></td><td>Exchanges the group's client-id and secret for a JWT token.</td><td>no</td></tr>
+<tr><td><code>GET /v1/locations</code></td><td>Islands and locations of the Azores with coordinates.</td><td>yes</td></tr>
+<tr><td><code>GET /v1/forecast/{locationId}</code></td><td>5-day forecast, normalised (numbers as numbers, ISO dates, weather type resolved).</td><td>yes</td></tr>
+<tr><td><code>GET /v1/warnings</code></td><td>Active weather warnings.</td><td>yes</td></tr>
+<tr><td><code>GET /v1/seismic</code></td><td>Recent earthquakes in the Azores region.</td><td>yes</td></tr>
+<tr><td><code>GET/POST/DELETE /v1/me/favorites</code></td><td>The group's favourites.</td><td>yes</td></tr>
+<tr><td><code>GET /icons/{weatherType}.svg</code></td><td>Weather icons.</td><td>no</td></tr>
+</tbody></table></div>
+
+<h2>Usage rules</h2>
+<ul>
+  <li>Each group has a client-id. Do not share it with other groups; requests are logged per group.</li>
+  <li>Always send the headers <code>X-Platform</code> (android, ios or web) and <code>X-App-Version</code>.</li>
+  <li>There is a limit on requests per minute. Cache on the app side: forecasts do not change every second.</li>
+  <li>The teacher can switch on <em>chaos mode</em> for your group: latency, random 429 and 500 responses. Your app must stay usable.</li>
+</ul>
+
+<nav class="pager" id="pager"></nav>
+</main>
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="../assets/app.js"></script>
+</body>
+</html>

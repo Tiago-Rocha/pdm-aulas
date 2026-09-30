@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11 · Quality: lints, organisation and git flow · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="11">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 11 · Week 6 · Tuesday, 13 October 2026 · 08:30 to 10:30</p>
+  <h1>Quality: lints, organisation and git flow</h1>
+  <p class="lead">Theory: code quality: lints, organisation by feature, widget extraction and code review; git flow for teams with a branch per task, small pull requests and review by a teammate. Practice: guided refactor of the mini-project and resolving a merge conflict.</p>
+  <div class="meta"><span>Repository: pdm-aula-11</span></div>
+  <aside class="notes">Ask who already has the mini-project compiling and who has already pushed. Ask two students to show the app: 1 minute each, no comments on the code yet. Then ask: "if I asked you to add a Warnings tab, how many files would you touch?" The answer is the starting point of the lesson.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Configure <code>analysis_options.yaml</code> with strict lints and explain why each important warning exists.</li>
+    <li>Organise a Flutter project by feature and say what it gains over organisation by layer.</li>
+    <li>Extract reusable widgets with named parameters and <code>const</code> constructors.</li>
+    <li>Review a classmate's code with useful comments on names, errors, <code>dispose</code> and null safety.</li>
+    <li>Work with a branch per task, pull requests, conventional commits, and resolve a merge conflict.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Lints: the compiler that knows you</h2>
+  <ul>
+    <li>The Dart analyser catches type errors. <strong>Lints</strong> go further: they catch code that compiles but is wrong, slow or going to cause problems. They are rules, and you choose which ones.</li>
+    <li><code>flutter_lints</code> comes with <code>flutter create</code>: the rules recommended by the Flutter team. Few, uncontroversial, no false positives.</li>
+    <li><code>very_good_analysis</code> (Very Good Ventures) is the strict set used in industry: 200-odd rules, including style, documentation and trailing commas. More noise at the start, fewer arguments in code review.</li>
+    <li>The configuration lives in <code>analysis_options.yaml</code> at the root. VS Code shows the warnings as you type; <code>flutter analyze</code> shows them all; the CI (lesson 25) rejects PRs with warnings.</li>
+    <li>Zero warnings is the definition of done in the project. Not because every warning is serious, but because a project with 200 warnings hides the 3 that matter.</li>
+  </ul>
+  <p><strong>For the tests:</strong> lints are static analysis rules configured in <code>analysis_options.yaml</code>; <code>flutter_lints</code> is the base set, <code>very_good_analysis</code> the strict one.</p>
+  <aside class="notes">Open the solution mini-project with very_good_analysis turned on and show the list of warnings: there are dozens. Ask which ones the students think matter. Then show the same with flutter_lints: almost none. The difference is the conversation of this slide and the next.</aside>
+</section>
+
+<section class="slide">
+  <h2><code>analysis_options.yaml</code></h2>
+<pre data-title="analysis_options.yaml"><code class="language-yaml">include: package:flutter_lints/flutter.yaml   # or package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: true          # no dynamic passing as a String without an explicit cast
+    strict-inference: true
+    strict-raw-types: true      # List without &lt;T&gt; is a warning
+  errors:
+    unused_import: error        # raised from warning to error
+    use_build_context_synchronously: error
+  exclude:
+    - "**/*.g.dart"             # generated code is not analysed
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_final_locals: true
+    avoid_print: true
+    require_trailing_commas: true
+    always_declare_return_types: true
+    avoid_dynamic_calls: true</code></pre>
+  <p><code>include</code> inherits a set; <code>analyzer.errors</code> changes the severity; <code>linter.rules</code> turns rules on or off one by one. The full list is at dart.dev/tools/linter-rules.</p>
+</section>
+
+<section class="slide">
+  <h2>Warnings that matter, and why</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Rule</th><th>Why it exists</th></tr></thead>
+  <tbody>
+  <tr><td><code>prefer_const_constructors</code></td><td>A <code>const</code> widget is created once and reused in every rebuild. Less work per frame; less jank.</td></tr>
+  <tr><td><code>use_build_context_synchronously</code></td><td>Using the <code>context</code> after an <code>await</code> can point to a widget that no longer exists. Intermittent crash, hard to reproduce.</td></tr>
+  <tr><td><code>avoid_print</code></td><td><code>print</code> stays in the release binary and goes to the system logs. Use <code>debugPrint</code> or a logger that turns itself off in production.</td></tr>
+  <tr><td><code>strict-casts</code> and <code>avoid_dynamic_calls</code></td><td>JSON is <code>dynamic</code>; without explicit casts the error shows up at runtime on the user's phone, not at compile time.</td></tr>
+  <tr><td><code>unused_import</code>, <code>unused_local_variable</code>, <code>dead_code</code></td><td>Noise that hides bugs and confuses the reader. If it is not used, delete it.</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> <code>use_build_context_synchronously</code> exists because the widget may have been destroyed during the <code>await</code>; <code>const</code> avoids rebuilds.</p>
+</section>
+
+<section class="slide">
+  <h2>Organisation: by layer or by feature</h2>
+  <div class="cols">
+    <div>
+      <h3>By layer</h3>
+<pre><code class="language-plaintext">lib/
+  models/      forecast.dart, location.dart, warning.dart
+  services/    local_forecasts.dart, api_client.dart
+  ui/          list_screen.dart, detail_screen.dart,
+               warnings_screen.dart, settings_screen.dart
+  widgets/     forecast_card.dart, day_chip.dart</code></pre>
+      <p>Simple to start with. With 30 screens, each feature is spread over four folders and one change touches all of them.</p>
+    </div>
+    <div>
+      <h3>By feature</h3>
+<pre><code class="language-plaintext">lib/
+  app/           app.dart, router.dart, theme.dart
+  forecast/      models/, data/, ui/
+  warnings/      models/, data/, ui/
+  settings/      ui/
+  shared/        widgets/, extensions/, l10n/</code></pre>
+      <p>Each folder is a complete feature, with its layers inside. One team per folder; deleting a feature is deleting a folder.</p>
+    </div>
+  </div>
+  <p><strong>For the tests:</strong> by layer groups by the kind of code; by feature groups by what the app does. The project uses by feature with layers inside each one, which is what the Flutter architecture guide recommends.</p>
+</section>
+
+<section class="slide">
+  <h2>Reusable widgets</h2>
+  <ul>
+    <li><strong>Extract when it repeats</strong> or when a <code>build</code> goes past 50 lines. A 300-line <code>build</code> cannot be read, cannot be tested and rebuilds everything every time.</li>
+    <li><strong>Class, not method.</strong> <code>Widget _card()</code> inside the <code>State</code> looks shorter, but it cannot be <code>const</code>, always rebuilds, and does not show up in the inspector. <code>class ForecastCard extends StatelessWidget</code> solves all three.</li>
+    <li><strong>Named parameters and <code>required</code>:</strong> <code>ForecastCard(forecast: f, onTap: open)</code> reads without opening the class. Input data as <code>final</code> fields; actions as <code>VoidCallback</code> or <code>ValueChanged&lt;T&gt;</code> callbacks.</li>
+    <li><strong><code>const</code> constructor</strong> whenever the fields are final. The <code>prefer_const_constructors</code> lint tells you where you can use it.</li>
+    <li><strong>Small files:</strong> one public widget per file, file name in <code>snake_case</code> matching the class name. <code>forecast_card.dart</code> holds <code>ForecastCard</code>.</li>
+    <li>The widget does not know where the data comes from or where navigation goes. It receives values and returns events. That is what makes it reusable and testable.</li>
+  </ul>
+  <p><strong>For the tests:</strong> extract widgets into classes, not methods: they allow <code>const</code>, avoid rebuilds and show up in the inspector.</p>
+</section>
+
+<section class="slide">
+  <h2>Code review: what to look for</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Look for</th><th>Example comment</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Names</strong> that say what the thing is</td><td>"<code>list2</code> → <code>filteredLocations</code>? That way the reader does not need to open the where."</td></tr>
+  <tr><td><strong>Error and empty states</strong> handled</td><td>"If the JSON fails, the <code>FutureBuilder</code> stays blank. A <code>Text</code> with the message and a retry button?"</td></tr>
+  <tr><td><strong><code>dispose</code></strong> for every controller, timer and subscription</td><td>"The <code>_controller</code> created in <code>initState</code> is never released. Memory leak every time the screen opens."</td></tr>
+  <tr><td><strong>Null checks</strong> with <code>!</code> and casts hiding problems</td><td>"This <code>json['tMax']!</code> fails when the field is missing. <code>?? 0</code> or a <code>FormatException</code> with the field name?"</td></tr>
+  <tr><td><strong>Large widgets</strong> and repeated code</td><td>"This <code>build</code> has 140 lines and the card appears three times. Extract <code>ForecastCard</code>?"</td></tr>
+  </tbody></table></div>
+  <aside class="notes">Project a 150-line file from the starter and do the review live with the class: they point, you write the comment. 5 minutes. Note that every comment ends with a question or a concrete suggestion, never with "this is wrong".</aside>
+</section>
+
+<section class="slide">
+  <h2>Code review: how to comment</h2>
+  <ul>
+    <li><strong>Comment on the code, not the person.</strong> "This method does two things" instead of "you did this wrong".</li>
+    <li><strong>Ask before asserting.</strong> "Is there a reason for the <code>Future</code> to be created in <code>build</code>?" Sometimes there is, and you learn; sometimes there is not, and the author fixes it without feeling attacked.</li>
+    <li><strong>Suggest, with code when it helps.</strong> GitHub has "suggestion" blocks that the author accepts with one click.</li>
+    <li><strong>Separate what blocks from what is taste.</strong> "blocking: crash with no network" vs "nit: I prefer <code>final</code> here". A PR does not sit waiting because of commas.</li>
+    <li><strong>Praise what is good.</strong> A review with only problems teaches less than one that says "this extraction came out clean, do the same in the detail screen".</li>
+    <li>Reviewing is reading carefully, not rushing. If you do not understand a block, the comment is "I did not understand this; can you explain or simplify it?". Probably nobody else understands it either.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a good review separates blocking from optional, comments on the code and not the author, and ends with a concrete suggestion.</p>
+</section>
+
+<section class="slide">
+  <h2>Git for teams (1 of 2): branches and pull requests</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 280" role="img" aria-label="Team Git flow: protected main; the feat/search branch leaves main and comes back by pull request, going through review by a teammate and green CI; a second branch fix/overflow-landscape runs in parallel and enters the same way">
+    <text x="40" y="30" class="t b">main</text>
+    <text x="90" y="30" class="t s">protected: everything enters by pull request</text>
+    <rect x="600" y="10" width="260" height="30" rx="8" class="box danger"/>
+    <text x="730" y="30" class="t s b" text-anchor="middle">direct push to main: rejected</text>
+    <path d="M40 70 L860 70" class="arrow accent"/>
+    <path d="M140 70 L190 150 L428 150" class="arrow"/>
+    <text x="200" y="140" class="t mono">feat/search</text>
+    <rect x="430" y="128" width="120" height="44" rx="8" class="box accent"/>
+    <text x="490" y="146" class="t b" text-anchor="middle">Pull request</text>
+    <text x="490" y="164" class="t s" text-anchor="middle">small, described</text>
+    <path d="M550 150 L578 150" class="arrow"/>
+    <rect x="580" y="128" width="130" height="44" rx="8" class="box ok"/>
+    <text x="645" y="146" class="t b" text-anchor="middle">Review</text>
+    <text x="645" y="164" class="t s" text-anchor="middle">by a teammate</text>
+    <path d="M710 150 L738 150" class="arrow"/>
+    <rect x="740" y="128" width="120" height="44" rx="8" class="box ok"/>
+    <text x="800" y="146" class="t b" text-anchor="middle">Green CI</text>
+    <text x="800" y="164" class="t s" text-anchor="middle">analyze + test</text>
+    <path d="M800 128 L800 74" class="arrow accent"/>
+    <text x="810" y="104" class="t s">merge</text>
+    <path d="M60 70 L110 250 L560 250" class="arrow"/>
+    <text x="120" y="240" class="t mono">fix/overflow-landscape</text>
+    <text x="575" y="255" class="t s">in progress: enters the same way</text>
+    <circle cx="100" cy="70" r="6" class="box accent"/>
+    <circle cx="800" cy="70" r="6" class="box accent"/>
+    <circle cx="240" cy="150" r="6" class="box"/>
+    <circle cx="310" cy="150" r="6" class="box"/>
+    <circle cx="380" cy="150" r="6" class="box"/>
+    <circle cx="200" cy="250" r="6" class="box"/>
+    <circle cx="300" cy="250" r="6" class="box"/>
+    <circle cx="400" cy="250" r="6" class="box"/>
+    <circle cx="500" cy="250" r="6" class="box"/>
+  </svg>
+  <figcaption>Each task is born from main on a short branch and only comes back by pull request, after review by a teammate and green CI.</figcaption>
+  </figure>
+  <ul>
+    <li><strong><code>main</code> protected.</strong> Nobody pushes directly. Everything enters through a reviewed pull request. On GitHub: Settings → Branches → "Require a pull request before merging". In the group project it is mandatory.</li>
+    <li><strong>One branch per task</strong>, short, with a name that says what it is: <code>feat/warning-detail</code>, <code>fix/overflow-landscape</code>, <code>chore/lints</code>. It is born from <code>main</code> and dies after the merge.</li>
+    <li><strong>Small PR.</strong> Fewer than 300 lines, one thing only. A 2000-line PR is not reviewed; it is approved without being read. Split it before opening.</li>
+    <li><strong>Description:</strong> what, why, how to test, a screenshot if it is UI. The title becomes the merge commit message.</li>
+    <li><strong>Review by a teammate</strong> before it goes in. The author does not approve their own PR. The CI (lesson 25) runs <code>analyze</code> and <code>test</code> and blocks if they fail.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a branch per task starting from <code>main</code>, a small PR reviewed by someone else, <code>main</code> protected with no direct push.</p>
+  <div class="callout"><strong>Analogy</strong> A commit is a photograph of the whole project with a caption and a date; none is ever deleted and you can go back to any of them. A branch is a separate notebook where you experiment without spoiling the main notebook. The pull request is asking a teammate to read the notebook before its contents are copied into the main one.</div>
+</section>
+
+<section class="slide">
+  <h2>Git for teams (2 of 2): commits, rebase and conflicts</h2>
+  <ul>
+    <li><strong>Conventional commits:</strong> <code>type(scope): description</code> in the imperative, up to 72 characters. Types: <code>feat</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, <code>test</code>, <code>chore</code>. Example: <code>feat(warnings): add warning detail with affected locations</code>. It lets you generate changelogs and understand the history without opening diffs.</li>
+    <li><strong>Merge</strong> joins two histories with a merge commit: it preserves everything, but the graph ends up with loops. <strong>Rebase</strong> rewrites your commits on top of the current <code>main</code>: linear history, but never on commits that have already been shared.</li>
+    <li>Project rule: <code>git pull --rebase</code> on your branch to update; "Squash and merge" on GitHub to enter <code>main</code>. One clean commit per PR.</li>
+    <li><strong>Conflicts</strong> happen when two branches change the same lines. They are not an error: they are git asking you to decide. You open the file, choose, delete the markers, <code>git add</code>, carry on.</li>
+    <li>Large conflicts are a symptom of large PRs or of two members working on the same file. Split the work by feature (folder) and almost all of them disappear.</li>
+  </ul>
+  <p><strong>For the tests:</strong> rebase rewrites history and is not done on shared commits; a conflict is resolved by editing the file, deleting the markers and running <code>git add</code>.</p>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Guided refactor</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-11.git
+cd pdm-aula-11/starter
+flutter pub get
+flutter run</code></pre>
+  <p>The <code>starter/</code> is a reference mini-project left untidy on purpose: lints turned off, a 300-line <code>detail_screen.dart</code>, everything in <code>lib/</code> at the root, a <code>TextEditingController</code> with no <code>dispose</code>. It has numbered <code>TODO</code>s and failing tests; <code>solucao/</code> is the final state. Steps 1 and 2 are done here, so everyone sees the same warnings; steps 3 to 5 are done in <strong>your</strong> mini-project repository.</p>
+  <ol class="steps">
+    <li>Run <code>flutter analyze</code> in the starter: "No issues found". It is lying by omission: the lints are turned off.</li>
+    <li>Open <code>analysis_options.yaml</code>. It has one line.</li>
+  </ol>
+  <aside class="notes">Give 8 minutes for setup. The starter compiles and runs fine: it is important that they see that "it works" and "it is good" are different things. Ask them to count the lines of detail_screen.dart before starting.</aside>
+</section>
+
+<section class="slide">
+  <h2>1. Turn on strict lints and fix</h2>
+<pre class="term"><code class="language-bash">flutter pub add --dev very_good_analysis
+flutter analyze
+dart fix --dry-run          # what dart can fix on its own
+dart fix --apply
+flutter analyze</code></pre>
+<pre data-title="analysis_options.yaml"><code class="language-yaml">include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    public_member_api_docs: false     # documenting everything is too much for an app; for packages
+    lines_longer_than_80_chars: false # the formatter takes care of the lines</code></pre>
+  <ul>
+    <li><code>dart fix</code> fixes the mechanical part: missing <code>const</code>, unused imports, trailing commas. The rest is fixed by hand, one warning at a time.</li>
+    <li>Turning a rule off is legitimate when you have a reason and you write it next to it. Turning a rule off because it produces many warnings is not a reason.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Solve <code>TODO 1</code>: turn on <code>very_good_analysis</code> and get to zero warnings in the starter. Count how many there were and how many <code>dart fix</code> solved on its own. The ones left over are the ones that matter: read each one and understand why it exists before fixing it.</div>
+</section>
+
+<section class="slide">
+  <h2>2. Extract widgets</h2>
+<pre data-title="lib/forecast/ui/forecast_card.dart"><code class="language-dart">class ForecastCard extends StatelessWidget {
+  const ForecastCard({
+    required this.forecast,
+    this.selected = false,
+    this.onTap,
+    super.key,
+  });
+
+  final Forecast forecast;
+  final bool selected;
+  final VoidCallback? onTap;                     // action: whoever uses it decides what it does
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      color: selected ? colors.primaryContainer : null,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text('${forecast.day.day}: ${forecast.tMin.round()}° to ${forecast.tMax.round()}°'),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Extract: what matters</h2>
+  <ul>
+    <li>VS Code does the extraction: select the widget, <kbd>Ctrl</kbd>+<kbd>.</kbd> → "Extract Widget", give it a name. Then you move the result to the right file and replace the captured fields with parameters.</li>
+    <li>Parameter order: the <code>required</code> ones first, the optional ones after, <code>super.key</code> at the end. It is the <code>very_good_analysis</code> convention.</li>
+    <li>The widget does not import <code>go_router</code> or <code>data.dart</code>. It receives a <code>Forecast</code> and an <code>onTap</code>. Whoever uses it decides where to navigate.</li>
+    <li>After extracting, the screen's <code>build</code> is left with 30 lines that read like a table of contents: header, row of days, card for the day. That is the goal.</li>
+  </ul>
+<pre><code class="language-plaintext">lib/
+  app/                 app.dart, router.dart, theme.dart
+  forecast/
+    models/            forecast.dart, location.dart, weather_type.dart
+    data/              local_forecasts.dart
+    ui/                locations_screen.dart, detail_screen.dart,
+                       forecast_card.dart, day_chip.dart, location_tile.dart
+  settings/ui/         settings_screen.dart
+  shared/              extensions/date_pt.dart, widgets/empty_state.dart</code></pre>
+  <div class="callout task"><strong>Exercise 2</strong> Solve <code>TODO 2</code> to <code>4</code>: extract <code>ForecastCard</code>, <code>DayChip</code> and <code>LocationTile</code> into their own files, move everything to the by-feature structure above, and fix the imports. <code>flutter analyze</code> stays at zero and the tests go green.</div>
+</section>
+
+<section class="slide">
+  <h2>3. Branch, pull request and review</h2>
+<pre class="term"><code class="language-bash">cd ~/pdm-mini-project                      # your repository, not the starter
+git switch -c chore/lints-and-structure
+flutter pub add --dev very_good_analysis   # repeat steps 1 and 2 in your project
+git add -A
+git commit -m "chore: enable very_good_analysis and organise by feature"
+git push -u origin chore/lints-and-structure
+gh pr create --fill --base main            # or the "Compare &amp; pull request" button on GitHub</code></pre>
+  <ol class="steps">
+    <li>On GitHub, Settings → Branches → add a rule for <code>main</code> with "Require a pull request before merging" and "Require approvals: 1".</li>
+    <li>Add a classmate as a collaborator on your repository and ask them for a review on the PR. They do the same with you.</li>
+    <li>Review your classmate's PR: at least two comments using the table on slide 8, one blocking and one "nit". Approve only after they reply.</li>
+    <li>"Squash and merge" your PR once it is approved. Delete the branch.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise 3</strong> PR opened, reviewed by a classmate with two comments, replied to, approved and merged. The <code>main</code> of your mini-project ends up with the lints turned on and the new structure.</div>
+  <aside class="notes">Make pairs on the spot: whoever is sitting next to them. Give 25 minutes. The typical confusion is the collaborator not being able to comment because the repository is private and they have not accepted the invitation yet; check the e-mail. Show a well-described PR from a real project as an example.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Simulate and resolve a conflict</h2>
+<pre class="term"><code class="language-bash">git switch main
+git pull
+git switch -c feat/title-pt      # change the title in lib/app/app.dart to 'Tempo Açores' and commit
+git switch main
+git switch -c feat/title-en      # change the SAME line to 'Azores Weather' and commit
+git switch main
+git merge feat/title-pt                             # goes in without conflict
+git merge feat/title-en                             # CONFLICT (content): lib/app/app.dart</code></pre>
+<pre data-title="lib/app/app.dart (during the conflict)"><code class="language-dart">      title: 'Tempo Açores',
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+      // version that is on main
+=======
+      title: 'Azores Weather',
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feat/title-en</code></pre>
+  <ol class="steps">
+    <li>Open the file. VS Code shows "Accept Current", "Accept Incoming", "Accept Both". Decide: here, the title comes from the <code>.arb</code>, so neither of the two is right.</li>
+    <li>Write the final version, delete the three markers, save. <code>flutter analyze</code> to confirm it compiles.</li>
+    <li><code>git add lib/app/app.dart</code> and <code>git commit</code>. If you were in a rebase: <code>git rebase --continue</code>.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise 4</strong> Cause and resolve the conflict above in your repository. Then delete the two branches. If you get lost halfway: <code>git merge --abort</code> goes back to the previous state, always.</div>
+  <aside class="notes">Let them cause the conflict on their own; it is the moment they realise it is not serious. Walk around and show git merge --abort to anyone who panics. Give 15 minutes. If there is time left, show the same with rebase and --force-with-lease on the push.</aside>
+</section>
+
+<section class="slide">
+  <h2>5. dart format and format-on-save</h2>
+<pre class="term"><code class="language-bash">dart format lib test                 # formats everything; with no arguments, the whole project
+dart format --set-exit-if-changed .  # in CI: fails if anything is not formatted</code></pre>
+<pre data-title=".vscode/settings.json"><code class="language-json">{
+  "editor.formatOnSave": true,
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.rulers": [80],
+    "editor.codeActionsOnSave": { "source.fixAll": "explicit" }
+  },
+  "dart.lineLength": 80
+}</code></pre>
+  <ul>
+    <li>The Dart formatter has no style options. The arguments about braces and indentation are over: everyone has the same code.</li>
+    <li>The trailing comma decides the format: with a comma at the end, one argument per line; without it, everything on one line. That is why <code>require_trailing_commas</code> is turned on.</li>
+    <li>Commit <code>.vscode/settings.json</code>: the whole team gets the same configuration.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 5</strong> Turn on format-on-save, run <code>dart format .</code> on the mini-project and commit the result in a PR of its own, <code>chore: format with dart format</code>. It is a small PR and simple to review.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Leave the mini-project with no warnings under <code>very_good_analysis</code> and with the by-feature structure. That is the state in which you hand it in on Sunday.</li>
+        <li>Review your classmate's PR by Friday: two comments, a reply to what they told you, and approve when it is good. The review counts towards your mark, not just theirs.</li>
+        <li>Tomorrow networking starts: install Postman or Bruno and open the documentation of the <a href="../api.html">course API</a>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Architecting Flutter apps</a>: the official recommendation on organisation, which we go deeper into in lesson 13.</li>
+        <li><a href="https://dart.dev/effective-dart" target="_blank" rel="noopener">Effective Dart</a>: style, documentation, usage and design. The "Style" section is the shortest and the most important.</li>
+        <li><a href="https://docs.github.com/get-started/start-your-journey/hello-world" target="_blank" rel="noopener">GitHub: Hello World</a>: branch, commit, pull request and merge in the browser, step by step.</li>
+        <li><a href="https://git-scm.com/book/en/v2" target="_blank" rel="noopener">Pro Git, ch. 1 and 2</a>: the basic concepts of commit, history and remotes, to understand what VS Code does underneath.</li>
+        <li><a href="https://pub.dev/packages/very_good_analysis" target="_blank" rel="noopener">very_good_analysis</a> on pub.dev: the list of rules and the reason for each one.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

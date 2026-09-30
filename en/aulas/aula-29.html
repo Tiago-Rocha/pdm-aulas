@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 29 · Stores and monetisation, and sprint 3 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="29">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 29 · Week 12 · Tuesday, 24 November 2026 · 08:30 to 10:30</p>
+  <h1>Stores and monetisation, and sprint 3</h1>
+  <p class="lead">Theory (30 minutes): business models on mobile, in-app purchases and subscriptions, store rules, advertising, common rejection reasons and ASO. Practice: sprint 3, with a review of the group's app against the App Store guidelines.</p>
+  <div class="meta"><span>Sprint 3 review: Wednesday 02/12 at 16:30</span></div>
+  <aside class="notes">08:30 lesson: wake the room up with a question, "who paid for an app this year, and how much?". Write the answers on the board: you get almost only subscriptions (Spotify, YouTube Premium, Duolingo) and no one-off purchases; it is the business models slide, made by them. Have App Store Connect and the Play Console for your account open in another tab to show where in-app products are created. Right after the objectives, a two-minute status check, one sentence per group: it decides where you go during the practical part.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Tell apart the five business models of an app and say what each one demands of the architecture.</li>
+    <li>Explain when a purchase has to go through StoreKit or Play Billing, how much it costs in commission and what the DMA changed in the EU.</li>
+    <li>Assess the cost of advertising for the user experience and for privacy.</li>
+    <li>Recognise the most common reasons for rejection in the stores and avoid them before submitting.</li>
+    <li>Ask for a rating at the right moment with <code>in_app_review</code> and prepare the app's listing so that it gets found.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Business models</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Model</th><th>Examples</th><th>What changes in the architecture</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Paid</strong> (one-off purchase)</td><td>Minecraft, Procreate, Things</td><td>Nothing in the code: the store charges before installing. Increasingly rare outside games and tools.</td></tr>
+  <tr><td><strong>Freemium</strong></td><td>Duolingo, Windy, Spotify</td><td>Entitlements (the app knows who has what), paywall, in-app purchases, restore purchases button.</td></tr>
+  <tr><td><strong>Subscription</strong></td><td>Carrot Weather, Headspace, YouTube Premium</td><td>Everything in freemium plus the lifecycle: trial, renewal, billing failure, cancellation; validation on the server.</td></tr>
+  <tr><td><strong>Advertising</strong></td><td>AccuWeather, Instagram, casual games</td><td>Ads SDK, consent, ATT, platform views; revenue depends on volume.</td></tr>
+  <tr><td><strong>Enterprise or internal</strong></td><td>A couriers' app, a bank's app for its branches</td><td>Distribution outside the public store (Apple Business Manager, managed Google Play), corporate login, no direct monetisation.</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>The models mix: Duolingo is free, shows ads and sells the subscription that removes them. Each model is one more screen and one more store rule.</li>
+    <li>A weather app for the Azores with public data tends towards free, or freemium with an extra that is worth the friction (personalised alerts, a 10-day forecast). What you charge for has to be worth more than the bother of paying.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the business model decides the architecture: freemium and subscription require entitlements and restoring purchases, advertising requires consent, enterprise apps are distributed outside the public store.</p>
+</section>
+
+<section class="slide">
+  <h2>In-app purchases and subscriptions</h2>
+  <ul>
+    <li><strong>Three product types:</strong> consumable (coins, credits), non-consumable (remove ads, Pro version, bought once for ever) and auto-renewable subscription (monthly or yearly, with a trial). They are defined in App Store Connect and in the Play Console, with a price tier and a localised name, not in the code.</li>
+    <li><strong>StoreKit 2</strong> (iOS) and the <strong>Play Billing Library</strong> (Android) are the native APIs. In Flutter: <code>in_app_purchase</code>, the official plugin that talks to both, or RevenueCat (<code>purchases_flutter</code>), a service that validates receipts, manages entitlements and sends webhooks; free up to a certain revenue volume.</li>
+    <li><strong>Validation on the server:</strong> the receipt (Apple) or the purchase token (Google) is verified with the App Store Server API or the Play Developer API. A rooted phone fakes a purchase in minutes; only the server knows whether it is real.</li>
+    <li><strong>Lifecycle of a subscription:</strong> trial, renewal, billing failure with a grace period, cancellation, refund. The server receives notifications (App Store Server Notifications, Real-time Developer Notifications) and updates the entitlement; the app only asks "does this user have access?".</li>
+    <li><strong>Restoring purchases</strong> is mandatory on Apple: a visible button that brings back what the user has already bought on another phone. Without it, rejection under guideline 3.1.1.</li>
+    <li><strong>The rule:</strong> digital content or functionality consumed in the app goes through the store's purchase system. Physical goods and services outside the app (Uber, Bolt, Zara, a restaurant booking) use whatever processor they like: Stripe, MB WAY, card.</li>
+  </ul>
+  <p><strong>For the tests:</strong> digital content consumed in the app goes through the store, physical goods and services do not; restoring purchases is mandatory and validation happens on the server.</p>
+  <aside class="notes">Show the form for creating an in-app product in App Store Connect (id, type, price tier) without saving. Ask: "does a booking app that charges €2 per booking go through StoreKit?" No: it is a service consumed outside the app. "And an app that sells a dark theme?" Yes. Confusing the two is a test question. If someone asks about Netflix and Spotify: they are "reader apps", they are allowed not to sell in the app, but until recently they could not even say where to buy.</aside>
+</section>
+
+<section class="slide">
+  <h2>Commissions and the DMA in the EU</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>App Store</th><th>Google Play</th></tr></thead>
+  <tbody>
+  <tr><td>Standard commission</td><td>30%</td><td>30%</td></tr>
+  <tr><td>Small developers</td><td>15% with the Small Business Program (up to US$1M per year)</td><td>15% on the first million dollars of each year</td></tr>
+  <tr><td>Subscriptions</td><td>15% from each subscriber's second year</td><td>15% from day one</td></tr>
+  <tr><td>Alternative payments in the EU</td><td>Allowed since iOS 17.4 (2024), with Apple's own terms and additional fees</td><td>User choice billing: the user chooses and the commission drops by about 4 points</td></tr>
+  <tr><td>Alternative stores</td><td>Only in the EU (AltStore PAL, Epic Games Store), with notarisation by Apple</td><td>Have always existed: sideloading, Galaxy Store, F-Droid</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>The <strong>DMA</strong> (Digital Markets Act, in force since March 2024) classified the App Store and Play as gatekeepers: they have to allow alternative payments and, on iOS, alternative stores. The concrete conditions (fees, warnings to the user) change almost every year and are still in dispute with the European Commission.</li>
+    <li><strong>Epic vs Apple</strong> (2020): Fortnite put a direct payment inside the app and was removed within hours. It only came back to the App Store in the US in 2025, after five years in court. The rule is still the store's, not yours.</li>
+    <li>For a small project: the store's system, the 15%, and no alternative payments without an accountant at your side.</li>
+  </ul>
+  <p><strong>For the tests:</strong> 30% is the standard commission, 15% for small developers and subscriptions; in the EU the DMA forces alternatives, but with each store's own conditions.</p>
+</section>
+
+<section class="slide">
+  <h2>Advertising</h2>
+  <ul>
+    <li><strong>AdMob</strong> (Google) is the dominant network on mobile; in Flutter you use <code>google_mobile_ads</code>. Formats: banner, interstitial (full screen between two actions), rewarded (the user watches 30 seconds and gets something) and native (imitates the app's content). Mediation to auction each impression among several networks.</li>
+    <li><strong>Revenue:</strong> eCPM, revenue per thousand impressions, goes from cents to a few euros depending on the country and the format. It takes tens of thousands of active users for ads to pay for one coffee a day. A niche app is better off selling a subscription.</li>
+    <li><strong>Experience:</strong> an interstitial at launch or in the middle of a gesture is the number one reason for one-star reviews in weather apps. Rewarded is the only format the user chooses to watch. The guidelines forbid ads that imitate system buttons or appear outside the app.</li>
+    <li><strong>Privacy:</strong> personalised ads depend on the IDFA (iOS) and the GAID (Android), so on ATT (lesson 18) and on GDPR consent. In the European Economic Area Google requires a certified consent platform (the UMP SDK will do). Without consent there are still ads, but contextual ones, and they pay less.</li>
+    <li><strong>Technique:</strong> each ad is a platform view (lesson 28): it costs memory and frames. Load the interstitial before you need it and never block the UI waiting for an ad.</li>
+  </ul>
+  <p><strong>For the tests:</strong> advertising pays by volume, degrades the experience when it is intrusive and requires consent (ATT and GDPR) to be personalised.</p>
+</section>
+
+<section class="slide">
+  <h2>Review guidelines and common rejections</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Guideline (Apple)</th><th>What the reviewer finds</th><th>How to avoid it</th></tr></thead>
+  <tbody>
+  <tr><td><strong>2.1</strong> Completeness</td><td>Crash on opening, a button that does nothing, "coming soon", a login that does not work</td><td>Test on a clean phone; demo account in the review notes; zero placeholders</td></tr>
+  <tr><td><strong>2.3</strong> Metadata</td><td>Screenshots from another version, a description that mentions Android, features that do not exist</td><td>Screenshots of the submitted build; describe only what exists</td></tr>
+  <tr><td><strong>3.1.1</strong> Payments</td><td>A link to pay on the website, "cheaper at tempoacores.pt"</td><td>Digital content only through the store; no reference to external prices</td></tr>
+  <tr><td><strong>4.2</strong> Minimum functionality</td><td>A WebView around the website, an app that only shows a static list</td><td>Native functionality the website does not have: offline, notifications, map, widgets</td></tr>
+  <tr><td><strong>5.1.1</strong> Privacy</td><td>Mandatory login with no account feature, a permission with no justification, too much data</td><td>Ask only for what you need, when you need it, with concrete text; labels that match the app</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Apple reviews everything, with people and automation, almost always within 24 to 48 hours; Google is mostly automatic and takes from hours to days. In both, the rejection quotes the number of the rule.</li>
+    <li><strong>Google Play</strong>, the most common ones: data safety form that disagrees with the real traffic, target API level below the required one, sensitive permissions without a declaration form (background location, <code>QUERY_ALL_PACKAGES</code>) and "deceptive behaviour" (functionality that is hidden or different from what is described).</li>
+  </ul>
+  <p><strong>For the tests:</strong> the most common rejections are crashes and incomplete functionality (2.1), misleading metadata (2.3), external payment (3.1.1), minimum functionality (4.2) and privacy (5.1.1).</p>
+  <div class="callout"><strong>Analogy</strong> The store is both the customs office and the shop window. Customs (the review) checks the rules before letting the app in; the shop window (the listing, the screenshots, the ASO on the next slide) decides whether anyone notices it. Apple has a customs office with a human inspection for every version; Google inspects mostly by machine and is faster, but requires new sellers to go through a closed testing period before the first sale.</div>
+  <aside class="notes">Tell a real rejection of your own, with the original message. "How to respond" is left for lesson 32: today is prevention. Ask: "does Tempo Açores pass 4.2?" If the answer is "it shows the forecast", it does not; with offline cache, notifications and a map, it does. That is the motivation for the exercise in the practical part.</aside>
+</section>
+
+<section class="slide">
+  <h2>ASO and asking for a rating at the right moment</h2>
+  <ul>
+    <li><strong>ASO</strong> (App Store Optimization) is the SEO of the stores. Name with 30 characters in both; subtitle (iOS) and short description (Play) with the benefit; keywords field only on iOS (100 characters, invisible); the long description counts for search on Play, not on iOS. "Tempo Açores: forecast and warnings" is worth more than "Tempo Açores".</li>
+    <li><strong>Screenshots:</strong> the first three decide the install. Per device and per language, with a benefit sentence on top, from the current build. A simple icon, legible at 48 px.</li>
+    <li><strong>Ratings</strong> weigh on ranking and on conversion; Play gives more weight to recent ones. Replying to reviews in public counts, and shows whoever reads them that there is someone on the other side.</li>
+    <li><strong><code>in_app_review</code></strong>: <code>requestReview()</code> calls <code>SKStoreReviewController</code> on iOS and the In-App Review API on Play. The system decides whether the prompt appears: Apple shows it at most 3 times a year per app; Play has an unpublished quota. Check <code>isAvailable()</code> first; <code>openStoreListing()</code> is for a "Rate" button in the settings.</li>
+    <li><strong>The right moment</strong> is right after a success: third forecast viewed, a warning received in time, a favourite synced. Never at launch, never after an error, never interrupting a gesture. The guidelines forbid custom prompts and the "do you like it? then rate it" pattern that only lets through those who like it.</li>
+  </ul>
+<pre data-title="lib/services/review_service.dart"><code class="language-dart">final review = InAppReview.instance;
+if (forecastsViewed == 3 &amp;&amp; await review.isAvailable()) {
+  await review.requestReview();   // the OS may decide to show nothing
+}</code></pre>
+  <p><strong>For the tests:</strong> you ask for a rating with the system API, after a success and never at launch; the system decides whether the prompt appears.</p>
+  <aside class="notes">Open the listing of a well-known app on the App Store and of another on Play and ask the class to say what is good and bad in the first three screenshots. Frequent question: "requestReview did nothing on my phone". Normal: in debug iOS always shows it, in TestFlight never, and in production only when it wants to. You do not test the logic through the dialog, you test it through the counter.</aside>
+</section>
+
+<section class="slide" data-part="Sprint">
+  <h2>Sprint 3: status check</h2>
+  <ul>
+    <li>Each group, one minute: what is in <code>main</code>, what is in a PR, what is left out and already written in the README.</li>
+    <li>The review is on <strong>Wednesday 02/12 at 16:30</strong>, in lesson 32. There are three lessons until then: tomorrow (size and startup), Monday (build and signing) and the review itself. Whatever is not in <code>main</code> by Tuesday 01/12 at night does not go into the demo.</li>
+    <li><strong>Done</strong> in sprint 3, as agreed in lesson 26: installable by a tester outside the group, README with screenshots, green CI; and since yesterday, API v2 with green tests on both versions.</li>
+    <li>Priority: the minimums first, one extra at most. A small merged PR is worth more than a half-finished feature.</li>
+    <li>The teacher goes round the groups. Blockers get solved live, in your code.</li>
+  </ul>
+  <div class="callout warn"><strong>Tight schedule</strong> After Wednesday's review there is one week until the freeze on 09/12, with test 2 in the middle, on Monday 07/12. The polish and the README cannot be left for freeze week: they go into this sprint.</div>
+  <aside class="notes">Ten minutes for the status check. Confirm group by group that the migration to v2 is merged: whoever is still on v1 has that as today's first task, before any extra. Note down one blocker per group and start going round the ones that are worst off; the ones that say "everything is fine" show the board.</aside>
+</section>
+
+<section class="slide">
+  <h2>Exercise: your app against the guidelines</h2>
+  <p>Fifteen minutes, per group, with the app installed on a phone (not on the emulator) and the store listing imagined as if the submission were tomorrow. Each point states the App Store guideline at stake.</p>
+  <ul class="checklist">
+    <li>It launches and reaches the main screen without crashing on a freshly installed phone, with network and in airplane mode (2.1).</li>
+    <li>No "under construction" screen, no visible TODO, no button that does nothing, no string left untranslated (2.1).</li>
+    <li>Its own icon and name: no default Flutter icon and no <code>tempo_acores</code> with an underscore below the icon (2.3).</li>
+    <li>The screenshots you would take of the app show exactly what it does today; the description does not mention Android or "coming soon" (2.3).</li>
+    <li>It does more than the IPMA website would do in a browser: offline cache, warning notifications, map, favourites (4.2).</li>
+    <li>Viewing forecasts requires no account and no personal data; if there is an account, there is a feature that justifies it (5.1.1).</li>
+    <li>Each permission has a concrete justification in <code>Info.plist</code> ("To show the forecast for the nearest location"), is requested at the moment it is needed, and the app keeps working if it is refused (5.1.1).</li>
+    <li>You can list everything the app sends out (client-id and headers to the course API, telemetry, crash reports) so that the privacy labels match (5.1.2).</li>
+    <li>No link, text or price pointing to payments outside the store; if the group's extra is paid, it is through an in-app purchase (3.1.1).</li>
+    <li>OpenStreetMap attribution visible on the map and the source of the weather data identified in the settings (5.2).</li>
+  </ul>
+  <div class="callout task"><strong>Exercise</strong> Go through the list in the group's app and write in an issue the <strong>three most likely reasons for rejection</strong>, each with the guideline number, what the reviewer would see and what you are going to do. The most serious of the three goes into the sprint 3 backlog today with an owner; the other two stay in the issue, or in the README as a known limitation if you decide not to fix them. If you finish early: <code>NSLocationWhenInUseUsageDescription</code> and the notification justifications rewritten in plain, concrete wording, in a five-minute PR.</div>
+  <aside class="notes">Go round with the checklist in hand and play the reviewer: open their app on a phone of yours in airplane mode and tap everything. The points that fail most are 2 (untranslated strings and half-finished screens), 7 (permission text that is vague or requested at launch) and 10 (nobody added the OSM attribution). Give exactly 15 minutes; at 12 warn them that the issue still has to be written.</aside>
+</section>
+
+<section class="slide">
+  <h2>From today's issue to Wednesday's review</h2>
+  <ul>
+    <li>The chosen reason has to be closed before the review: it is a PR like the others, reviewed by a colleague, with green CI.</li>
+    <li>The review notes you would write today: how to reach each screen, which location to choose, that the API belongs to the course and where the data is. Keep them in the README, in a "For the reviewer" section. You will need them in lesson 32.</li>
+    <li>If your extra is asking for a rating, the right moment is already decided: right after a success, with a counter, never at launch.</li>
+    <li>Tomorrow we measure the size of the app with <code>flutter build apk --analyze-size</code>: bring the project compiling in release and a laptop with free disk space.</li>
+  </ul>
+  <div class="callout tip"><strong>The reviewer's rule</strong> The Apple reviewer spends a few minutes with your app and has never read your code. Anything that needs explaining already comes too late: if a screen only makes sense with context, the context goes in the review notes or the screen goes.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Sprint 3 continues: the rejection reason chosen today is in an issue with an owner, and the migration to API v2 is merged in every group.</li>
+        <li>Open PRs reviewed by a colleague by tomorrow; nothing goes into <code>main</code> without a review and without green CI.</li>
+        <li>For tomorrow: the project compiles in release (<code>flutter build apk --release</code> with no errors) on one of the group's laptops.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://developer.apple.com/app-store/review/guidelines/" target="_blank" rel="noopener">App Store Review Guidelines</a>: read 2.1, 3.1.1, 4.2 and 5.1.1 in full; they are the ones that reject the most.</li>
+        <li><a href="https://play.google.com/about/developer-content-policy/" target="_blank" rel="noopener">Google Play Developer Policy</a>: Google's equivalent, with the rules on privacy, permissions, advertising and deceptive behaviour.</li>
+        <li><a href="https://support.google.com/googleplay/android-developer/answer/9858738" target="_blank" rel="noopener">Google Play's Payments policy</a>: what has to go through Play Billing and the exceptions.</li>
+        <li><a href="https://pub.dev/packages/in_app_review" target="_blank" rel="noopener">in_app_review</a>: <code>requestReview</code>, <code>openStoreListing</code> and why the dialog may not appear.</li>
+        <li><a href="https://adapty.io/docs/prepare-your-app-for-store-review" target="_blank" rel="noopener">Prepare your app for store review</a> (Adapty): a practical checklist of what reviewers look for in both stores and how to react to a rejection.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

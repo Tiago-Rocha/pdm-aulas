@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 31 · Build and signing · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="31">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 31 · Week 13 · Monday, 30 November 2026 · 16:00 to 18:00</p>
+  <h1>Build and signing</h1>
+  <p class="lead">Theory: app signing on Android and on iOS, versioning accepted by the stores, flavors and environments, build secrets. Practice: release build signed with a key owned by the group, app bundle, versioning and dev and prod flavors.</p>
+  <div class="meta"><span>Repo: pdm-aula-31</span></div>
+  <aside class="notes">Ask who already has the JDK available on the command line (keytool). On Windows, keytool is in C:\Program Files\Android\Android Studio\jbr\bin; whoever does not have it on the PATH uses the full path. Show your production keystore in the password manager (without opening it) to make it clear where a real key lives.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Explain what a digital signature proves in an app and what happens when the key is lost, on Android and on iOS.</li>
+    <li>Create a keystore, connect it to Gradle with <code>key.properties</code> outside the repository and generate a signed app bundle.</li>
+    <li>Tell <code>versionName</code> from <code>versionCode</code> and apply the stores' rules to the <code>version</code> in <code>pubspec.yaml</code>.</li>
+    <li>Configure dev and prod flavors with different application ids and icons, and inject build configuration with <code>--dart-define</code>.</li>
+    <li>Describe certificates, provisioning profiles and automatic signing on iOS.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Signing: why it exists (1 of 2)</h2>
+  <ul>
+    <li>Signing means computing a digest (hash) of the package and encrypting it with a <strong>private key</strong>. The certificate with the public key travels inside the package.</li>
+    <li>It proves two things: <strong>who built</strong> the app (the same key is the same author) and that the package <strong>was not changed</strong> after it was signed.</li>
+    <li>The operating system only accepts an update if the package name and the key are the same as those of the installed version. This is what stops a fake app from replacing yours.</li>
+    <li>It does not prove that the app is safe, or that the code is any good. It proves identity and integrity, nothing more.</li>
+    <li>Every app installed on a phone is signed, including debug ones: Flutter uses <code>~/.android/debug.keystore</code>, generated on the first build, different on each machine.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the signature proves authorship and integrity; it does not prove quality or security.</p>
+  <div class="callout"><strong>Analogy</strong> The signature is a notary's seal. It proves who made the app (the same key is the same author) and that nobody changed it along the way (the hash matches). It says nothing about the content of the document: a bad contract with a seal is still a bad contract.</div>
+  <aside class="notes">A real example that has already caught groups out: colleague A installs the debug app on colleague B's phone; then B tries to run flutter run and gets INSTALL_FAILED_UPDATE_INCOMPATIBLE, because each laptop's debug key is different. The solution is to uninstall. This is the signature doing its job.</aside>
+</section>
+
+<section class="slide">
+  <h2>Signing: losing the key (2 of 2)</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Android without Play App Signing</th><th>Android with Play App Signing</th><th>iOS</th></tr></thead>
+  <tbody>
+  <tr><td>Who holds the final key</td><td>You, in a <code>.jks</code> file</td><td>Google keeps the <em>app signing key</em>; you sign with an <em>upload key</em></td><td>Apple signs for the store; you have certificates that expire after one year</td></tr>
+  <tr><td>If you lose your key</td><td>You never update the app again. You publish another one with another package name and lose users, ratings and history</td><td>You ask Google for a new upload key and carry on</td><td>You revoke the certificate and create another. A nuisance, not a catastrophe</td></tr>
+  <tr><td>Current status</td><td>Old apps only</td><td>Mandatory for new apps since 2021</td><td>It has always been this way</td></tr>
+  </tbody></table></div>
+  <div class="callout warn"><strong>Even with Play App Signing</strong> The keystore and the passwords live in the team's password manager, with a backup copy. Never in the repository, never only on one person's laptop.</div>
+  <div class="callout"><strong>Analogy</strong> The keystore is the notary's stamp itself. Whoever loses it can never again sign an update as being the same app: to the system, an app with another stamp is another app. Play App Signing is Google keeping a copy of the final stamp; your upload key is a secondary stamp that, if lost, gets replaced.</div>
+</section>
+
+<section class="slide">
+  <h2>Android: keystore, key.properties, signingConfigs</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Android signing chain: keytool creates the keystore, kept outside the repository; key.properties says where it is and how to open it; signingConfigs in build.gradle uses it in the release build type; flutter build appbundle generates a signed AAB; Play App Signing keeps the final key and generates the per-device APKs; losing the keystore without Play App Signing means never updating the app again">
+    <rect x="40" y="20" width="250" height="84" rx="10" class="box accent"/>
+    <text x="60" y="44" class="t b">1. Keystore (keytool)</text>
+    <text x="60" y="66" class="t mono">upload-keystore.jks</text>
+    <text x="60" y="88" class="t s">outside the repo, backed up</text>
+    <path d="M290 62H323" class="arrow"/>
+    <rect x="325" y="20" width="250" height="84" rx="10" class="box"/>
+    <text x="345" y="44" class="t b">2. key.properties</text>
+    <text x="345" y="66" class="t s">path, alias and passwords</text>
+    <text x="345" y="88" class="t s">in .gitignore; CI writes it</text>
+    <path d="M575 62H608" class="arrow"/>
+    <rect x="610" y="20" width="250" height="84" rx="10" class="box"/>
+    <text x="630" y="44" class="t b">3. signingConfigs</text>
+    <text x="630" y="66" class="t mono">app/build.gradle.kts</text>
+    <text x="630" y="88" class="t s">release signs with this key</text>
+    <path d="M735 104V138" class="arrow"/>
+    <rect x="610" y="140" width="250" height="84" rx="10" class="box"/>
+    <text x="630" y="164" class="t b">4. Release build</text>
+    <text x="630" y="186" class="t mono">flutter build appbundle</text>
+    <text x="630" y="208" class="t s">without this: debug key</text>
+    <path d="M610 182H577" class="arrow"/>
+    <rect x="325" y="140" width="250" height="84" rx="10" class="box"/>
+    <text x="345" y="164" class="t b">5. Signed AAB</text>
+    <text x="345" y="186" class="t mono">app-release.aab</text>
+    <text x="345" y="208" class="t s">with your upload key</text>
+    <path d="M325 182H292" class="arrow"/>
+    <rect x="40" y="140" width="250" height="84" rx="10" class="box ok"/>
+    <text x="60" y="164" class="t b">6. Play App Signing</text>
+    <text x="60" y="186" class="t s">Google keeps the app signing key</text>
+    <text x="60" y="208" class="t s">generates per-device APKs</text>
+    <rect x="40" y="250" width="820" height="56" rx="10" class="box danger"/>
+    <text x="60" y="273" class="t b">Losing the keystore without Play App Signing = never updating the app again</text>
+    <text x="60" y="294" class="t s">A new app means losing users and ratings. Keystore and passwords: in the team's password manager, backed up.</text>
+  </svg>
+  <figcaption>The keystore signs; key.properties only says where it is. Neither of them goes into git.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Keystore</strong> (<code>.jks</code>): a file with the key pair, protected by a password. Each key inside it has an <em>alias</em>. You create it once with <code>keytool</code>.</li>
+    <li><strong><code>android/key.properties</code></strong>: four lines with the path of the keystore, the alias and the passwords. Gradle reads it. It goes into <code>.gitignore</code>.</li>
+    <li><strong><code>signingConfigs</code></strong> in <code>android/app/build.gradle.kts</code>: tells Gradle that the <code>release</code> build type signs with that key.</li>
+    <li>Without this, <code>flutter build appbundle</code> signs with the debug key and the Play Console refuses the upload.</li>
+    <li>In CI, the keystore comes in as a <em>secret</em> in base64 and <code>key.properties</code> is written at build time.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the keystore signs; <code>key.properties</code> only says where it is and how to open it. Neither of them goes into git.</p>
+</section>
+
+<section class="slide">
+  <h2>APK vs AAB</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>APK</th><th>AAB (Android App Bundle)</th></tr></thead>
+  <tbody>
+  <tr><td>What it is</td><td>Installable package, with everything inside</td><td>Publishing format; Play generates an APK tailored to each device</td></tr>
+  <tr><td>Size</td><td>All architectures (arm64, armv7, x86_64) and densities</td><td>Only what that phone needs: typically 15 to 30% smaller</td></tr>
+  <tr><td>Where it is used</td><td>Installing by hand, Firebase App Distribution, testers</td><td>Mandatory on the Play Store for new apps since 2021</td></tr>
+  <tr><td>Signing</td><td>Your key is the final one</td><td>You sign with the upload key; Google signs again with the app signing key</td></tr>
+  <tr><td>Command</td><td><code>flutter build apk</code></td><td><code>flutter build appbundle</code></td></tr>
+  </tbody></table></div>
+  <p>An AAB cannot be installed with <code>adb install</code>. To test locally from a bundle you use Google's <code>bundletool</code>, or you generate an APK as well.</p>
+</section>
+
+<section class="slide">
+  <h2>iOS: certificates and provisioning profiles (1 of 2)</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 350" role="img" aria-label="iOS signing: on developer.apple.com there are the certificate, the App ID with the bundle id and the list of devices; together they form the provisioning profile, which Xcode uses to sign and generate the IPA; there is a development profile, limited to the listed devices, and a distribution profile for TestFlight and the App Store">
+    <text x="40" y="22" class="t s b">Apple Developer (developer.apple.com)</text>
+    <rect x="40" y="34" width="240" height="56" rx="10" class="box"/>
+    <text x="60" y="57" class="t b">Certificate (identity)</text>
+    <text x="60" y="78" class="t s">via CSR; valid for one year</text>
+    <rect x="40" y="106" width="240" height="56" rx="10" class="box"/>
+    <text x="60" y="129" class="t b">App ID (bundle id)</text>
+    <text x="60" y="150" class="t mono">pt.uac.tempoacores</text>
+    <rect x="40" y="178" width="240" height="56" rx="10" class="box"/>
+    <text x="60" y="201" class="t b">Devices (UDID)</text>
+    <text x="60" y="222" class="t s">development and ad hoc only</text>
+    <path d="M280 206H305V134H328" class="arrow dashed"/>
+    <path d="M280 62H305V134H328" class="arrow"/>
+    <path d="M280 134H328" class="arrow"/>
+    <rect x="330" y="92" width="240" height="84" rx="10" class="box accent"/>
+    <text x="350" y="117" class="t b">Provisioning profile</text>
+    <text x="350" y="140" class="t s">= certificate + App ID</text>
+    <text x="350" y="160" class="t s">+ devices + entitlements</text>
+    <path d="M570 134H618" class="arrow"/>
+    <rect x="620" y="92" width="240" height="84" rx="10" class="box"/>
+    <text x="640" y="117" class="t b">Xcode signs</text>
+    <text x="640" y="140" class="t s">automatic signing handles it</text>
+    <text x="640" y="160" class="t mono">flutter build ipa</text>
+    <path d="M740 176V198" class="arrow"/>
+    <rect x="620" y="200" width="240" height="56" rx="10" class="box ok"/>
+    <text x="640" y="223" class="t b">Signed IPA</text>
+    <text x="640" y="244" class="t s">profile inside; upload: Transporter</text>
+    <rect x="40" y="272" width="400" height="56" rx="10" class="box"/>
+    <text x="60" y="295" class="t b">Development profile</text>
+    <text x="60" y="316" class="t s">run on your iPhone; listed devices only</text>
+    <rect x="460" y="272" width="400" height="56" rx="10" class="box ok"/>
+    <text x="480" y="295" class="t b">Distribution profile</text>
+    <text x="480" y="316" class="t s">TestFlight and App Store; per team; paid account</text>
+  </svg>
+  <figcaption>Certificate, App ID and devices come together in a provisioning profile; that is what Xcode signs the IPA with.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Development certificate</strong>: per developer, to run on your iPhone. <strong>Distribution certificate</strong>: per team, for TestFlight and the App Store. Both issued by Apple from a request (CSR) and valid for one year.</li>
+    <li>The certificate's private key stays in the Keychain of the Mac that made the request. For another machine or for CI you export it as <code>.p12</code>.</li>
+    <li><strong>App ID / bundle identifier</strong>: registered on developer.apple.com, in reverse DNS notation (<code>pt.uac.tempoacores</code>). The capabilities (push, associated domains) are attached to it.</li>
+    <li><strong>Provisioning profile</strong> = certificate + App ID + list of devices (in development and ad hoc) + entitlements. It is embedded in the <code>.ipa</code>.</li>
+    <li>A free Apple ID is enough to run on your own iPhone: 7-day profile, no TestFlight and no store. The paid account costs 99 USD a year.</li>
+  </ul>
+  <div class="callout"><strong>Analogy</strong> On iOS there is also Apple's notarial register. The certificate is the notary's identity (who you are); the provisioning profile is the record of which devices and which app the seal is valid for. Without both, Xcode does not sign, and the final seal that reaches the store is Apple's own.</div>
+</section>
+
+<section class="slide">
+  <h2>iOS: bundle id and automatic signing (2 of 2)</h2>
+  <ul>
+    <li><strong>Automatically manage signing</strong> in Xcode creates certificates, App ID and profiles for you. It is enough for almost every project, including yours.</li>
+    <li>Manual signing only when you need to control the profile: CI, extensions (widgets, rich notifications), several teams. In that world people use <em>fastlane match</em>, which keeps the certificates encrypted in a private repository.</li>
+    <li>The bundle id is unique in the world and does not change once published. Choose it well the first time.</li>
+    <li><code>flutter build ipa</code> generates the .ipa file; the upload is done with Transporter or with <code>xcrun altool</code>. Only on macOS.</li>
+    <li>Versioning is the same as on Android: it comes from <code>pubspec.yaml</code>, as you will see next.</li>
+  </ul>
+  <p><strong>For the tests:</strong> on iOS the one who signs the app that reaches the store is Apple; your distribution certificate only authorises you to upload.</p>
+  <aside class="notes">Show Xcode: Runner → Signing &amp; Capabilities → Team. Also show developer.apple.com → Certificates, IDs &amp; Profiles with your account, so they see that the three objects really exist. Do not spend more than 5 minutes: whoever has no Mac is not going to do this.</aside>
+</section>
+
+<section class="slide">
+  <h2>Versioning: <code>version: 1.2.3+45</code></h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>In pubspec.yaml</th><th>Android</th><th>iOS</th><th>Who sees it</th></tr></thead>
+  <tbody>
+  <tr><td><code>1.2.3</code> (before the <code>+</code>)</td><td><code>versionName</code></td><td><code>CFBundleShortVersionString</code></td><td>The user, in the store and in the settings</td></tr>
+  <tr><td><code>45</code> (after the <code>+</code>)</td><td><code>versionCode</code></td><td><code>CFBundleVersion</code></td><td>The store, to order builds</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Flutter copies both values to Gradle (<code>flutter.versionName</code>, <code>flutter.versionCode</code>) and to Xcode (<code>Generated.xcconfig</code>) on every build. The pubspec is the single source.</li>
+    <li>On the command line you can override them: <code>--build-name=1.2.4 --build-number=46</code>. That is what CI does with the run number.</li>
+    <li>Follow semver in the name: <em>major</em> when you break compatibility, <em>minor</em> when you add, <em>patch</em> when you fix.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Versioning: store rules</h2>
+  <ul>
+    <li><strong>Play:</strong> the <code>versionCode</code> is an integer that has to be <em>strictly greater</em> than any already uploaded for the app, on any track. Maximum 2,100,000,000. It is never reused.</li>
+    <li><strong>App Store:</strong> within the same version (<code>1.2.3</code>) the build number has to go up; TestFlight refuses a repeated build. A new version can restart the build at 1, but nobody does that.</li>
+    <li>The version name can repeat between uploads (several builds of 1.2.3 in testing); the code never.</li>
+    <li>On the phone, installing a <code>versionCode</code> lower than the installed one gives <code>INSTALL_FAILED_VERSION_DOWNGRADE</code>. It is the same mechanism that stops a user from being "updated" backwards.</li>
+    <li>A simple strategy for the project: <code>1.0.0+N</code>, with N going up on every build that leaves the laptop for another person.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>versionName</code> is for humans and can repeat; <code>versionCode</code> is for the store and can never go down or repeat.</p>
+</section>
+
+<section class="slide">
+  <h2>Flavors and environments</h2>
+  <ul>
+    <li><strong>Why:</strong> the dev app talks to the dev API, the prod one to the prod API; the two install side by side on the same phone; the icon says which is which; the prod one has no logs and no hidden menus.</li>
+    <li><strong>Android:</strong> <code>productFlavors</code> in Gradle, with <code>applicationIdSuffix</code> (<code>.dev</code>) and <em>source sets</em> per flavor (<code>src/dev/res</code>) for icon and name.</li>
+    <li><strong>iOS:</strong> schemes and configurations (<code>Debug-dev</code>, <code>Release-prod</code>) with <code>.xcconfig</code> files. More manual work; there are packages that automate it.</li>
+    <li><strong>Flutter:</strong> <code>flutter run --flavor dev</code>. The flavor name has to exist on both platforms if you build both.</li>
+    <li>Two environments are enough for the project. In companies you see dev, staging and prod, rarely more.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a flavor changes the identity of the app (id, name, icon) and the build configuration; it does not change the Dart code.</p>
+</section>
+
+<section class="slide">
+  <h2><code>--dart-define</code> for configuration and build secrets</h2>
+  <ul>
+    <li><code>--dart-define=API_URL=https://...</code> on the command line and <code>String.fromEnvironment('API_URL')</code> in the code. It is a compile-time constant: there are also <code>bool.fromEnvironment</code> and <code>int.fromEnvironment</code>.</li>
+    <li>With many keys: <code>--dart-define-from-file=env/prod.json</code>. The prod file goes into <code>.gitignore</code> and into the CI secrets.</li>
+    <li>The value goes into the binary as text. Obfuscation (<code>--obfuscate</code>) makes it harder but does not stop someone from extracting it from an APK. It is for configuration and low-risk keys (URL, maps key restricted by package), not for secrets that would give access to data.</li>
+    <li>The group's secret for the course API stays where it already is: obtained at runtime and kept in <code>flutter_secure_storage</code>, as we did in lesson 17.</li>
+    <li>Flavor and dart-define combine: the flavor changes the identity of the app, the dart-define changes what Dart reads.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>--dart-define</code> injects values at compile time; everything that goes into the binary can be read by whoever decompiles it.</p>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Sign, version and separate environments</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-31.git
+cd pdm-aula-31/starter
+flutter pub get
+flutter run</code></pre>
+  <p><code>starter/</code> is the Tempo Açores app from lesson 28 with numbered TODOs in <code>build.gradle.kts</code>, in <code>pubspec.yaml</code> and in <code>lib/config/environment.dart</code>. <code>solucao/</code> has the final state, without the keystore, of course.</p>
+  <div class="callout task"><strong>Before you start</strong> Confirm that <code>keytool</code> responds in the terminal. If not, use the full path: on macOS and Linux <code>$(/usr/libexec/java_home)/bin/keytool</code> or the Android Studio JDK; on Windows <code>"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe"</code>.</div>
+  <aside class="notes">Do step 1 live on your laptop for the keystore of the lesson repo, and leave your screen visible. The keytool questions (name, organisation, city) are confusing: tell them they can answer anything, only the alias and the passwords matter.</aside>
+</section>
+
+<section class="slide">
+  <h2>1. Create the keystore and key.properties</h2>
+  <ol class="steps">
+    <li><strong>Generate the key</strong>, outside the project folder. Keep both passwords in the group's password manager.
+<pre class="term"><code class="language-bash">keytool -genkey -v -keystore ~/tempo-acores-upload.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 -alias upload</code></pre></li>
+    <li><strong>Write <code>key.properties</code></strong> inside <code>android/</code>, with the absolute path of the keystore.
+<pre data-title="android/key.properties"><code class="language-ini">storePassword=your-password
+keyPassword=your-password
+keyAlias=upload
+storeFile=/Users/me/tempo-acores-upload.jks</code></pre></li>
+    <li><strong>Protect both in git</strong> before you make any commit.
+<pre data-title=".gitignore"><code class="language-ini">android/key.properties
+**/*.jks
+**/*.keystore</code></pre></li>
+  </ol>
+  <div class="callout task"><strong>Exercise 1</strong> Create the keystore, <code>key.properties</code> and the <code>.gitignore</code> lines. Run <code>git status</code> and confirm that neither of them shows up.</div>
+</section>
+
+<section class="slide">
+  <h2>2. signingConfigs in build.gradle.kts</h2>
+<pre data-title="android/app/build.gradle.kts"><code class="language-kotlin">import java.util.Properties
+import java.io.FileInputStream
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    // ...namespace, compileSdk, defaultConfig stay as they are
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")   // TODO 1: was "debug"
+        }
+    }
+}</code></pre>
+  <div class="callout task"><strong>Exercise 2</strong> Apply TODO 1. The <code>import</code> lines go at the top of the file, before <code>plugins { }</code>. Run <code>flutter build appbundle</code> and confirm that it finishes with no errors.</div>
+</section>
+
+<section class="slide">
+  <h2>3. Generate, install and verify the release</h2>
+  <ol class="steps">
+    <li><strong>App bundle for the store.</strong> It ends up in <code>build/app/outputs/bundle/release/app-release.aab</code>.
+<pre class="term"><code class="language-bash">flutter build appbundle --release</code></pre></li>
+    <li><strong>Release APK to install</strong> on the phone. Uninstall the debug version first: the key is different and Android refuses the update.
+<pre class="term"><code class="language-bash">flutter build apk --release
+adb uninstall pt.uac.tempoacores
+adb install build/app/outputs/flutter-apk/app-release.apk</code></pre></li>
+    <li><strong>Verify who signed it.</strong> <code>keytool</code> reads the certificate from inside the APK. Compare the SHA-256 with the one from your keystore.
+<pre class="term"><code class="language-bash">keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk
+keytool -list -v -keystore ~/tempo-acores-upload.jks -alias upload</code></pre></li>
+  </ol>
+  <div class="callout task"><strong>Exercise 3</strong> Install the release APK on the phone of a colleague from another group and show them the SHA-256 of the certificate. Notice that the release starts faster and has no debug banner.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Bump the version, and what happens if you do not</h2>
+<pre data-title="pubspec.yaml"><code class="language-yaml">name: tempo_acores
+description: Weather forecast for the Azores.
+publish_to: 'none'
+
+version: 1.0.1+2   # TODO 2: was 1.0.0+1
+
+environment:
+  sdk: ^3.5.0</code></pre>
+  <ul>
+    <li>Install the new build over the previous one: it works, because <code>versionCode</code> 2 &gt; 1 and the key is the same.</li>
+    <li>Go back to <code>1.0.1+1</code>, build and try to install over the 2: <code>INSTALL_FAILED_VERSION_DOWNGRADE</code>. In the Play Console the equivalent is "Version code 1 has already been used".</li>
+    <li>Without touching the pubspec: <code>flutter build apk --build-name=1.0.1 --build-number=3</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 4</strong> Do the three experiments above and note down the exact error message of the downgrade. You will meet it in real life when CI reuses a build number.</div>
+</section>
+
+<section class="slide">
+  <h2>5. Dev and prod flavors on Android</h2>
+<pre data-title="android/app/build.gradle.kts"><code class="language-kotlin">android {
+    // ...
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"          // pt.uac.tempoacores.dev
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Tempo Açores DEV")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "Tempo Açores")
+        }
+    }
+}</code></pre>
+  <ul>
+    <li>In <code>AndroidManifest.xml</code>, <code>android:label="@string/app_name"</code> now uses the flavor's value.</li>
+    <li>Different icon: copy <code>android/app/src/main/res/mipmap-*</code> to <code>android/app/src/dev/res/mipmap-*</code> and swap the images. The flavor's source set overrides <code>main</code>.</li>
+    <li>Run with <code>flutter run --flavor dev</code>. The two apps stay installed at the same time, with different names and icons.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 5</strong> Apply TODO 3 (flavors) and TODO 4 (label in the manifest). Generate the dev icon with the <code>flutter_launcher_icons</code> you already used in lesson 27, pointing to <code>assets/icon-dev.png</code>, and install the two flavors side by side.</div>
+  <aside class="notes">Classic mistake: after adding flavors, flutter run without --flavor fails with "The android project must specify a flavor". Let them hit the error and read the message. In VS Code, configure launch.json with "args": ["--flavor", "dev"].</aside>
+</section>
+
+<section class="slide">
+  <h2>6. <code>--dart-define</code> for the API URL</h2>
+<pre data-title="lib/config/environment.dart"><code class="language-dart">class Environment {
+  // TODO 5: replace the hard-coded URL with String.fromEnvironment
+  static const apiUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'https://api.pdm-daw.pt/v1',
+  );
+  static const name = String.fromEnvironment('ENVIRONMENT', defaultValue: 'prod');
+  static const isDev = name == 'dev';
+}</code></pre>
+<pre class="term"><code class="language-bash">flutter run --flavor dev \
+  --dart-define=ENVIRONMENT=dev --dart-define=API_URL=https://api-dev.pdm-daw.pt/v1
+flutter build appbundle --flavor prod --dart-define-from-file=env/prod.json</code></pre>
+  <ul>
+    <li><code>env/prod.json</code> is a JSON object with the same keys. It goes into <code>.gitignore</code>; in CI it comes from a secret.</li>
+    <li>The <code>ApiClient</code> now receives <code>Environment.apiUrl</code>. In dev, show the name of the environment in the AppBar so that nobody confuses the two.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 6</strong> Apply TODO 5 and TODO 6 ("DEV" banner in the AppBar when <code>Environment.isDev</code>). Run the dev flavor with a made-up URL and confirm that the error screen from lesson 14 appears with the right message.</div>
+</section>
+
+<section class="slide">
+  <h2>7. iOS, for those who have a Mac</h2>
+  <ol class="steps">
+    <li><strong>Open the project in Xcode</strong> with <code>open ios/Runner.xcworkspace</code>. Never the <code>.xcodeproj</code>: the workspace is the one that has the pods.</li>
+    <li><strong>Runner → Signing &amp; Capabilities.</strong> Tick <em>Automatically manage signing</em> and choose your team. Without a paid account you get "Personal Team" with your Apple ID.</li>
+    <li><strong>Unique bundle identifier:</strong> <code>pt.uac.pdm.tempoacores.groupN</code>. Xcode creates the App ID and the profile by itself.</li>
+    <li><strong>Connect the iPhone and run</strong> <code>flutter run</code>. On the phone, Settings → General → VPN &amp; Device Management → trust the developer.</li>
+    <li><strong>Limits of the free account:</strong> the profile expires in 7 days, maximum 3 apps, no push and no TestFlight. <code>flutter build ipa</code> only with a paid account.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise 7</strong> If you have a Mac and an iPhone: app running on the iPhone with automatic signing. If you have a Mac without an iPhone: <code>flutter run</code> on the simulator needs no signing, but do steps 1 to 3 anyway to see what Xcode generates.</div>
+  <aside class="notes">Upload a build of your own to App Store Connect with your paid account, live, if there is time: flutter build ipa and Transporter. Show the build appearing in Processing. In lesson 32 we come back to this console.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you next lesson</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Signed release build of the project, with <code>version: 1.0.0+1</code> in <code>pubspec.yaml</code>, the group's keystore kept in the password manager and <code>key.properties</code> outside the repository.</li>
+        <li>Dev and prod flavor in the project, with the API URL through <code>--dart-define</code>.</li>
+        <li>Wednesday is the sprint 3 review, at 16:30. 5-minute demo prepared.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/deployment/android" target="_blank" rel="noopener">Build and release an Android app</a> (docs.flutter.dev): signing, app bundle and versioning, step by step.</li>
+        <li><a href="https://docs.flutter.dev/deployment/ios" target="_blank" rel="noopener">Build and release an iOS app</a> (docs.flutter.dev): bundle id, certificates, TestFlight and upload, for those who have a Mac.</li>
+        <li><a href="https://docs.flutter.dev/deployment/flavors" target="_blank" rel="noopener">Set up flavors for Android and iOS</a> (docs.flutter.dev): flavors on the Xcode side as well.</li>
+        <li><a href="https://developer.android.com/studio/publish/app-signing" target="_blank" rel="noopener">Sign your app</a> (developer.android.com): Play App Signing, upload key and what to do when you lose it.</li>
+        <li><a href="https://dev.to/ersuman/app-signing-explained-keystores-certificates-and-provisioning-profiles-4llh" target="_blank" rel="noopener">App signing explained: keystores, certificates and provisioning profiles</a> (dev.to): the same concepts in plain language, Android and iOS side by side.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

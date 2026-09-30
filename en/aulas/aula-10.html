@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10 · Accessibility, i18n and mini-project · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="10">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 10 · Week 6 · Monday, 12 October 2026 · 16:00 to 18:00</p>
+  <h1>Accessibility, i18n and mini-project</h1>
+  <p class="lead">Theory (30 minutes): accessibility for people who use a screen reader, and internationalising the app. Practice (two and a half hours): individual mini-project, the Tempo Açores app built from a local JSON file, with list, detail, search, theme and two languages. It is the first assessed submission.</p>
+  <div class="meta"><span>Repository: pdm-aula-10</span></div>
+  <aside class="notes">In the first 5 minutes confirm that everyone has lesson 9 running (it is the starting point) and explain that today's practice is individual and assessed: no pairs, but questions to the teacher are allowed. Show the assignment brief on Moodle and the deadline: Sunday 18/10 at 23:59.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Justify why accessibility is required by law and by the stores, and what it costs to ignore it.</li>
+    <li>Make a Flutter screen readable by TalkBack and VoiceOver with <code>Semantics</code>, tooltips and focus order.</li>
+    <li>Guarantee contrast, touch targets and layouts that do not break with large text.</li>
+    <li>Internationalise an app with <code>gen-l10n</code>, <code>.arb</code> files, plurals and placeholders, and format dates and numbers with <code>intl</code>.</li>
+    <li>Deliver a complete app built from local JSON data, with a README and a screenshot.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Accessibility is mandatory, and it is good engineering</h2>
+  <ul>
+    <li><strong>Law:</strong> the European Accessibility Act has been in force since June 2025. Apps for commerce, banking, transport and consumer services in the EU have to be accessible. Fines and removal from the market are real.</li>
+    <li><strong>Stores:</strong> Apple and Google assess accessibility in featuring reviews and in rejections. Apple has published "Accessibility Nutrition Labels" since 2025.</li>
+    <li><strong>People:</strong> about 1 in 6 people has some disability. And we all use the phone in the sun, with one hand, with a cracked screen, or with the system text size turned up.</li>
+    <li><strong>Engineering:</strong> an accessible app has widgets with names, a clear structure and no colour as the only signal. That is the same as an app that is testable and easy to maintain.</li>
+    <li>Flutter already does a lot by itself: buttons, texts and fields get semantics automatically. You take care of what is missing.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the European Accessibility Act (2025) requires consumer service apps in the EU to be accessible; semantics in Flutter are generated automatically for Material widgets and completed with <code>Semantics</code>.</p>
+  <aside class="notes">Turn on TalkBack on your phone live and navigate two screens of the lesson 9 solution without looking. The students hear "button" with no name on the star icon. It is the most effective demonstration of the whole lesson; 3 minutes.</aside>
+</section>
+
+<section class="slide">
+  <h2><code>Semantics</code> in Flutter</h2>
+<pre><code class="language-dart">// Flutter generates semantics for Text, buttons and fields. You add what is missing:
+IconButton(
+  icon: const Icon(Icons.star_border),
+  tooltip: 'Add to favourites',              // read by the screen reader and shown on long press
+  onPressed: add,
+),
+
+Semantics(
+  label: 'Ponta Delgada, 21 degrees, clear sky',
+  button: true,
+  child: ExcludeSemantics(                   // the icon and the texts are already in the label
+    child: LocationCard(forecast: p),
+  ),
+),
+
+Image.asset('assets/img/sao_miguel.jpg', semanticLabel: 'Lagoa das Sete Cidades'),
+
+MergeSemantics(                              // two texts read as one
+  child: Row(children: const [Text('Min '), Text('17°')]),
+),</code></pre>
+  <ul>
+    <li>Focus order: the reader follows the order of the tree. If the visual layout does not match, <code>Semantics(sortKey: OrdinalSortKey(1))</code> fixes it.</li>
+    <li>Test with <strong>TalkBack</strong> (Android: Settings → Accessibility) or <strong>VoiceOver</strong> (iOS: triple-click the side button). Five minutes of use with the screen covered reveal more than reading the documentation.</li>
+  </ul>
+  <div class="callout"><strong>Analogy</strong> The screen reader is a guide who describes the room to someone who cannot see. A button with only an icon is an object with no name: the guide says "button" and nothing else. The semantic label (<code>tooltip</code>, <code>label</code>) gives it its name; <code>MergeSemantics</code> joins several pieces into one description.</div>
+  <aside class="notes">Ask: what does the screen reader say on a card with a sun icon, "Ponta Delgada" and "21°"? Without Semantics: three separate elements, the icon with no name. With the label: one sentence. Show "Show semantics" in DevTools so they can see the semantics tree.</aside>
+</section>
+
+<section class="slide">
+  <h2>Contrast, touch and large text</h2>
+  <ul>
+    <li><strong>Contrast:</strong> 4.5:1 for normal text, 3:1 for large text and icons (WCAG AA). <code>ColorScheme.fromSeed</code> guarantees the <code>x</code>/<code>onX</code> pairs; colours set by hand are the source of the problems. Check with Accessibility Scanner (Android) or the Xcode inspector.</li>
+    <li><strong>Touch targets:</strong> 48 dp minimum. <code>IconButton</code> and <code>ListTile</code> already comply; a <code>GestureDetector</code> around a 20 dp icon does not. <code>MaterialTapTargetSize.padded</code> is the theme's default value.</li>
+    <li><strong>Large text:</strong> the user can set the text to 200%. <code>MediaQuery.textScalerOf(context)</code> tells you the factor. Layouts with fixed heights (<code>SizedBox(height: 40)</code> around a <code>Text</code>) break; use <code>Wrap</code>, <code>Expanded</code>, <code>FittedBox</code> or leave the height free.</li>
+    <li>Test with the system text size at maximum. If a card ends up with cut-off text, it is a bug, not an odd preference.</li>
+    <li><strong>Colour is not a signal:</strong> a "red" warning also needs an icon or text. Colour blindness affects 8% of men.</li>
+  </ul>
+  <p><strong>For the tests:</strong> minimum contrast 4.5:1, minimum target 48 dp, and the layout has to survive a <code>textScaler</code> of 2.0.</p>
+</section>
+
+<section class="slide">
+  <h2>i18n (1 of 2): gen-l10n and .arb files</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 260" role="img" aria-label="Internationalisation pipeline: the files app_pt.arb and app_en.arb go through flutter gen-l10n, which generates the AppLocalizations class used by the widgets; the phone's locale picks the language">
+    <rect x="40" y="50" width="185" height="54" rx="10" class="box"/>
+    <text x="55" y="73" class="t b mono">app_pt.arb</text>
+    <text x="55" y="93" class="t s">"forecast": "Previsão"</text>
+    <rect x="40" y="130" width="185" height="54" rx="10" class="box"/>
+    <text x="55" y="153" class="t b mono">app_en.arb</text>
+    <text x="55" y="173" class="t s">"forecast": "Forecast"</text>
+    <path d="M225 77 L272 108" class="arrow"/>
+    <path d="M225 157 L272 126" class="arrow"/>
+    <rect x="275" y="90" width="175" height="54" rx="10" class="box"/>
+    <text x="290" y="113" class="t b mono">flutter gen-l10n</text>
+    <text x="290" y="133" class="t s">runs on every pub get</text>
+    <path d="M450 117 L508 117" class="arrow accent"/>
+    <rect x="510" y="90" width="190" height="54" rx="10" class="box accent"/>
+    <text x="525" y="113" class="t b mono">AppLocalizations</text>
+    <text x="525" y="133" class="t s">one class per language</text>
+    <path d="M700 117 L738 117" class="arrow accent"/>
+    <rect x="740" y="90" width="135" height="54" rx="10" class="box"/>
+    <text x="752" y="113" class="t b">Widgets</text>
+    <text x="752" y="133" class="t mono">l10n.forecast</text>
+    <rect x="470" y="190" width="250" height="50" rx="10" class="box muted"/>
+    <text x="485" y="211" class="t b">Phone locale</text>
+    <text x="485" y="231" class="t s">pt → app_pt · en → app_en</text>
+    <path d="M595 190 L595 146" class="arrow dashed"/>
+    <text x="605" y="172" class="t s">picks the language</text>
+  </svg>
+  <figcaption>The strings live in the .arb files; the Dart code only uses generated keys. The phone's locale decides which language is shown.</figcaption>
+  </figure>
+<pre data-title="pubspec.yaml and l10n.yaml"><code class="language-yaml"># pubspec.yaml
+dependencies:
+  flutter_localizations:
+    sdk: flutter
+  intl: any                     # the version the SDK pins
+flutter:
+  generate: true                # runs gen-l10n on every pub get
+
+# l10n.yaml (at the project root)
+arb-dir: lib/l10n
+template-arb-file: app_pt.arb
+output-localizations-file: app_localizations.dart</code></pre>
+<pre data-title="lib/l10n/app_pt.arb"><code class="language-json">{
+  "@@locale": "pt",
+  "appTitle": "Tempo Açores",
+  "search": "Pesquisar localidade",
+  "forecastDays": "{n, plural, =1{Previsão para 1 dia} other{Previsão para {n} dias}}",
+  "@forecastDays": {"placeholders": {"n": {"type": "int"}}},
+  "updatedAgo": "Atualizado há {minutes} min",
+  "@updatedAgo": {"placeholders": {"minutes": {"type": "int"}}}
+}</code></pre>
+  <div class="callout"><strong>Analogy</strong> You do not write the text on the wall; you write it on a sign that can be swapped. The <code>.arb</code> files are the signs in each language, and <code>gen-l10n</code> builds the holder the sign slots into (<code>AppLocalizations</code>). The phone's locale picks the sign.</div>
+</section>
+
+<section class="slide">
+  <h2>i18n (2 of 2): using the strings</h2>
+<pre data-title="lib/main.dart and widgets"><code class="language-dart">import 'l10n/app_localizations.dart';                       // generated in lib/l10n/
+
+MaterialApp.router(
+  routerConfig: router,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,     // [pt, en], from the .arb files
+  onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+)
+
+// in a widget
+final l10n = AppLocalizations.of(context)!;
+Text(l10n.appTitle);
+Text(l10n.forecastDays(5));                                  // Previsão para 5 dias
+Text(l10n.updatedAgo(12));                                 // Atualizado há 12 min</code></pre>
+  <ul>
+    <li>The template file (<code>app_pt.arb</code>) defines the keys; every other language is an <code>.arb</code> with the same keys. A missing key gives a warning when generating, not a crash at runtime.</li>
+    <li>Plurals with ICU: <code>=0</code>, <code>=1</code>, <code>other</code>. In Portuguese "1 dia" and "2 dias"; other languages have more forms, and the format handles them.</li>
+    <li>The language comes from the system. To force one, <code>locale: const Locale('en')</code> in the <code>MaterialApp</code> (useful for testing).</li>
+  </ul>
+  <p><strong>For the tests:</strong> the strings live in <code>.arb</code> files, one language per file; <code>gen-l10n</code> generates the <code>AppLocalizations</code> class; there is never visible text hard-coded in the widgets.</p>
+</section>
+
+<section class="slide">
+  <h2>Formats with intl, and RTL in one sentence</h2>
+<pre><code class="language-dart">import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
+await initializeDateFormatting('pt_PT');               // once, in main, before runApp
+
+final today = DateTime(2026, 10, 6);
+DateFormat.EEEE('pt_PT').format(today);                // terça-feira
+DateFormat('d MMM', 'pt_PT').format(today);            // 6 out.
+DateFormat.yMMMMd('en').format(today);                 // October 6, 2026
+NumberFormat('0.0', 'pt_PT').format(21.456);           // 21,5
+NumberFormat.decimalPattern('en').format(1234.5);      // 1,234.5
+
+// Better: the screen's locale, not a fixed one
+final locale = Localizations.localeOf(context).toString();
+DateFormat.EEEE(locale).format(today);</code></pre>
+  <ul>
+    <li>Dates, numbers, currencies and units change from language to language: the decimal comma, the day/month order, the name of the day. Never assemble them by hand with <code>'$day/$month'</code>.</li>
+    <li><strong>RTL:</strong> Arabic and Hebrew are written from right to left; Flutter mirrors the layout by itself if you use <code>EdgeInsetsDirectional</code> and <code>start</code>/<code>end</code> instead of <code>left</code>/<code>right</code>.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>intl</code> formats dates and numbers by locale; <code>initializeDateFormatting</code> is mandatory for locales other than English.</p>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Individual mini-project: Tempo Açores offline</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-10.git
+cd pdm-aula-10/starter
+flutter pub get
+flutter run</code></pre>
+  <p>This time <code>starter/</code> is the starting point of your mini-project: it brings <code>assets/forecasts.json</code> with nine locations and five days each, the empty models, <code>l10n.yaml</code> configured, numbered <code>TODO</code>s and failing tests. <code>solucao/</code> is only published after the submission.</p>
+  <ol class="steps">
+    <li>Create a <strong>private</strong> repository in your GitHub account called <code>pdm-mini-project</code> and add the teacher as a collaborator. Copy the contents of <code>starter/</code> into it and make the first commit.</li>
+    <li>Work alone. You can ask the teacher and consult anything you like, including AI, but you have to explain every line in lesson 11.</li>
+    <li>Commit after each completed step. The history counts in the assessment.</li>
+  </ol>
+  <aside class="notes">Give 10 minutes for getting started. Insist on the private repository with the teacher as a collaborator: that is how you will see the history. Anyone without a GitHub account set up with SSH or a token will lose time here; have the setup guide open.</aside>
+</section>
+
+<section class="slide">
+  <h2>Requirements</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Required (for a pass mark)</th><th>Extras (to go higher)</th></tr></thead>
+  <tbody>
+  <tr><td>List of locations loaded from <code>assets/forecasts.json</code>, with island and current temperature</td><td>In-memory favourites with a star, shown at the top of the list</td></tr>
+  <tr><td>Detail with a 5-day forecast (horizontal row of days and a card for the chosen day)</td><td>Two-column layout above 600 dp and in landscape</td></tr>
+  <tr><td>Search by name with an empty state</td><td>Icons and colours per weather type, read from the enum</td></tr>
+  <tr><td>Light and dark theme with <code>ColorScheme.fromSeed</code> and a choice in the settings</td><td>Full semantics: the app can be used with your eyes closed with TalkBack</td></tr>
+  <tr><td>All strings in <code>app_pt.arb</code> and <code>app_en.arb</code>; dates formatted with <code>intl</code></td><td><code>Hero</code> transition of the island image between list and detail</td></tr>
+  </tbody></table></div>
+  <p>Everything in the required column was covered in lessons 5 to 9. The extras are for those who finish before 17:30.</p>
+</section>
+
+<section class="slide">
+  <h2>Step 1: loading JSON from the assets</h2>
+<pre data-title="lib/forecast/data/local_forecasts.dart"><code class="language-dart">import 'dart:convert';
+import 'package:flutter/services.dart';
+
+class LocalForecasts {
+  Future&lt;List&lt;Location&gt;&gt; load() async {
+    final text = await rootBundle.loadString('assets/forecasts.json');
+    final json = jsonDecode(text) as Map&lt;String, dynamic&gt;;
+    final items = json['locations'] as List&lt;dynamic&gt;;
+    return items
+        .map((e) => Location.fromJson(e as Map&lt;String, dynamic&gt;))
+        .toList();
+  }
+}
+
+// on the list screen
+FutureBuilder&lt;List&lt;Location&gt;&gt;(
+  future: _future,                              // created once in initState, never in build
+  builder: (context, snapshot) {
+    if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+    final locations = snapshot.data!;
+    return LocationList(locations: locations);
+  },
+)</code></pre>
+  <aside class="notes">Classic mistake: creating the Future inside build; on every rebuild it reads the file again and the screen flickers. Show it on purpose and fix it with initState. Second mistake: the file is not declared in pubspec.yaml and loadString throws "Unable to load asset".</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 1: what matters</h2>
+  <ul>
+    <li><code>rootBundle.loadString</code> reads a file declared in <code>pubspec.yaml</code> in the <code>assets:</code> section. It is asynchronous because in release the assets come from inside the binary.</li>
+    <li>The <code>Location</code> and <code>Forecast</code> models with <code>fromJson</code> are the ones from lesson 4, with the validation from the homework: a missing field throws a <code>FormatException</code> with the name of the field.</li>
+    <li><code>FutureBuilder</code> draws the states of the <code>Future</code>: loading, with an error, with data. It is the minimal version of the four states from lesson 6; in lesson 14 we do better.</li>
+    <li>The <code>Future</code> is created once (<code>initState</code>) and kept in a field. Creating it in <code>build</code> repeats the read on every rebuild.</li>
+    <li>The <code>LocalForecasts</code> class is the only one that knows where the data comes from. In lesson 12 it is swapped for one that talks to the API without touching the screens.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Solve <code>TODO 1</code> to <code>3</code>: models with a validated <code>fromJson</code>, <code>LocalForecasts.load()</code>, and the locations list with a <code>FutureBuilder</code>. The tests in <code>test/models_test.dart</code> have to be green before you move on.</div>
+</section>
+
+<section class="slide">
+  <h2>Step 2: list, search and detail</h2>
+  <ol class="steps">
+    <li><strong>List</strong> (<code>TODO 4</code>): <code>ListView.builder</code> with one <code>LocationTile</code> per location: island image, name, island, current temperature and weather icon. Lessons 6 and 7.</li>
+    <li><strong>Search</strong> (<code>TODO 5</code>): <code>TextField</code> in the <code>AppBar</code> or above the list, filter by name ignoring accents and capitals, empty state with a message and a clear button. Lesson 8.</li>
+    <li><strong>Detail</strong> (<code>TODO 6</code>): route <code>/location/:id</code> with <code>go_router</code>; <code>Stack</code> header with the image, horizontal row of <code>DayChip</code>, card for the chosen day with <code>setState</code>. Lessons 7, 8 and 9.</li>
+    <li><strong>Navigation</strong> (<code>TODO 7</code>): <code>StatefulShellRoute</code> with Forecast and Settings (the Warnings tab is left out today). Lesson 9.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise 2</strong> Finish <code>TODO 4</code> to <code>7</code> by 17:30. Commit after each TODO. If a step blocks you for more than 10 minutes, skip it and come back at the end.</div>
+  <aside class="notes">This is the long block: 60 minutes. Walk around and do not solve it for them; point to the slide of the right lesson. Anyone far behind at 17:30: prioritise list and detail, leave the search for home.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 3: theme and strings in pt and en</h2>
+<pre data-title="lib/l10n/app_en.arb"><code class="language-json">{
+  "@@locale": "en",
+  "appTitle": "Azores Weather",
+  "search": "Search location",
+  "noResults": "No location matches \"{text}\"",
+  "@noResults": {"placeholders": {"text": {"type": "String"}}},
+  "forecastDays": "{n, plural, =1{1-day forecast} other{{n}-day forecast}}",
+  "@forecastDays": {"placeholders": {"n": {"type": "int"}}},
+  "theme": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark"
+}</code></pre>
+  <ul>
+    <li>Look for every <code>Text('...')</code> with visible text and move it into the <code>.arb</code>. The VS Code search for <code>Text('</code> finds them.</li>
+    <li>The weekday in the <code>DayChip</code> widgets comes from <code>DateFormat.E(locale)</code>; never from a list of names in Portuguese.</li>
+    <li>Change the phone's language to English and go through the app. Whatever is still in Portuguese is a <code>TODO</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Solve <code>TODO 8</code> and <code>9</code>: light/dark theme with the <code>SegmentedButton</code> in the settings (lesson 9) and all strings in the two <code>.arb</code> files. The test <code>test/l10n_test.dart</code> confirms that both languages have the same keys.</div>
+</section>
+
+<section class="slide">
+  <h2>Step 4: minimum accessibility</h2>
+  <ul class="checklist">
+    <li>Every <code>IconButton</code> has a <code>tooltip</code>; every image has a <code>semanticLabel</code>.</li>
+    <li>Each <code>LocationTile</code> and <code>DayChip</code> is read as one sentence: <code>Semantics(label: ...)</code> with <code>ExcludeSemantics</code> on the children.</li>
+    <li>With the system text size at maximum, no text is cut off and no card overflows.</li>
+    <li>With dark mode on, no text disappears (search for <code>Colors.</code> in the widgets).</li>
+    <li>The weather type has an icon and text, not just colour.</li>
+    <li>Five minutes with TalkBack or VoiceOver on, eyes closed: can you get to the detail for Horta?</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 4</strong> Solve <code>TODO 10</code> by going through this list. The last item is homework and you write the result in the README: what worked and what did not.</div>
+</section>
+
+<section class="slide">
+  <h2>Submission criteria</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Criterion</th><th>How it is checked</th></tr></thead>
+  <tbody>
+  <tr><td>Runs on the phone</td><td>The teacher installs it from your repository with <code>flutter run</code>. If it does not compile, there is no assessment.</td></tr>
+  <tr><td>No lint warnings</td><td><code>flutter analyze</code> returns "No issues found". Warnings count against you, errors void the submission.</td></tr>
+  <tr><td>Green tests</td><td><code>flutter test</code> passes the starter's tests. Deleted tests count as failed.</td></tr>
+  <tr><td>README with screenshot</td><td>Name, what you did of the required items and of the extras, one screenshot of the list and one of the detail (in release, without the DEBUG banner), and the result of the TalkBack test.</td></tr>
+  <tr><td>Commit history</td><td>At least one commit per step, with messages that say what changed.</td></tr>
+  </tbody></table></div>
+  <p>The full rubric is in <a href="../avaliacao.html">Assessment</a>. The mini-project is worth 15% of the final mark and is individual.</p>
+  <aside class="notes">Read the five criteria aloud and ask whether there are questions; it is on record that they were explained. Show an example README from a previous year (anonymised): half a page is enough. Warn that the DEBUG banner in the screenshots is the most common mistake.</aside>
+</section>
+
+<section class="slide">
+  <h2>Submitting on Moodle</h2>
+  <ol class="steps">
+    <li>Confirm that the repository is private, that the teacher is a collaborator, and that the last commit is on GitHub (<code>git push</code>).</li>
+    <li>Run <code>flutter analyze</code> and <code>flutter test</code> one last time in the project folder, and paste the output at the end of the README.</li>
+    <li>Take the screenshots with <code>flutter run --release</code> and save them in <code>docs/</code> inside the repository.</li>
+    <li>On Moodle, activity "Mini-project": paste the repository link. Only the link; no zip files.</li>
+  </ol>
+  <div class="callout warn"><strong>Deadline</strong> Sunday, 18 October, at 23:59. Submissions up to 48 h late get a 20% penalty; after that they are not assessed. The commit that counts is the last one before the deadline.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Finish the mini-project and submit the link on Moodle by Sunday 18/10 at 23:59. Tomorrow we will use it in the quality lesson, so bring what you have, even if incomplete.</li>
+        <li>Test the app with TalkBack or VoiceOver on for 5 minutes, eyes closed, and write the result in the README: what you managed to do and what was inaccessible.</li>
+        <li>Change the phone's language to English and go through every screen. Each text in Portuguese is a TODO.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/ui/accessibility-and-internationalization/accessibility" target="_blank" rel="noopener">Accessibility in Flutter</a>: semantics, screen readers and how to test.</li>
+        <li><a href="https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization" target="_blank" rel="noopener">Internationalizing Flutter apps</a>: gen-l10n step by step, plurals, selects and dates.</li>
+        <li><a href="https://m3.material.io/foundations/accessible-design/overview" target="_blank" rel="noopener">Material 3: accessible design</a>: contrast, touch targets and scalable text according to Material.</li>
+        <li><a href="https://pub.dev/packages/intl" target="_blank" rel="noopener">intl</a> on pub.dev: <code>DateFormat</code> and <code>NumberFormat</code> with all the patterns.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

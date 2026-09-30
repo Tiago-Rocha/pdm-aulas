@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 28 · Platform channels, plugins and API v2 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="28">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 28 · Week 12 · Monday, 23 November 2026 · 16:00 to 18:00</p>
+  <h1>Platform channels, plugins and API v2</h1>
+  <p class="lead">Theory: platform channels, plugins and FFI; criteria for evaluating a package on pub.dev; API versioning and breaking changes. Practice: a MethodChannel in Dart, Kotlin and Swift to read the battery level, and migrating the app to the course API v2.</p>
+  <div class="meta"><span>Repo: pdm-aula-28</span><span>API v1 switches off on 09/12</span></div>
+  <aside class="notes">Switch v2 on in the API before the lesson and confirm that v1 responds with the Deprecation and Sunset headers. On the way in, ask who did Friday's distribution to the three testers; whoever did not does it today at the end. Warn them that the Kotlin and Swift part is for reading and copying, not for memorising: what matters is the channel's contract.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Explain what a platform channel is, the difference between <code>MethodChannel</code> and <code>EventChannel</code>, and which types go through them.</li>
+    <li>Place FFI, federated plugins and platform views, and say when each one is used.</li>
+    <li>Evaluate a package on pub.dev with objective criteria before adding it to the project.</li>
+    <li>Read the battery level with a <code>MethodChannel</code> in Kotlin and Swift, and handle the platforms where it does not exist.</li>
+    <li>Migrate the models and the repository to API v2 while keeping v1 working behind a feature flag.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>MethodChannel and EventChannel</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="A MethodChannel: Dart calls invokeMethod on the pdm/battery channel, the codec serialises the message, Kotlin on Android or Swift on iOS respond, and the response comes back to Dart in a Future; with no native handler, as on the web, you get MissingPluginException">
+    <text x="450" y="24" class="t s" text-anchor="middle">platform channel «pdm/battery»</text>
+    <rect x="40" y="40" width="250" height="150" rx="10" class="box accent"/>
+    <text x="58" y="66" class="t b">Dart</text>
+    <text x="58" y="92" class="t mono">MethodChannel('pdm/battery')</text>
+    <text x="74" y="112" class="t mono">.invokeMethod('level')</text>
+    <text x="58" y="142" class="t s">returns a Future&lt;int&gt;: 87</text>
+    <text x="58" y="162" class="t s">always asynchronous</text>
+    <path d="M290 75H324" class="arrow accent"/>
+    <path d="M326 95H292" class="arrow"/>
+    <rect x="326" y="40" width="204" height="150" rx="10" class="box muted"/>
+    <text x="428" y="66" class="t b" text-anchor="middle">Codec</text>
+    <text x="428" y="88" class="t mono" text-anchor="middle">StandardMessageCodec</text>
+    <text x="428" y="112" class="t s" text-anchor="middle">request: name + arguments</text>
+    <text x="428" y="132" class="t s" text-anchor="middle">response: value or error</text>
+    <text x="428" y="156" class="t s" text-anchor="middle">null, bool, int, double,</text>
+    <text x="428" y="176" class="t s" text-anchor="middle">String, List, Map, bytes</text>
+    <path d="M530 75H564" class="arrow accent"/>
+    <path d="M566 95H532" class="arrow"/>
+    <rect x="566" y="40" width="294" height="70" rx="10" class="box"/>
+    <text x="584" y="65" class="t b">Android · Kotlin</text>
+    <text x="584" y="88" class="t s">BatteryManager → result.success(87)</text>
+    <path d="M530 155H564" class="arrow accent"/>
+    <path d="M566 175H532" class="arrow"/>
+    <rect x="566" y="120" width="294" height="70" rx="10" class="box"/>
+    <text x="584" y="145" class="t b">iOS · Swift</text>
+    <text x="584" y="168" class="t s">UIDevice.batteryLevel → result(87)</text>
+    <text x="450" y="212" class="t s" text-anchor="middle">Accent arrow: invokeMethod('level') request. Grey arrow: response, which reaches Dart in a Future.</text>
+    <rect x="40" y="228" width="400" height="56" rx="10" class="box warn"/>
+    <text x="60" y="251" class="t b">No native handler (web, desktop)</text>
+    <text x="60" y="272" class="t s">invokeMethod throws MissingPluginException</text>
+    <rect x="460" y="228" width="400" height="56" rx="10" class="box"/>
+    <text x="480" y="251" class="t b">EventChannel: stream from native to Dart</text>
+    <text x="480" y="272" class="t s">receiveBroadcastStream().listen · sensors, position</text>
+  </svg>
+  <figcaption>Asynchronous request-response between Dart and native code, with the data serialised as primitives, lists and maps.</figcaption>
+  </figure>
+  <ul>
+    <li>A <strong>platform channel</strong> is a named message channel (<code>pdm/battery</code>) between Dart and native code: Kotlin or Java on Android, Swift or Objective-C on iOS. The messages are serialised by the <code>StandardMessageCodec</code>.</li>
+    <li><strong><code>MethodChannel</code></strong> is request-response: Dart calls <code>invokeMethod('level')</code>, the native side responds with <code>result.success(value)</code> or <code>result.error(...)</code>. Always asynchronous.</li>
+    <li><strong><code>EventChannel</code></strong> is a stream from native to Dart: battery changes, sensors, position. The native side emits whenever it wants; Dart calls <code>receiveBroadcastStream().listen</code>.</li>
+    <li><strong>Supported types:</strong> <code>null</code>, <code>bool</code>, <code>int</code>, <code>double</code>, <code>String</code>, <code>Uint8List</code> and other typed lists, <code>List</code>, <code>Map</code>. Objects do not go through: serialise them as a <code>Map</code>.</li>
+    <li>The handler runs on the platform's main thread: heavy work on the native side goes to another thread and responds later.</li>
+    <li>A <strong>plugin</strong> pays off when the same channel serves more than one app or you want to publish it. For one app, a channel inside the project is enough.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>MethodChannel</code> is asynchronous request-response; <code>EventChannel</code> is a native → Dart stream; the data goes through as primitives, lists and maps.</p>
+  <div class="callout"><strong>Analogy</strong> A platform channel is an interpreter between two people who do not speak the same language: Dart on one side, Kotlin or Swift on the other. The messages go in small standardised packets (the codec), one at a time, and the response takes a while, so it arrives in a <code>Future</code>. A plugin is an interpreter that someone has already hired and shared on pub.dev.</div>
+  <aside class="notes">Draw on the board: Dart ─ message "level" ─→ Kotlin/Swift ─ 87 ─→ Dart. Ask: "what is the image_picker from lesson 24 on the inside?" A MethodChannel with the methods pickImage and pickVideo. Every plugin that touches hardware is this.</aside>
+</section>
+
+<section class="slide">
+  <h2>FFI: calling C directly</h2>
+  <ul>
+    <li><code>dart:ffi</code> calls C functions with no channel and no serialisation: Dart loads a library (<code>.so</code>, <code>.dylib</code>) and calls the function with the declared signature. Microseconds instead of milliseconds.</li>
+    <li><code>ffigen</code> generates the Dart bindings from a C header; <code>jnigen</code> does the same for Android's Java and Kotlin APIs; for Swift there is <code>swift2objc</code>, still experimental.</li>
+    <li>Use cases: existing C libraries (SQLite, cryptography, codecs, image processing), code shared with other platforms in Rust or C++ (<code>flutter_rust_bridge</code>).</li>
+    <li>Costs: manual memory with <code>malloc</code> and <code>free</code> from <code>package:ffi</code>, C types, compiling the library for each architecture, and no hot reload on the native part.</li>
+    <li>Example: the <code>sqlite3</code> package uses FFI and is faster than <code>sqflite</code>, which uses a <code>MethodChannel</code>.</li>
+  </ul>
+  <p><strong>For the tests:</strong> FFI calls C directly, with no serialisation; platform channels exchange messages with Kotlin and Swift. FFI for C libraries and performance; channels for system APIs.</p>
+</section>
+
+<section class="slide">
+  <h2>Federated plugins and platform views</h2>
+  <ul>
+    <li>A <strong>federated plugin</strong> is split into: the interface (<code>x_platform_interface</code>), one implementation per platform (<code>x_android</code>, <code>x_ios</code>, <code>x_web</code>) and the package you import (<code>x</code>). Each implementation registers itself.</li>
+    <li>Advantage: someone else adds Windows or web without touching the main plugin. This is how <code>url_launcher</code>, <code>camera</code> and <code>shared_preferences</code> are built.</li>
+    <li><code>flutter create --template=plugin --platforms=android,ios</code> generates the skeleton; the <code>pubspec.yaml</code> declares <code>flutter: plugin: platforms:</code> with the native class for each platform.</li>
+    <li><strong>Platform view:</strong> a native widget (Google map, WebView, video player, ad) embedded in the Flutter tree. It costs performance and has limitations with gestures and clipping.</li>
+    <li><code>google_maps_flutter</code> and <code>webview_flutter</code> are platform views; the <code>flutter_map</code> from lesson 21 is not: it draws the tiles in Dart.</li>
+  </ul>
+  <p><strong>For the tests:</strong> federated plugin = interface + one implementation per platform; platform view = a native widget inside the Flutter tree, more expensive than a Dart widget.</p>
+</section>
+
+<section class="slide">
+  <h2>Evaluating a package on pub.dev</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Criterion</th><th>Where to look</th><th>Warning sign</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Pub points</strong> (up to 160)</td><td>The package card: analysis, docs, platforms, null safety</td><td>Below 120, or no null safety</td></tr>
+  <tr><td><strong>Popularity</strong></td><td>Downloads per week and likes</td><td>Few users and no known alternative</td></tr>
+  <tr><td><strong>Maintenance</strong></td><td>Date of the latest version; issues and PRs on GitHub</td><td>More than a year with no release, dozens of unanswered issues</td></tr>
+  <tr><td><strong>Who publishes</strong></td><td>Verified publisher, "Flutter Favorite"</td><td>A name with no website or organisation</td></tr>
+  <tr><td><strong>Licence</strong></td><td>License tab</td><td>GPL (contaminates the app) or no licence</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Dependencies: <code>flutter pub deps</code> shows what the package brings with it. Each one is maintenance you inherit.</li>
+    <li>Final question: can you write it in 50 lines? Then do not install it.</li>
+  </ul>
+  <p><strong>For the tests:</strong> pub points, popularity, date of the latest version, open issues, publisher and licence; an unmaintained package is a debt you will pay.</p>
+  <aside class="notes">Open two packages live: a good one (url_launcher) and an abandoned one (search for "battery" on pub.dev and pick one with 3 years without a release). Let the class score each one with the table.</aside>
+</section>
+
+<section class="slide">
+  <h2>APIs change: versioning and migrating without breaking</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 340" role="img" aria-label="Timeline of an API migration: v1 in production, v2 published with v1 still responding and marked as deprecated until 9 December, and then v1 returning 410 Gone; in the app, first v1 only, then v1 and v2 side by side with a feature flag, and finally v2 only with a forced update; installed apps do not update when you want">
+    <text x="40" y="22" class="t s b">Backend (API)</text>
+    <rect x="40" y="30" width="210" height="80" rx="10" class="box"/>
+    <text x="60" y="55" class="t b">v1 in production</text>
+    <text x="60" y="78" class="t mono">GET /v1/forecast</text>
+    <text x="60" y="98" class="t s">a single contract</text>
+    <path d="M250 70H278" class="arrow"/>
+    <rect x="280" y="30" width="340" height="80" rx="10" class="box"/>
+    <text x="300" y="55" class="t b">v2 published, v1 still responds</text>
+    <text x="300" y="78" class="t mono">GET /v2/forecast</text>
+    <text x="300" y="98" class="t s">v1 sends Deprecation and Sunset: 09/12</text>
+    <path d="M620 70H648" class="arrow"/>
+    <rect x="650" y="30" width="210" height="80" rx="10" class="box danger"/>
+    <text x="670" y="55" class="t b">v1 switched off</text>
+    <text x="670" y="78" class="t mono">410 Gone</text>
+    <text x="670" y="98" class="t s">only v2 responds</text>
+    <path d="M40 142H858" class="arrow"/>
+    <circle cx="280" cy="142" r="7" class="box accent"/>
+    <text x="280" y="131" class="t s" text-anchor="middle">v2 ships</text>
+    <circle cx="650" cy="142" r="7" class="box danger"/>
+    <text x="650" y="131" class="t s" text-anchor="middle">09/12: v1 deadline ends</text>
+    <text x="856" y="131" class="t s" text-anchor="end">time</text>
+    <text x="40" y="168" class="t s b">App (Flutter)</text>
+    <rect x="40" y="176" width="210" height="80" rx="10" class="box"/>
+    <text x="60" y="201" class="t b">v1 only</text>
+    <text x="60" y="224" class="t mono">fromJsonV1</text>
+    <text x="60" y="244" class="t s">the app in the store</text>
+    <path d="M250 216H278" class="arrow"/>
+    <rect x="280" y="176" width="340" height="80" rx="10" class="box accent"/>
+    <text x="300" y="201" class="t b">Feature flag: v1 and v2 together</text>
+    <text x="300" y="224" class="t mono">fromJsonV1 · fromJsonV2</text>
+    <text x="300" y="244" class="t s">tests with real samples of both versions</text>
+    <path d="M620 216H648" class="arrow"/>
+    <rect x="650" y="176" width="210" height="80" rx="10" class="box ok"/>
+    <text x="670" y="201" class="t b">v2 only</text>
+    <text x="670" y="224" class="t s">forced update (lesson 30)</text>
+    <text x="670" y="244" class="t s">for those still on v1</text>
+    <rect x="40" y="276" width="820" height="56" rx="10" class="box warn"/>
+    <text x="60" y="299" class="t b">Installed apps do not update when you want</text>
+    <text x="60" y="320" class="t s">Some stay on a version for months: the backend serves v1 and v2 until the deadline and the app ignores new fields.</text>
+  </svg>
+  <figcaption>Two versions in parallel during the deprecation period; the app migrates with a feature flag and only then is v1 switched off.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Versioning by URL</strong> (<code>/v1/</code>, <code>/v2/</code>) is the most common on mobile: visible, cacheable, easy to test. Alternatives: an <code>Accept-Version</code> header or a <code>?v=2</code> query.</li>
+    <li><strong>Breaking:</strong> renaming or removing fields, changing types or date formats, removing endpoints. <strong>Compatible:</strong> a new optional field, a new endpoint. A well-made client ignores fields it does not know.</li>
+    <li><strong>Deprecation with a deadline:</strong> v1 keeps responding after v2 ships, with <code>Deprecation</code> and <code>Sunset</code> headers. In the course: v1 until 09/12, then <code>410 Gone</code>.</li>
+    <li>The installed app does not update when you want: some people stay on a version for months. The backend serves both versions during that period; the app tolerates small differences.</li>
+    <li><strong>Changelog</strong> per version, with response examples. Without it, migrating is guessing.</li>
+    <li>Strategy: two factories (<code>fromJsonV1</code>, <code>fromJsonV2</code>), a feature flag in the repository, tests with real samples of both versions, a forced update when v1 is switched off (lesson 30).</li>
+  </ul>
+  <p><strong>For the tests:</strong> version by URL, deprecate with a deadline, and never assume that every user is on the new version of the app.</p>
+  <div class="callout"><strong>Analogy</strong> Versioning an API is changing the rules of a public form. You do not alter the old form under the feet of those still using it: you publish the new one alongside it (<code>/v2/</code>), announce a deadline for the old one (<code>Sunset</code>) and only then stop accepting it (<code>410 Gone</code>).</div>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Practice: battery through a MethodChannel and migration to v2</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-28.git
+cd pdm-aula-28/starter
+flutter pub get
+flutter run</code></pre>
+  <p>The <code>starter/</code> has Tempo Açores on v1, a settings screen with room for the battery, and TODOs numbered 1 to 8. In <code>test/</code> there are failing tests: <code>battery_service_test.dart</code> (with the mocked channel) and <code>forecast_v2_test.dart</code>. The <code>solucao/</code> has the final state on both platforms and with the flag.</p>
+  <p>Four blocks: the channel in Dart, Kotlin and Swift; the platforms with no channel; the v2 models; the flag to run v1 and v2 side by side.</p>
+  <div class="callout warn"><strong>Kotlin and Swift</strong> They require <code>flutter run</code> again after every change: hot reload only reloads Dart. Whoever has no Mac does only Android; the Swift is there to read.</div>
+</section>
+
+<section class="slide">
+  <h2>1. The Dart side of the channel</h2>
+<pre data-title="lib/services/battery_service.dart"><code class="language-dart">import 'package:flutter/services.dart';
+
+class BatteryService {
+  BatteryService({MethodChannel? channel})
+      : _channel = channel ?? const MethodChannel('pdm/battery');
+  final MethodChannel _channel;
+
+  /// Battery level as a percentage, from 0 to 100.
+  Future&lt;int&gt; level() async {
+    final value = await _channel.invokeMethod&lt;int&gt;('level');
+    if (value == null) throw StateError('The platform did not return the level');
+    return value;
+  }
+}
+
+// On the settings screen
+FutureBuilder&lt;int&gt;(
+  future: context.read&lt;BatteryService&gt;().level(),
+  builder: (context, snapshot) {
+    if (snapshot.hasError) return const Text('Battery unavailable');
+    if (!snapshot.hasData) return const SizedBox.shrink();
+    return Text('Battery: ${snapshot.data} %');
+  },
+)</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. The Android side, in Kotlin</h2>
+<pre data-title="android/app/src/main/kotlin/pt/uac/tempoacores/MainActivity.kt"><code class="language-kotlin">package pt.uac.tempoacores
+
+import android.content.Context
+import android.os.BatteryManager
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
+
+class MainActivity : FlutterActivity() {
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdm/battery")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "level") { result.notImplemented(); return@setMethodCallHandler }
+                val bm = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+                val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                if (level == Integer.MIN_VALUE) {
+                    result.error("UNAVAILABLE", "Battery level not available", null)
+                } else {
+                    result.success(level)
+                }
+            }
+    }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. The iOS side, in Swift</h2>
+<pre data-title="ios/Runner/AppDelegate.swift"><code class="language-swift">import Flutter
+import UIKit
+
+@main
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    let controller = window?.rootViewController as! FlutterViewController
+    let channel = FlutterMethodChannel(name: "pdm/battery", binaryMessenger: controller.binaryMessenger)
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "level" else { result(FlutterMethodNotImplemented); return }
+      let device = UIDevice.current
+      device.isBatteryMonitoringEnabled = true
+      if device.batteryState == .unknown {
+        result(FlutterError(code: "UNAVAILABLE", message: "Battery level not available", details: nil))
+      } else {
+        result(Int(device.batteryLevel * 100))
+      }
+    }
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. The channel: what matters</h2>
+  <ul>
+    <li>The channel name is a contract: <code>pdm/battery</code> on all three sides. A typo gives <code>MissingPluginException</code> at runtime, not a compile error.</li>
+    <li><code>invokeMethod&lt;int&gt;</code> does the cast: Kotlin's <code>Int</code> and Swift's <code>Int</code> arrive as <code>int</code> in Dart. A <code>Long</code> too, because Dart's <code>int</code> has 64 bits.</li>
+    <li><code>result.error(code, message, details)</code> reaches Dart as a <code>PlatformException</code>. Codes in upper case and stable, so that Dart can <code>switch</code> on them.</li>
+    <li>You create only one <code>MethodChannel</code> per name; the handler is the last one registered. Register it in <code>configureFlutterEngine</code> and in <code>didFinishLaunchingWithOptions</code>, never in a widget.</li>
+    <li>Testing without a phone: <code>TestDefaultBinaryMessenger.setMockMethodCallHandler</code> answers the channel with a fixed value. The starter already comes with that test.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> TODOs 1 to 3: the three sides of the channel and the line "Battery: N %" on the settings screen. On the iOS simulator it shows "unavailable" (the <code>batteryState</code> is <code>unknown</code>; that is normal); on the phone it shows the value. Run <code>flutter test test/battery_service_test.dart</code>.</div>
+  <aside class="notes">20 minutes. Where they get stuck: the Kotlin package does not match the folder (copy what the starter has), and forgetting flutter run after editing the native side. Show the MissingPluginException live by changing one letter in the channel name.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. Where the channel does not exist: web, desktop, simulator</h2>
+<pre data-title="lib/services/battery_service.dart (continued)"><code class="language-dart">import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+
+  /// null when the platform has no channel or does not know the level.
+  Future&lt;int?&gt; safeLevel() async {
+    if (kIsWeb) return null;                     // on the web there is no native code
+    try {
+      return await _channel.invokeMethod&lt;int&gt;('level');
+    } on MissingPluginException {
+      return null;                               // desktop with no handler, or wrong name
+    } on PlatformException catch (e) {
+      debugPrint('Battery: ${e.code} ${e.message}');
+      return null;                               // UNAVAILABLE on the iOS simulator
+    }
+  }</code></pre>
+  <ul>
+    <li><code>MissingPluginException</code>: there is no handler for the channel on this platform. It is not a user error; it is a feature that does not exist here.</li>
+    <li><code>PlatformException</code>: the native side responded with an error. <code>code</code> to decide, <code>message</code> for the logs.</li>
+    <li>The UI does not show "error": it hides the line or says "unavailable". An optional feature degrades silently.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> TODO 4: use <code>safeLevel()</code> on the screen and run <code>flutter run -d chrome</code>: the app starts and the battery line disappears. Test: with the mocked handler throwing <code>PlatformException(code: 'UNAVAILABLE')</code>, <code>safeLevel()</code> returns <code>null</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>3. API v2: what changed</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>v1 (<code>/v1/forecast/{id}</code>)</th><th>v2 (<code>/v2/forecast/{id}</code>)</th><th>Kind of change</th></tr></thead>
+  <tbody>
+  <tr><td><code>locationId</code></td><td><code>location_id</code></td><td>Renamed: all of v2 uses snake_case</td></tr>
+  <tr><td><code>tMin</code>, <code>tMax</code> loose</td><td><code>temperature: {min, max}</code></td><td>Structure: the temperatures move into an object</td></tr>
+  <tr><td><code>forecastDate: "2026-11-23"</code></td><td><code>date: "2026-11-23T00:00:00-01:00"</code></td><td>Full ISO 8601, with the time and the Azores offset</td></tr>
+  <tr><td><code>weatherType</code>, <code>precipProb</code></td><td><code>weather</code>, <code>precipitation_probability</code></td><td>Renamed</td></tr>
+  <tr><td>—</td><td><code>issued_at</code></td><td>New, optional: when IPMA issued the forecast</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Authentication, favourites and the <code>X-Platform</code> and <code>X-App-Version</code> headers do not change. The warnings change in the same style: <code>level</code> becomes <code>severity</code> and the dates become ISO 8601.</li>
+    <li>v1 responds until 09/12 with <code>Deprecation: true</code> and <code>Sunset</code>; after that, <code>410 Gone</code>. The full changelog is on the <a href="../api.html">API</a> page.</li>
+  </ul>
+  <aside class="notes">Show the same location in both versions in Swagger, side by side. Ask: "which tests from lesson 25 are going to break?" None, if the current fromJson is renamed to fromJsonV1. That is the idea: add, do not replace.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. One <code>forecast</code> element, in both versions</h2>
+<pre data-title="GET /v1/forecast/3420300 (excerpt)"><code class="language-json">{
+  "locationId": "3420300",
+  "forecastDate": "2026-11-23",
+  "tMin": 14.2,
+  "tMax": 19.8,
+  "weatherType": "rain",
+  "precipProb": 65
+}</code></pre>
+<pre data-title="GET /v2/forecast/3420300 (excerpt)"><code class="language-json">{
+  "location_id": "3420300",
+  "date": "2026-11-23T00:00:00-01:00",
+  "temperature": { "min": 14.2, "max": 19.8 },
+  "weather": "rain",
+  "precipitation_probability": 65,
+  "issued_at": "2026-11-23T06:12:00-01:00"
+}</code></pre>
+  <p>Both excerpts are in <code>test/samples/</code> in the starter, copied from the real API. The tests run against them.</p>
+</section>
+
+<section class="slide">
+  <h2>3. Two factories in the same model</h2>
+<pre data-title="lib/models/forecast.dart"><code class="language-dart">class Forecast {
+  // fields and constructor as in lesson 25
+
+  factory Forecast.fromJsonV1(Map&lt;String, dynamic&gt; json) => Forecast(
+        locationId: json['locationId'] as String,
+        day: DateTime.parse(json['forecastDate'] as String),
+        tMin: (json['tMin'] as num).toDouble(),
+        tMax: (json['tMax'] as num).toDouble(),
+        type: WeatherType.fromApi(json['weatherType'] as String),
+        rainChance: (json['precipProb'] as num?)?.toDouble(),
+      );
+
+  factory Forecast.fromJsonV2(Map&lt;String, dynamic&gt; json) {
+    final temp = json['temperature'] as Map&lt;String, dynamic&gt;?;
+    if (temp == null) throw const FormatException('v2: the "temperature" object is missing');
+    return Forecast(
+      locationId: json['location_id'] as String,
+      day: DateTime.parse(json['date'] as String).toLocal(),
+      tMin: (temp['min'] as num).toDouble(),
+      tMax: (temp['max'] as num).toDouble(),
+      type: WeatherType.fromApi(json['weather'] as String),
+      rainChance: (json['precipitation_probability'] as num?)?.toDouble(),
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. The v2 tests</h2>
+<pre data-title="test/models/forecast_v2_test.dart"><code class="language-dart">import 'dart:convert';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tempo_acores/models/forecast.dart';
+
+const sampleV2 = '''
+{"location_id": "3420300", "date": "2026-11-23T00:00:00-01:00",
+ "temperature": {"min": 14.2, "max": 19.8}, "weather": "rain",
+ "precipitation_probability": 65}
+''';
+
+void main() {
+  final p = Forecast.fromJsonV2(jsonDecode(sampleV2) as Map&lt;String, dynamic&gt;);
+
+  test('reads the temperatures from the temperature object', () {
+    expect(p.tMin, 14.2);
+    expect(p.tMax, 19.8);
+    expect(p.range, closeTo(5.6, 0.001));
+  });
+
+  test('converts the ISO date with offset to local time', () {
+    expect(p.day.isUtc, isFalse);
+    expect(p.day.toUtc(), DateTime.utc(2026, 11, 23, 1));   // 00:00 in the Azores is 01:00 UTC
+  });
+
+  test('throws FormatException if temperature is missing', () {
+    expect(() => Forecast.fromJsonV2({'location_id': '1', 'date': '2026-11-23T00:00:00Z', 'weather': 'sun'}),
+        throwsFormatException);
+  });
+}</code></pre>
+  <div class="callout task"><strong>Exercise 3</strong> TODOs 5 and 6: rename the current <code>fromJson</code> to <code>fromJsonV1</code> (the tests from lesson 25 change only the name), write <code>fromJsonV2</code>, and do the same for <code>Warning</code>. Green tests on both versions.</div>
+</section>
+
+<section class="slide">
+  <h2>4. v1 and v2 side by side, with a feature flag</h2>
+<pre data-title="lib/data/api_config.dart and lib/data/forecast_repository_http.dart"><code class="language-dart">enum ApiVersion { v1, v2 }
+
+class ApiConfig {
+  /// flutter run --dart-define=API_V2=true switches v2 on; by default it stays on v1.
+  static const version = bool.fromEnvironment('API_V2') ? ApiVersion.v2 : ApiVersion.v1;
+}
+
+class ForecastRepositoryHttp implements ForecastRepository {
+  ForecastRepositoryHttp(this._client, {this.version = ApiConfig.version});
+  final ApiClient _client;
+  final ApiVersion version;
+
+  @override
+  Future&lt;List&lt;Forecast&gt;&gt; forecast(String locationId) async {
+    final (path, parse) = switch (version) {
+      ApiVersion.v1 => ('/v1/forecast/$locationId', Forecast.fromJsonV1),
+      ApiVersion.v2 => ('/v2/forecast/$locationId', Forecast.fromJsonV2),
+    };
+    final json = await _client.getJson(path);
+    final items = json['forecast'] as List&lt;dynamic&gt;;
+    return items.map((e) => parse(e as Map&lt;String, dynamic&gt;)).toList();
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>4. The migration: what matters</h2>
+  <ul>
+    <li>The flag lives in one place only. The screen does not know that v1 or v2 exists; neither does the notifier. Only the repository changes path and parser.</li>
+    <li><code>--dart-define</code> is a build flag: the CI runs the tests against both. A Remote Config flag (lesson 26) switches without a new build; the logic is the same, the source of the value changes.</li>
+    <li>Order: models with the two factories and green tests → repository with the flag → test build on v2 to the testers → flag defaulting to v2 → delete v1 when the backend switches it off and raise the minimum version (forced update, lesson 30).</li>
+    <li>Never delete v1 in the PR where you switch v2 on. If v2 fails in production, the kill switch is turning the flag back.</li>
+    <li>The <code>switch</code> over the enum is exhaustive: when an <code>ApiVersion.v3</code> appears, the compiler forces you to handle it.</li>
+  </ul>
+  <p><strong>For the tests:</strong> migrating an API is adding the new version alongside the old one, switching by flag and only then removing; never replacing in a single step.</p>
+  <div class="callout task"><strong>Exercise 4</strong> TODOs 7 and 8: the flag in <code>ApiConfig</code>, the repository choosing path and parser, and the same in <code>WarningsRepository</code>. Run the app with and without <code>--dart-define=API_V2=true</code> and show "API v1" or "API v2" on the settings screen. Test: with <code>version: ApiVersion.v2</code>, the repository requests <code>/v2/forecast/3420300</code> (mock of <code>ApiClient</code> with mocktail and <code>verify</code>).</div>
+  <aside class="notes">In the last 10 minutes: each group says how many files in the project touch API JSON. If the answer is "only the models and the repositories", the architecture from lesson 13 paid for itself today. If it is "the screens too", that is the first TODO of the sprint.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Project migrated to API v2: models with <code>fromJsonV1</code> and <code>fromJsonV2</code>, repositories with the flag, green tests on both versions and green CI.</li>
+        <li>Test build with <code>API_V2=true</code> distributed to the group's testers before switching v2 on by default.</li>
+        <li>Whoever did not distribute on Friday to three testers outside the group does it today: it is a sprint 3 requirement.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/platform-integration/platform-channels" target="_blank" rel="noopener">Writing custom platform-specific code</a> (docs.flutter.dev): the official <code>MethodChannel</code> example is precisely the battery, in Kotlin, Java, Swift and Objective-C.</li>
+        <li><a href="https://docs.flutter.dev/packages-and-plugins/developing-packages" target="_blank" rel="noopener">Developing packages and plugins</a> (docs.flutter.dev): how a federated plugin is structured and how it is published on pub.dev.</li>
+        <li><a href="https://dart.dev/interop/c-interop" target="_blank" rel="noopener">C interop using dart:ffi</a> (dart.dev): calling C libraries with no channel and no serialisation, with <code>ffigen</code> and manual memory management.</li>
+        <li><a href="https://pub.dev/help/scoring" target="_blank" rel="noopener">Package scores</a> (pub.dev): what pub points are and how the score used by the evaluation table is calculated.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

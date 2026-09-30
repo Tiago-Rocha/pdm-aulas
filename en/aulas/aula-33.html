@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 33 · Revision for test 2 and finishing workshop · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="33">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 33 · Week 13 · Friday, 4 December 2026 · 08:30 to 12:30</p>
+  <h1>Revision for test 2 and finishing workshop</h1>
+  <p class="lead">First part: revision of the material from lessons 21 to 32, with ten sample questions solved together and the most frequent mistakes. Second part: finishing the project: submission checklist, fixes, README, signed final build and upload to the testers. The test is on the following Monday; the freeze on Wednesday.</p>
+    <aside class="notes">Start at 08:30 sharp with the map of the material; whoever arrives late catches the questions. For the questions, take a show of hands per option before revealing: it shows the class that the wrong options are plausible. Keep 10 minutes before the break for loose questions. From 10:35 it is group work; keep circulating and do not get stuck with a single group.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Place each topic from lessons 21 to 32 and say what the central idea is that the test will ask about.</li>
+    <li>Solve multiple-choice questions by elimination, identifying the "almost right" option that is the trap.</li>
+    <li>Recognise the five classic mistakes in this material and explain why they are wrong.</li>
+    <li>Check the project against the submission checklist and close what is missing.</li>
+    <li>Generate the signed final build and distribute it to the testers through Firebase App Distribution or TestFlight.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Map of the material (1 of 2): lessons 21 to 26</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Lesson</th><th>Topic</th><th>The idea the test asks about</th></tr></thead>
+  <tbody>
+  <tr><td>21</td><td>Location and maps</td><td>Accuracy vs battery; when-in-use vs always; permanent denial; free OSM vs Google Maps with a key and costs.</td></tr>
+  <tr><td>22</td><td>Deep links</td><td>Custom scheme vs Universal/App Links; domain verification with AASA and assetlinks; the router decides the screen.</td></tr>
+  <tr><td>23</td><td>Background</td><td>The OS limits it because of battery; WorkManager with constraints and no exact time; iOS with no guarantees; silent push.</td></tr>
+  <tr><td>24</td><td>Hardware and sensors</td><td>Each sensor has its permission, power consumption and per-platform limits; NFC more restricted on iOS; BLE needs scan permissions.</td></tr>
+  <tr><td>25 and 26</td><td>Tests, CI and observability</td><td>Pyramid; fakes instead of the network; CI as the definition of done; crash-free, ANR, feature flags and kill switch.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide">
+  <h2>Map of the material (2 of 2): lessons 27 to 32</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Lesson</th><th>Topic</th><th>The idea the test asks about</th></tr></thead>
+  <tbody>
+  <tr><td>27</td><td>Distribution to testers</td><td>App Distribution with no review; external TestFlight with beta review; internal testing up to 100; never distribute debug.</td></tr>
+  <tr><td>28</td><td>Platform channels and APIs</td><td>MethodChannel and the codec's types; evaluating a package; versioning an API without breaking installed apps.</td></tr>
+  <tr><td>29</td><td>Stores and monetisation</td><td>IAP mandatory for digital content; reasons for rejection; ASO and asking for a rating at the right moment.</td></tr>
+  <tr><td>30</td><td>Size, startup and updates</td><td>AAB and split per ABI; measure before the first frame; code push with limits; forced update.</td></tr>
+  <tr><td>31 and 32</td><td>Build, signing and consoles</td><td>Signing proves authorship and integrity; versionCode never goes down; tracks, staged rollout, data safety and privacy labels, vitals.</td></tr>
+  </tbody></table></div>
+  <aside class="notes">Go through the two maps in 10 minutes, no more. For each row ask a different student "who can tell me in one sentence what X is?". If nobody knows, that is where you spend two minutes.</aside>
+</section>
+
+<section class="slide">
+  <h2>How to answer multiple choice</h2>
+  <ul>
+    <li>Read the question to the end before the options. Underline the word that changes everything: <em>always</em>, <em>never</em>, <em>guarantees</em>, <em>mandatory</em>, <em>only</em>.</li>
+    <li>First eliminate the two that are clearly from another topic or too absolute. Two remain: one right and one "almost right".</li>
+    <li>The "almost right" one is usually true in another context (Android instead of iOS, debug instead of release, web instead of mobile). Ask yourself "for this platform and this scenario?".</li>
+    <li>There is no penalty for a wrong answer: answer all of them. A question you still cannot answer after 90 seconds, mark it and come back at the end.</li>
+    <li>40 questions in 75 minutes gives less than two minutes per question. Time is not the problem if you do not get stuck.</li>
+  </ul>
+  <p>The next ten slides use the format of the test. You vote, and only then do we see the answer.</p>
+</section>
+
+<section class="slide">
+  <h2>Question 1 · Location</h2>
+  <p>Tempo Açores wants to open on the location nearest to the user when they open the app. Which permission should it request?</p>
+  <ol type="A">
+    <li><em>Always</em> location, so that it also works in the background.</li>
+    <li><em>When in use</em> location, with approximate accuracy being enough.</li>
+    <li>Background location with a foreground service so that it does not fail.</li>
+    <li>None: GPS coordinates are public and do not need a permission.</li>
+  </ol>
+  <aside class="notes">Answer: B. The app only needs the position while it is open; requesting always is rejected by the stores without a justification and scares the user. To choose the nearest location among nine islands, approximate accuracy is enough. A is the classic "always vs when-in-use" mistake; C confuses background with reliability; D is false, location is sensitive data and always requires a runtime permission.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 2 · Deep links</h2>
+  <p>Why should a "magic login" link sent by email not use a custom scheme such as <code>tempoacores://login?token=...</code>?</p>
+  <ol type="A">
+    <li>Because custom schemes do not work on Android.</li>
+    <li>Because any installed app can register the same scheme and receive the link with the token.</li>
+    <li>Because iOS only allows schemes registered on the App Store.</li>
+    <li>Because custom schemes require HTTPS and a certificate.</li>
+  </ol>
+  <aside class="notes">Answer: B. A scheme has no owner: there is no domain verification, so another app can claim tempoacores:// and grab the token. Universal Links and App Links solve this because the domain proves, with the AASA and assetlinks.json, that the app belongs to it. A and C are false; D mixes up schemes with HTTPS links. Classic mistake: "custom scheme as secure".</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 3 · Background</h2>
+  <p>You configure WorkManager to refresh the forecast cache every 6 hours. What does Android guarantee?</p>
+  <ol type="A">
+    <li>That the task runs exactly every 6 hours, even in Doze.</li>
+    <li>That the task runs at least once in each period, when the constraints allow it, and survives restarts.</li>
+    <li>That the task runs only while the app is in the foreground.</li>
+    <li>That the same configuration works on iOS with the same guarantee.</li>
+  </ol>
+  <aside class="notes">Answer: B. WorkManager guarantees execution, not a time: the period is a minimum and the system batches tasks into maintenance windows, especially in Doze and in the App Standby buckets. It survives a reboot. A is the classic "WorkManager with a guaranteed time" mistake. C describes the opposite of what it is for. D is false: on iOS it is BGTaskScheduler, with even fewer guarantees.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 4 · Hardware</h2>
+  <p>An app wants to scan for Bluetooth Low Energy devices on a current Android. What does it need?</p>
+  <ol type="A">
+    <li>Nothing: BLE scanning is unrestricted because it does not identify the user.</li>
+    <li>Only the NFC permission, because BLE and NFC share the radio.</li>
+    <li>The <code>BLUETOOTH_SCAN</code> permission (Android 12 and later) and, on earlier versions, the location permission.</li>
+    <li>The camera permission, because scanning uses the code reader.</li>
+  </ol>
+  <aside class="notes">Answer: C. Up to Android 11, BLE scanning required location, because beacons make it possible to locate people; since 12 there are dedicated Bluetooth permissions (SCAN, CONNECT) with the option to declare that location is not derived. A ignores the privacy risk; B and D are plausible nonsense for anyone who did not study. Links to lesson 24.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 5 · Tests</h2>
+  <p>In the test pyramid there are many unit tests and few integration or E2E tests. Why?</p>
+  <ol type="A">
+    <li>Because unit tests are fast, cheap and point directly at the cause of the failure.</li>
+    <li>Because Flutter does not support integration tests.</li>
+    <li>Because unit tests test the interface and E2E tests only test the logic.</li>
+    <li>Because golden tests replace E2E tests.</li>
+  </ol>
+  <aside class="notes">Answer: A. A unit test runs in milliseconds and says "fromJson fails with a missing field"; an E2E test takes minutes, needs a device and says "the screen went blank". B is false, integration_test exists. C is the wrong way round. D confuses pixel comparison with a complete flow. Reinforce: in the project, parsing, notifier with a fake repository and one widget test per state.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 6 · Observability</h2>
+  <p>Crashlytics shows "crash-free users: 99.2%" for the last week. What does this mean?</p>
+  <ol type="A">
+    <li>That 0.8% of sessions ended in a crash.</li>
+    <li>That 99.2% of crashes have already been fixed.</li>
+    <li>That 0.8% of users had at least one crash in that period.</li>
+    <li>That 0.8% of the app's code has bugs.</li>
+  </ol>
+  <aside class="notes">Answer: C. The metric is per user and per period: of everyone who used the app, 0.8% saw at least one crash. A confuses users with sessions (crash-free sessions exists, it is a different metric). B and D are impossible readings. Then ask: "and is this good?" It depends on the product; above 99% is the normal expectation, and Play starts penalising at around 1.1% of user-perceived crashes.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 7 · Distribution to testers</h2>
+  <p>What is the essential difference between distributing a build to external testers through TestFlight and through Firebase App Distribution?</p>
+  <ol type="A">
+    <li>Firebase App Distribution only works for iOS.</li>
+    <li>External TestFlight goes through a beta review by Apple; Firebase delivers the file with no review.</li>
+    <li>TestFlight has no limit on testers; Firebase is limited to 25.</li>
+    <li>There is no difference: both install through the App Store.</li>
+  </ol>
+  <aside class="notes">Answer: B. External TestFlight (up to 10,000 testers) requires a beta review, lighter than the store's but it exists; internal testers (up to 100, team members) do not go through it. Firebase App Distribution delivers an APK/AAB or an ad hoc IPA directly, with no review, and on iOS requires the tester's UDID to be in the profile. A and D are false; C inverts the limits.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 8 · Platform channels</h2>
+  <p>Which types can you send directly over a <code>MethodChannel</code> between Dart and Kotlin or Swift?</p>
+  <ol type="A">
+    <li>Any Dart object, because the channel serialises automatically using reflection.</li>
+    <li>Only <code>String</code>; everything else has to go as JSON.</li>
+    <li>Primitives, <code>String</code>, lists and maps supported by the <code>StandardMessageCodec</code>; your own objects are converted to maps.</li>
+    <li>Widgets, so that the native side can draw them.</li>
+  </ol>
+  <aside class="notes">Answer: C. The StandardMessageCodec supports null, bool, int, double, String, Uint8List and the like, List and Map. A Forecast class goes as a Map (toJson) and is rebuilt on the other side. A does not exist in Dart AOT; B is what many people do out of laziness, but it is not mandatory; D confuses platform views with channels. Remind them of the MissingPluginException on the web and of EventChannel for streams.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 9 · Stores and monetisation</h2>
+  <p>Tempo Açores starts selling a "10-day forecast" subscription inside the iOS app. What does Apple require?</p>
+  <ol type="A">
+    <li>Nothing: the app can accept card payments with any payment provider.</li>
+    <li>That the purchase of digital content uses Apple's in-app purchase system, with the corresponding commission.</li>
+    <li>That the subscription is sold only on the website and the app never mentions it.</li>
+    <li>That the app is paid in the store instead of having a subscription.</li>
+  </ol>
+  <aside class="notes">Answer: B. Digital content and features consumed in the app go through StoreKit (15% or 30%). Physical goods and services outside the app (a trip, a taxi) can use another processor. In the EU, the DMA forced Apple to allow alternatives with their own conditions; the general rule for the exam is still B. C describes the "reader" model with restrictions; D has nothing to do with it.</aside>
+</section>
+
+<section class="slide">
+  <h2>Question 10 · Build and versioning</h2>
+  <p>You uploaded an app bundle with <code>versionCode</code> 7 to the internal testing track. You fix a bug and want to upload to production. What does the new bundle need?</p>
+  <ol type="A">
+    <li>Nothing: tracks are independent and 7 can be repeated.</li>
+    <li><code>versionCode</code> 7 and a different <code>versionName</code>.</li>
+    <li><code>versionCode</code> 8 or higher; the <code>versionName</code> can be the same.</li>
+    <li>A new keystore, because the test key is no good for production.</li>
+  </ol>
+  <aside class="notes">Answer: C. The versionCode is unique per app on Play, across all tracks, and only goes up. The versionName is for humans and can be repeated. A and B are the classic "same versionCode" mistake. D is serious: changing keystore would prevent updates for everyone who already has the app; the key is always the same, and with Play App Signing so is the upload key.</aside>
+</section>
+
+<section class="slide">
+  <h2>Frequent mistakes in the test</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>The mistake</th><th>Why it is wrong</th></tr></thead>
+  <tbody>
+  <tr><td>Requesting <em>always</em> location "to be safe"</td><td>The app does not need it, the stores reject it without a justification and the user denies it. <em>When in use</em> is enough for almost everything.</td></tr>
+  <tr><td>Treating a custom scheme as secure</td><td>It has no owner and no domain verification. For tokens and login, Universal/App Links.</td></tr>
+  <tr><td>Counting on WorkManager at a fixed time</td><td>It guarantees execution within constraints, not a time. The OS batches and defers work because of battery.</td></tr>
+  <tr><td>Thinking code push changes everything without the store</td><td>Only Dart code; nothing native, no assets, no permissions. And Apple requires that it does not change the purpose of the app.</td></tr>
+  <tr><td>Reusing the <code>versionCode</code></td><td>Play refuses the upload and the phone refuses the downgrade. It always goes up; it is the <code>versionName</code> that can repeat.</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> when an option promises an absolute guarantee (always, exactly, without limits) on a mobile system, be suspicious.</p>
+</section>
+
+<section class="slide" data-part="Workshop">
+  <h2>Finishing workshop: submission checklist</h2>
+  <ul class="checklist">
+    <li><strong>Minimum requirements</strong> working on the phone: locations with search, 5-day forecast, warnings, synced favourites, working without network with "data from X ago", loading, error and empty states on every screen.</li>
+    <li><strong>Chaos mode</strong> switched on for 5 minutes without the app failing.</li>
+    <li><strong>Green CI</strong> on <code>main</code>: <code>flutter analyze</code> with no warnings and at least five tests passing.</li>
+    <li><strong>No secrets in the repository:</strong> <code>git log -p | grep -i secret</code> clean, <code>key.properties</code> and keystore kept out.</li>
+    <li><strong>README</strong> complete (next slide).</li>
+    <li><strong>Signed build</strong> <code>1.0.0+N</code>, distributed through Firebase App Distribution to at least 3 testers outside the group, and through TestFlight for those who have iOS.</li>
+  </ul>
+  <div class="callout task"><strong>How it will go</strong> 10:35 to 10:50: each group goes through the checklist and marks what is missing in the milestone. 10:50 to 12:00: work, with the teacher circulating. 12:00 to 12:30: uploads and cross-checking with another group.</div>
+  <aside class="notes">Cross-checking is the part that pays off most: group A installs group B's build through the App Distribution link, turns on airplane mode and tries to break the app for 5 minutes, and vice versa. Record what they find as issues in the other group's repo. It is the "real tester" of the rubric.</aside>
+</section>
+
+<section class="slide">
+  <h2>README and documentation: what has to be there</h2>
+  <ol class="steps">
+    <li><strong>Header:</strong> name of the app, the members with their GitHub username, and a screenshot or GIF of the app running on the phone.</li>
+    <li><strong>How to run:</strong> Flutter version, <code>flutter pub get</code>, what to put in <code>--dart-define</code> or in <code>env/dev.json</code>, and how to get the client-id (not the secret itself).</li>
+    <li><strong>Architecture in ten lines:</strong> layers, folders per feature, where the state lives, how the cache works. A simple diagram is worth more than ten paragraphs.</li>
+    <li><strong>What is done and what is not:</strong> the minimums, the extras, the "Later" milestone. Honesty here is assessed; hiding a known bug is not.</li>
+    <li><strong>How to get the build:</strong> App Distribution invitation link, current version, and who has the keystore.</li>
+    <li><strong>Retrospective:</strong> the two sentences from lesson 32.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise</strong> Swap READMEs with another group. Without talking to them, try to run the app using only what is written there. Each thing you had to ask about is a line that is missing.</div>
+</section>
+
+<section class="slide">
+  <h2>Signed final build and upload to App Distribution</h2>
+  <ol class="steps">
+    <li><strong>Bump the build number</strong> in <code>pubspec.yaml</code>: <code>version: 1.0.0+N</code>, with N greater than the last one you distributed.</li>
+    <li><strong>Build the release APK</strong> with the prod flavor and the prod configuration.
+<pre class="term"><code class="language-bash">flutter build apk --release --flavor prod --dart-define-from-file=env/prod.json</code></pre></li>
+    <li><strong>Upload it</strong> with the Firebase CLI, to the class tester group you created in lesson 27.
+<pre class="term"><code class="language-bash">firebase appdistribution:distribute \
+  build/app/outputs/flutter-apk/app-prod-release.apk \
+  --app 1:123456789012:android:0123456789abcdef \
+  --groups pdm-class \
+  --release-notes "v1.0.0 (N): final build for the defence"</code></pre></li>
+    <li><strong>Confirm on another group's phone</strong> that the App Distribution notification arrived and that the app installs over the previous one, without uninstalling.</li>
+  </ol>
+  <div class="callout task"><strong>Exercise</strong> Build distributed to at least 3 testers outside the group, with the release link pasted into the README. If installing over the previous one fails, the cause is in lesson 31: key or <code>versionCode</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>TestFlight, for those who have iOS</h2>
+  <ol class="steps">
+    <li><strong>Paid account and a Mac.</strong> The teacher does the upload with their own account for the groups whose app compiles on iOS; the bundle id must be the one agreed with the teacher.</li>
+    <li><strong>Build the .ipa file</strong> and open it in Xcode or in Transporter.
+<pre class="term"><code class="language-bash">flutter build ipa --release --flavor prod --dart-define-from-file=env/prod.json
+open build/ios/archive/Runner.xcarchive</code></pre></li>
+    <li><strong>Distribute App → App Store Connect → Upload.</strong> The build shows as "Processing" for a few minutes.</li>
+    <li><strong>Internal testers</strong> need no review: add your classmates' Apple IDs to the internal testing group, and they receive the invitation in the TestFlight app.</li>
+    <li><strong>No Mac:</strong> there is no way. State in the README that the iOS build was not distributed and why; it is not penalised.</li>
+  </ol>
+  <aside class="notes">Do a live upload to your App Store Connect if at least one group has iOS; otherwise show TestFlight with a build of yours and the list of testers. Check that the "Missing Compliance" (encryption) message is answered, it is the usual reason builds get stuck.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you next lesson</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Study the theory component of lessons 21 to 32. The test is on Monday, 07/12, at 16:00, on paper and closed book.</li>
+        <li>Close what was left unticked on today's checklist. The freeze is on Wednesday at 18:30, with the tag <code>v1.0.0</code>.</li>
+        <li>Confirm that the 3 testers outside the group really did install the build.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://developer.android.com/develop/sensors-and-location/location/permissions" target="_blank" rel="noopener">Request location permissions</a> (developer.android.com): foreground vs background, precise vs approximate, with the rules per version (lesson 21).</li>
+        <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a> (docs.flutter.dev): custom schemes, App Links and Universal Links, and domain verification with <code>assetlinks.json</code> and AASA (lesson 22).</li>
+        <li><a href="https://developer.android.com/develop/background-work/background-tasks/persistent" target="_blank" rel="noopener">WorkManager</a> (developer.android.com): what the system guarantees and does not guarantee to a background task (lesson 23).</li>
+        <li><a href="https://docs.flutter.dev/deployment/android" target="_blank" rel="noopener">Build and release an Android app</a> (docs.flutter.dev): signing, app bundle and versioning; go over the steps again if an upload failed today (lesson 31).</li>
+        <li><a href="https://developer.apple.com/app-store/review/guidelines/" target="_blank" rel="noopener">App Store Review Guidelines</a>: 2.1, 3.1.1, 4.2 and 5.1.1, which are the ones that cause the most rejections (lessons 29 and 32).</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

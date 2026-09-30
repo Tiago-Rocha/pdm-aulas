@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19 · Push notifications, sprint 1 review and revision for test 1 · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="19">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 19 · Week 9 · Monday, 2 November 2026 · 16:00 to 18:00</p>
+  <h1>Push notifications, sprint 1 review and revision for test 1</h1>
+  <p class="lead">Theory (30 minutes): the journey of a push notification from the server to the lock screen. Sprint 1 review, retrospective and sprint 2 planning. Revision for test 1: map of the material and sample questions.</p>
+  <div class="meta"><span>Sprint 1 review</span><span>Test 1 on Wednesday, 4/11</span></div>
+  <aside class="notes">Before starting, ask each group to connect the phone to screen mirroring and confirm that main runs. While they do it, start the theory. The order of the demos is the order in which the groups are ready; write it on the board. Also state the rules for Wednesday's test (40 questions, 75 minutes, closed book). A full lesson: push in 30 minutes, review and retro in 40, revision in the last 45.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Describe the path of a push notification from the server to the app, and the role of the device token.</li>
+    <li>Tell a notification message from a data message, and what happens in foreground, in background and with the app terminated.</li>
+    <li>Explain channels on Android, categories on iOS and what silent notifications are for.</li>
+    <li>Decide when to request the notification permission and how not to lose it.</li>
+    <li>Present a sprint review and leave with the sprint 2 backlog planned.</li>
+    <li>Place each topic from lessons 1 to 19 and state the key idea of each one in a sentence.</li>
+    <li>Solve a multiple-choice question by eliminating options, without guessing.</li>
+    <li>Recognise the five classic mistakes that show up in every test.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>How a push reaches the screen</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 280" role="img" aria-label="Path of a push: the app sends the device token to the server; the server hands the payload to FCM or APNs, which delivers it to the device's operating system; at the destination there are three states: app in the foreground handles the message, in the background the notification goes to the tray, closed the system shows it and a tap opens the app with the payload">
+    <path d="M740 50 V22 H130 V46" class="arrow dashed"/>
+    <text x="435" y="16" class="t s" text-anchor="middle">1 · the app sends the device token to the server</text>
+    <rect x="40" y="50" width="180" height="60" rx="10" class="box"/>
+    <text x="60" y="74" class="t b">App server</text>
+    <text x="60" y="96" class="t s">token per user</text>
+    <line x1="220" y1="80" x2="300" y2="80" class="arrow accent"/>
+    <text x="260" y="72" class="t s" text-anchor="middle">2 · payload</text>
+    <rect x="300" y="50" width="240" height="60" rx="10" class="box accent"/>
+    <text x="320" y="74" class="t b">FCM (Android) · APNs (iOS)</text>
+    <text x="320" y="96" class="t s">picks the device by its token</text>
+    <line x1="540" y1="80" x2="620" y2="80" class="arrow accent"/>
+    <text x="580" y="72" class="t s" text-anchor="middle">3 · delivery</text>
+    <rect x="620" y="50" width="240" height="60" rx="10" class="box"/>
+    <text x="640" y="74" class="t b">Operating system</text>
+    <text x="640" y="96" class="t s">shows, wakes the app or discards</text>
+    <line x1="730" y1="110" x2="730" y2="132" class="box"/>
+    <line x1="170" y1="132" x2="730" y2="132" class="box"/>
+    <line x1="170" y1="132" x2="170" y2="158" class="arrow"/>
+    <line x1="450" y1="132" x2="450" y2="158" class="arrow"/>
+    <line x1="730" y1="132" x2="730" y2="158" class="arrow"/>
+    <rect x="40" y="160" width="260" height="96" rx="10" class="box ok"/>
+    <text x="60" y="184" class="t b">In the foreground</text>
+    <text x="60" y="206" class="t s">the app gets the message (onMessage)</text>
+    <text x="60" y="224" class="t s">and decides what to show: snackbar,</text>
+    <text x="60" y="242" class="t s">badge or nothing</text>
+    <rect x="320" y="160" width="260" height="96" rx="10" class="box"/>
+    <text x="340" y="184" class="t b">In the background</text>
+    <text x="340" y="206" class="t s">the OS shows it in the tray</text>
+    <text x="340" y="224" class="t s">without waking the interface</text>
+    <text x="340" y="242" class="t s">tap → onMessageOpenedApp</text>
+    <rect x="600" y="160" width="260" height="96" rx="10" class="box muted"/>
+    <text x="620" y="184" class="t b">Closed</text>
+    <text x="620" y="206" class="t s">the OS shows the notification</text>
+    <text x="620" y="224" class="t s">a tap opens the app with the payload</text>
+    <text x="620" y="242" class="t s">getInitialMessage() decides the route</text>
+  </svg>
+  <figcaption>The server never talks to the phone: it hands over to FCM or APNs, and the operating system decides what to do depending on the state of the app.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><strong>The app registers</strong> with the platform's service: APNs (Apple Push Notification service) on iOS, FCM (Firebase Cloud Messaging) on Android. It receives a <em>device token</em>: a long string that identifies this installation on this phone.</li>
+    <li><strong>The app sends the token to your server</strong>, associated with the user. Without this, the server does not know who to send to.</li>
+    <li><strong>The server sends the payload to FCM/APNs</strong> (never directly to the phone), authenticated with a server key.</li>
+    <li><strong>FCM/APNs delivers to the operating system</strong>, which decides: show it, wake the app, or discard it.</li>
+  </ol>
+  <ul>
+    <li>The token <strong>changes</strong>: reinstall, restore from backup, clearing data. The app has to listen to <code>onTokenRefresh</code> and send it again.</li>
+    <li>On iOS, FCM also works: it wraps APNs, and needs the APNs key configured in the Firebase project.</li>
+  </ul>
+  <p><strong>For the tests:</strong> your server never talks to the phone; it talks to FCM or APNs, which talk to the operating system.</p>
+  <div class="callout"><strong>Analogy</strong> The post office. The app does not stand at the door waiting for the postman: it registers its address, the device token, with the platform's post office, FCM or APNs. The server hands the letter to the post office with that address, and the post office delivers it when the phone can be reached. A single connection from the phone to the post office serves every installed app, and that is why the battery copes.</div>
+  <aside class="notes">Draw the four boxes on the board: server → FCM/APNs → OS → app. Ask: "and if the user has the app on two phones?" Two tokens, two sends. "And if they uninstalled it?" FCM returns an error and the server should delete the token.</aside>
+</section>
+
+<section class="slide">
+  <h2>Permissions: ask at the right moment</h2>
+  <ul>
+    <li><strong>iOS always asks</strong>, with a system dialog that only appears <em>once</em>. If the user says no, the only way back is in Settings.</li>
+    <li><strong>Android 13+</strong> (API 33) also asks at runtime: <code>POST_NOTIFICATIONS</code>. On earlier versions notifications come turned on by default.</li>
+    <li>Asking at app launch is the fastest way to get a "no": the user does not yet know what it is for.</li>
+    <li>Ask <strong>in context</strong>: after the user marks Ponta Delgada as a favourite, "Do you want to be notified when IPMA issues a warning for Ponta Delgada?", and only then the system dialog.</li>
+    <li>iOS has <em>provisional authorisation</em>: quiet notifications in Notification Centre, with no dialog, until the user decides.</li>
+    <li>Industry studies point to about half of users accepting on iOS and quite a lot more on Android; the difference comes from when and how you ask.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a permission request is explained before it appears, and is made when the user already sees the benefit.</p>
+</section>
+
+<section class="slide">
+  <h2>Payload: notification vs data</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>App state</th><th>Notification message (<code>notification</code>)</th><th>Data message (<code>data</code>)</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Foreground</strong></td><td>Delivered to your code; by default nothing appears. The app decides whether to show it.</td><td>Delivered to your code.</td></tr>
+  <tr><td><strong>Background</strong></td><td>The system shows it in the tray <em>without running the app</em>. On tap, the app opens with the data.</td><td>Wakes the app for a moment to process it (with limits).</td></tr>
+  <tr><td><strong>Terminated</strong></td><td>Same as background: the system handles it.</td><td>Android: can wake the app. iOS: only if it is silent and the system allows it.</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>The payload has <code>title</code>, <code>body</code> and a <code>data</code> map of strings, for example <code>{"type": "warning", "locationId": "3"}</code>. It is through <code>data</code> that the app knows which screen to open.</li>
+    <li>Practical limit: 4 KB. You do not send the whole forecast; you send an identifier and the app fetches it.</li>
+  </ul>
+  <p><strong>For the tests:</strong> with the app in background, a notification-only message is shown by the system without executing any app code.</p>
+</section>
+
+<section class="slide">
+  <h2>Channels, categories, sound, badge and silence</h2>
+  <ul>
+    <li><strong>Channels (Android 8+)</strong>: every notification belongs to a channel with a name and an importance. The user turns channels off in the system settings, one by one: "Weather warnings" on, "News" off. An app with a single channel forces all or nothing.</li>
+    <li><strong>Categories (iOS)</strong>: they define the action buttons ("See forecast", "Mute for 24h") and grouping.</li>
+    <li><strong>Sound and badge</strong>: the number on the icon (badge) is managed by the app on iOS and by the launcher on Android. Custom sounds have to be bundled in the app.</li>
+    <li><strong>Silent notifications</strong> (<code>content-available</code> on iOS, a data message with priority on Android): they show nothing; they wake the app to sync. iOS limits them to a few per hour and does not guarantee delivery.</li>
+    <li>Example: WhatsApp uses a silent one to download the message and then shows the notification with the text already in it.</li>
+  </ul>
+  <p><strong>For the tests:</strong> channels belong to Android and let the user choose which types of notification they want.</p>
+  <aside class="notes">Ask someone to open the notification settings for Instagram or YouTube on an Android phone and read the list of channels out loud. It is the best demonstration possible.</aside>
+</section>
+
+<section class="slide">
+  <h2>Local vs remote</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Local</th><th>Remote (push)</th></tr></thead>
+  <tbody>
+  <tr><td>Who creates it</td><td>The app itself, on the phone</td><td>A server, through FCM/APNs</td></tr>
+  <tr><td>Needs network</td><td>No</td><td>Yes, at least at the moment of delivery</td></tr>
+  <tr><td>When it is useful</td><td>Reminders, scheduled ones ("tomorrow's forecast at 20:00"), events the app already knows about</td><td>News only the server knows: a new IPMA warning, a message from another person</td></tr>
+  <tr><td>How it looks to the user</td><td colspan="2">Identical. The user cannot tell them apart.</td></tr>
+  <tr><td>Flutter package</td><td><code>flutter_local_notifications</code></td><td><code>firebase_messaging</code></td></tr>
+  </tbody></table></div>
+  <p>In lesson 22 we do local notifications: the app detects a new warning for a favourite when it refreshes, and schedules the next day's forecast. Remote push requires a Firebase project per group; it stays as an extra for the project.</p>
+  <div class="callout"><strong>Analogy</strong> A local notification is a reminder the app itself leaves on the fridge: it writes it and schedules it on the phone, without going through the post office. A remote push is a letter that comes from outside, and only the post office (FCM or APNs) knows how to deliver it. To the reader, the note on the fridge and the letter look the same.</div>
+</section>
+
+<section class="slide">
+  <h2>Good practice</h2>
+  <ul>
+    <li><strong>Do not overdo it.</strong> One useless notification costs the permission for all the ones after it. Duolingo is personalised and frequent, and even so a lot of people mute it.</li>
+    <li><strong>Personalise.</strong> "Orange warning for strong wind in Angra do Heroísmo until 18:00" instead of "There are new warnings".</li>
+    <li><strong>Deep link to the content.</strong> Tapping the notification opens the location's screen, not the home page.</li>
+    <li><strong>Let the user turn them off by type</strong> inside the app, and respect quiet hours.</li>
+    <li><strong>Group and replace.</strong> Three warnings for the same location are one updated notification, not three.</li>
+    <li><strong>Work without them.</strong> The app cannot depend on a push arriving; iOS discards them whenever it likes.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a notification with no deep link to the content is a badly made notification.</p>
+</section>
+
+<section class="slide" data-part="Review">
+  <h2>Sprint 1 review: 5 minutes per group</h2>
+  <div class="cols">
+    <div>
+      <h3>What each group shows</h3>
+      <ol class="steps">
+        <li><strong>1 min</strong>: the goal of the sprint and what went in.</li>
+        <li><strong>3 min</strong>: demo on the phone, projected, from <code>main</code>. Route: open the app, list, detail, an error state (airplane mode).</li>
+        <li><strong>1 min</strong>: what was left undone and why; what changes in sprint 2.</li>
+      </ol>
+    </div>
+    <div>
+      <h3>What the teacher looks at</h3>
+      <ul class="checklist">
+        <li>The app runs from <code>main</code>, without the teacher's cable.</li>
+        <li>Each member has commits and PRs reviewed by someone else.</li>
+        <li>Loading, error and empty states exist.</li>
+        <li>Token and secrets out of the repository.</li>
+        <li>Each member can explain their part.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Stopwatch in view. At 5 minutes you cut them off, no exceptions; it is training for the defence. Ask each member a question about the part they did not present. Note down two strong points and one to improve per group; you hand that over in writing on Moodle by Friday.</aside>
+</section>
+
+<section class="slide">
+  <h2>Retrospective: 15 minutes</h2>
+  <p>Each group, together, writes three columns in a shared document or on sticky notes:</p>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Start</th><th>Stop</th><th>Continue</th></tr></thead>
+  <tbody>
+  <tr><td>What we did not do and should have done. E.g.: review PRs on the same day.</td><td>What slowed us down. E.g.: 800-line PRs; everyone working on the same file.</td><td>What worked. E.g.: a 10 min meeting at the start of each lesson.</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Talk about the process, not about people. "The PRs sat for days waiting for review", not "X did not review".</li>
+    <li>Each column with one to three items. More than that does not get done.</li>
+    <li>One "Start" item becomes an issue in sprint 2, with an owner.</li>
+  </ul>
+  <aside class="notes">Go round the groups and read the columns. The patterns repeat every year: big PRs, one member doing almost everything, nobody testing on someone else's phone. Tell the class what the patterns were, without naming groups.</aside>
+</section>
+
+<section class="slide">
+  <h2>Planning sprint 2 (3/11 to 18/11)</h2>
+  <ul>
+    <li><strong>Three weeks with a test in the middle</strong> (4/11). Count on one week of lower productivity and plan less than in sprint 1.</li>
+    <li><strong>Candidates for the backlog</strong>, in lesson order: favourites synced with the backend (lesson 17), offline cache showing how old the data is (lesson 16), map with the nearest location (workshop on 6/11), warning notification and deep link (lesson 22).</li>
+    <li><strong>Issues with acceptance criteria</strong>: "As a user, when I open the app with no network I see the last forecast and the time it was fetched". Rough estimate: S, M, L.</li>
+    <li><strong>Distribution</strong>: each member owns at least one M or L issue. Whoever did UI in sprint 1 does data in sprint 2, and vice versa.</li>
+    <li><strong>Definition of done</strong> does not change: runs on the phone, no warnings, PR reviewed, error states handled.</li>
+  </ul>
+  <div class="callout task"><strong>By Friday, 6/11</strong> Sprint 2 backlog closed on the repository's board, with issues assigned. The teacher comments on the issues over the weekend.</div>
+</section>
+
+<section class="slide" data-part="Revision">
+  <h2>Map of the material (1 of 3): foundations</h2>
+  <ul>
+    <li><strong>Lesson 1 · Mobile landscape.</strong> Small screen, battery, intermittent network, imposed lifecycle, sandbox, stores. Five approaches: native, Flutter, React Native/KMP, hybrid, PWA. Flutter draws every pixel.</li>
+    <li><strong>Lessons 2 and 3 · Flutter and Dart.</strong> Framework (Dart), engine (C++), embedder. Immutable widget; <code>build</code> describes, it does not draw. Hot reload keeps state; hot restart does not. JIT in development, AOT in release.</li>
+    <li><strong>Lesson 4 · Lifecycle and asynchrony.</strong> Foreground, background, suspended, terminated; <code>AppLifecycleState</code>. One UI thread, event loop, 16 ms per frame. <code>Future</code>, <code>async</code>/<code>await</code>, <code>Stream</code>.</li>
+    <li><strong>Lesson 5 · Flutter project.</strong> <code>lib/</code>, <code>pubspec.yaml</code>, <code>^</code> in versions, <code>pubspec.lock</code>. Debug, profile, release. DevTools.</li>
+    <li><strong>Lessons 6 and 7 · UX and layouts.</strong> Material 3 vs HIG, 48 dp touch targets, expected gestures. Constraints go down, sizes go up, the parent sets the position. <code>ListView.builder</code> builds items on demand.</li>
+    <li><strong>Lesson 8 · State.</strong> Ephemeral vs app state. <code>setState</code> → Provider → BLoC/Riverpod depending on scale. Unidirectional flow, immutability, <code>copyWith</code>.</li>
+  </ul>
+  <aside class="notes">Do not read the map slides; for each lesson ask "what is the sentence for the tests from this lesson?" and let the class answer before you show it. Two minutes per map slide.</aside>
+</section>
+
+<section class="slide">
+  <h2>Map of the material (2 of 3): building</h2>
+  <ul>
+    <li><strong>Lesson 9 · Navigation and themes.</strong> Push/pop stack; <code>go</code> replaces, <code>push</code> stacks. URL as state (go_router). <code>ColorScheme.fromSeed</code>, <code>ThemeMode</code>.</li>
+    <li><strong>Lesson 10 · Accessibility and i18n.</strong> TalkBack and VoiceOver read the <code>Semantics</code> tree. Contrast, <code>textScaler</code>, layouts that do not break. <code>.arb</code> files, plurals, <code>intl</code>.</li>
+    <li><strong>Lesson 11 · Quality.</strong> Lints in <code>analysis_options.yaml</code>. Organisation by feature. Small, <code>const</code> widgets. A branch per task, small PRs, nobody pushes to <code>main</code>.</li>
+    <li><strong>Lesson 12 · Network.</strong> Codes 2xx, 4xx, 5xx, 429 with <code>Retry-After</code>. REST, GraphQL, gRPC, WebSockets. OpenAPI. Timeouts, retries with backoff, a single HTTP client with interceptors.</li>
+    <li><strong>Lesson 13 · Architecture.</strong> UI → Notifier → Repository → DataSource. Dependencies point inwards only. Constructor injection; no hidden singletons.</li>
+    <li><strong>Lesson 14 · Resilience.</strong> Everything fails. Loading, Failure, Empty, Data states as a <code>sealed class</code>. Offline-first. ETag and 304. Exponential backoff with jitter; never retry a non-idempotent POST.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Map of the material (3 of 3): going to production</h2>
+  <ul>
+    <li><strong>Lesson 15 · Methodology.</strong> An MVP cuts features, not quality. Backlog in issues with acceptance criteria. Definition of done. Two-week sprints with a review.</li>
+    <li><strong>Lesson 16 · Persistence.</strong> Key-value, SQLite, documents, files, secrets: each thing in its place. Sandbox. Keychain and Keystore. Cache-first with the age of the data visible.</li>
+    <li><strong>Lesson 17 · Authentication.</strong> Authenticating ≠ authorising. A JWT is signed, not encrypted. OAuth2 with PKCE: the app never sees the password. Short access token, long refresh token, both in secure storage. Biometrics unlock locally.</li>
+    <li><strong>Lesson 18 · Security.</strong> OWASP Mobile Top 10. Secrets never in the repository; an APK can be opened in 5 minutes. HTTPS always; pinning is expensive to maintain. Minimal permissions. GDPR and App Tracking Transparency.</li>
+    <li><strong>Lesson 18 · Performance.</strong> Isolates for computation; <code>async</code> only for waiting. <code>const</code> and small widgets against rebuilds. <code>ListView.builder</code>, resized images. Measure in profile.</li>
+    <li><strong>Lesson 19 · Push.</strong> Server → FCM/APNs → OS → app. The device token changes. Notification vs data. Channels on Android. Request the permission in context.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Sample questions (1 of 3)</h2>
+  <div class="callout tip"><strong>Method</strong> Read the question to the end. Cross out the two options that are clearly wrong. Between the two that are left, choose the one that uses the exact vocabulary from the lessons; the other is usually "almost true".</div>
+  <p><strong>1.</strong> You changed the body of <code>main()</code> and pressed <kbd>r</kbd>. The app does not reflect the change. Why?</p>
+  <ol type="a">
+    <li>Hot reload only works in release mode.</li>
+    <li>Hot reload does not run <code>main()</code> again; a hot restart is needed.</li>
+    <li>You forgot to run <code>flutter pub get</code>.</li>
+    <li>The phone is in airplane mode.</li>
+  </ol>
+  <p><strong>2.</strong> A 2-second computation inside <code>build</code> makes the app…</p>
+  <ol type="a">
+    <li>stay smooth, because Dart is multithreaded by default.</li>
+    <li>freeze, because the interface runs on a single thread.</li>
+    <li>be terminated immediately by the operating system.</li>
+    <li>fail to compile.</li>
+  </ol>
+  <p><strong>3.</strong> Where does the state of a <code>StatefulWidget</code> live?</p>
+  <ol type="a">
+    <li>In the widget itself, which is therefore mutable.</li>
+    <li>In the <code>State</code> object, which survives the widget's rebuilds.</li>
+    <li>In the <code>BuildContext</code>.</li>
+    <li>In the <code>MaterialApp</code>.</li>
+  </ol>
+  <aside class="notes">For each question: 30 seconds in silence, a show of hands per option, and only then the answer. Ask those who voted for the wrong one to say what drew them to it; that is where you learn to eliminate.</aside>
+</section>
+
+<section class="slide">
+  <h2>Sample questions (2 of 3)</h2>
+  <p><strong>4.</strong> With go_router, what is the difference between <code>context.go('/x')</code> and <code>context.push('/x')</code>?</p>
+  <ol type="a">
+    <li><code>go</code> replaces the stack with the route; <code>push</code> stacks on top of the current one.</li>
+    <li>They are equivalent; <code>push</code> is the old name.</li>
+    <li><code>push</code> only works on the web.</li>
+    <li><code>go</code> only works with <code>Navigator.push</code>.</li>
+  </ol>
+  <p><strong>5.</strong> The course API returns 429. What should the app do?</p>
+  <ol type="a">
+    <li>Retry immediately until it gets 200.</li>
+    <li>Wait the time given in <code>Retry-After</code> and retry with backoff.</li>
+    <li>Show a fatal error and close the app.</li>
+    <li>Swap the POST method for GET.</li>
+  </ol>
+  <p><strong>6.</strong> Which of these requests should you <em>not</em> retry automatically after a timeout?</p>
+  <ol type="a">
+    <li><code>GET /v1/locations</code></li>
+    <li><code>GET /v1/forecast/3</code></li>
+    <li><code>POST /v1/me/favorites</code></li>
+    <li><code>GET /v1/warnings</code></li>
+  </ol>
+  <p><strong>7.</strong> Where do you store the API access token?</p>
+  <ol type="a">
+    <li>In <code>shared_preferences</code>, because it is fast.</li>
+    <li>In a file in <code>getApplicationDocumentsDirectory()</code>.</li>
+    <li>In <code>flutter_secure_storage</code>, which uses the Keychain and the Keystore.</li>
+    <li>In a constant in the code, so it does not get lost.</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>Sample questions (3 of 3)</h2>
+  <p><strong>8.</strong> A JWT…</p>
+  <ol type="a">
+    <li>is encrypted; nobody can read the content.</li>
+    <li>is signed; anyone can read the content, but cannot change it without invalidating the signature.</li>
+    <li>never expires.</li>
+    <li>should contain the user's password to renew the session.</li>
+  </ol>
+  <p><strong>9.</strong> To parse a 5 MB JSON response without jank, you use…</p>
+  <ol type="a">
+    <li><code>setState</code> after the parse.</li>
+    <li><code>Future.delayed</code> to give the interface time.</li>
+    <li><code>compute()</code> or <code>Isolate.run</code>.</li>
+    <li><code>async</code>/<code>await</code>, which frees the thread during the parse.</li>
+  </ol>
+  <p><strong>10.</strong> A push with only a <code>notification</code> field, without <code>data</code>, arrives with the app in background. What happens?</p>
+  <ol type="a">
+    <li>The app is woken up and decides what to show.</li>
+    <li>The operating system shows it in the tray without executing any app code.</li>
+    <li>It is discarded.</li>
+    <li>It is kept until the app is opened manually.</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>Answers and why</h2>
+  <div class="cols">
+    <div>
+      <ol>
+        <li><strong>b.</strong> Hot reload injects code and calls <code>build</code> again; <code>main</code> and global variables only with <kbd>R</kbd>.</li>
+        <li><strong>b.</strong> One UI thread, one event loop. Heavy computation blocks until it finishes.</li>
+        <li><strong>b.</strong> The widget is immutable; the <code>State</code> is the object that persists.</li>
+        <li><strong>a.</strong> <code>go</code> is declarative navigation to a location; <code>push</code> stacks a screen that can be closed with back.</li>
+        <li><strong>b.</strong> 429 means "slow down"; retrying immediately makes it worse and can get you blocked.</li>
+      </ol>
+    </div>
+    <div>
+      <ol start="6">
+        <li><strong>c.</strong> POST is not idempotent: retrying can create the favourite twice. GETs can be retried without risk.</li>
+        <li><strong>c.</strong> <code>shared_preferences</code> is a file that can be read on a rooted phone; secrets go into the system's secure storage.</li>
+        <li><strong>b.</strong> Base64 is not encryption. The signature guarantees integrity, not confidentiality. It expires through <code>exp</code>.</li>
+        <li><strong>c.</strong> <code>await</code> only yields the thread on waiting operations; <code>jsonDecode</code> is pure computation.</li>
+        <li><strong>b.</strong> Notification messages in background are handled by the system; only on tap does the app receive the data.</li>
+      </ol>
+    </div>
+  </div>
+  <aside class="notes">Places where the class usually goes wrong: 6 (they think a timeout is always safe to retry) and 9 (they think async solves computation). Spend more time on these two. If there are doubts about 8, show a decoded JWT on jwt.io live.</aside>
+</section>
+
+<section class="slide">
+  <h2>Frequent mistakes in the test</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Mistake</th><th>Why it is wrong</th></tr></thead>
+  <tbody>
+  <tr><td>Confusing hot reload with hot restart</td><td>Reload keeps state and does not re-run <code>main</code>; restart starts the app again and loses the state. A full rebuild is something else: <code>flutter run</code> again.</td></tr>
+  <tr><td>A "mutable" widget with fields that change</td><td>Widgets are immutable and recreated on every build; what changes is the <code>State</code> or the app state in a notifier.</td></tr>
+  <tr><td><code>!</code> as the solution to null safety</td><td>It forces a value that may be null and moves the error from the compiler to a crash in production. Use <code>?.</code>, <code>??</code>, <code>if</code> or patterns.</td></tr>
+  <tr><td>Token in <code>shared_preferences</code></td><td>Readable text on disk; on a rooted phone or in a backup it is exposed. Keychain and Keystore exist for this.</td></tr>
+  <tr><td>Automatic retry on POST</td><td>A non-idempotent POST repeated creates duplicates. Retry only on operations that are safe to repeat, with backoff and a limit.</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> when two options look right, the right one is the one without a word too many ("always", "never", "only on iOS").</p>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Wednesday, test day</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Study the theory component of lessons 1 to 19: the theory slides of each lesson and the "For the tests" sentences.</li>
+        <li>Redo the ten questions from this lesson without looking at the answers, and write one new question per lesson.</li>
+        <li>Sprint 2 backlog closed by Friday: issues with acceptance criteria, estimate and owner, organised on the board.</li>
+        <li>Sprint 2: each member's branch with its first commit by Friday.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/learn/pathway/how-flutter-works" target="_blank" rel="noopener">How Flutter works</a>: widgets, elements and render objects, what <code>build</code> does and why hot reload is possible (lessons 2 and 18).</li>
+        <li><a href="https://docs.flutter.dev/perf/isolates" target="_blank" rel="noopener">Concurrency and isolates</a>: event loop, main isolate and when to use isolates; it explains why <code>await</code> does not solve heavy computation (lessons 4 and 18).</li>
+        <li><a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Flutter app architecture</a>: layers and dependency rules, just as in lesson 13.</li>
+        <li><a href="https://firebase.google.com/docs/cloud-messaging/fcm-architecture" target="_blank" rel="noopener">FCM architecture</a>: the components of FCM and the journey of a message from the server to the device.</li>
+        <li><a href="https://firebase.google.com/docs/cloud-messaging/concept-options" target="_blank" rel="noopener">FCM: about messages</a>: notification vs data, priorities, time to live.</li>
+        <li><a href="https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications" target="_blank" rel="noopener">Asking permission to use notifications</a>: provisional authorisation and the one-time iOS dialog.</li>
+        <li><a href="https://developer.android.com/develop/ui/views/notifications/channels" target="_blank" rel="noopener">Notification channels</a>: channels on Android, importance and what the user controls.</li>
+        <li><a href="https://firebase.flutter.dev/docs/messaging/overview" target="_blank" rel="noopener">firebase_messaging</a>: the Flutter plugin, with the token, <code>onMessage</code>, <code>onMessageOpenedApp</code> and the background handler.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

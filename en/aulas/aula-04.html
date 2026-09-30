@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 04 · Lifecycle, asynchrony and Dart II · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="4">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 04 · Week 3 · Friday, 25 September 2026 · 08:30 to 10:30</p>
+  <h1>Lifecycle, asynchrony and Dart II</h1>
+  <p class="lead">Theory: the lifecycle of a mobile app, with the states imposed by the operating system, and the execution model on a single thread with 16 milliseconds per frame. Practice: the asynchronous part of Dart: Future, async/await, Stream, error handling and JSON.</p>
+  <div class="meta"><span>DartPad: dartpad.dev</span></div>
+  <aside class="notes">Ask three students to open the DartPad link with Wednesday's exercises. Do not correct everything: pick exercise 5 (the Location class) and show a solution in two minutes, because today's Forecast starts from there. Check that everyone has dartpad.dev open before starting the theory.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Describe the states of a mobile app (foreground, background, suspended, dead) and what the operating system does at each transition.</li>
+    <li>Explain why a heavy computation blocks the interface and what the 16 ms per frame are.</li>
+    <li>Write asynchronous code in Dart with <code>Future</code>, <code>async</code>/<code>await</code>, error handling and <code>Stream</code>.</li>
+    <li>Convert JSON into Dart objects and back with <code>fromJson</code> and <code>toJson</code>.</li>
+    <li>Use enums with values and methods, and extension methods on types that are not yours.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>States of an app</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>State</th><th>What the user sees</th><th>What the OS does</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Foreground</strong> (active)</td><td>The app on screen, responding to touch</td><td>Gives it priority for CPU, network and GPS</td></tr>
+  <tr><td><strong>Inactive</strong> (in transition)</td><td>Incoming call, notification panel, app switcher</td><td>Pauses animations; the app is still visible</td></tr>
+  <tr><td><strong>Background</strong></td><td>Another app on screen</td><td>Limits CPU and network; after a few seconds, suspends</td></tr>
+  <tr><td><strong>Suspended</strong></td><td>Nothing; it appears in the list of recent apps</td><td>Keeps it in memory, but runs no code</td></tr>
+  <tr><td><strong>Dead</strong></td><td>Nothing, or a launch screen when it comes back</td><td>Has freed the memory; the next launch is a cold start</td></tr>
+  </tbody></table></div>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 220" role="img" aria-label="State machine of Flutter's AppLifecycleState: resumed and inactive alternate, inactive and paused alternate, paused moves to detached; from paused the operating system can kill the process without warning">
+    <rect x="30" y="40" width="150" height="56" rx="10" class="box ok"/>
+    <text x="105" y="64" class="t mono" text-anchor="middle">resumed</text>
+    <text x="105" y="84" class="t s" text-anchor="middle">foreground, active</text>
+    <text x="221" y="30" class="t s" text-anchor="middle">interruption</text>
+    <line x1="182" y1="60" x2="258" y2="60" class="arrow"/>
+    <line x1="258" y1="76" x2="182" y2="76" class="arrow"/>
+    <rect x="260" y="40" width="150" height="56" rx="10" class="box"/>
+    <text x="335" y="64" class="t mono" text-anchor="middle">inactive</text>
+    <text x="335" y="84" class="t s" text-anchor="middle">transition, visible</text>
+    <text x="451" y="30" class="t s" text-anchor="middle">other app in front</text>
+    <line x1="412" y1="60" x2="488" y2="60" class="arrow"/>
+    <line x1="488" y1="76" x2="412" y2="76" class="arrow"/>
+    <rect x="490" y="40" width="150" height="56" rx="10" class="box warn"/>
+    <text x="565" y="64" class="t mono" text-anchor="middle">paused</text>
+    <text x="565" y="84" class="t s" text-anchor="middle">background, suspended</text>
+    <text x="681" y="30" class="t s" text-anchor="middle">app is closing</text>
+    <line x1="642" y1="68" x2="718" y2="68" class="arrow"/>
+    <rect x="720" y="40" width="150" height="56" rx="10" class="box muted"/>
+    <text x="795" y="64" class="t mono" text-anchor="middle">detached</text>
+    <text x="795" y="84" class="t s" text-anchor="middle">no view, terminating</text>
+    <line x1="565" y1="98" x2="565" y2="138" class="arrow dashed"/>
+    <rect x="420" y="140" width="290" height="56" rx="10" class="box danger"/>
+    <text x="565" y="164" class="t b" text-anchor="middle">the OS kills the process</text>
+    <text x="565" y="184" class="t s" text-anchor="middle">no warning: what you did not save is lost</text>
+    <text x="400" y="176" class="t s" text-anchor="end">can happen at any moment</text>
+  </svg>
+  <figcaption>The five states in the table as Flutter sees them: save in <code>paused</code>, because after that there may be no further warning.</figcaption>
+  </figure>
+  <p><strong>For the tests:</strong> in the background the app can be killed at any moment and without warning. What you did not save, you lost.</p>
+  <div class="callout"><strong>Analogy</strong> A shop in a shopping centre. Open and with customers is the foreground. With the lights off but the stock in place is the background and suspension. In the middle of the night, the shopping centre can evict the shop without warning to give the space to another one: that is the process being killed. When the customer comes back, the shop has to reopen as if nothing had happened, and whatever was not stored in the stockroom (the disk) is lost.</div>
+  <aside class="notes">Ask: how many apps do you have "open" on your phone right now? Most of the ones that show up in the recents list are dead; the OS only shows a screenshot. Example: opening Instagram after a few hours and seeing the launch screen is a cold start. Give this slide 5 minutes.</aside>
+</section>
+
+<section class="slide">
+  <h2>Android and iOS in broad strokes</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Android</th><th>iOS</th></tr></thead>
+  <tbody>
+  <tr><td>Lifecycle unit</td><td><em>Activity</em>: a screen with a window</td><td><em>Scene</em> (from iOS 13 onwards) inside the UIApplication</td></tr>
+  <tr><td>Main callbacks</td><td><code>onCreate</code> → <code>onStart</code> → <code>onResume</code> → <code>onPause</code> → <code>onStop</code> → <code>onDestroy</code></td><td><code>sceneDidBecomeActive</code>, <code>sceneWillResignActive</code>, <code>sceneDidEnterBackground</code>, <code>sceneWillEnterForeground</code></td></tr>
+  <tr><td>Death in the background</td><td>The process can be killed with no callback; <code>onSaveInstanceState</code> saves the essentials beforehand</td><td>Suspended after a few seconds, killed without warning; <em>state restoration</em> to come back to the same place</td></tr>
+  <tr><td>Background work</td><td>Foreground services (music, navigation) and WorkManager (lesson 23)</td><td>Declared modes (audio, location) and BGTaskScheduler with no guaranteed time (lesson 23)</td></tr>
+  <tr><td>In Flutter</td><td>A single <code>FlutterActivity</code> for the whole app</td><td>A single <code>FlutterViewController</code></td></tr>
+  </tbody></table></div>
+  <p>Spotify keeps playing in the background because it declares a foreground service on Android and an audio mode on iOS. Without that, it would die like any other app.</p>
+</section>
+
+<section class="slide">
+  <h2><code>AppLifecycleState</code> in Flutter</h2>
+<pre data-title="lib/forecast_screen.dart"><code class="language-dart">class _ForecastScreenState extends State&lt;ForecastScreen&gt; {
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: _refreshForecasts,            // back on screen: the data may be stale
+      onPause: _saveDraft,                    // going to the background: save now
+      onStateChange: (state) => debugPrint('lifecycle: $state'),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  void _refreshForecasts() { /* ask the API if more than 10 min have passed */ }
+  void _saveDraft() { /* shared_preferences, lesson 16 */ }
+}</code></pre>
+  <p>The states are <code>resumed</code>, <code>inactive</code>, <code>paused</code>, <code>hidden</code> and <code>detached</code>. <strong>For the tests:</strong> <code>resumed</code> is the moment to refresh; <code>paused</code> is the last safe moment to save.</p>
+</section>
+
+<section class="slide">
+  <h2>A single UI thread</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 220" role="img" aria-label="On the left, a timeline with 16 ms frames: in a normal frame build, layout and paint fit; a 5 MB jsonDecode takes 80 ms and drops 4 frames. On the right, the event loop: it empties the microtask queue, takes one event from the event queue and repeats">
+    <text x="30" y="26" class="t b">UI thread: one frame every 16 ms (60 Hz)</text>
+    <text x="30" y="52" class="t s">normal frame: build → layout → paint fits, time to spare</text>
+    <rect x="30" y="60" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="130" y="60" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="230" y="60" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="330" y="60" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="430" y="60" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="34" y="65" width="60" height="24" rx="5" class="box ok"/>
+    <rect x="134" y="65" width="60" height="24" rx="5" class="box ok"/>
+    <rect x="234" y="65" width="60" height="24" rx="5" class="box ok"/>
+    <rect x="334" y="65" width="60" height="24" rx="5" class="box ok"/>
+    <rect x="434" y="65" width="60" height="24" rx="5" class="box ok"/>
+    <text x="64" y="82" class="t s" text-anchor="middle">10 ms</text>
+    <text x="164" y="82" class="t s" text-anchor="middle">10 ms</text>
+    <text x="264" y="82" class="t s" text-anchor="middle">10 ms</text>
+    <text x="364" y="82" class="t s" text-anchor="middle">10 ms</text>
+    <text x="464" y="82" class="t s" text-anchor="middle">10 ms</text>
+    <text x="30" y="118" class="t s">5 MB jsonDecode: 80 ms on the thread, 4 frames dropped</text>
+    <rect x="30" y="126" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="130" y="126" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="230" y="126" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="330" y="126" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="430" y="126" width="96" height="34" rx="6" class="box muted"/>
+    <rect x="34" y="131" width="492" height="24" rx="5" class="box danger"/>
+    <text x="280" y="148" class="t s" text-anchor="middle">80 ms with no drawing and no touch handling: jank</text>
+    <text x="30" y="180" class="t s" text-anchor="middle">0 ms</text>
+    <text x="130" y="180" class="t s" text-anchor="middle">✗ 16</text>
+    <text x="230" y="180" class="t s" text-anchor="middle">✗ 32</text>
+    <text x="330" y="180" class="t s" text-anchor="middle">✗ 48</text>
+    <text x="430" y="180" class="t s" text-anchor="middle">✗ 64</text>
+    <text x="530" y="180" class="t s" text-anchor="middle">80 ms</text>
+    <text x="600" y="26" class="t b">Event loop</text>
+    <rect x="620" y="52" width="240" height="44" rx="10" class="box accent"/>
+    <text x="740" y="72" class="t b" text-anchor="middle">microtask queue</text>
+    <text x="740" y="90" class="t s" text-anchor="middle">then, await: emptied first</text>
+    <line x1="740" y1="98" x2="740" y2="122" class="arrow"/>
+    <rect x="620" y="124" width="240" height="44" rx="10" class="box"/>
+    <text x="740" y="144" class="t b" text-anchor="middle">event queue</text>
+    <text x="740" y="162" class="t s" text-anchor="middle">touches, timers, network, frames</text>
+    <path d="M740 170 V186 H884 V36 H740 V50" class="arrow"/>
+    <text x="752" y="204" class="t s" text-anchor="middle">repeat: one task at a time</text>
+  </svg>
+  <figcaption>The loop only draws again when the current task finishes: <code>await</code> hands the thread back to it, a synchronous computation does not.</figcaption>
+  </figure>
+  <ul>
+    <li>Your app's Dart code runs in a single <em>isolate</em>, with a single thread. It is the same one that draws the interface and responds to touch.</li>
+    <li>An <strong>event loop</strong> takes tasks from two queues: <strong>microtasks</strong> (continuations of Futures: <code>then</code>, <code>await</code>) and <strong>events</strong> (touches, timers, network responses, the request to draw the next frame). It always empties the microtasks before moving on to the next event.</li>
+    <li><code>await</code> does not block: it suspends the function, hands the thread back to the loop, and the continuation joins the queue when the value arrives.</li>
+    <li>A heavy <em>synchronous</em> computation (decoding a 5 MB JSON, a loop of millions of iterations, resizing a photo) holds the thread until it finishes. Meanwhile nothing is drawn and no touch is handled.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>async</code>/<code>await</code> does not create threads. It is for waiting on network and disk without blocking; it is not for speeding up computation.</p>
+  <div class="callout"><strong>Analogy</strong> The event loop is someone serving at a counter who takes one order at a time, in the order they arrived. <code>await</code> is that person setting an order aside while the coffee comes out of the machine and serving the next customer; they do not stand there staring at the machine. When the coffee is ready, the order goes back into the queue.</div>
+  <aside class="notes">Draw the two queues on the board and the loop alternating between them. Ask: "if I run a for loop of 100 million iterations inside an async function, does the UI keep responding?" Most say yes. No: async is not parallelism. This is the number one confusion in the tests.</aside>
+</section>
+
+<section class="slide">
+  <h2>Jank: 16 milliseconds per frame</h2>
+  <ul>
+    <li>A 60 Hz screen shows a new image every <strong>16.6 ms</strong>; at 120 Hz (iPhone Pro, many recent Android phones) every <strong>8.3 ms</strong>.</li>
+    <li>In that time Flutter has to run <code>build</code>, layout, painting and hand over to the GPU. If your code holds the thread for longer than that, the frame is dropped.</li>
+    <li>The user sees: stuttering scroll, an animation that jumps, a button that only reacts half a second later. It is called <em>jank</em> and it is the number one reason for one-star reviews.</li>
+    <li>Long blocks are worse: Android shows "App isn't responding" (ANR) after 5 s; iOS kills the app if startup takes too long.</li>
+    <li>Where it happens in practice: parsing a large JSON at startup, lists with heavy widgets, images at their original size.</li>
+  </ul>
+  <p><strong>For the tests:</strong> 60 fps means a budget of 16 ms per frame; a missed frame is jank.</p>
+  <div class="callout"><strong>Analogy</strong> The screen asks for a new image 60 times a second, and each request has 16 ms to be served. An 80 ms <code>jsonDecode</code> is a customer who holds up the counter for five orders: the others are left waiting and the screen freezes.</div>
+  <aside class="notes">Ask whether anyone has felt this in a well-known app; almost always someone mentions a banking app or the tax office app. If you have an app to hand with a synchronous sleep, show the performance overlay in 2 minutes; otherwise it waits for lesson 18.</aside>
+</section>
+
+<section class="slide">
+  <h2>Isolates: the answer to heavy work</h2>
+  <ul>
+    <li>An <strong>isolate</strong> is a thread with its own memory. Two isolates do not share objects; they communicate through messages, which are copies.</li>
+    <li><code>Isolate.run(() => jsonDecode(text))</code> or <code>compute(parse, text)</code> runs the function in another isolate and returns the result as a <code>Future</code>. The UI stays at 60 fps.</li>
+    <li>With no shared memory there are no race conditions and no locks. In exchange, passing large data costs copying time.</li>
+    <li>You cannot touch widgets or call plugins from another isolate.</li>
+    <li>Real cases: decoding the API response with a thousand forecasts, compressing a photo before sending it, searching a list of 50,000 items.</li>
+  </ul>
+  <div class="callout">Today it is just the idea. In lesson 18 we measure with DevTools and move work to an isolate.</div>
+  <div class="callout"><strong>Analogy</strong> Two cooks in separate kitchens, each with their own pans (the memory). They share nothing; they pass dishes through the hatch, and each dish is a copy (the messages). The cook serving the dining room, the main isolate, never leaves the room empty: the heavy work goes to the other kitchen.</div>
+</section>
+
+<section class="slide" data-part="Check">
+  <h2>Environment check (10 min)</h2>
+  <p>Before the practice, everyone runs this in a new terminal:</p>
+<pre class="term"><code class="language-bash">flutter doctor
+flutter devices
+git --version</code></pre>
+  <div class="cols">
+    <div>
+      <h3>It must give</h3>
+      <ul class="checklist">
+        <li>✓ Flutter, ✓ Android toolchain, ✓ Android Studio</li>
+        <li>One device in <code>flutter devices</code>: the phone over USB (debugging on, data cable, trust accepted) or the emulator created in the Device Manager</li>
+        <li><code>git --version</code> answering, and the <code>pdm-dart</code> repository on GitHub with Wednesday's exercises</li>
+      </ul>
+    </div>
+    <div>
+      <h3>If it fails</h3>
+      <ul>
+        <li>Note down the exact error and carry on with the lesson in DartPad; today's practice does not need Flutter installed.</li>
+        <li>In the last 15 minutes the teacher goes round the unresolved cases, starting with the Windows ones: PATH, OneDrive, Developer Mode, USB drivers.</li>
+        <li>Monday needs all of this working: it is the first lesson in the repository.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Do a quick show of hands: clean doctor? phone visible? push done? Note who is failing at what and deal with it at the end of the lesson, not now. The Windows problems repeat: solve one out loud and the others follow.</aside>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Dart II in DartPad</h2>
+  <p>We continue at <a href="https://dartpad.dev" target="_blank" rel="noopener">dartpad.dev</a>, without Flutter. Six blocks: Future, errors, parallelism and timeouts, Stream, JSON, enums and extensions. At the end you have the <code>Forecast</code> class that the app will use on Monday, already reading JSON.</p>
+  <ol class="steps">
+    <li>Type each block by hand and run it. Read the compiler errors before asking.</li>
+    <li>Solve the exercise before moving on to the next block.</li>
+    <li>Save the DartPad share link at the end: it is your work for today.</li>
+  </ol>
+  <div class="callout task"><strong>Pace</strong> About 12 minutes per block. If you are stuck for more than 5 minutes, call for help.</div>
+  <aside class="notes">Blocks 1 to 3 are the most important for lesson 12 (network). If time gets tight, cut block 4 (Stream) and leave block 6 as homework. Walk round the room during block 2: it is where try/on/catch confuses people the most.</aside>
+</section>
+
+<section class="slide">
+  <h2>1. Future and async/await</h2>
+<pre><code class="language-dart">import 'dart:math';
+
+Future&lt;double&gt; readTemperature(String location) async {
+  await Future.delayed(const Duration(seconds: 1));     // simulates waiting for the network
+  return 15 + Random().nextInt(10) + Random().nextDouble();
+}
+
+void main() async {
+  print('Requesting Ponta Delgada...');
+  final t = await readTemperature('Ponta Delgada');     // waits here, without blocking
+  print('Ponta Delgada: ${t.toStringAsFixed(1)} °C');
+
+  final future = readTemperature('Horta');              // no await: it is just a future value
+  print('Requested Horta and carried on');
+  future.then((t) => print('Horta: ${t.toStringAsFixed(1)} °C'));
+  print('End of main (Horta arrives later)');
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Future: what matters</h2>
+  <ul>
+    <li><code>Future&lt;T&gt;</code> is the promise of a value <code>T</code> that does not exist yet. <code>async</code> marks the function; <code>await</code> waits for the value without stopping the thread.</li>
+    <li>An <code>async</code> function always returns a <code>Future</code>, even if you write <code>return 21.0</code>.</li>
+    <li>You can only use <code>await</code> inside an <code>async</code> function. If you do not <code>await</code>, the Future runs all the same; you just do not wait for it.</li>
+    <li><code>then</code> is what <code>await</code> does underneath. Prefer <code>await</code>: it reads from top to bottom.</li>
+  </ul>
+  <p><strong>For the tests:</strong> <code>await</code> suspends the function, not the thread.</p>
+  <div class="callout task"><strong>Exercise 1</strong> Write <code>Future&lt;List&lt;double&gt;&gt; readWeek(String location)</code> that calls <code>readTemperature</code> five times in sequence and returns the five temperatures. Measure the time with <code>Stopwatch</code> and print it. Keep the result: you will improve it in block 3.</div>
+</section>
+
+<section class="slide">
+  <h2>2. Errors: try, on, catch, finally</h2>
+<pre><code class="language-dart">class ApiException implements Exception {
+  const ApiException(this.code, this.message);
+  final int code;
+  final String message;
+  @override
+  String toString() => 'ApiException($code): $message';
+}
+
+Future&lt;double&gt; readTemperature(String location) async {
+  await Future.delayed(const Duration(milliseconds: 500));
+  if (location == 'Atlantis') throw const ApiException(404, 'unknown location');
+  return 21.0;
+}
+
+void main() async {
+  for (final l in ['Horta', 'Atlantis']) {
+    try {
+      print('$l: ${await readTemperature(l)} °C');
+    } on ApiException catch (e) {
+      print('The API refused: ${e.message} (${e.code})');   // expected error: handle it
+    } finally {
+      print('--- request "$l" finished');                   // always runs
+    }
+  }
+}</code></pre>
+  <aside class="notes">Show what happens if you remove the try: the exception goes up to main and the program ends. It is the equivalent of the app crashing. Then show the order: specific on first, generic catch after.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. Errors: what matters</h2>
+  <ul>
+    <li><code>on Type catch (e)</code> catches only that type; <code>catch (e)</code> catches everything. The order matters: from the most specific to the most general.</li>
+    <li><code>finally</code> always runs, with or without an error. It is where you turn off the loading indicator and close what you opened.</li>
+    <li>A custom exception (<code>implements Exception</code>) with a code and a message lets the UI decide: 404 shows "not found", 500 shows "try again later".</li>
+    <li>An <code>await</code> that fails throws the exception at the place of the <code>await</code>. With no <code>try</code> around it, it goes up until it ends the app with an error.</li>
+  </ul>
+  <p><strong>For the tests:</strong> expected errors (network, API) are handled with <code>on</code>; programming errors (<code>ArgumentError</code>, <code>!</code> on a null) should fail early, in development.</p>
+  <div class="callout task"><strong>Exercise 2</strong> Add <code>if (location.isEmpty) throw ArgumentError('empty location');</code> and a generic <code>catch (e)</code> after the <code>on</code>. Run it with <code>['Horta', 'Atlantis', '']</code> and check that each request lands in the right branch and that the <code>finally</code> runs all three times.</div>
+</section>
+
+<section class="slide">
+  <h2>3. Parallel requests and timeouts</h2>
+<pre><code class="language-dart">import 'dart:async';
+
+void main() async {
+  final locations = ['Ponta Delgada', 'Angra do Heroísmo', 'Horta'];
+  final stopwatch = Stopwatch()..start();
+
+  for (final l in locations) {
+    await readTemperature(l);                          // one at a time: 3 × 1 s
+  }
+  print('In sequence: ${stopwatch.elapsedMilliseconds} ms');
+
+  stopwatch.reset();
+  final temps = await Future.wait(locations.map(readTemperature));
+  print('In parallel: ${stopwatch.elapsedMilliseconds} ms → $temps');   // ~1 s, same order
+
+  try {
+    final t = await readTemperature('Flores').timeout(const Duration(milliseconds: 300));
+    print('Flores: $t');
+  } on TimeoutException {
+    print('Slow network: show the old data and try again later');
+  }
+}</code></pre>
+  <ul>
+    <li><code>Future.wait</code> starts them all at the same time and returns a list in the original order. If one fails, the <code>await</code> throws.</li>
+    <li><code>.timeout</code> throws <code>TimeoutException</code> if the value does not arrive in time. Without a timeout, the app stays "loading" forever inside a tunnel.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Rewrite <code>readWeek</code> with <code>Future.wait</code> and compare the times with exercise 1. Then apply <code>.timeout(const Duration(seconds: 2))</code> to the whole set and handle the <code>TimeoutException</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Stream: values over time</h2>
+<pre><code class="language-dart">import 'dart:async';
+
+Stream&lt;double&gt; readings() async* {
+  for (var i = 0; i &lt; 5; i++) {
+    await Future.delayed(const Duration(milliseconds: 400));
+    yield 18 + i * 0.5;                                // emits a value and carries on
+  }
+}
+
+Stream&lt;DateTime&gt; clock() =>
+    Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
+
+void main() async {
+  await for (final t in readings()) {                  // consumes until the stream closes
+    print('Reading: $t °C');
+  }
+
+  final subscription = clock().listen(
+    (now) => print('${now.hour}:${now.minute}:${now.second}'),
+  );
+  await Future.delayed(const Duration(seconds: 3));
+  await subscription.cancel();                         // an infinite stream has to be cancelled
+  print('End');
+}</code></pre>
+  <ul>
+    <li>A <code>Stream</code> is a sequence of values over time: readings from a sensor, GPS position, messages from a WebSocket, the clock on the screen.</li>
+    <li><code>async*</code> and <code>yield</code> create; <code>await for</code> consumes; <code>listen</code> returns a subscription that you have to cancel in <code>dispose</code> (lesson 8).</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 4</strong> Write <code>Stream&lt;String&gt; warnings()</code> that emits <code>'yellow'</code>, <code>'orange'</code> and <code>'red'</code> 1 s apart. Consume it with <code>await for</code>, print in upper case and leave the loop with <code>break</code> on receiving <code>'red'</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>5. JSON (1 of 2): the model</h2>
+<pre><code class="language-dart">import 'dart:convert';
+
+class Forecast {
+  const Forecast({required this.location, required this.day, required this.tMin, required this.tMax});
+
+  final String location;
+  final DateTime day;
+  final double tMin;
+  final double tMax;
+
+  factory Forecast.fromJson(Map&lt;String, dynamic&gt; json) => Forecast(
+        location: json['location'] as String,
+        day: DateTime.parse(json['day'] as String),
+        tMin: (json['tMin'] as num).toDouble(),        // the API may send 17 or 17.0
+        tMax: (json['tMax'] as num).toDouble(),
+      );
+
+  Map&lt;String, dynamic&gt; toJson() => {
+        'location': location,
+        'day': day.toIso8601String(),
+        'tMin': tMin,
+        'tMax': tMax,
+      };
+}</code></pre>
+  <aside class="notes">This is the pattern that will show up in every model of the project. Insist on (x as num).toDouble(): it is the most common bug when the API changes 17.0 to 17. Ask: what happens if the tMax field does not come? Leave the answer for the homework.</aside>
+</section>
+
+<section class="slide">
+  <h2>5. JSON (2 of 2): decoding and serialising</h2>
+<pre><code class="language-dart">const body = '''
+[
+  {"location": "Horta", "day": "2026-09-23", "tMin": 17, "tMax": 22.5},
+  {"location": "Horta", "day": "2026-09-24", "tMin": 16, "tMax": 21}
+]''';
+
+void main() {
+  final raw = jsonDecode(body) as List&lt;dynamic&gt;;           // does not know what it is yet
+  final forecasts = raw
+      .map((e) => Forecast.fromJson(e as Map&lt;String, dynamic&gt;))
+      .toList();
+
+  print(forecasts.length);                                     // 2
+  print(forecasts.first.tMax);                                 // 22.5
+  print(forecasts.map((f) => f.day.day).toList());             // [23, 24]
+
+  final text = jsonEncode(forecasts.map((f) => f.toJson()).toList());
+  print(text);                                                 // ready to send or save
+}</code></pre>
+  <p><strong>Pipeline:</strong> <code>String</code> (response body) → <code>jsonDecode</code> → <code>Map</code> / <code>List</code> → <code>fromJson</code> → <code>Forecast</code> → <code>List&lt;Forecast&gt;</code> → widgets</p>
+  <div class="callout"><strong>Analogy</strong> JSON is text with labels, like a form filled in by hand. <code>jsonDecode</code> turns that text into a dictionary (<code>Map&lt;String, dynamic&gt;</code>): you can already read it by key, but nothing is checked. <code>Forecast.fromJson</code> copies the form out neatly onto a typed record card: each field in the right place, with the right type, and a clear error if something is missing. From then on the rest of the app works with record cards, never with text.</div>
+</section>
+
+<section class="slide">
+  <h2>5. JSON: what matters</h2>
+  <ul>
+    <li><code>jsonDecode</code> returns <code>dynamic</code>: a <code>Map&lt;String, dynamic&gt;</code> for objects, a <code>List&lt;dynamic&gt;</code> for lists. You do the cast and then build your own objects.</li>
+    <li><code>fromJson</code> is a <code>factory</code>: it takes the map and returns an instance. <code>toJson</code> goes the other way. This pair will exist in every model of the project.</li>
+    <li>Numbers: JSON does not distinguish <code>17</code> from <code>17.0</code>; in Dart the first is an <code>int</code>. <code>(x as num).toDouble()</code> avoids a crash.</li>
+    <li>If a field is missing, <code>json['tMax'] as num</code> throws a <code>TypeError</code>. Validating this is the homework.</li>
+  </ul>
+  <p><strong>For the tests:</strong> in Dart, JSON is decoded into generic <code>Map</code> and <code>List</code>; the conversion to classes is your code (or generated with <code>json_serializable</code>).</p>
+  <div class="callout task"><strong>Exercise 5</strong> Create <code>class Location</code> with <code>name</code>, <code>island</code> and <code>List&lt;Forecast&gt; forecasts</code>, with a <code>fromJson</code> that converts the nested list. Decode a JSON with one location and two forecasts and print the highest <code>tMax</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>6. Enums with values and extension methods</h2>
+<pre><code class="language-dart">enum WeatherType {
+  sun('☀️', 'Clear sky'),
+  cloudy('☁️', 'Cloudy'),
+  rain('🌧️', 'Rain'),
+  thunderstorm('⛈️', 'Thunderstorm');
+
+  const WeatherType(this.icon, this.description);
+  final String icon;
+  final String description;
+
+  static WeatherType fromApi(String code) =>
+      values.firstWhere((t) => t.name == code, orElse: () => cloudy);
+}
+
+extension Temperature on double {
+  String get celsius => '${toStringAsFixed(1)} °C';
+  double get fahrenheit => this * 9 / 5 + 32;
+}
+
+void main() {
+  final t = WeatherType.fromApi('rain');
+  print('${t.icon} ${t.description}');   // 🌧️ Rain
+  print(21.456.celsius);                 // 21.5 °C
+  print(21.0.fahrenheit);                // 69.8
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>6. Enums and extensions: what matters</h2>
+  <ul>
+    <li>An enum can have fields, a <code>const</code> constructor, getters and static methods. <code>values</code> is the list of all of them; <code>name</code> is the identifier as text.</li>
+    <li><code>firstWhere</code> with <code>orElse</code> turns the string from the API into an enum value without failing when a new value turns up.</li>
+    <li><code>extension X on Type</code> adds methods to types that are not yours (<code>double</code>, <code>DateTime</code>, <code>String</code>). It has to be imported in the file where you use it.</li>
+    <li>In Flutter you will see extensions on <code>BuildContext</code> (<code>context.theme</code>) and on <code>num</code> in many pub.dev packages.</li>
+  </ul>
+  <p><strong>For the tests:</strong> an enum in Dart 3 is a class with a fixed number of instances; it can have fields and methods, but it cannot be extended.</p>
+  <div class="callout task"><strong>Exercise 6</strong> Write <code>extension DateEn on DateTime</code> with <code>short</code> (<code>'23/9'</code>) and <code>weekdayName</code> (<code>'Monday'</code> to <code>'Sunday'</code>, from <code>weekday</code>). Add to <code>Forecast</code> a getter <code>summary</code> that returns <code>'Wednesday 23/9: 17.0 °C to 22.5 °C'</code> using the two extensions.</div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Monday</h2>
+  <div class="cols">
+    <div>
+      <h3>To do by Monday</h3>
+      <ul class="checklist">
+        <li>Complete <code>Forecast.fromJson</code> with validation of missing fields, and push to <code>pdm-dart</code>.</li>
+        <li>Read <a href="https://dart.dev/libraries/async/async-await" target="_blank" rel="noopener">Asynchronous programming</a> on dart.dev.</li>
+        <li><code>flutter doctor</code> with no errors and one device in <code>flutter devices</code> (phone or emulator). Monday starts with <code>git clone</code> and <code>flutter run</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://dart.dev/libraries/async/async-await" target="_blank" rel="noopener">Asynchronous programming: futures, async, await</a>: step-by-step tutorial with exercises.</li>
+        <li><a href="https://dart.dev/language/isolates" target="_blank" rel="noopener">Isolates</a>: <code>Isolate.run</code>, when to use it and the cost of passing data between isolates.</li>
+        <li><a href="https://api.flutter.dev/flutter/dart-ui/AppLifecycleState.html" target="_blank" rel="noopener">AppLifecycleState</a>: the five states and what each transition means on Android and iOS.</li>
+        <li><a href="https://dart.dev/blog/dart-asynchronous-programming-isolates-and-event-loops" target="_blank" rel="noopener">Dart asynchronous programming: isolates and event loops</a>: the event loop and the two queues explained with diagrams.</li>
+        <li><a href="https://developer.android.com/guide/components/activities/process-lifecycle" target="_blank" rel="noopener">Processes and app lifecycle</a>: how Android decides which process to kill when memory runs short.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

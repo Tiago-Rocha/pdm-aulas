@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 26 · Observability and sprint 2 review · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="26">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 26 · Week 11 · Wednesday, 18 November 2026 · 16:00 to 18:00</p>
+  <h1>Observability and sprint 2 review</h1>
+  <p class="lead">Theory (30 minutes): observability in production: crash reports, analytics, feature flags and remote config, metrics to keep an eye on. Practice: sprint 2 review, retrospective and sprint 3 planning.</p>
+  <div class="meta"><span>Sprint 3: 19/11 to 02/12</span></div>
+  <aside class="notes">Prepare the order of the demos (drawn at random) and a visible timer. Say right at the start that the review begins at 16:35 sharp, so that the groups get their phones ready during the theory. Test the projector cable or scrcpy before you start. If there are more than 7 groups, cut the theory to 25 minutes.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Explain what a crash report contains and why the symbols and the app version are indispensable.</li>
+    <li>Compare Crashlytics and Sentry and hook up Flutter's two error capture points.</li>
+    <li>Define meaningful analytics events and say what is never recorded.</li>
+    <li>Use feature flags and remote config to ship switched off, switch off remotely and force an update.</li>
+    <li>Present sprint 2 in 5 minutes and plan sprint 3 with what goes in and what stays out.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Without observability you do not know the app is broken</h2>
+  <ul>
+    <li>On the web, the server has logs and you see the error in seconds. On mobile, the code runs on a stranger's phone, sometimes offline, on a version that is no longer the current one.</li>
+    <li>A <strong>crash report</strong> brings: stack trace, version and build number, device model and OS version, free memory, <em>breadcrumbs</em> (the last screens and actions) and whether the app was in the foreground.</li>
+    <li><strong>Symbols:</strong> in release the code is AOT and may be obfuscated; without the symbol files (dSYM on iOS, mapping on Android, and Flutter's own with <code>--split-debug-info</code>) the stack trace is a list of addresses. They are uploaded at build time.</li>
+    <li><strong>Grouping:</strong> the service gathers identical crashes into one issue, counts affected users and says "started in 1.4.2". That is what decides whether you hotfix today or in the next version.</li>
+    <li>A real example: a crash only on the Samsung A12 with Android 11 and the Samsung keyboard. Without reports, you would never reproduce it on your own phone.</li>
+  </ul>
+  <p><strong>For the tests:</strong> without symbols a release crash report is unreadable; without the app version you do not know whether the bug still exists.</p>
+  <div class="callout"><strong>Analogy</strong> Crash reports and metrics are the airplane's black box and instrument panel. Without them, you only find out the plane has crashed when someone phones, and without the flight data (version, device, breadcrumbs) you do not know why. The black box records what happened; the panel shows, in flight, whether everything is within limits.</div>
+  <aside class="notes">Ask: "how many of you have given an app 1 star because it crashed?" Then: "and how many wrote to the developer to explain?" That is the whole argument of the lesson. Show a real crash from your Crashlytics, with the list of devices.</aside>
+</section>
+
+<section class="slide">
+  <h2>Crashlytics vs Sentry, and the two capture points</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Firebase Crashlytics</th><th>Sentry</th></tr></thead>
+  <tbody>
+  <tr><td>Cost</td><td>Free, inside Firebase</td><td>Free up to 5 thousand errors per month; self-hosting possible</td></tr>
+  <tr><td>Integration</td><td><code>firebase_crashlytics</code>, needs the Firebase project and <code>google-services.json</code></td><td><code>sentry_flutter</code>, only needs a DSN</td></tr>
+  <tr><td>Strengths</td><td>Connects to Analytics and Remote Config; detects ANRs on Android</td><td>Performance tracing, releases, navigation breadcrumbs, backend in the same account</td></tr>
+  <tr><td>Non-fatal errors</td><td><code>recordError</code></td><td><code>captureException</code></td></tr>
+  </tbody></table></div>
+<pre data-title="lib/main.dart"><code class="language-dart">FlutterError.onError = (details) {
+  FlutterError.presentError(details);                 // still shows up in the console
+  crash.record(details.exception, details.stack);     // build, layout and paint errors
+};
+PlatformDispatcher.instance.onError = (error, stack) {
+  crash.record(error, stack, fatal: true);            // Futures with no catch, outside the tree
+  return true;                                        // handled: the app does not die
+};</code></pre>
+  <p><strong>For the tests:</strong> <code>FlutterError.onError</code> catches framework errors; <code>PlatformDispatcher.instance.onError</code> catches the asynchronous ones. Both SDKs hook up both for you.</p>
+</section>
+
+<section class="slide">
+  <h2>Analytics: meaningful events</h2>
+  <ul>
+    <li>An event is a name and parameters: <code>forecast_opened {location: "horta", source: "favorites"}</code>. Firebase Analytics, Mixpanel, Amplitude, PostHog.</li>
+    <li>A meaningful event answers a product question: "how many reach the detail?", "how many add a favourite in the first session?". If nobody is going to look at the chart, do not record it.</li>
+    <li><strong>Funnel:</strong> a sequence of events (open → list → detail → favourite) and the percentage that gives up at each step. That is how you decide what to improve next.</li>
+    <li><strong>What not to record:</strong> name, email, exact location, the contents of text fields, anything that identifies a person without consent. GDPR, App Tracking Transparency on iOS and the Play data safety form (lesson 18).</li>
+    <li>Spotify knows at which second you skip the song. Your app needs to know whether anyone opens the map. Different scale, same logic.</li>
+  </ul>
+  <p><strong>For the tests:</strong> analytics records product events, not personal data; a funnel shows where users give up.</p>
+  <aside class="notes">A 2-minute exercise: each group names one event it would record in Tempo Açores and the question it answers. Reject events with no question ("button_pressed") and events with personal data ("search_text" with the text).</aside>
+</section>
+
+<section class="slide">
+  <h2>Feature flags and remote config</h2>
+  <ul>
+    <li>A <strong>feature flag</strong> is a value the app reads at startup that decides whether it shows the feature. Firebase Remote Config, LaunchDarkly, or a <code>/config</code> endpoint of your own.</li>
+    <li><strong>Ship switched off:</strong> the map code goes out in 1.5 with the flag set to <code>false</code>. You switch it on for 10% of users, watch the crashes, switch it on for everyone. No new store submission.</li>
+    <li><strong>Kill switch:</strong> the broken feature is switched off in minutes; a fix through the store takes days, and some people never update.</li>
+    <li><strong>A/B:</strong> half see the blue button, half the green one, and analytics says which converts. It only makes sense with volume; with 50 users it is noise.</li>
+    <li><strong>Forced update:</strong> the config says "minimum version 1.4.0"; versions below it show a blocking screen with a link to the store. Mandatory when you change the API in an incompatible way (lesson 28).</li>
+    <li>Rule: the app works with the default values if the config does not arrive. The first launch may be offline.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a feature flag switches features on or off without going through the store; the forced update blocks versions below the minimum.</p>
+  <div class="callout"><strong>Analogy</strong> A feature flag is a switch on the instrument panel that can be turned off in flight, without landing. A fix through the store is landing, repairing and taking off again: it takes days, and some passengers never catch the next flight. The switch turns off the broken feature in minutes, in the version that is already installed.</div>
+</section>
+
+<section class="slide">
+  <h2>Metrics, alerts and logs</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Metric</th><th>What it is</th><th>Healthy value</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Crash-free users</strong></td><td>Percentage of users with no crash in the period</td><td>Above 99.5%</td></tr>
+  <tr><td><strong>ANR</strong> (Android)</td><td>"App Not Responding": the UI thread blocked for 5 seconds</td><td>Below 0.47% of sessions, the Play threshold</td></tr>
+  <tr><td><strong>Startup time</strong></td><td>From the tap on the icon to the first useful frame</td><td>Below 2 s on a cold start (lesson 30)</td></tr>
+  <tr><td><strong>Adoption per version</strong></td><td>Percentage of users on each version</td><td>Most on the latest after two weeks</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>The stores watch this: Play lowers the visibility of apps above the thresholds (Android vitals); the App Store shows crashes in the Xcode Organizer.</li>
+    <li>A useful alert: "crash-free dropped below 99% in the new version" → a message on Slack. An alert nobody reads is noise.</li>
+    <li>Logs: <code>dart:developer</code> or the <code>logging</code> package instead of <code>print</code>; levels; never tokens or personal data.</li>
+  </ul>
+  <p><strong>For the tests:</strong> crash-free users and ANR are the metrics the stores watch; above the thresholds, the app's visibility drops.</p>
+</section>
+
+<section class="slide" data-part="Review">
+  <h2>Sprint 2 review</h2>
+  <ul>
+    <li><strong>5 minutes per group</strong>, with a timer. Demo on the projected phone (scrcpy or mirroring), never on the emulator.</li>
+    <li>Structure: 30 s on what you promised for the sprint; 3 min of demo; 1 min on what was left undone; 30 s of questions.</li>
+    <li>Show: the app running from <code>main</code>, airplane mode switched on halfway through, favourites synced between two phones, the green CI in the README.</li>
+    <li>Those watching: each group notes one good thing and asks the next group one question. The teacher takes notes for the rubric.</li>
+  </ul>
+  <div class="callout tip"><strong>If the demo fails</strong> Say what should have happened and move on. Nobody is penalised for a crash in the demo; you are penalised for not being able to explain it.</div>
+  <aside class="notes">Order drawn at random. Cut at 5 minutes with no exceptions: it is a skill. Note per group: does offline work? favourites? error states? CI? and one UX comment. With 6 to 8 groups, set aside 45 minutes and keep the retro and the planning in the last 40.</aside>
+</section>
+
+<section class="slide">
+  <h2>Retro and sprint 3 planning</h2>
+  <div class="cols">
+    <div>
+      <h3>Retro (15 min)</h3>
+      <ul>
+        <li>Each member writes three sticky notes: <strong>start</strong>, <strong>stop</strong>, <strong>continue</strong>.</li>
+        <li>The group picks one of each and shares it with the class in one minute.</li>
+        <li>Typical theme: "stop leaving PRs open for three days"; "start testing on a colleague's phone".</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Sprint 3, the last one (19/11 to 02/12)</h3>
+      <ul>
+        <li><strong>Goes in:</strong> the missing minimum requirements, at most one extra per group, tests and CI, the polish and Friday's distribution.</li>
+        <li><strong>Stays out:</strong> new features while the minimums are not done, big refactors, changing architecture.</li>
+        <li><strong>Done</strong> in sprint 3: installable by a tester outside the group, README with screenshots, green CI.</li>
+      </ul>
+    </div>
+  </div>
+  <p>Sprint 3 backlog in issues by Friday. Sprint 3 review on 02/12; freeze on 09/12.</p>
+  <aside class="notes">The typical mistake in this planning is ambition: groups with favourites half done planning earthquakes and a map. Go round each group and ask "what happens if you only do half of this?". The answer has to be "we still have the minimums".</aside>
+</section>
+
+<section class="slide">
+  <h2>Teacher demo: Sentry in a Flutter project in 5 minutes</h2>
+  <ol class="steps">
+    <li><strong>Project on sentry.io</strong> of type Flutter; copy the DSN. Then <code>flutter pub add sentry_flutter</code>.</li>
+    <li><strong>Initialisation</strong> wrapping <code>runApp</code>:
+<pre data-title="lib/main.dart"><code class="language-dart">Future&lt;void&gt; main() async {
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = const String.fromEnvironment('SENTRY_DSN');
+      options.environment = kReleaseMode ? 'production' : 'dev';
+      options.tracesSampleRate = 0.2;   // 20% of sessions with performance
+    },
+    appRunner: () => runApp(const TempoApp()),
+  );
+}</code></pre></li>
+    <li><strong>Run</strong> with <code>flutter run --dart-define=SENTRY_DSN=https://...</code> and press a button that does <code>throw StateError('crash test')</code>.</li>
+    <li><strong>See the issue</strong> in Sentry: readable stack trace, device, breadcrumbs with the screens visited. Mark it as resolved in the next version.</li>
+  </ol>
+  <div class="callout"><strong>The DSN is not a critical secret</strong> It only allows sending events, but it goes through <code>--dart-define</code> all the same: what stays in the repository is its absence.</div>
+  <aside class="notes">Do this in your own demo app, not in a group's. If the classroom network fails, you have the screenshot of the issue. Finish with the next slide and with the reminder that Friday is 4 hours and starts at 08:30.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Friday</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Sprint 3 backlog closed by Friday: issues with acceptance criteria, who does what, and what stays out written in the README.</li>
+        <li>Friday is a 4-hour workshop (08:30): bring your phone with free space, a cable, and a Google account to receive your colleagues' build.</li>
+        <li>Optional: hook up Sentry or Crashlytics to the project in a PR by one member. It is a cheap extra and it counts.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://firebase.google.com/docs/crashlytics/get-started?platform=flutter" target="_blank" rel="noopener">Crashlytics for Flutter</a>: installation and the two error handlers.</li>
+        <li><a href="https://docs.sentry.io/platforms/flutter/" target="_blank" rel="noopener">Sentry for Flutter</a>: installation, error capture, breadcrumbs, releases and performance tracing.</li>
+        <li><a href="https://pub.dev/packages/sentry_flutter" target="_blank" rel="noopener">sentry_flutter</a>: the package on pub.dev, with the DSN, the options and the API reference.</li>
+        <li><a href="https://firebase.google.com/docs/remote-config" target="_blank" rel="noopener">Firebase Remote Config</a>: feature flags, default values and rollout by percentage of users.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

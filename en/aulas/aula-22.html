@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 22 · Deep links and local notifications · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="22">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 22 · Week 10 · Monday, 9 November 2026 · 16:00 to 18:00</p>
+  <h1>Deep links and local notifications</h1>
+  <p class="lead">Theory: deep links: custom schemes, App Links and Universal Links, domain verification and deferred deep links. Practice: a local warning notification for a favourite, opening the detail from the notification, the tempoacores:// scheme tested with adb, and a scheduled notification with tomorrow's forecast.</p>
+  <div class="meta"><span>Repo: pdm-aula-22</span></div>
+  <aside class="notes">In the first few minutes ask them to clone the repo and run the starter while you give the theory: flutter_local_notifications requires desugaring in Gradle and the first build takes a while. Anyone on Android 13+ will see the permission dialog; on iOS local notifications work in the simulator and the deep link is tested with xcrun. Confirm that everyone still has the /location/:id route from lesson 9 and the map from lesson 21 in the project. The theory ends at 16:40.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Tell a custom scheme from an App Link or Universal Link, and say which one to use for sharing, magic login or an OAuth callback.</li>
+    <li>Explain how the system verifies domain ownership with <code>assetlinks.json</code> and <code>apple-app-site-association</code>, and what happens when it fails.</li>
+    <li>Show a local notification with a channel, permission and payload using <code>flutter_local_notifications</code>.</li>
+    <li>Open the right screen with <code>go_router</code> from the payload of a notification or from a URL, with the app running or closed.</li>
+    <li>Schedule a notification for a set time with <code>zonedSchedule</code> and a time zone.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>A URL opens a screen: the three types</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Type</th><th>Example</th><th>Without the app installed</th><th>Who can claim the link</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Custom scheme</strong></td><td><code>tempoacores://location/3</code></td><td>Nothing happens (Android) or "cannot open" (iOS). Dead link.</td><td>Any app. Two apps with the same scheme: a conflict with no rule.</td></tr>
+  <tr><td><strong>App Links</strong> (Android 6+)</td><td><code>https://tempoacores.pt/location/3</code></td><td>Opens the website in the browser.</td><td>Only whoever proves the domain with <code>assetlinks.json</code>.</td></tr>
+  <tr><td><strong>Universal Links</strong> (iOS 9+)</td><td><code>https://tempoacores.pt/location/3</code></td><td>Opens the website in Safari.</td><td>Only whoever proves the domain with <code>apple-app-site-association</code>.</td></tr>
+  <tr><td><strong>https without verification</strong> (Android)</td><td>The same URL, without <code>autoVerify</code></td><td>Browser.</td><td>Android asks "open with…" and the user chooses.</td></tr>
+  </tbody></table></div>
+  <p>A <em>deep link</em> is a URL that opens the app on a specific screen instead of the home screen. All three types do that; they differ in who can register them and in what happens without the app.</p>
+  <p><strong>For the tests:</strong> App Links and Universal Links are ordinary <code>https</code> URLs that the system hands to the app after verifying the domain; a custom scheme is a URL that belongs only to the app, with no verification.</p>
+  <div class="callout"><strong>Analogy</strong> A deep link is a full address, with street, number, floor and door, instead of "go to the city and look around". Opening the app from its icon is arriving in the city; the URL takes you to the app and to the right screen, with the <code>id</code> of the location already in the path.</div>
+  <aside class="notes">Ask who has tapped an Instagram link in an email and seen the app open instead of the website. Then ask what happens to that same link on a phone without Instagram: it opens the website. That is the difference custom schemes cannot give you.</aside>
+</section>
+
+<section class="slide">
+  <h2>Custom scheme vs https: security and fallback</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 320" role="img" aria-label="Two paths from a tap on a link: with the custom scheme tempoacores:// any app can register the scheme and without the app installed nothing happens; with https://tempoacores.pt the system verifies assetlinks.json or AASA on the domain, opens the app if it exists and the website if it does not">
+    <rect x="350" y="14" width="200" height="40" rx="10" class="box"/>
+    <text x="450" y="39" class="t b" text-anchor="middle">Tap on a link</text>
+    <line x1="400" y1="54" x2="230" y2="90" class="arrow"/>
+    <line x1="500" y1="54" x2="670" y2="90" class="arrow accent"/>
+    <rect x="40" y="90" width="380" height="56" rx="10" class="box warn"/>
+    <text x="60" y="112" class="t b">Custom scheme</text>
+    <text x="60" y="134" class="t mono">tempoacores://location/3</text>
+    <line x1="230" y1="146" x2="230" y2="172" class="arrow"/>
+    <rect x="40" y="172" width="380" height="52" rx="10" class="box"/>
+    <text x="60" y="194" class="t b">Nobody verifies who the owner is</text>
+    <text x="60" y="214" class="t s">any app can register tempoacores://; the OS asks</text>
+    <line x1="230" y1="224" x2="230" y2="250" class="arrow"/>
+    <rect x="40" y="250" width="380" height="52" rx="10" class="box danger"/>
+    <text x="60" y="272" class="t b">Without the app, nothing happens</text>
+    <text x="60" y="292" class="t s">no fallback: the link dies in an email or QR</text>
+    <rect x="480" y="90" width="380" height="56" rx="10" class="box accent"/>
+    <text x="500" y="112" class="t b">App Link / Universal Link</text>
+    <text x="500" y="134" class="t mono">https://tempoacores.pt/location/3</text>
+    <line x1="670" y1="146" x2="670" y2="172" class="arrow accent"/>
+    <rect x="480" y="172" width="380" height="52" rx="10" class="box accent"/>
+    <text x="500" y="194" class="t b">The OS verifies the domain</text>
+    <text x="500" y="214" class="t s">assetlinks.json / AASA in the site's /.well-known/</text>
+    <line x1="670" y1="224" x2="670" y2="250" class="arrow accent"/>
+    <rect x="480" y="250" width="380" height="52" rx="10" class="box ok"/>
+    <text x="500" y="272" class="t b">Opens the app, or the site without it</text>
+    <text x="500" y="292" class="t s">the same link works in email, SMS, QR and ads</text>
+  </svg>
+  <figcaption>Nobody verifies a custom scheme and it has no fallback; the https link proves domain ownership and falls back to the website without the app.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Any app can declare <code>tempoacores://</code>.</strong> With two apps claiming the same scheme, Android asks "open with" and iOS picks one with no documented rule. That is why no bank sends tokens through a custom scheme.</li>
+    <li><strong>Without the app, the custom scheme dies.</strong> The <code>https</code> link falls back to the website: the same link works in an email, an SMS, a QR code or an ad, with or without the app installed.</li>
+    <li><strong>Verified https has a cost</strong>: a domain, a file served at <code>/.well-known/</code>, and on iOS the <em>Associated Domains</em> entitlement, which requires a paid developer account.</li>
+    <li><strong>A custom scheme is fine</strong> for prototypes and lessons, internal apps, and the OAuth callback (<code>com.googleusercontent.apps.123:/oauth2redirect</code>), because the PKCE from lesson 17 protects the code even if another app catches it.</li>
+    <li>Example: Spotify has <code>spotify:track:…</code> and <code>https://open.spotify.com/track/…</code>. The share button always uses the second.</li>
+  </ul>
+  <p><strong>For the tests:</strong> nobody verifies a custom scheme and it has no fallback; an App Link or Universal Link proves domain ownership and falls back to the website when the app is not installed.</p>
+  <div class="callout"><strong>Analogy</strong> <code>tempoacores://</code> is a nickname: any app can claim it and nobody checks who answers. <code>https://tempoacores.pt/...</code> is a registered address: the system confirms on the domain, through <code>assetlinks.json</code> or the AASA, that the app really owns the address; and if the app is not installed, the letter still arrives, at the website.</div>
+</section>
+
+<section class="slide">
+  <h2>Domain verification: AASA and assetlinks.json</h2>
+  <ul>
+    <li><strong>iOS</strong>: <code>https://tempoacores.pt/.well-known/apple-app-site-association</code>, JSON with no extension, served as <code>application/json</code> over HTTPS with no redirects. It lists <code>appIDs</code> (Team ID + bundle id) and the paths. The app declares <code>applinks:tempoacores.pt</code> in the entitlement.</li>
+    <li>The iPhone does not go to your server: it downloads the file through Apple's CDN at install time and every now and then. A change takes hours to arrive; in development use <code>?mode=developer</code> in the entitlement.</li>
+    <li><strong>Android</strong>: <code>https://tempoacores.pt/.well-known/assetlinks.json</code> with <code>package_name</code> and the SHA-256 of the signing certificate. The intent-filter carries <code>android:autoVerify="true"</code>. Verified at install time.</li>
+    <li><strong>Keys</strong>: debug, release and Play App Signing have different SHA-256 values. The file can list all three; <code>./gradlew signingReport</code> shows them.</li>
+    <li><strong>When it fails, nobody tells you</strong>: iOS opens Safari, Android opens the browser or asks. Diagnosis: <code>adb shell pm get-app-links pt.uac.tempoacores</code>; on iOS, Settings → Developer → Universal Links.</li>
+  </ul>
+  <p><strong>For the tests:</strong> verification is done by the system at install time, against a file in <code>/.well-known/</code> on the domain; failure is silent and the link falls back to the browser.</p>
+  <aside class="notes">Classic production mistake: the signing key changes (or they move to Play App Signing) and the App Links stop opening the app without anyone noticing, because the browser keeps showing the website. Tell it as a story; it comes up in the test.</aside>
+</section>
+
+<section class="slide">
+  <h2>Deferred deep links, attribution and use cases</h2>
+  <ul>
+    <li><strong>Deferred deep link</strong>: the user taps the link, does not have the app, installs it, opens it, and lands on the right content. The stores do not pass the URL to the app; a service (Branch, AppsFlyer, Adjust) records the tap (IP, model, time) and does the <em>match</em> on first open.</li>
+    <li><strong>Campaign attribution</strong>: knowing which ad or poster each install came from. That is the business of those services; ATT on iOS (lesson 18) limits the match. Firebase Dynamic Links shut down in August 2025.</li>
+    <li><strong>Play Install Referrer</strong>: the only official mechanism, Android only and Play Store only: the store hands a string to the app on first open.</li>
+    <li><strong>Use cases</strong>: notification → content (today); sharing ("see the forecast for Horta"); marketing (QR code on the festival poster); email verification and magic login; OAuth callback.</li>
+    <li><strong>Magic login only with an App Link or Universal Link.</strong> With a custom scheme, the wrong app can catch the token that travels in the URL.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a deferred deep link survives the install and needs an external service, because the stores do not hand the link to the app.</p>
+</section>
+
+<section class="slide">
+  <h2>From the URL to the screen: the router decides</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 260" role="img" aria-label="Three sources of a URL, app closed with initialLocation, app in the background with a link event and notification with a payload, converge on GoRouter, which normalises host and path and validates the id, and opens the /location/:id screen">
+    <rect x="40" y="16" width="260" height="64" rx="10" class="box"/>
+    <text x="60" y="40" class="t b">App closed</text>
+    <text x="60" y="58" class="t s">cold start: URL = initialLocation</text>
+    <text x="60" y="74" class="t s">no token or cache yet</text>
+    <rect x="40" y="100" width="260" height="64" rx="10" class="box"/>
+    <text x="60" y="124" class="t b">App in the background</text>
+    <text x="60" y="142" class="t s">OS delivers the link (onNewIntent)</text>
+    <text x="60" y="158" class="t s">the app comes back and navigates</text>
+    <rect x="40" y="184" width="260" height="64" rx="10" class="box"/>
+    <text x="60" y="208" class="t b">Notification tapped</text>
+    <text x="60" y="226" class="t s">the payload carries the route</text>
+    <text x="60" y="242" class="t s">e.g. /location/3</text>
+    <line x1="300" y1="48" x2="350" y2="100" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(350 100) rotate(46.1)"/>
+    <line x1="300" y1="132" x2="350" y2="124" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(350 124) rotate(-9.1)"/>
+    <line x1="300" y1="216" x2="350" y2="148" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(350 148) rotate(-53.7)"/>
+    <rect x="350" y="60" width="260" height="130" rx="10" class="box accent"/>
+    <text x="370" y="90" class="t b">GoRouter</text>
+    <text x="370" y="112" class="t s">gets the URL via MaterialApp.router</text>
+    <text x="370" y="130" class="t s">same as context.go(url)</text>
+    <text x="370" y="148" class="t s">redirect: normalises host and path</text>
+    <text x="370" y="166" class="t s">validates the id (may not exist)</text>
+    <line x1="610" y1="124" x2="690" y2="124" class="arrow accent"/><path d="M-10 -5L0 0L-10 5z" class="ah accent" transform="translate(690 124)"/>
+    <text x="650" y="116" class="t mono" text-anchor="middle">go(url)</text>
+    <rect x="690" y="84" width="170" height="80" rx="10" class="box ok"/>
+    <text x="710" y="108" class="t b">Detail screen</text>
+    <text x="710" y="130" class="t mono">/location/:id</text>
+    <text x="710" y="150" class="t s">loads itself by id</text>
+  </svg>
+  <figcaption>Wherever it comes from, the URL goes through the router like any navigation; what changes is whether the app was already running.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>The OS hands the URL to the app.</strong> Android: an <code>Intent</code> with <code>ACTION_VIEW</code>, in <code>onCreate</code> if it was closed or <code>onNewIntent</code> if it was running. iOS: <code>application(_:open:)</code>, or <code>continue userActivity</code> for Universal Links.</li>
+    <li><strong>Flutter wraps it in a <code>RouteInformation</code></strong> and <code>MaterialApp.router</code> hands it to <code>go_router</code>. For the router it is the same as <code>context.go(url)</code>. Designing the routes as public URLs in lesson 9 pays off here.</li>
+    <li><strong>Three situations</strong>: app in the foreground (it just navigates); in the background (it comes back to the screen and navigates); closed (cold start: the URL is the initial route and nothing else exists yet, neither token nor cache).</li>
+    <li>So <strong>the destination screen loads itself</strong> from the <code>id</code>, without depending on the user having gone through the list. And it validates: the <code>id</code> comes from outside and may not exist.</li>
+    <li><strong>Testing with no website and no server</strong>: <code>adb shell am start -a android.intent.action.VIEW -d "tempoacores://location/3"</code> on Android; <code>xcrun simctl openurl booted "tempoacores://location/3"</code> on the iOS simulator.</li>
+  </ul>
+  <p><strong>For the tests:</strong> a deep link is handled by the router like any navigation; what changes is where the URL comes from and whether the app was already running.</p>
+  <aside class="notes">Do the demo with the solution: app closed, adb command, it opens on the detail; app open on another tab, adb command, it switches to the detail. Thirty seconds and the second part of the practice becomes clear. Then ask: "what if the id is 999?" That is exercise 3.</aside>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Practice: clone and run</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-22.git
+cd pdm-aula-22/starter
+flutter pub get
+flutter run</code></pre>
+  <ul>
+    <li><code>starter/</code> has the app from the previous lessons (list, detail, favourites, warnings, map) with <strong>numbered TODOs</strong> from 1 to 9 and failing tests in <code>test/notifications_test.dart</code> and <code>test/routes_test.dart</code>. The <code>flutter_local_notifications</code>, <code>timezone</code> and <code>go_router</code> packages are already in <code>pubspec.yaml</code>.</li>
+    <li><code>solucao/</code> has the final state. Open it only when you have been stuck for more than 10 minutes.</li>
+    <li>Android 13+ shows the permission dialog. On iOS, local notifications work in the simulator; the deep link is tested with <code>xcrun simctl openurl</code>.</li>
+  </ul>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Block</th><th>Time</th><th>Steps</th></tr></thead>
+  <tbody>
+  <tr><td>Warning notification</td><td>16:40 to 17:10</td><td>1 to 4</td></tr>
+  <tr><td>From the tap to the screen</td><td>17:10 to 17:30</td><td>5 and 6</td></tr>
+  <tr><td>Scheme and testing with adb</td><td>17:30 to 17:45</td><td>7 and 8</td></tr>
+  <tr><td>Scheduled notification</td><td>17:45 to 18:00</td><td>9</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide">
+  <h2>Step 1: what Android needs to know</h2>
+<pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;!-- Android 13+: showing notifications is a runtime permission --&gt;
+    &lt;uses-permission android:name="android.permission.POST_NOTIFICATIONS" /&gt;
+    &lt;!-- Scheduled ones survive a phone restart --&gt;
+    &lt;uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /&gt;
+
+    &lt;application android:label="Tempo Açores" android:icon="@mipmap/ic_launcher"&gt;
+        &lt;activity android:name=".MainActivity" ...&gt;...&lt;/activity&gt;
+
+        &lt;!-- Plugin receivers: fire the scheduled one and reschedule after boot --&gt;
+        &lt;receiver android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" /&gt;
+        &lt;receiver android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.BOOT_COMPLETED" /&gt;
+                &lt;action android:name="android.intent.action.MY_PACKAGE_REPLACED" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/receiver&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+  <ul>
+    <li>In the group project: <code>flutter pub add flutter_local_notifications timezone</code>, and in <code>android/app/build.gradle.kts</code> the plugin requires <code>isCoreLibraryDesugaringEnabled = true</code> plus the dependency <code>coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")</code>. The starter already has everything.</li>
+    <li>iOS: nothing to declare for local notifications. The permission dialog belongs to the system and its text cannot be customised.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Step 2: initialise the plugin and create the channel</h2>
+<pre data-title="lib/notifications/notification_service.dart"><code class="language-dart">import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+class NotificationService {
+  final _plugin = FlutterLocalNotificationsPlugin();
+  static const warningsChannel = AndroidNotificationChannel(
+    'warnings', 'Weather warnings',
+    description: 'IPMA warnings for your favourite locations',
+    importance: Importance.high, // shows as heads-up, with sound
+  );
+
+  Future&lt;void&gt; initialize({required void Function(String route) onTap}) async {
+    await _plugin.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings( // do not ask yet: we ask in context
+          requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
+      ),
+      onDidReceiveNotificationResponse: (response) {
+        if (response.payload case final route?) onTap(route); // tap with the app running
+      },
+    );
+    await _plugin.resolvePlatformSpecificImplementation&lt;AndroidFlutterLocalNotificationsPlugin&gt;()
+        ?.createNotificationChannel(warningsChannel); // once; the user manages it in the system
+  }
+}</code></pre>
+  <aside class="notes">The @mipmap/ic_launcher icon is fine for the lesson; in release, Android paints the small icon white and you get a square. Say that the project should have a monochrome ic_notification in res/drawable. Show the channel appearing in the system settings after the first launch.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 3: ask for permission in context and show</h2>
+<pre data-title="lib/notifications/notification_service.dart"><code class="language-dart">/// Ask when the user turns on "Notify me" in the settings, never at launch.
+Future&lt;bool&gt; requestPermission() async {
+  final android = _plugin.resolvePlatformSpecificImplementation&lt;
+      AndroidFlutterLocalNotificationsPlugin&gt;();
+  if (android != null) {
+    return await android.requestNotificationsPermission() ?? false; // 13+; before that, true
+  }
+  final ios = _plugin.resolvePlatformSpecificImplementation&lt;
+      IOSFlutterLocalNotificationsPlugin&gt;();
+  return await ios?.requestPermissions(alert: true, badge: true, sound: true) ?? false;
+}
+
+Future&lt;void&gt; showWarning(Warning w) =&gt; _plugin.show(
+      w.id, // stable id: the same warning replaces the notification, no duplicate
+      'Warning ${w.level}: ${w.locationName}',
+      w.description,
+      NotificationDetails(
+        android: AndroidNotificationDetails(warningsChannel.id, warningsChannel.name,
+            channelDescription: warningsChannel.description,
+            importance: Importance.high, priority: Priority.high),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: '/location/${w.locationId}', // the route the router opens on tap
+    );</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Local notifications: what matters</h2>
+  <ul>
+    <li>A notification has an <code>id</code>, title, body, per-platform details and a <code>payload</code>. The <code>id</code> is its identity: <code>show</code> with the same id replaces it. Use the id of the warning, not a counter.</li>
+    <li><strong>Channel</strong>: created once, with a name the user will read in the system settings. <code>Importance.high</code> gives heads-up. Changing the importance after it is created has no effect: the channel now belongs to the user.</li>
+    <li><strong>Permission in context</strong>: on the "Notify me" button, never in <code>main</code>. On Android 13+ it is a runtime permission; before that it is automatic. iOS asks once and never again: the second attempt goes to the settings.</li>
+    <li><strong>Foreground</strong>: Android always shows it; iOS shows it by default and lets you tune alert, sound and badge in <code>DarwinNotificationDetails</code>.</li>
+    <li><strong>The payload is a route, not data</strong>: <code>/location/3</code>. Whoever opens the screen fetches the rest from the repository.</li>
+    <li>Android small icon: monochrome, in <code>res/drawable</code>. The <code>ic_launcher</code> becomes a white square in release.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Complete TODOs 1 to 3: <code>NotificationService</code> with <code>initialize</code>, <code>requestPermission</code> and <code>showWarning</code>; a "Notify me of warnings" switch in the settings that asks for the permission and shows the result; a test button in the warnings list that calls <code>showWarning</code> with the first warning. Deny the permission and see what happens. The test <code>notifications_test.dart</code> checks the generated payload.</div>
+  <aside class="notes">Give them 15 minutes. Go round the groups and ask each one to show you the "Weather warnings" channel in the system settings and the heads-up notification. Anyone who denied the permission on Android 13 and wants to undo it: app settings → notifications, or reinstall.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 4: detect a new warning for a favourite</h2>
+<pre data-title="lib/warnings/warnings_notifier.dart"><code class="language-dart">class WarningsNotifier extends ChangeNotifier {
+  WarningsNotifier(this._repository, this._favorites, this._notifications);
+  final WarningsRepository _repository;     // GET /v1/warnings (lessons 14 and 16)
+  final FavoritesNotifier _favorites;       // lesson 17
+  final NotificationService _notifications;
+
+  List&lt;Warning&gt; _warnings = [];
+  bool _hasLoaded = false;
+  List&lt;Warning&gt; get warnings =&gt; _warnings;
+
+  Future&lt;void&gt; refresh() async {
+    final known = _warnings.map((w) =&gt; w.id).toSet();
+    _warnings = await _repository.fetchWarnings();
+    notifyListeners();
+
+    final firstTime = !_hasLoaded;
+    _hasLoaded = true;
+    if (firstTime) return; // at launch, nothing is "new"
+
+    for (final w in _warnings) {
+      final isNew = !known.contains(w.id) &amp;&amp; _favorites.contains(w.locationId);
+      if (isNew) await _notifications.showWarning(w);
+    }
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Step 5: from the payload to the route, with the app running or closed</h2>
+<pre data-title="lib/notifications/notification_service.dart and lib/main.dart"><code class="language-dart">/// null if the app opened normally; the payload route if a tap launched it.
+Future&lt;String?&gt; launchRoute() async {
+  final details = await _plugin.getNotificationAppLaunchDetails();
+  if (details?.didNotificationLaunchApp != true) return null;
+  return details!.notificationResponse?.payload;
+}
+
+// lib/main.dart
+Future&lt;void&gt; main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // plugins before runApp
+  final notifications = NotificationService();
+  // App running (front or back): the tap reaches the callback and the router navigates.
+  await notifications.initialize(onTap: (route) =&gt; router.go(route));
+  // App closed: the callback does not fire; the route goes in as the initial route.
+  final initialRoute = await notifications.launchRoute();
+  router = createRouter(initialRoute: initialRoute ?? '/');
+
+  runApp(MultiProvider(
+    providers: [
+      Provider.value(value: notifications),
+      // ...ApiClient, repositories and notifiers from the previous lessons
+    ],
+    child: const TempoApp(), // MaterialApp.router(routerConfig: router)
+  ));
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Step 6: the router with an initial route and URLs from outside</h2>
+<pre data-title="lib/app/router.dart"><code class="language-dart">late final GoRouter router; // created in main(), once the initial route is known
+
+GoRouter createRouter({String initialRoute = '/'}) =&gt; GoRouter(
+      initialLocation: initialRoute,
+      redirect: (context, state) {
+        final uri = state.uri;
+        // tempoacores://location/3: "location" is the host and "/3" the path, and
+        // go_router only matches the path. We normalise to /location/3.
+        if (uri.scheme == 'tempoacores') return '/${uri.host}${uri.path}';
+        return null; // https://tempoacores.pt/location/3 already has the right path
+      },
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) =&gt; const LocationsScreen(),
+          routes: [
+            GoRoute(
+              path: 'location/:id', // the id comes from outside: validate it
+              builder: (context, state) =&gt;
+                  DetailScreen(id: int.tryParse(state.pathParameters['id'] ?? '')), // null → "not found"
+            ),
+          ],
+        ),
+      ], // ...plus warnings, map and settings in the StatefulShellRoute from lessons 9 and 21
+    );</code></pre>
+</section>
+
+<section class="slide">
+  <h2>From the tap to the screen: what matters</h2>
+  <ul>
+    <li><strong>Two paths, one destination.</strong> Running: <code>onDidReceiveNotificationResponse</code> → <code>router.go</code>. Closed: <code>getNotificationAppLaunchDetails</code> → <code>initialLocation</code>. If you only handle the first, a tap with the app closed opens the list.</li>
+    <li><code>WidgetsFlutterBinding.ensureInitialized()</code> before touching plugins in <code>main</code>. Without it, <code>MissingPluginException</code>.</li>
+    <li>The <code>redirect</code> normalises URLs that come from outside before the router looks for routes: scheme, host, prefixes. A single place for every format.</li>
+    <li>The <code>id</code> comes from outside: <code>int.tryParse</code> and a "location not found" screen with a button to the list. Never <code>!</code>.</li>
+    <li>Detecting what is new: save the <code>known</code> ids before refreshing and compare afterwards; the first load does not notify. Extra: persist the ids already seen in <code>shared_preferences</code> to survive restarts. Tomorrow's workmanager will need that.</li>
+    <li>To test without waiting for IPMA, the starter has a <code>WarningsRepositoryFake</code> that returns one extra warning on the second call.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> Complete TODOs 4 to 6: <code>refresh()</code> notifies only new warnings for favourite locations; a tap with the app in the background opens the detail; a tap with the app closed (stop the app in the IDE, tap the notification) does too. The test <code>routes_test.dart</code> checks that <code>createRouter(initialRoute: '/location/3')</code> shows <code>DetailScreen</code>.</div>
+  <aside class="notes">Twenty minutes. The "app closed" case is the one that fails most: anyone who stops the app from the IDE and taps the notification sees the list, because they did not call launchRoute. Ask each group to show you that path. If a group finishes early, have them persist the seen ids in shared_preferences.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 7: register the scheme on Android and iOS</h2>
+<pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" ...&gt;
+    &lt;!-- On by default since Flutter 3.27; being explicit does no harm --&gt;
+    &lt;meta-data android:name="flutter_deeplinking_enabled" android:value="true" /&gt;
+    &lt;!-- tempoacores://location/3 --&gt;
+    &lt;intent-filter&gt;
+        &lt;action android:name="android.intent.action.VIEW" /&gt;
+        &lt;category android:name="android.intent.category.DEFAULT" /&gt;
+        &lt;category android:name="android.intent.category.BROWSABLE" /&gt;
+        &lt;data android:scheme="tempoacores" /&gt;
+    &lt;/intent-filter&gt;
+&lt;/activity&gt;</code></pre>
+<pre data-title="ios/Runner/Info.plist"><code class="language-xml">&lt;key&gt;FlutterDeepLinkingEnabled&lt;/key&gt;
+&lt;true/&gt;
+&lt;key&gt;CFBundleURLTypes&lt;/key&gt;
+&lt;array&gt;
+  &lt;dict&gt;
+    &lt;key&gt;CFBundleTypeRole&lt;/key&gt;&lt;string&gt;Editor&lt;/string&gt;
+    &lt;key&gt;CFBundleURLName&lt;/key&gt;&lt;string&gt;pt.uac.tempoacores&lt;/string&gt;
+    &lt;key&gt;CFBundleURLSchemes&lt;/key&gt;
+    &lt;array&gt;&lt;string&gt;tempoacores&lt;/string&gt;&lt;/array&gt;
+  &lt;/dict&gt;
+&lt;/array&gt;</code></pre>
+  <p><code>singleTop</code> (already in the template) makes the running app receive the URL in <code>onNewIntent</code> instead of opening a second instance. <code>BROWSABLE</code> lets a link on a web page open the app. Universal Links on iOS do not go in <code>Info.plist</code>: they go in <code>Runner.entitlements</code>, via Xcode → Signing &amp; Capabilities → Associated Domains.</p>
+</section>
+
+<section class="slide">
+  <h2>Step 8: test with adb and xcrun</h2>
+<pre class="term"><code class="language-bash">adb shell am start -a android.intent.action.VIEW -d "tempoacores://location/3" pt.uac.tempoacores
+xcrun simctl openurl booted "tempoacores://location/3"
+adb shell pm get-app-links pt.uac.tempoacores</code></pre>
+  <ul>
+    <li><strong>Three scenarios per command</strong>: app closed, in the background, in the foreground on another tab. All three must end on the detail of location 3, with the list underneath.</li>
+    <li><code>-d</code> is the <code>data</code> of the Intent; the last argument restricts it to our package. Without it, Android asks "open with" if another app has the same scheme.</li>
+    <li>On a physical iPhone: type the URL in Notes and tap it. Typing the URL in the Chrome address bar does not count; it has to be a tapped link.</li>
+    <li>With no network, the detail opens with the cache from lesson 16 or with the error state. Never blank.</li>
+    <li>The third command is for App Links (Android 12+): it shows whether the domain is <em>verified</em>. For the custom scheme there is no verification to show.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Complete TODOs 7 and 8: the scheme on Android (and on iOS, if you have a Mac), the <code>redirect</code> in the router, and the <code>adb</code> command in the three scenarios. <code>tempoacores://location/999</code> shows "location not found" with a button to the list. Extra: <code>tempoacores://warnings</code> opens the warnings tab.</div>
+  <aside class="notes">Fifteen minutes. If a group sees the command open the app but stay on the list, there are three causes: a project created before 3.27 without the meta-data, a missing redirect (the "location" host got lost), or the intent-filter ended up outside the activity. In this order.</aside>
+</section>
+
+<section class="slide">
+  <h2>App Links and Universal Links: the files (overview)</h2>
+  <p>The course backend serves an example at <code>/.well-known/assetlinks.json</code>. For your project you would need the SHA-256 of your key (<code>./gradlew signingReport</code>) and a domain of your own, so it stays as an overview.</p>
+<pre data-title="https://tempoacores.pt/.well-known/assetlinks.json"><code class="language-json">[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "pt.uac.tempoacores",
+    "sha256_cert_fingerprints": ["14:6D:E9:83:C5:73:06:50:D8:EE:B9:95:2F:34:FC:64:16:A0:83:42:E6:1D:BE:A8:8A:04:96:B2:3F:CF:44:E5"]
+  }
+}]</code></pre>
+<pre data-title="https://tempoacores.pt/.well-known/apple-app-site-association"><code class="language-json">{
+  "applinks": {
+    "details": [
+      { "appIDs": ["ABCDE12345.pt.uac.tempoacores"], "components": [{ "/": "/location/*" }] }
+    ]
+  }
+}</code></pre>
+  <p>On the app side: a second <code>intent-filter</code> with <code>android:autoVerify="true"</code>, <code>android:scheme="https"</code> and <code>android:host="tempoacores.pt"</code>; on iOS, the entitlement <code>applinks:tempoacores.pt</code>. The <code>redirect</code> from step 6 does not need to change: the path already comes in right.</p>
+</section>
+
+<section class="slide">
+  <h2>Step 9: tomorrow's forecast at 20:00 with zonedSchedule</h2>
+<pre data-title="lib/notifications/notification_service.dart"><code class="language-dart">import 'package:timezone/timezone.dart' as tz; // tz.local set in initialize()
+
+Future&lt;void&gt; scheduleTomorrowForecast(Location l, Forecast tomorrow) =&gt;
+    _plugin.zonedSchedule(
+      1000 + l.id, // one id per location: rescheduling replaces, it does not pile up
+      'Tomorrow in ${l.name}',
+      '${tomorrow.tMin.round()}° to ${tomorrow.tMax.round()}°, ${tomorrow.type.description}',
+      _next20h(),
+      const NotificationDetails(
+        android: AndroidNotificationDetails('forecast', "Tomorrow's forecast",
+            channelDescription: 'Every day at 20:00, for your favourites'),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, // no exact alarm
+      payload: '/location/${l.id}',
+    );
+
+/// Today at 20:00 if it has not passed yet; otherwise tomorrow at 20:00. Always in tz.local.
+tz.TZDateTime _next20h() {
+  final now = tz.TZDateTime.now(tz.local);
+  final today = tz.TZDateTime(tz.local, now.year, now.month, now.day, 20);
+  return today.isAfter(now) ? today : today.add(const Duration(days: 1));
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Scheduled notifications: what matters</h2>
+  <ul>
+    <li><code>zonedSchedule</code> takes a <code>TZDateTime</code>, not a <code>DateTime</code>: the time belongs to a time zone. In <code>initialize()</code>: <code>tz.initializeTimeZones()</code> and <code>tz.setLocalLocation(tz.getLocation('Atlantic/Azores'))</code>. Without this <code>tz.local</code> is UTC and the 20:00 one fires at 19:00 in winter. For the phone's time zone, <code>flutter_timezone</code>.</li>
+    <li><strong>Inexact vs exact</strong>: <code>inexactAllowWhileIdle</code> can be minutes late (Doze, tomorrow). <code>exactAllowWhileIdle</code> requires <code>SCHEDULE_EXACT_ALARM</code> on Android 12+, and on 14 only alarm clocks and calendars have it by default. For a forecast, inexact is enough.</li>
+    <li><strong>The same id replaces</strong>: each forecast refresh reschedules with fresh text. Tomorrow, workmanager does that every 6 hours without opening the app.</li>
+    <li><strong>Android</strong>: without <code>RECEIVE_BOOT_COMPLETED</code> and the receiver from step 1, a restart wipes the schedule. <strong>iOS</strong>: it keeps the 64 nearest pending ones and discards the rest.</li>
+    <li>Debugging: <code>pendingNotificationRequests()</code> lists what is scheduled; <code>cancel(id)</code> and <code>cancelAll()</code>. To test, schedule for <code>now + 10 s</code> and go back to 20:00 afterwards.</li>
+    <li>Switch turned off in the app settings: <code>cancel</code> all of them. Channel turned off in the system: it does not fire and there is no error; the app never finds out.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 4</strong> TODO 9: when the forecast of a favourite is refreshed, schedule "Tomorrow in X" for 20:00; a "Tomorrow's forecast" switch in the settings that cancels when turned off. Test with <code>now + 10 s</code>. Extra: the tap opens the detail already on tomorrow's day, with the payload <code>/location/3?day=1</code> read from <code>state.uri.queryParameters</code>.</div>
+  <aside class="notes">Last 15 minutes. If time gets tight, exercise 4 becomes homework and you show the solution scheduling for 10 seconds from now, with the phone locked. Finish by linking to tomorrow: the notifier's refresh() will run in a background isolate, so it cannot touch BuildContext or Provider.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Warning notification and deep link in the project: channel, permission in context, <code>tempoacores://location/:id</code> working with the app closed. PR reviewed by Wednesday.</li>
+        <li>Keep the notifier's <code>refresh()</code> free of <code>BuildContext</code>: tomorrow it will run in the background with <code>workmanager</code>.</li>
+        <li>If you have a Mac: scheme in <code>Info.plist</code> and a test with <code>xcrun simctl openurl</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a> on docs.flutter.dev: what Flutter does with the URL and the configuration pages for Android and iOS.</li>
+        <li><a href="https://developer.android.com/training/app-links/verify-android-applinks" target="_blank" rel="noopener">Verify Android App Links</a>: <code>assetlinks.json</code>, <code>autoVerify</code> and how to diagnose with <code>adb</code>.</li>
+        <li><a href="https://developer.apple.com/documentation/xcode/supporting-universal-links-in-your-app" target="_blank" rel="noopener">Supporting universal links in your app</a>: the AASA file, the Associated Domains entitlement and developer mode for testing without waiting for the CDN.</li>
+        <li><a href="https://pub.dev/packages/flutter_local_notifications" target="_blank" rel="noopener">flutter_local_notifications</a>: the per-platform configuration section and the scheduling modes on Android.</li>
+        <li><a href="https://docs.expo.dev/linking/overview/" target="_blank" rel="noopener">Overview of linking</a> in the Expo documentation: the three types of link explained clearly and independently of the framework.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 06 · Mobile UX and layouts · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="6">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 06 · Week 4 · Tuesday, 29 September 2026 · 08:30 to 10:30</p>
+  <h1>Mobile UX and layouts</h1>
+  <p class="lead">Theory: what users expect from a mobile app: gestures, touch target sizes, navigation patterns and the differences between Android and iOS. Practice: Flutter's layout model and the widgets Row, Column, Expanded, Flexible and Stack. Lists, grids and custom widgets are left for tomorrow.</p>
+  <div class="meta"><span>Repository: pdm-aula-06</span></div>
+  <aside class="notes">Ask who finished yesterday's TODOs and who compared with solucao/. It does not matter: today's main is already yesterday's app finished. Take three questions and answer them in 5 minutes, at most. Then ask everyone to open an app they use a lot (Instagram, their bank, Uber) and leave it on the phone: you will use it on the gestures and navigation slides.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Identify the main differences between Material 3 and the Human Interface Guidelines and decide when to follow the platform.</li>
+    <li>List the gestures and touch target sizes users expect, and the cost of ignoring them.</li>
+    <li>Explain Flutter's layout model: constraints go down, sizes go up, parent sets position.</li>
+    <li>Distribute space with <code>Row</code>, <code>Column</code>, <code>Expanded</code> and <code>Flexible</code>, and fix an overflow.</li>
+    <li>Read a <code>Stack</code> with <code>Positioned</code>: who ends up on top and where.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Material 3 vs Human Interface Guidelines</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Material 3 (Google)</th><th>HIG (Apple)</th></tr></thead>
+  <tbody>
+  <tr><td>Main navigation</td><td><em>Navigation bar</em> at the bottom with 3 to 5 destinations, or a <em>navigation drawer</em></td><td><em>Tab bar</em> at the bottom; no drawer</td></tr>
+  <tr><td>Back</td><td>System button or gesture, from either side; <em>predictive back</em> since Android 14</td><td>Swipe gesture from the left edge and an arrow in the bar</td></tr>
+  <tr><td>Buttons</td><td>Filled, tonal, outlined, text; FAB for the main action</td><td>Text and system buttons; no FAB</td></tr>
+  <tr><td>Dialogs and sheets</td><td>Centred dialog; modal <em>bottom sheet</em></td><td>Centred alert; <em>action sheet</em> and sheets that slide up from the bottom</td></tr>
+  <tr><td>Typography</td><td>Roboto; a scale with 15 styles (display, headline, title, body, label)</td><td>SF Pro; Dynamic Type scale controlled by the user</td></tr>
+  </tbody></table></div>
+  <aside class="notes">Ask someone with an iPhone and someone with an Android to show the same WhatsApp screen side by side. The differences in navigation and dialogs are obvious at a glance. Give it 5 minutes.</aside>
+</section>
+
+<section class="slide">
+  <h2>When to follow the platform</h2>
+  <ul>
+    <li>WhatsApp and Gmail follow each platform: tabs at the top on Android, at the bottom on iOS. Instagram and Spotify have their own design, the same everywhere. Both choices are legitimate.</li>
+    <li>Flutter is Material by default and that is how we are going to work. There are Cupertino widgets for anyone who wants the iOS look, but maintaining both doubles the work.</li>
+    <li>What the user notices, and what you must always respect: the iOS back gesture, each platform's scroll physics, the system permission dialogs, the Android back key. Flutter handles this by default.</li>
+    <li>What the user does not notice: whether the button is "filled" or "bordered", whether the font is Roboto or Inter.</li>
+  </ul>
+  <p><strong>For the tests:</strong> Material 3 is Google's design system and Flutter's default; the HIG are Apple's rules. An app can have its own design, but it must respect the system's gestures and conventions.</p>
+</section>
+
+<section class="slide">
+  <h2>Gestures users expect</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Gesture</th><th>What the user expects to happen</th><th>If you ignore it</th></tr></thead>
+  <tbody>
+  <tr><td>Tap</td><td>Immediate action with visual feedback (ripple, colour change)</td><td>Taps twice, fires two actions</td></tr>
+  <tr><td>Long press</td><td>Context menu, selection, drag</td><td>Cannot find the "delete" option and goes to the settings</td></tr>
+  <tr><td>Horizontal swipe</td><td>Go back (left edge on iOS), change tab, delete a list item</td><td>Gets stuck on a screen; leaves the app</td></tr>
+  <tr><td>Pull-to-refresh</td><td>Refresh the list, with an indicator</td><td>Reopens the app to see new data</td></tr>
+  <tr><td>Pinch and double tap</td><td>Zoom on images and maps</td><td>Cannot read what is in the image</td></tr>
+  </tbody></table></div>
+  <p>The rule is not to invent. A gesture that only your app uses is a gesture nobody discovers.</p>
+</section>
+
+<section class="slide">
+  <h2>Touch, thumb and legibility</h2>
+  <ul>
+    <li><strong>48 × 48 dp</strong> is the minimum size of a touch target (Material), and 44 pt at Apple. A finger is about 1 cm wide. 24 dp icons need padding around them; Flutter does that for you in <code>IconButton</code>.</li>
+    <li><strong>8 dp of space</strong> between neighbouring targets. Two buttons stuck together are one button with a 50% error rate.</li>
+    <li><strong>Thumb zone:</strong> with one hand, the bottom third of the screen is easy, the top is hard. Frequent actions at the bottom (navigation bar, FAB); rare or dangerous actions at the top.</li>
+    <li><strong>4.5:1 contrast</strong> for normal text (WCAG AA). Light grey on white in the sun cannot be read. We look at tools in a later lesson.</li>
+    <li><strong>Text:</strong> body at 14 to 16 sp, short lines, and never disable the system font size.</li>
+  </ul>
+  <p><strong>For the tests:</strong> minimum target of 48 dp, minimum contrast of 4.5:1, frequent actions within reach of the thumb.</p>
+</section>
+
+<section class="slide">
+  <h2>Navigation patterns</h2>
+  <ul>
+    <li><strong>Bottom navigation:</strong> 3 to 5 top-level sections, always visible, each with its own stack of screens. Instagram, YouTube, our Tempo Açores (Forecast, Warnings, Settings).</li>
+    <li><strong>Drawer:</strong> side menu for many sections or rarely used sections. Gmail. It is falling out of use because it hides the options.</li>
+    <li><strong>Tabs:</strong> views of the same content, at the top, swipeable. WhatsApp on Android (Chats, Status, Calls).</li>
+    <li><strong>List → detail:</strong> the most common pattern in any app: a list, you tap, the detail comes in, you go back. On a tablet, the two side by side.</li>
+    <li><strong>Modal:</strong> a flow that interrupts (login, create a new item, filters) and returns to the starting point when closed.</li>
+  </ul>
+  <p>On Wednesday, 7 October, we implement the first three with <code>go_router</code>. Today, only layout.</p>
+</section>
+
+<section class="slide">
+  <h2>Empty, loading and error states are part of the design</h2>
+  <ul>
+    <li>Every screen that shows data has four states: <strong>loading</strong>, <strong>with data</strong>, <strong>empty</strong> and <strong>error</strong>. If you only design the second, the other three are blank screens.</li>
+    <li><strong>Loading:</strong> an indicator, or better, a <em>skeleton</em> in the shape of the content. Never a white screen for more than 300 ms.</li>
+    <li><strong>Empty:</strong> one sentence and one action. "You have no favourites yet. Tap the star on a location." It is not a bug; it is an opportunity.</li>
+    <li><strong>Error:</strong> what happened in human language and a button to try again. "No connection. The data is from 12 minutes ago."</li>
+    <li>Apps that do this well: Airbnb, Revolut. Notice it the next time you lose network.</li>
+  </ul>
+  <div class="callout">Today you design the state with data. In a later lesson we model the four states with a <code>sealed class</code> and test them with the API's chaos mode.</div>
+  <aside class="notes">Ask the class to put the phone in airplane mode and open the app they chose at the start. What shows up? Who has a white screen, who has a message, who has old data. Two minutes of discussion and move on to the practice.</aside>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Layout in Tempo Açores</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-06.git
+cd pdm-aula-06
+flutter pub get</code></pre>
+  <p>A single project at the root: open the <code>pdm-aula-06</code> folder in VS Code. It is the app from lesson 5 already finished, plus the forecast screen in <code>lib/forecast_screen.dart</code>, where you are going to work. <code>lib/data.dart</code> has the static data and is not to be changed.</p>
+  <p>The practice has four steps, one slide each: the first today, the others tomorrow. Each step slide starts with three commands, one per line, that put you at the starting point of that step, whether you finished the previous one or not. After them, hot restart in VS Code: the ↻ button on the debug toolbar. Then it shows the code you are going to use, and what you have to do. The <code>passo-N</code> branch is step N done; <code>passo-4</code> is the final state.</p>
+  <ol class="steps">
+    <li>Open the folder in VS Code. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → your Android. Then <kbd>F5</kbd>: it runs the "Tempo Açores (debug)" configuration that already comes with the project. Look at the phone: below the temperature there are yellow and black stripes. It is an overflow, and it is step 1.</li>
+    <li>Run <code>flutter test</code>: four red tests, one per step.</li>
+  </ol>
+  <aside class="notes">While they compile, open the DevTools Layout Explorer on your machine and leave it visible on the projector: you will use it on the next slide to show constraints live.</aside>
+</section>
+
+<section class="slide">
+  <h2>1. Constraints go down, sizes go up, parent sets position</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="A parent widget contains a child: a downward arrow carries the constraints (minimum and maximum width and height), an upward arrow returns the chosen size, and a dashed line from the parent's corner to the child's corner shows that it is the parent that decides the position">
+    <rect x="40" y="30" width="590" height="250" rx="12" class="box"/>
+    <text x="614" y="56" class="t b" text-anchor="end">Parent (e.g. Center)</text>
+    <text x="614" y="76" class="t s" text-anchor="end">gives limits, gets a size, positions</text>
+    <rect x="300" y="150" width="180" height="90" rx="10" class="box accent"/>
+    <text x="390" y="180" class="t b" text-anchor="middle">Child (Container)</text>
+    <text x="390" y="202" class="t s" text-anchor="middle">chooses 100 × 100</text>
+    <text x="390" y="220" class="t s" text-anchor="middle">within the limits</text>
+    <line x1="365" y1="92" x2="365" y2="146" class="arrow accent"/>
+    <line x1="415" y1="146" x2="415" y2="92" class="arrow"/>
+    <text x="430" y="108" class="t s">↓ constraints: min/max limits</text>
+    <text x="430" y="130" class="t s">↑ size: the child chooses</text>
+    <line x1="44" y1="34" x2="296" y2="146" class="arrow dashed"/>
+    <text x="60" y="154" class="t s">parent positions child: (x, y)</text>
+    <line x1="668" y1="44" x2="668" y2="78" class="arrow accent"/>
+    <text x="684" y="58" class="t b">constraints go down</text>
+    <text x="684" y="76" class="t s">min and max width/height</text>
+    <line x1="668" y1="144" x2="668" y2="110" class="arrow"/>
+    <text x="684" y="122" class="t b">sizes go up</text>
+    <text x="684" y="140" class="t s">the child chooses its size</text>
+    <line x1="656" y1="212" x2="676" y2="184" class="arrow dashed"/>
+    <text x="684" y="186" class="t b">parent sets position</text>
+    <text x="684" y="204" class="t s">child does not know where it is</text>
+  </svg>
+  <figcaption>Three rules in one drawing: the limits go down, the size goes up, and only the parent knows where the child ends up.</figcaption>
+  </figure>
+<pre><code class="language-dart">// 1. The parent tells the child its limits (minimum and maximum width and height)
+// 2. The child chooses its size within those limits
+// 3. The parent positions the child
+
+Scaffold(
+  body: Container(color: Colors.teal),          // fills the whole screen: the parent forces it
+)
+
+Scaffold(
+  body: Center(
+    child: Container(color: Colors.teal, width: 100, height: 100),   // Center lets it choose
+  ),
+)</code></pre>
+  <div class="callout"><strong>Ask the class</strong> If I swap <code>Center</code> for <code>Align(alignment: Alignment.topRight)</code>, where does the square end up? And if I remove the <code>width</code> and the <code>height</code> from the <code>Container</code> that is inside the <code>Center</code>?</div>
+  <ul>
+    <li>A widget does not know where it is and cannot choose its position. It only knows the limits it received.</li>
+    <li>The <code>width: 100</code> on the first <code>Container</code> would be ignored: the <code>Scaffold</code> gives tight limits the size of the screen.</li>
+    <li>Flutter's most famous error, "Vertical viewport was given unbounded height", is a <code>ListView</code> inside a <code>Column</code>: the column gives infinite height and the list does not know what size to be. The cure is <code>Expanded</code>.</li>
+  </ul>
+  <p><strong>For the tests:</strong> constraints go down, sizes go up, the parent sets the position. A child never chooses where it goes.</p>
+  <div class="callout"><strong>Analogy</strong> The parent tells the child "you can be between 0 and 300 wide": those are the constraints going down. The child answers "I will take 200": that is the size going up. The parent then decides where to put it. A child never chooses its position and can never be larger than the parent allows.</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> With <code>Align(alignment: Alignment.topRight)</code> the 100 × 100 square sits against the top right corner: the size is the same, only where the parent puts it changes. With no <code>width</code> or <code>height</code>, the <code>Container</code> has no child and no requested size, so it becomes as large as the limits allow: <code>Center</code> gives it from 0 up to the whole screen and it fills the whole screen. Make both changes live and show the limits in the Layout Explorer.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. Row, Column, Expanded and Flexible</h2>
+<pre><code class="language-dart">Column(
+  crossAxisAlignment: CrossAxisAlignment.start,   // aligns to the left
+  children: [
+    Text('Ponta Delgada', style: textTheme.headlineSmall),
+    const Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,   // one at each end
+      children: [Text('Hoje'), Text('21 °C')],
+    ),
+    const SizedBox(height: 12),
+    Row(
+      children: [
+        Expanded(flex: 2, child: Container(height: 40, color: Colors.teal)),    // 2 parts
+        const SizedBox(width: 8),
+        Expanded(child: Container(height: 40, color: Colors.orange)),           // 1 part
+        const SizedBox(width: 8),
+        Flexible(child: Container(height: 40, width: 300, color: Colors.grey)), // up to 1 part
+      ],
+    ),
+  ],
+)</code></pre>
+  <div class="callout"><strong>Ask the class</strong> What changes if I swap <code>spaceBetween</code> for <code>spaceEvenly</code>? If the grey <code>Container</code> had <code>Expanded</code> instead of <code>Flexible</code>, how wide would it be? How would I make the teal one take three parts and the orange one take one?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> <code>spaceBetween</code> pushes the first and the last to the ends and puts all the space in the middle; <code>spaceEvenly</code> shares the space in equal parts before, between and after, so "Hoje" and "21 °C" move away from the edges. Grey with <code>Expanded</code>: it would have the same width, one part in four of what is left (2 + 1 + 1), because the 300 requested is already more than that part and <code>Flexible</code> was already limiting it to that. The difference only shows with a child smaller than the part: with <code>width: 40</code>, <code>Flexible</code> leaves it at 40 and <code>Expanded</code> stretches it. Three parts for the teal one: <code>flex: 3</code>; the orange one keeps the default <code>flex</code> of 1.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. Row and Column: what matters</h2>
+  <ul>
+    <li><code>mainAxis</code> is the direction of the widget (horizontal in a <code>Row</code>, vertical in a <code>Column</code>); <code>crossAxis</code> is the other one. <code>MainAxisAlignment</code> distributes space; <code>CrossAxisAlignment</code> aligns.</li>
+    <li><code>Expanded</code> forces the child to take the remaining space, divided according to <code>flex</code>. <code>Flexible</code> lets the child be smaller if it wants. <code>Spacer</code> is an empty <code>Expanded</code>.</li>
+    <li>A <code>Row</code> does not scroll and does not wrap. If the children do not fit, you see the yellow and black overflow stripes. Use <code>Expanded</code>, <code>Wrap</code> or a horizontal <code>ListView</code>.</li>
+    <li><code>mainAxisSize: MainAxisSize.min</code> makes the column shrink to its content instead of taking the whole height.</li>
+  </ul>
+  </section>
+
+<section class="slide">
+  <h2>Step 1: fixing the overflow</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout main
+flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · CurrentConditions"><code class="language-dart">// As it stands: three fixed widths, 3 × 160 = 480, and the phone has 360
+Row(
+  children: [
+    SizedBox(width: 160, child: _Measure('Mín', '${today.tMin.round()} °C')),
+    SizedBox(width: 160, child: _Measure('Máx', '${today.tMax.round()} °C')),
+    SizedBox(width: 160, child: _Measure('Chuva', '${today.rainChance} %')),
+  ],
+)
+
+// Hint: Expanded gives each child an equal share of what is left
+Expanded(child: _Measure('Mín', '${today.tMin.round()} °C')),</code></pre>
+  <div class="callout task"><strong>Do</strong> Before touching the code, say what is going to happen when you swap the three <code>SizedBox</code> for <code>Expanded</code>. Then do it and save the file: hot reload is automatic.</div>
+  <p><strong>On the phone:</strong> the yellow and black stripes disappear and the three values are evenly spaced. <strong>In the terminal:</strong> <code>flutter test</code>, the <em>Passo 1</em> test turns green.</p>
+</section>
+
+<section class="slide">
+  <h2>3. Stack and Positioned: image with text on top</h2>
+<pre><code class="language-dart">SizedBox(
+  height: 200,
+  child: Stack(
+    fit: StackFit.expand,                          // children with no position fill everything
+    children: [
+      Image.asset('assets/img/sao_miguel.jpg', fit: BoxFit.cover),
+      const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.transparent, Colors.black54],   // darkens so the text is readable
+          ),
+        ),
+      ),
+      Positioned(
+        left: 16,
+        bottom: 16,
+        child: Text('São Miguel', style: textTheme.headlineMedium?.copyWith(color: Colors.white)),
+      ),
+    ],
+  ),
+)</code></pre>
+  <div class="callout"><strong>Ask the class</strong> If I remove <code>fit: StackFit.expand</code>, what happens to the image? How would I put the text at the top right? And if I swapped the order of the image and the gradient in the list?</div>
+  <ul>
+    <li><code>Stack</code> overlays its children in list order: the last one ends up on top. <code>Positioned</code> anchors a child to one or more edges.</li>
+    <li>A gradient on top of the image is a common technique in travel apps to guarantee contrast for the text.</li>
+  </ul>
+  <aside class="notes"><strong>Answers to the questions.</strong> Without <code>StackFit.expand</code> the children with no <code>Positioned</code> are no longer forced to fill the <code>Stack</code>: the image takes whatever size fits while keeping its aspect ratio, pinned to the top left, and an empty strip may be left beside it; the gradient, which has no child, shrinks to zero and disappears. Text at the top right: <code>Positioned(top: 16, right: 16)</code>. With the order swapped, the gradient ends up under the image and can no longer be seen: the last one in the list is the one on top.</aside>
+  </section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>If the <em>Passo 1</em> test is not green yet, finish step 1. Then compare with <code>git stash -u</code> and then <code>git checkout passo-1</code>.</li>
+        <li>Read <a href="https://docs.flutter.dev/ui/layout/constraints" target="_blank" rel="noopener">Understanding constraints</a>. It has 29 examples; run at least the first ten in DartPad.</li>
+        <li>Tomorrow at 16:00 we continue in the same repository, from step 2: the name and the chip over the image, the row of days and the grid of islands.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/ui/layout" target="_blank" rel="noopener">Layouts in Flutter</a>: the layout widgets, with pictures.</li>
+        <li><a href="https://m3.material.io/foundations/accessible-design/overview" target="_blank" rel="noopener">Material 3: accessible design</a>: touch targets, contrast and text size, with the numbers we used today.</li>
+        <li><a href="https://developer.apple.com/design/human-interface-guidelines" target="_blank" rel="noopener">Human Interface Guidelines</a>: what Apple expects from an app.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

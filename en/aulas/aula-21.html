@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 21 · Workshop: location, maps and permissions · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="21">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 21 · Week 9 · Friday, 6 November 2026 · 08:30 to 12:30</p>
+  <h1>Workshop: location, maps and permissions</h1>
+  <p class="lead">Theory: location sources and accuracy, battery cost, permissions and store requirements; map options. Practice (three hours): permission handled in every case, current position, nearest location and a map of the Azores with the locations and the weather, to integrate into the project.</p>
+  <div class="meta"><span>Repo: pdm-aula-21</span></div>
+  <aside class="notes">Ask everyone to turn on location on their phone and confirm that Google Maps finds the position. Anyone using an emulator has to set the location in the Extended controls; show where. Without this, they lose half an hour in the practice. The theory ends at 09:15; do not let it stretch.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Explain how GPS, Wi-Fi and mobile networks produce a position, and the trade-off between accuracy and battery.</li>
+    <li>Tell apart when-in-use, always, precise and approximate permission, and what the stores require for background location.</li>
+    <li>Compare Google Maps, Apple Maps and OpenStreetMap on costs, licences and integration with Flutter.</li>
+    <li>Request the location permission and handle every result, including permanent denial.</li>
+    <li>Get the current position, work out the nearest location and show a map with markers that open the detail.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Where the position comes from</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 316" role="img" aria-label="Three location sources on an axis of accuracy against battery: mobile network, with accuracy of hundreds of metres to kilometres and almost no battery; Wi-Fi, with 20 to 50 metres and low battery; GPS, with 3 to 10 metres and high battery">
+    <line x1="110" y1="288" x2="110" y2="20" class="arrow"/>
+    <line x1="110" y1="288" x2="870" y2="288" class="arrow"/>
+    <text x="100" y="52" class="t s" text-anchor="end">m</text>
+    <text x="100" y="278" class="t s" text-anchor="end">km</text>
+    <text x="118" y="34" class="t s">accuracy (better at the top)</text>
+    <text x="118" y="306" class="t s">almost no battery</text>
+    <text x="862" y="306" class="t s" text-anchor="end">a lot of battery</text>
+    <rect x="130" y="196" width="220" height="80" rx="10" class="box"/>
+    <text x="150" y="220" class="t b">Mobile network</text>
+    <text x="150" y="238" class="t s">100 m to several km</text>
+    <text x="150" y="254" class="t s">almost no battery</text>
+    <text x="150" y="271" class="t mono">LocationAccuracy.low</text>
+    <rect x="380" y="108" width="220" height="80" rx="10" class="box"/>
+    <text x="400" y="132" class="t b">Wi-Fi</text>
+    <text x="400" y="150" class="t s">20 to 50 m, even indoors</text>
+    <text x="400" y="166" class="t s">low battery</text>
+    <text x="400" y="183" class="t mono">LocationAccuracy.medium</text>
+    <rect x="630" y="20" width="220" height="80" rx="10" class="box accent"/>
+    <text x="650" y="44" class="t b">GPS / GNSS</text>
+    <text x="650" y="62" class="t s">3 to 10 m, open sky only</text>
+    <text x="650" y="78" class="t s">high battery, fix in 10 to 30 s</text>
+    <text x="650" y="95" class="t mono">LocationAccuracy.high</text>
+    <text x="380" y="250" class="t s">the app asks for an accuracy; the system fuses the sources</text>
+    <text x="380" y="268" class="t s">(Fused Location on Android, Core Location on iOS)</text>
+  </svg>
+  <figcaption>More accuracy costs more battery: the app asks for a level and the system chooses the sources.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Source</th><th>Typical accuracy</th><th>Battery</th><th>Where it works</th></tr></thead>
+  <tbody>
+  <tr><td><strong>GPS/GNSS</strong> (GPS, Galileo, GLONASS)</td><td>3 to 10 m outdoors</td><td>High; the first fix takes 10 to 30 s</td><td>With open sky. Fails indoors, in garages and in narrow streets.</td></tr>
+  <tr><td><strong>Wi-Fi</strong></td><td>20 to 50 m</td><td>Low</td><td>Cities and indoors: compares the visible networks with a database from Google or Apple.</td></tr>
+  <tr><td><strong>Mobile networks</strong></td><td>100 m to several km</td><td>Very low</td><td>Everywhere with coverage; it knows the cell tower, not the street.</td></tr>
+  <tr><td><strong>Fusion</strong> (Fused Location on Android, Core Location on iOS)</td><td>Whatever you ask for</td><td>Adjusted to the request</td><td>The system combines the three with the motion sensors. It is what your app uses.</td></tr>
+  <tr><td><strong>Bluetooth beacons</strong></td><td>1 to 5 m</td><td>Low</td><td>Instrumented indoor spaces: museums, shopping centres, airports.</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> the app never talks to the GPS; it asks the system for an accuracy, and the system chooses the sources.</p>
+  <aside class="notes">Ask: "why does Google Maps know where you are inside the shopping centre, without GPS?" Wi-Fi. And "why does the first fix in the garage never arrive?" No sky. These two questions explain the whole table.</aside>
+</section>
+
+<section class="slide">
+  <h2>Accuracy vs battery: one position or a stream</h2>
+  <ul>
+    <li><strong>Accuracy levels</strong> (<code>LocationAccuracy</code> in geolocator): <code>lowest</code>/<code>low</code> use networks, kilometres, almost no battery; <code>medium</code> uses Wi-Fi, about 100 m; <code>high</code>/<code>best</code>/<code>bestForNavigation</code> turn on the GPS, metres, high battery consumption.</li>
+    <li><strong>One position</strong> (<code>getCurrentPosition</code>): "where am I now". It turns on the sources, gets a fix, turns them off. It is what a weather app needs.</li>
+    <li><strong>A stream</strong> (<code>getPositionStream</code>): continuous positions while the user moves. Navigation, running, deliveries. With <code>distanceFilter</code> so it does not emit on every metre.</li>
+    <li><strong>Plan B</strong>: <code>timeLimit</code> so you do not wait forever, and <code>getLastKnownPosition</code> to use the last position the system has cached.</li>
+    <li>In Tempo Açores the nearest location is kilometres away: <code>medium</code> is enough and saves battery.</li>
+    <li>Examples: Uber uses a high-accuracy stream only during the ride; Instagram requests one position when you tap "add location".</li>
+  </ul>
+  <p><strong>For the tests:</strong> ask for the minimum accuracy the use case can live with; high accuracy is GPS and GPS is battery.</p>
+  <div class="callout"><strong>Analogy</strong> GPS is a strong, power-hungry torch: it shows the right door, but uses up battery for as long as it is on. Wi-Fi and the mobile network are the ambient light: it is already on, costs almost nothing, and is enough to know the street, not to know the door. Asking for <code>medium</code> is using the ambient light; asking for <code>best</code> is switching on the torch.</div>
+</section>
+
+<section class="slide">
+  <h2>Location permissions (1 of 2): which types there are</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Permission</th><th>iOS</th><th>Android</th></tr></thead>
+  <tbody>
+  <tr><td><strong>In use</strong> (when in use)</td><td>"While Using the App". It is the one you request by default.</td><td><code>ACCESS_FINE_LOCATION</code> or <code>ACCESS_COARSE_LOCATION</code>, only with the app visible.</td></tr>
+  <tr><td><strong>Always</strong> (always)</td><td>A separate request, after "when in use"; iOS asks again later whether the app really uses it.</td><td><code>ACCESS_BACKGROUND_LOCATION</code>, a separate request (Android 10+); from 11 onwards only in the app settings.</td></tr>
+  <tr><td><strong>Precise vs approximate</strong></td><td>iOS 14+: "Precise Location" switch in the dialog. Approximate gives a few kilometres.</td><td>Android 12+: the user chooses "approximate" even if you request fine. The app receives coarse.</td></tr>
+  <tr><td><strong>Once</strong></td><td>"Allow Once": expires when the app closes.</td><td>"Only this time" (Android 11+): same behaviour.</td></tr>
+  </tbody></table></div>
+  <p><strong>For the tests:</strong> "always" and "precise" are separate, later requests; start with "when in use", and with approximate if that is enough for you.</p>
+</section>
+
+<section class="slide">
+  <h2>Location permissions (2 of 2): justify, deny, recover</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 340" role="img" aria-label="State machine of the location permission: requesting leads to granted (while in use or always, precise or approximate), denied (you can ask again with a justification) or denied forever (only in the system settings, with openAppSettings); location service turned off is a separate state">
+    <rect x="310" y="16" width="280" height="56" rx="10" class="box accent"/>
+    <text x="450" y="40" class="t b" text-anchor="middle">Request permission</text>
+    <text x="450" y="60" class="t s" text-anchor="middle">in context, on tapping the button</text>
+    <line x1="330" y1="72" x2="150" y2="130" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(150 130) rotate(162.1)"/>
+    <text x="215" y="96" class="t s" text-anchor="end">grants</text>
+    <line x1="420" y1="72" x2="420" y2="130" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(420 130) rotate(90.0)"/>
+    <text x="410" y="104" class="t s" text-anchor="end">denies</text>
+    <line x1="480" y1="130" x2="480" y2="72" class="arrow dashed"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(480 72) rotate(-90.0)"/>
+    <text x="490" y="98" class="t s">ask again</text>
+    <text x="490" y="114" class="t s">with a reason</text>
+    <line x1="570" y1="72" x2="750" y2="130" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(750 130) rotate(17.9)"/>
+    <text x="690" y="96" class="t s">"don't ask again"</text>
+    <rect x="40" y="130" width="220" height="110" rx="10" class="box ok"/>
+    <text x="60" y="154" class="t b">Granted</text>
+    <text x="60" y="175" class="t s">while in use (the default)</text>
+    <text x="60" y="192" class="t s">or always: separate request</text>
+    <text x="60" y="209" class="t s">precise or approximate</text>
+    <text x="60" y="229" class="t mono">getCurrentPosition()</text>
+    <rect x="340" y="130" width="220" height="110" rx="10" class="box warn"/>
+    <text x="360" y="154" class="t b">Denied</text>
+    <text x="360" y="175" class="t s">the user said no</text>
+    <text x="360" y="192" class="t s">you can ask again, after</text>
+    <text x="360" y="209" class="t s">explaining what is lost</text>
+    <text x="360" y="229" class="t s">(iOS: one denial is permanent)</text>
+    <line x1="560" y1="185" x2="640" y2="185" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(640 185)"/>
+    <text x="600" y="177" class="t s" text-anchor="middle">2nd denial</text>
+    <text x="600" y="201" class="t s" text-anchor="middle">Android</text>
+    <rect x="640" y="130" width="220" height="110" rx="10" class="box danger"/>
+    <text x="660" y="154" class="t b">Denied forever</text>
+    <text x="660" y="175" class="t s">request() shows no dialog</text>
+    <text x="660" y="192" class="t s">only in the app settings:</text>
+    <text x="660" y="212" class="t mono">openAppSettings()</text>
+    <rect x="40" y="270" width="820" height="50" rx="10" class="box muted"/>
+    <text x="60" y="291" class="t b">Location service turned off: a separate state</text>
+    <text x="60" y="311" class="t s">not a permission; it is turned on in the system settings</text>
+    <text x="840" y="301" class="t mono" text-anchor="end">isLocationServiceEnabled()</text>
+  </svg>
+  <figcaption>Four cases to handle: service off, denied, denied forever and granted; only denied lets you ask again.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Mandatory justification.</strong> On iOS, without <code>NSLocationWhenInUseUsageDescription</code> in <code>Info.plist</code> the dialog does not even appear. The text is read by the user and by Apple's review: "To show the forecast for the nearest location", not "We need your location".</li>
+    <li><strong>Service off ≠ permission denied.</strong> The user may have location turned off for the whole system. It is fixed in the location settings, not in the app's.</li>
+    <li><strong>Permanent denial.</strong> iOS: one denial is permanent. Android: "Don't ask again", or two denials in a row on 11+. From then on <code>request()</code> returns denied straight away, with no dialog.</li>
+    <li><strong>Recover</strong>: explain what is lost and offer a button to open the app settings (<code>openAppSettings</code>). Never get stuck in a loop asking.</li>
+    <li><strong>Ask in context</strong>: when the user taps "Use my position", not at launch. The acceptance rate doubles.</li>
+  </ul>
+  <p><strong>For the tests:</strong> an app has to handle four cases: service off, denied, denied forever, granted.</p>
+  <div class="callout"><strong>Analogy</strong> Requesting a permission is asking leave to enter a room in the user's house. You ask at the door of that room, with the reason in plain view, and not at the entrance to the house: at app launch nobody yet knows what it is for. If the answer is "never again", the app cannot knock on the door again; the only way out is for the user to go to the settings and open the door on their own initiative.</div>
+  <aside class="notes">Show the iOS location dialog and the Android 12 one side by side (screenshots). Ask what happens to the app if the user chooses "approximate" and the app assumes 10 m accuracy: the nearest location may be wrong, and the app has to live with that.</aside>
+</section>
+
+<section class="slide">
+  <h2>Background location</h2>
+  <ul>
+    <li>It means carrying on receiving positions with the app off the screen. Who really needs it: navigation, Strava, deliveries, Find My. A weather app does not.</li>
+    <li><strong>Android</strong>: background permission plus a <em>foreground service</em> of type <code>location</code>, with a permanent visible notification. Google Play requires a declaration form, a video of the feature, and that it be central to the app. Otherwise, rejection.</li>
+    <li><strong>iOS</strong>: "Always" permission plus <code>UIBackgroundModes: location</code>. Blue indicator in the status bar. Periodically iOS shows "app X has used your location 34 times in the background", with a map. A lot of people uninstall at that moment.</li>
+    <li><strong>Cost</strong>: continuous GPS drains the battery in hours. The user notices, and blames the app, rightly.</li>
+    <li>Alternatives: geofencing (next), <em>significant location changes</em> on iOS (only when you change cell), refreshing when the app opens.</li>
+  </ul>
+  <p><strong>For the tests:</strong> background location only for central features, with a declaration in the stores, and the user sees that it is happening.</p>
+</section>
+
+<section class="slide">
+  <h2>Geofencing</h2>
+  <ul>
+    <li>A <strong>virtual fence</strong>: centre and radius. The system wakes the app when the user <em>enters</em>, <em>exits</em> or <em>dwells</em>. The app does not need to be running.</li>
+    <li>It is the system that keeps watch, with Wi-Fi and mobile networks: little battery, but latency of minutes and a practical minimum radius of 100 m.</li>
+    <li><strong>Limits</strong>: 100 fences per app on Android, 20 regions per app on iOS. Both require background permission.</li>
+    <li><strong>Use cases</strong>: "red warning for the area you have just entered", reminders by place, retail ("you are 200 m from the shop"), automatic check-in at work.</li>
+    <li>In Flutter there are community packages (<code>geofence_service</code>) or native code per platform. It is not part of the project.</li>
+  </ul>
+  <p><strong>For the tests:</strong> geofencing is done by the operating system, saves battery, has latency of minutes and limits of 100 (Android) and 20 (iOS).</p>
+</section>
+
+<section class="slide">
+  <h2>Maps (1 of 2): the options</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Option</th><th>Costs and keys</th><th>Platforms</th><th>Notes</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Google Maps SDK</strong> (<code>google_maps_flutter</code>)</td><td>API key and a billing account with a card. The native map on mobile is not charged; Places, Directions and Geocoding are.</td><td>Android and iOS</td><td>Platform view: heavy, but with roads, traffic and Street View.</td></tr>
+  <tr><td><strong>Apple Maps</strong> (MapKit)</td><td>Free, no key, inside iOS apps.</td><td>iOS only (community packages)</td><td>Privacy as the selling point; does not solve Android.</td></tr>
+  <tr><td><strong>OpenStreetMap</strong> + <code>flutter_map</code></td><td>Free, no key. Public tiles with a fair use policy and mandatory attribution.</td><td>All: it is pure Dart</td><td>For production, a tile provider with a key (MapTiler, Stadia, Thunderforest).</td></tr>
+  <tr><td><strong>Mapbox</strong></td><td>Key; free up to a monthly cap of map loads.</td><td>Android, iOS, web</td><td>Custom styles, native SDK.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide">
+  <h2>Maps (2 of 2): which one to use and why</h2>
+  <ul>
+    <li><strong>In Tempo Açores: <code>flutter_map</code> with OpenStreetMap tiles.</strong> No key, no card, runs on any laptop, no platform view, works on the web for the demo.</li>
+    <li><strong>Rules for the public OSM tiles</strong>: visible attribution "© OpenStreetMap contributors", a <em>user agent</em> that identifies the app, no bulk downloading of tiles, and heavy production traffic goes to a paid provider.</li>
+    <li><strong>Google Maps</strong> when you need traffic, Street View, address autocomplete, or the look that Android users know. And when you have someone to pay the bill if the app grows.</li>
+    <li><strong>Apple Maps</strong> when the app is iOS only and privacy is a selling point.</li>
+    <li><strong>Licences</strong>: OSM data is ODbL (open, with attribution). Google and Apple have terms of service: you cannot store tiles, nor show their data on another map.</li>
+  </ul>
+  <p><strong>For the tests:</strong> OSM is free but has a usage policy and mandatory attribution; Google Maps requires a key and a billing account even when it does not charge.</p>
+  <aside class="notes">If someone asks "so why do companies use Google Maps if OSM is free?": traffic data, Places, and contractual liability. An OSM tile provider costs a few euros a month for a small app. Five-minute break here, before cloning.</aside>
+</section>
+
+<section class="slide" data-part="Workshop">
+  <h2>Workshop: clone and run</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-21.git
+cd pdm-aula-21/starter
+flutter pub get
+flutter run</code></pre>
+  <ul>
+    <li><code>starter/</code> has the app from the previous lessons (list, detail, favourites) with <strong>numbered TODOs</strong> from 1 to 11 and failing tests in <code>test/geolocation_test.dart</code>. The packages are already in <code>pubspec.yaml</code>.</li>
+    <li><code>solucao/</code> has the final state. Only open it when you have been stuck for more than 10 minutes.</li>
+    <li>A physical phone with location turned on, or an emulator with the position set in <em>Extended controls → Location</em> (Ponta Delgada: 37.74, -25.67).</li>
+  </ul>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Block</th><th>Time</th><th>Steps</th></tr></thead>
+  <tbody>
+  <tr><td>Permissions and position</td><td>09:20 to 10:15</td><td>1 to 7</td></tr>
+  <tr><td>Break</td><td>10:15 to 10:30</td><td></td></tr>
+  <tr><td>Map</td><td>10:30 to 11:30</td><td>8 to 10</td></tr>
+  <tr><td>Integrate into the project</td><td>11:30 to 12:30</td><td>11 and exercises</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide">
+  <h2>Step 1: packages and platform requirements</h2>
+  <p>In the group's project, the same packages go in with one command:</p>
+<pre class="term"><code class="language-bash">flutter pub add geolocator permission_handler flutter_map latlong2 url_launcher</code></pre>
+  <ul>
+    <li><strong>geolocator</strong>: position, service enabled, distance between points. <strong>permission_handler</strong>: request and check permissions in a uniform way.</li>
+    <li><strong>flutter_map</strong> draws the map in Dart; <strong>latlong2</strong> provides the <code>LatLng</code> type. <strong>url_launcher</strong> for the attribution link.</li>
+    <li>Android: <code>minSdk 21</code> and <code>compileSdk 34</code> or higher in <code>android/app/build.gradle</code>. The current Flutter template already complies.</li>
+    <li>iOS: <code>platform :ios, '13.0'</code> in the <code>Podfile</code>, and a macro for permission_handler (step 3).</li>
+  </ul>
+  <aside class="notes">The usual question: "why two packages for permissions?" geolocator also requests the location permission, but permission_handler is the one they will use for notifications, camera and the rest of the project, and it handles "denied forever" explicitly. One pattern for all of them.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 2: permissions on Android</h2>
+<pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;!-- Network: map tiles and the course API --&gt;
+    &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+
+    &lt;!-- Location when in use. Declare both: Android 12+ lets
+         the user choose "approximate", and the app receives coarse. --&gt;
+    &lt;uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /&gt;
+    &lt;uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /&gt;
+
+    &lt;!-- Do NOT add without a reason: it requires a declaration on Google Play.
+    &lt;uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /&gt;
+    --&gt;
+
+    &lt;application
+        android:label="Tempo Açores"
+        android:icon="@mipmap/ic_launcher"&gt;
+        ...
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+  <p>Without <code>INTERNET</code> the map is grey in release: in debug Flutter adds it for you, and the error only shows up in the final build.</p>
+</section>
+
+<section class="slide">
+  <h2>Step 3: permissions on iOS</h2>
+<pre data-title="ios/Runner/Info.plist"><code class="language-xml">&lt;key&gt;NSLocationWhenInUseUsageDescription&lt;/key&gt;
+&lt;string&gt;We use your position to show the forecast for the nearest location.&lt;/string&gt;
+&lt;!-- Only if one day you request "always": --&gt;
+&lt;!-- &lt;key&gt;NSLocationAlwaysAndWhenInUseUsageDescription&lt;/key&gt; --&gt;</code></pre>
+  <p>permission_handler only compiles the code for each permission you enable, so that Apple's review does not see permissions you do not use:</p>
+<pre data-title="ios/Podfile"><code class="language-ruby">post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_LOCATION=1',
+      ]
+    end
+  end
+end</code></pre>
+  <p>Then: <code>cd ios &amp;&amp; pod install</code>. Anyone without a Mac skips this step and tests on Android only.</p>
+</section>
+
+<section class="slide">
+  <h2>Step 4: request the permission and handle every result</h2>
+<pre data-title="lib/geolocation/geolocation_service.dart"><code class="language-dart">import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+enum GeolocationState { ready, serviceDisabled, denied, deniedForever }
+
+class GeolocationService {
+  /// Makes sure we can request a position. Never throws; returns the state.
+  Future&lt;GeolocationState&gt; preparePermission() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      return GeolocationState.serviceDisabled; // location turned off in the system
+    }
+    var status = await Permission.locationWhenInUse.status;
+    if (status.isDenied) {
+      status = await Permission.locationWhenInUse.request(); // system dialog
+    }
+    return switch (status) {
+      PermissionStatus.granted || PermissionStatus.limited =&gt; GeolocationState.ready,
+      PermissionStatus.permanentlyDenied || PermissionStatus.restricted =&gt;
+        GeolocationState.deniedForever,
+      _ =&gt; GeolocationState.denied,
+    };
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Step 5: the screen reacts to each state</h2>
+<pre data-title="lib/geolocation/geolocation_screen.dart"><code class="language-dart">Future&lt;void&gt; _requestGeolocation(BuildContext context) async {
+  final state = await context.read&lt;GeolocationService&gt;().preparePermission();
+  if (!context.mounted) return; // the user may have left the screen
+
+  switch (state) {
+    case GeolocationState.ready:
+      await context.read&lt;GeolocationNotifier&gt;().refresh();
+    case GeolocationState.serviceDisabled:
+      _notice(context, 'Location is turned off on the phone.',
+          action: 'Turn on', onTap: Geolocator.openLocationSettings);
+    case GeolocationState.deniedForever:
+      _notice(context, 'No permission. You can change that in the app settings.',
+          action: 'Settings', onTap: openAppSettings);
+    case GeolocationState.denied:
+      _notice(context, 'Without your position, we show Ponta Delgada.');
+  }
+}
+
+void _notice(BuildContext context, String text,
+    {String? action, Future&lt;bool&gt; Function()? onTap}) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Text(text),
+    action: action == null ? null : SnackBarAction(label: action, onPressed: () =&gt; onTap?.call()),
+  ));
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Permissions: what matters</h2>
+  <ul>
+    <li>Four states, four reactions. The <code>switch</code> is exhaustive: if you add a state to the enum, the compiler forces you to handle it.</li>
+    <li><strong>Service off</strong> opens the <em>system location</em> settings; <strong>denied forever</strong> opens the <em>app's</em> settings. They are different screens.</li>
+    <li>The app stays useful without the permission: it shows a default location. Never block the screen behind a request.</li>
+    <li><code>context.mounted</code> after each <code>await</code>: the system dialog takes time, and the user may have navigated away.</li>
+    <li>Ask when the user taps the "My position" button, not in <code>initState</code>.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Complete TODOs 1 to 4. Test the four paths on the phone: accept; deny once; deny with "don't ask again" (or on iOS, deny once); turn off location in the system. In each one, the app has to say something useful and not crash. Extra: on Android 12+, choose "approximate" and see what <code>Geolocator.getLocationAccuracy()</code> returns.</div>
+  <aside class="notes">Give 25 minutes. Walk round and ask each group to show you the "denied forever" path: it is the one almost nobody tests. Anyone on the Android emulator denies with "Don't ask again" through two denials in a row.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 6: the current position (and a stream for later)</h2>
+<pre data-title="lib/geolocation/geolocation_service.dart"><code class="language-dart">import 'dart:async'; // TimeoutException
+
+// ...inside GeolocationService
+Future&lt;Position&gt; currentPosition() async {
+  try {
+    return await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium, // Wi-Fi is enough: ~100 m
+        timeLimit: Duration(seconds: 10),
+      ),
+    );
+  } on TimeoutException {
+    // No fix in 10 s (garage, indoors): the last known one will do
+    final last = await Geolocator.getLastKnownPosition();
+    if (last != null) return last;
+    rethrow;
+  }
+}
+
+/// For navigation, or to update while the user walks.
+Stream&lt;Position&gt; positions() =&gt; Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 50, // only emits after 50 m travelled
+      ),
+    );</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Step 7: the nearest location</h2>
+<pre data-title="lib/geolocation/proximity.dart"><code class="language-dart">import 'package:geolocator/geolocator.dart';
+
+typedef Proximity = ({Location location, double meters});
+
+Proximity nearest(Position pos, List&lt;Location&gt; locations) {
+  assert(locations.isNotEmpty, 'the list comes from GET /v1/locations');
+  var best = locations.first;
+  var shortest = double.infinity;
+  for (final l in locations) {
+    final d = Geolocator.distanceBetween(
+      pos.latitude, pos.longitude, l.latitude, l.longitude,
+    );
+    if (d &lt; shortest) {
+      shortest = d;
+      best = l;
+    }
+  }
+  return (location: best, meters: shortest);
+}
+
+String formatDistance(double meters) =&gt; meters &lt; 1000
+    ? '${meters.round()} m'
+    : '${(meters / 1000).toStringAsFixed(1)} km';</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Position and distance: what matters</h2>
+  <ul>
+    <li><code>Position</code> carries <code>latitude</code>, <code>longitude</code>, <code>accuracy</code> (error radius in metres), <code>timestamp</code> and <code>isMocked</code>. Show the accuracy to the user when it is large: "about 2 km away".</li>
+    <li><code>distanceBetween</code> returns <strong>metres</strong> in a straight line over the sphere (Haversine). It is not distance by road, and for the Azores it is enough.</li>
+    <li>The <em>record</em> <code>({Location location, double meters})</code> returns two values without creating a class. It is Dart 3.</li>
+    <li><code>timeLimit</code> plus <code>getLastKnownPosition</code>: the app always answers within 10 s, with the best information there is.</li>
+    <li>A position outside the Azores (emulator in California, student on holiday) gives a "nearest" location 2000 km away. If <code>meters &gt; 100 000</code>, say "outside the Azores" and use the default location.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> Complete TODOs 5 to 7 and make the tests for <code>nearest</code> and <code>formatDistance</code> pass (<code>flutter test</code>). On the home screen, a card "You are 3.2 km from Ponta Delgada" with a button to open the detail. Handle the "outside the Azores" case.</div>
+  <aside class="notes">The starter's tests use three locations and a fixed position; anyone who wants to see the calculation fail swaps latitude and longitude in distanceBetween. Break at 10:15, 15 minutes, even if they are in the middle of something.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 8: the map with OpenStreetMap tiles</h2>
+  <p>Inside <code>_LocationsMapState</code>, the <code>State</code> of a widget that receives the list of locations. Imports: <code>flutter_map</code> and <code>latlong2</code>.</p>
+<pre data-title="lib/map/locations_map.dart"><code class="language-dart">final _controller = MapController();
+static final _azores = LatLngBounds(
+  const LatLng(36.7, -31.5), // south-west: south of Flores
+  const LatLng(39.9, -24.6), // north-east: east of Santa Maria
+);
+
+@override
+Widget build(BuildContext context) {
+  return FlutterMap(
+    mapController: _controller,
+    options: MapOptions(
+      initialCenter: const LatLng(38.4, -28.0),
+      initialZoom: 6.5,
+      minZoom: 5,
+      maxZoom: 15,
+      cameraConstraint: CameraConstraint.contain(bounds: _azores),
+    ),
+    children: [
+      TileLayer(
+        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        userAgentPackageName: 'pt.uac.tempoacores',
+      ),
+      _markers(context), // step 9
+      _attribution(),
+    ],
+  );
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Step 9: markers with the weather, and attribution</h2>
+<pre data-title="lib/map/locations_map.dart"><code class="language-dart">Widget _markers(BuildContext context) {
+  final forecasts = context.watch&lt;ForecastNotifier&gt;().byLocation; // Map&lt;int, Forecast&gt;
+  return MarkerLayer(
+    markers: [
+      for (final l in widget.locations)
+        Marker(
+          point: LatLng(l.latitude, l.longitude),
+          width: 44,
+          height: 44,
+          child: GestureDetector(
+            onTap: () =&gt; context.push('/location/${l.id}'),
+            child: Tooltip(
+              message: l.name,
+              child: Icon(iconFor(forecasts[l.id]?.type), size: 36),
+            ),
+          ),
+        ),
+    ],
+  );
+}
+
+Widget _attribution() =&gt; RichAttributionWidget(attributions: [
+      TextSourceAttribution('OpenStreetMap contributors',
+          onTap: () =&gt; launchUrl(Uri.parse('https://openstreetmap.org/copyright'))),
+    ]);</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Map: what matters</h2>
+  <ul>
+    <li>A <code>FlutterMap</code> is a stack of <code>children</code>: tiles at the bottom, markers on top, attribution in the corner. The order matters.</li>
+    <li><code>urlTemplate</code> with <code>{z}/{x}/{y}</code>: the map is made of 256 px images per zoom level. Changing provider means changing the URL (and adding the key).</li>
+    <li><code>userAgentPackageName</code> is mandatory for the public OSM tiles; without it, they block you. Attribution is mandatory too, and <code>RichAttributionWidget</code> takes care of it.</li>
+    <li><code>cameraConstraint</code> locks the camera to the Azores: the user does not get lost in the Atlantic. <code>minZoom</code> and <code>maxZoom</code> avoid requesting useless tiles.</li>
+    <li>A <code>Marker</code> is any widget: an icon, text with the temperature, a <code>Card</code>. The <code>GestureDetector</code> leads to the detail with the route that already exists.</li>
+    <li><code>iconFor</code> is the helper from the previous lessons that turns a <code>WeatherType</code> into an <code>IconData</code>; the starter already has it.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Complete TODOs 8 and 9. The map shows the locations from the API with the icon for the current weather; tapping a marker opens the detail. Extra: write the maximum temperature below the icon, in a <code>Column</code> inside the marker.</div>
+</section>
+
+<section class="slide">
+  <h2>Step 10: centre on the user</h2>
+<pre data-title="lib/map/locations_map.dart"><code class="language-dart">LatLng? _myPosition;
+
+Future&lt;void&gt; _goToMe() async {
+  final service = context.read&lt;GeolocationService&gt;();
+  final state = await service.preparePermission();
+  if (!mounted) return;
+  if (state != GeolocationState.ready) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text('No location permission.'),
+      action: SnackBarAction(label: 'Settings', onPressed: () =&gt; openAppSettings()),
+    ));
+    return;
+  }
+  final pos = await service.currentPosition();
+  final here = LatLng(pos.latitude, pos.longitude);
+  setState(() =&gt; _myPosition = here);
+  _controller.move(here, 10); // outside the Azores? cameraConstraint holds it
+}
+
+// In the MarkerLayer, a marker for the user (Dart 3 if-case):
+//   if (_myPosition case final me?)
+//     Marker(point: me, child: const Icon(Icons.person_pin_circle, size: 40)),
+// In the screen's Scaffold:
+//   floatingActionButton: FloatingActionButton(
+//     onPressed: _goToMe, child: const Icon(Icons.my_location)),</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Step 11: integrate into the project as a Map tab</h2>
+<pre data-title="lib/app/router.dart and lib/main.dart"><code class="language-dart">// Inside the ShellRoute that has the NavigationBar (lesson 9):
+GoRoute(path: '/map', builder: (context, state) =&gt; const MapScreen()),
+
+// In the NavigationBar, a new destination between Forecast and Warnings:
+NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Map'),
+// and in onDestinationSelected: context.go(['/', '/map', '/warnings', '/settings'][i])
+
+// In main.dart, the providers the screens will read:
+MultiProvider(
+  providers: [
+    Provider(create: (_) =&gt; GeolocationService()),
+    ChangeNotifierProvider(
+      create: (c) =&gt; GeolocationNotifier(c.read(), c.read()), // service + repository
+    ),
+  ],
+  child: const TempoApp(),
+)</code></pre>
+  <ul>
+    <li><code>MapScreen</code> reads the locations from the lesson 13 repository and passes them to <code>LocationsMap</code>. The map knows nothing about HTTP.</li>
+    <li><code>GeolocationNotifier</code> holds <code>position</code>, <code>proximity</code> and <code>error</code>, and has the <code>refresh()</code> method from step 5. The home screen and the map watch it.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 4</strong> TODOs 10 and 11: a Map tab in the group's project, with markers, a "My position" button and the nearest-location card on the home screen. Open one PR per person: one does the map, another the service and the notifier, another the integration and the tests. Extra: listen to <code>positions()</code> and move the user's marker.</div>
+  <aside class="notes">Last hour. The goal is for each group to leave with the PR open on the project repository, not just with the starter done. Insist on the split per person. If there is time left, show how to change the urlTemplate to a provider with a key and what changes in the attribution.</aside>
+</section>
+
+<section class="slide">
+  <h2>Frequent problems</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Symptom</th><th>Likely cause</th><th>Solution</th></tr></thead>
+  <tbody>
+  <tr><td>On iOS the permission dialog never appears</td><td>The key is missing from <code>Info.plist</code> or the <code>PERMISSION_LOCATION</code> macro from the Podfile</td><td>Step 3, then <code>pod install</code> and a full rebuild</td></tr>
+  <tr><td>Grey map, no tiles</td><td>No network, no <code>INTERNET</code> in the manifest (release), or <code>userAgentPackageName</code> missing</td><td>Check all three; look in the log for 403 or 429 responses from OSM</td></tr>
+  <tr><td>The position shows up in California</td><td>Emulator with Google's default location</td><td>Extended controls → Location, or use the phone</td></tr>
+  <tr><td><code>permanentlyDenied</code> straight away on the first request</td><td>It was already denied before (on Android, twice; on iOS, once)</td><td>App settings → Permissions → Location; or reinstall the app</td></tr>
+  <tr><td><code>getCurrentPosition</code> never answers inside the classroom</td><td><code>high</code> accuracy requires GPS and there is no sky</td><td><code>medium</code>, <code>timeLimit</code> and <code>getLastKnownPosition</code> as in step 6</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you on Monday</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Map in the project with markers and nearest location: PRs reviewed and merged by Monday.</li>
+        <li>Test the app on a colleague's phone with the permission denied: is the app still usable?</li>
+        <li>Monday: local notifications and deep links. The Map tab and the <code>/location/:id</code> route will be needed.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://developer.android.com/develop/sensors-and-location/location/permissions" target="_blank" rel="noopener">Location permissions</a> on Android: precise vs approximate, foreground vs background, what changed in each version.</li>
+        <li><a href="https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services" target="_blank" rel="noopener">Requesting authorization to use location services</a>: Apple's rules for "when in use" and "always".</li>
+        <li><a href="https://pub.dev/packages/geolocator" target="_blank" rel="noopener">geolocator</a>: the table of accuracies per platform and the errors each method throws.</li>
+        <li><a href="https://pub.dev/packages/permission_handler" target="_blank" rel="noopener">permission_handler</a>: the states of a permission (denied, denied forever), <code>openAppSettings</code> and the configuration per platform.</li>
+        <li><a href="https://docs.fleaflet.dev" target="_blank" rel="noopener">flutter_map</a>: <code>TileLayer</code>, markers, attribution and tile providers.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>

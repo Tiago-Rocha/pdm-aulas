@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setup guide · PDM · DAW 2 · 2026/27</title>
+<meta name="description" content="Installing Flutter, Git, VS Code and Android Studio on Windows, macOS and Linux, and setting up GitHub, for the Programming for Mobile Devices (PDM) course.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="index.html#calendar">Calendar</a>
+    <a href="guia-instalacao.html">Setup</a>
+    <a href="projeto.html">Project</a>
+    <a href="avaliacao.html">Assessment</a>
+    <a href="api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="wrap layout">
+<aside class="toc" id="toc"></aside>
+<main class="content">
+
+<p class="kicker">Week 1 · lessons 1 to 4</p>
+<h1>Setup guide</h1>
+<p class="lead">Goal of the first week: Flutter, Git and GitHub working on your laptop, with the sample app running on an Android phone or on the emulator. Installation starts in lesson 1, while the downloads run during the theory part, and finishes at home over the week. This guide gives priority to Windows, which is the system most of the class uses; macOS and Linux have their own, shorter sections. The screenshots were taken on macOS; on Windows the VS Code and Android Studio windows look the same.</p>
+
+<div class="callout warn"><strong>Before you install anything at all</strong>
+<ul>
+  <li><strong>Working folder:</strong> create <code>C:\dev</code> (Windows) or <code>~/dev</code> (macOS and Linux). Everything you install or clone goes there.</li>
+  <li><strong>Never inside OneDrive, Documents, Desktop or Program Files.</strong> On Windows, Documents and Desktop are usually synced with OneDrive, and that breaks Flutter and Git.</li>
+  <li><strong>No spaces or accents in the path.</strong> If your Windows user is called <code>João Silva</code>, that is one more reason to use <code>C:\dev</code> and not <code>C:\Users\João Silva\...</code>.</li>
+  <li><strong>Disk space:</strong> at least 15 GB free. Android Studio and the SDK take about 8 GB; Flutter, 2 GB.</li>
+</ul>
+</div>
+
+<h3>Downloading and installing are two different moments</h3>
+<p>The downloaded files (the installers) land in the browser's <em>Downloads</em> folder, and it does not matter where. The program is only installed when you run each installer, and in most cases without asking where. The only moment you choose a folder is the Flutter SDK download from VS Code, and there the answer is <code>C:\dev</code>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Download</th><th>What it is</th><th>When installing</th></tr></thead>
+<tbody>
+<tr><td>Git for Windows (<code>Git-…-64-bit.exe</code>)</td><td>Installer</td><td>Installs into <code>Program Files\Git</code> without asking. Just click Next; confirm the Credential Manager.</td></tr>
+<tr><td>VS Code (<code>VSCodeUserSetup-x64-….exe</code>)</td><td>Installer</td><td>Installs into <code>AppData\Local\Programs</code> without asking. Only the <em>Add to PATH</em> box matters.</td></tr>
+<tr><td>Android Studio (<code>android-studio-…-windows.exe</code>)</td><td>Installer</td><td>Installs into <code>Program Files\Android</code> without asking. On first launch, <em>Standard</em> puts the SDK in <code>AppData\Local\Android\Sdk</code>; only <em>Custom</em> asks where.</td></tr>
+<tr><td>Flutter SDK</td><td>Not a manual download</td><td>The <em>Download SDK</em> button in VS Code downloads it straight into the folder you choose: <code>C:\dev</code>. It is the only folder choice in the whole installation.</td></tr>
+</tbody></table></div>
+<p class="muted">At the end, the installers can be deleted from Downloads; you will not need them again.</p>
+
+<h3>Where each thing lives</h3>
+<p>The <code>C:\dev</code> rule applies to the Flutter SDK and to your projects. Programs install into their default folders.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>What</th><th>Where it lives</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Git, VS Code, Android Studio</td><td>The installer's default folder (<code>Program Files</code> or <code>AppData\Local</code>)</td><td>They are programs; there is no reason to move them.</td></tr>
+<tr><td>GitHub</td><td>Not installed</td><td>It is a web service. What you install is Git; GitHub is where Git sends the copies.</td></tr>
+<tr><td>Flutter SDK</td><td><code>C:\dev\flutter</code></td><td>It is a folder that Flutter updates by itself; it needs a simple path outside OneDrive.</td></tr>
+<tr><td>Projects and cloned repositories</td><td><code>C:\dev\project-name</code></td><td>Every <code>flutter create</code> and every <code>git clone</code> goes here.</td></tr>
+<tr><td>Android SDK</td><td>By default <code>C:\Users\&lt;name&gt;\AppData\Local\Android\Sdk</code></td><td>Fine if your user name has no spaces or accents. If it has, see the box below.</td></tr>
+</tbody></table></div>
+<div class="callout warn"><strong>Windows user with spaces or accents in the name</strong> If your home folder is something like <code>C:\Users\João Silva</code>, Gradle and the NDK will fail with the SDK and cache paths. Three adjustments, once:
+<ol>
+  <li>On the first launch of Android Studio choose the <em>Custom</em> installation and set <em>Android SDK Location</em> to <code>C:\dev\Android\Sdk</code>. If you have already installed it, change it in SDK Manager → <em>Android SDK Location</em> → Edit.</li>
+  <li>Create two user environment variables (Start menu → <em>environment variables</em> → Edit environment variables for your account → New): <code>GRADLE_USER_HOME</code> = <code>C:\dev\.gradle</code> and <code>PUB_CACHE</code> = <code>C:\dev\.pub-cache</code>.</li>
+  <li>Close and reopen the terminals and VS Code. Confirm with <code>flutter doctor -v</code> that the Android SDK shows up in <code>C:\dev\Android\Sdk</code>.</li>
+</ol>
+</div>
+
+<section id="ja-tenho">
+<h2>Do you already have any of these tools?</h2>
+<p>Students coming from the first year often have VS Code installed; Git, as a rule, not. In a terminal (Start menu → <em>Terminal</em>):</p>
+<pre class="term"><code class="language-bash">git --version
+code --version</code></pre>
+<ul>
+  <li><strong>Git "is not recognized":</strong> the usual case. Install Git for Windows (Step 1).</li>
+  <li><strong>Git answers with 2.4x or higher:</strong> done. Confirm that the Credential Manager is there (<code>git config --global credential.helper</code> should answer <code>manager</code>); if not, reinstall Git for Windows over the existing one.</li>
+  <li><strong>VS Code already installed:</strong> Help → <em>Check for Updates</em> (the Flutter extension needs a recent version) and go straight to Step 2, the Flutter SDK, which is a 2 GB download and is best started early.</li>
+  <li><strong>Old projects in Documents or on OneDrive:</strong> no problem; the ones for this course go in <code>C:\dev</code>.</li>
+</ul>
+</section>
+
+<section id="ordem">
+<h2>Recommended order in lesson 1</h2>
+<p>The downloads are the slow part. Start them in this order in the first minutes of the lesson and let them run during the theory. Sizes are approximate.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>What</th><th>Size</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Android Studio (installer)</td><td>1.2 GB, then another 3 to 4 GB of SDK on first launch</td><td><a href="https://developer.android.com/studio" target="_blank" rel="noopener">developer.android.com/studio</a></td></tr>
+<tr><td>2</td><td>Git</td><td>70 MB</td><td><a href="https://git-scm.com/downloads" target="_blank" rel="noopener">git-scm.com/downloads</a> (on macOS it comes with the Xcode tools; on Linux, through apt)</td></tr>
+<tr><td>3</td><td>Visual Studio Code</td><td>100 MB</td><td><a href="https://code.visualstudio.com" target="_blank" rel="noopener">code.visualstudio.com</a></td></tr>
+<tr><td>4</td><td>Flutter SDK (through the VS Code extension)</td><td>1.5 to 2 GB</td><td>Step 2 below; only after VS Code is installed</td></tr>
+<tr><td>5</td><td>GitHub account</td><td>—</td><td><a href="https://github.com/signup" target="_blank" rel="noopener">github.com/signup</a>, while you wait</td></tr>
+</tbody></table></div>
+<p>Install in the same order as the downloads finish. Android Studio can keep downloading the SDK in the background while the rest installs.</p>
+<div class="shots-2">
+  <figure class="shot"><img src="../assets/img/instalacao/site-astudio.png" alt="The developer.android.com/studio page with the Download Android Studio button"><figcaption><strong>Android Studio:</strong> <em>Download Android Studio</em> button; accept the terms underneath.</figcaption></figure>
+  <figure class="shot"><img src="../assets/img/instalacao/site-vscode.png" alt="VS Code home page with the Download for Windows button"><figcaption><strong>VS Code:</strong> <em>Download for Windows</em> button (the site detects your system).</figcaption></figure>
+</div>
+<figure class="shot medium"><img src="../assets/img/instalacao/site-git.png" alt="Git for Windows download page with the Click here to download link"><figcaption><strong>Git:</strong> Windows tab → <em>Click here to download</em> (x64 version). Do not use the Portable or ARM64 versions.</figcaption></figure>
+</section>
+
+<section id="windows">
+<h2>Windows, step by step</h2>
+<p>Tested with 64-bit Windows 10 and 11. You need an account with permission to install programs.</p>
+
+<h3>Step 1: Git, VS Code and Android Studio</h3>
+<ol class="steps">
+  <li><strong>Git for Windows.</strong> Run the installer with the default options, with two things to confirm: in <em>Choosing the default editor</em> choose <strong>Use Visual Studio Code as Git's default editor</strong> (if VS Code is already installed; otherwise leave Vim, you can change it later), and confirm that <strong>Git Credential Manager</strong> is selected. It is what will let you sign in to GitHub through the browser without typing passwords.</li>
+  <li><strong>Visual Studio Code.</strong> <em>User Installer</em>. Tick <strong>Add to PATH</strong> and <strong>Add "Open with Code" action</strong>. When it finishes, open it and install the <strong>Flutter</strong> extension (author Dart Code) from the Extensions menu, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>, typing "Flutter" in the search box. It is the first in the list.
+    <figure class="shot small"><img src="../assets/img/instalacao/vs-extensoes.png" alt="VS Code Extensions view with the search Flutter and the Flutter extension by Dart Code at the top of the list"><figcaption>Extensions → search "Flutter" → <strong>Flutter</strong>, by Dart Code. It brings the Dart extension with it.</figcaption></figure></li>
+  <li><strong>Android Studio.</strong> Installer with the default options. On first launch choose the <strong>Standard</strong> installation and accept the licences: it downloads the SDK, the platform-tools and an emulator. Let it run; come back here when it finishes. At the end the welcome screen below appears.
+    <figure class="shot medium"><img src="../assets/img/instalacao/as-inicio.png" alt="Android Studio welcome screen, Welcome to Android Studio, with the New Project, Open and Clone Repository buttons and the three-dot menu"><figcaption>Android Studio welcome screen. The three-dot menu, to the right of <em>Clone Repository</em>, is <strong>More Actions</strong>: that is how you get to the SDK Manager and the Device Manager.</figcaption></figure></li>
+  <li><strong>Windows Developer Mode.</strong> Flutter needs it to create symlinks when it builds plugins. Open the Start menu, type <em>Developer settings</em> (or run <code>start ms-settings:developers</code> in a terminal) and turn on the <strong>Developer Mode</strong> switch; confirm the warning. Without this, the error <code>Building with plugins requires symlink support</code> shows up later.
+    <figure class="diagram"><svg viewBox="0 0 900 120" role="img" aria-label="Diagram of the For developers page in Windows Settings with the Developer Mode switch turned on"><rect x="20" y="10" width="860" height="100" rx="8" class="box"/><text x="40" y="40" class="t b">Settings › System › For developers</text><text x="40" y="70" class="t">Developer Mode</text><text x="40" y="92" class="t s">Install apps from any source, including loose files.</text><rect x="780" y="58" width="60" height="28" rx="14" class="box ok"/><circle cx="826" cy="72" r="10" class="box ok"/><text x="760" y="77" class="t s" text-anchor="end">On</text></svg><figcaption>Diagram (not a screenshot). On Windows 10 the page is called <em>For developers</em> and is under Update &amp; Security.</figcaption></figure></li>
+</ol>
+
+<h3>Step 2: Flutter SDK through VS Code</h3>
+<ol class="steps">
+  <li>In VS Code open the command palette, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, type <code>flutter new</code> and choose <strong>Flutter: Create New Project</strong> (the documentation still calls it "Flutter: New Project"; it is the same command).
+    <figure class="shot medium"><img src="../assets/img/instalacao/vs-paleta.png" alt="VS Code command palette with the search Flutter: New and the Flutter: Create New Project command selected"><figcaption>The command palette is the box that appears at the top with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>. If no "Flutter" command shows up, the extension is not installed or the folder is in restricted mode (see below).</figcaption></figure></li>
+  <li>When it asks for the SDK, choose <strong>Download SDK</strong>.</li>
+  <li>In the folder window choose <code>C:\dev</code>. The SDK ends up in <code>C:\dev\flutter</code>.</li>
+  <li>Click <strong>Clone Flutter</strong> and wait. If it seems stuck for more than 15 minutes, cancel and try again.</li>
+  <li>When it appears, click <strong>Add SDK to PATH</strong>. If a notice about Google Analytics appears, click OK.</li>
+  <li><strong>Close VS Code and every terminal and open them again.</strong> The PATH only applies to new windows.</li>
+  <li>Open a new terminal (Start menu → <em>Terminal</em> or <em>PowerShell</em>) and confirm:
+<pre class="term"><code class="language-powershell">flutter --version</code></pre>
+    It should answer with Flutter 3.4x and Dart 3.1x. If it says that <code>flutter</code> is not recognized, see the <a href="#problemas">common problems</a>.</li>
+</ol>
+<div class="callout"><strong>Manual alternative</strong> If the download through VS Code fails, download the stable channel zip from <a href="https://docs.flutter.dev/install/archive" target="_blank" rel="noopener">docs.flutter.dev/install/archive</a> and extract it to <code>C:\dev</code> (giving <code>C:\dev\flutter</code>). Then: Start menu → type <em>environment variables</em> → <strong>Edit environment variables for your account</strong> → under <em>User variables</em> open <strong>Path</strong> → <strong>New</strong> → type <code>C:\dev\flutter\bin</code> → OK on everything. Close and reopen the terminals.</div>
+
+<h3>Step 3: Android SDK and licences</h3>
+<ol class="steps">
+  <li>In Android Studio: welcome screen → three-dot menu (<strong>More Actions</strong>) → <strong>SDK Manager</strong>. It opens the <em>Settings</em> window at the <em>Android SDK</em> section.
+    <figure class="shot small"><img src="../assets/img/instalacao/as-more-actions.png" alt="Android Studio More Actions menu with the options Import an Android Code Sample, Profile or Debug APK, Virtual Device Manager and SDK Manager"><figcaption>The <strong>More Actions</strong> menu. The SDK Manager and the Virtual Device Manager are here.</figcaption></figure></li>
+  <li><strong>SDK Platforms</strong> tab: the most recent platform (API 36 or higher) should have the status <em>Installed</em>. The <em>Android SDK Location</em> line at the top says where the SDK went; write it down.
+    <figure class="shot medium"><img src="../assets/img/instalacao/as-sdk-platforms.png" alt="SDK Manager, SDK Platforms tab, with Android 16.0 API 36.1 marked as installed and the SDK location at the top"><figcaption><strong>SDK Platforms.</strong> One recent platform installed is enough. The SDK location is in the box at the top.</figcaption></figure></li>
+  <li><strong>SDK Tools</strong> tab: tick <strong>Android SDK Command-line Tools (latest)</strong>, as well as Build-Tools, Platform-Tools and Emulator, and click <strong>Apply</strong> and then <strong>OK</strong>. The command-line tools are the component that is most often missing.
+    <figure class="shot medium"><img src="../assets/img/instalacao/as-sdk-tools.png" alt="SDK Manager, SDK Tools tab, with Android SDK Build-Tools, Command-line Tools, Emulator and Platform-Tools ticked"><figcaption><strong>SDK Tools.</strong> The four that matter: Build-Tools, Command-line Tools (latest), Emulator and Platform-Tools. CMake and the NDK are not needed for now.</figcaption></figure></li>
+  <li>In a terminal accept the licences, answering <kbd>y</kbd> to all of them:
+<pre class="term"><code class="language-powershell">flutter doctor --android-licenses</code></pre></li>
+  <li>Diagnosis:
+<pre class="term"><code class="language-powershell">flutter doctor</code></pre>
+    You need ✓ on Flutter, Android toolchain and Android Studio. Warnings about Visual Studio (it is for Windows desktop apps) and Chrome can be ignored.</li>
+</ol>
+
+<h3>What the PATH is, and when you need to touch it</h3>
+<p>When you type <code>flutter</code> in a terminal, Windows has to find out where the program with that name is. It looks for it in a list of folders called <strong>PATH</strong>. If the folder <code>C:\dev\flutter\bin</code> is not in that list, Windows answers that the command is not recognized, even with Flutter installed.</p>
+<p>The PATH is an <strong>environment variable</strong>: a named value, stored by Windows, that every program can read. It is not a file you edit; you change it in a settings window. The <strong>Add SDK to PATH</strong> button in VS Code makes that change for you, and as a rule you do not need to do anything else. You only change it by hand if, in a new terminal, <code>flutter --version</code> still says the command is not recognized.</p>
+<figure class="diagram">
+<svg viewBox="0 0 900 250" role="img" aria-label="How Windows finds a command: the terminal receives flutter, looks up the PATH list of folders and finds the program in C colon dev flutter bin">
+  <rect x="20" y="70" width="190" height="90" rx="10" class="box accent"/>
+  <text x="115" y="105" class="t b" text-anchor="middle">Terminal</text>
+  <text x="115" y="132" class="t mono" text-anchor="middle">flutter --version</text>
+  <line x1="210" y1="115" x2="268" y2="115" class="arrow"/>
+  <text x="239" y="103" class="t s" text-anchor="middle">where?</text>
+  <rect x="270" y="30" width="400" height="170" rx="10" class="box"/>
+  <text x="470" y="58" class="t b" text-anchor="middle">PATH: list of folders to search</text>
+  <text x="290" y="88" class="t mono">C:\Windows\System32</text>
+  <text x="290" y="112" class="t mono">C:\Program Files\Git\cmd</text>
+  <text x="290" y="136" class="t mono">C:\Users\Ana\AppData\...\VS Code\bin</text>
+  <text x="290" y="160" class="t mono" style="fill: var(--accent)">C:\dev\flutter\bin  ← the button adds this</text>
+  <text x="290" y="184" class="t s">if this line is missing: "not recognized"</text>
+  <line x1="670" y1="115" x2="728" y2="115" class="arrow"/>
+  <text x="699" y="103" class="t s" text-anchor="middle">found</text>
+  <rect x="730" y="70" width="150" height="90" rx="10" class="box ok"/>
+  <text x="805" y="105" class="t b" text-anchor="middle">flutter.bat</text>
+  <text x="805" y="132" class="t s" text-anchor="middle">C:\dev\flutter\bin</text>
+  <text x="450" y="235" class="t s" text-anchor="middle">A terminal reads the PATH when it opens. After changing the PATH, close it and open a new terminal.</text>
+</svg>
+<figcaption>The PATH is the list of folders where Windows looks for the commands you type.</figcaption>
+</figure>
+
+<h3>Changing the PATH by hand (only if you need to)</h3>
+<ol class="steps">
+  <li>Open the Start menu and type <em>environment variables</em>. Choose <strong>Edit environment variables for your account</strong> (in Portuguese, <em>Editar as variáveis de ambiente da conta</em>). The <em>Environment Variables</em> window opens.</li>
+  <li>In the top half, <em>User variables</em>, select the <strong>Path</strong> line and click <strong>Edit…</strong>.</li>
+  <li>In the next window click <strong>New</strong>, type <code>C:\dev\flutter\bin</code> and click <strong>OK</strong>. Then <strong>OK</strong> in the previous window, and <strong>OK</strong> again.</li>
+  <li>Close every terminal and VS Code, open a new terminal and run <code>flutter --version</code>.</li>
+</ol>
+<figure class="diagram">
+<svg viewBox="0 0 900 330" role="img" aria-label="Diagram of the two Windows dialogs: Environment Variables with the Path line selected and the Edit button, and Edit environment variable with the list of folders, the New button and the new line C colon dev flutter bin">
+  <rect x="20" y="20" width="400" height="290" rx="8" class="box"/>
+  <rect x="20" y="20" width="400" height="30" rx="8" class="box muted"/>
+  <text x="220" y="40" class="t b" text-anchor="middle">Environment Variables</text>
+  <text x="36" y="72" class="t s">User variables for Ana</text>
+  <rect x="36" y="82" width="368" height="110" rx="4" class="box muted"/>
+  <text x="48" y="104" class="t s">OneDrive        C:\Users\Ana\OneDrive</text>
+  <rect x="40" y="114" width="360" height="22" rx="3" class="box accent"/>
+  <text x="48" y="130" class="t s">Path            C:\Users\Ana\AppData\Local\...</text>
+  <text x="48" y="156" class="t s">TEMP            C:\Users\Ana\AppData\Local\Temp</text>
+  <rect x="220" y="200" width="56" height="24" rx="4" class="box"/><text x="248" y="217" class="t s" text-anchor="middle">New…</text>
+  <rect x="284" y="200" width="56" height="24" rx="4" class="box accent"/><text x="312" y="217" class="t s" text-anchor="middle">Edit…</text>
+  <rect x="348" y="200" width="56" height="24" rx="4" class="box"/><text x="376" y="217" class="t s" text-anchor="middle">Delete</text>
+  <text x="36" y="250" class="t s">System variables (do not touch)</text>
+  <rect x="36" y="258" width="368" height="40" rx="4" class="box muted"/>
+  <text x="220" y="325" class="t s" text-anchor="middle">1 · select Path in the user variables and click Edit</text>
+
+  <line x1="420" y1="212" x2="478" y2="140" class="arrow accent"/>
+
+  <rect x="480" y="20" width="400" height="290" rx="8" class="box"/>
+  <rect x="480" y="20" width="400" height="30" rx="8" class="box muted"/>
+  <text x="680" y="40" class="t b" text-anchor="middle">Edit environment variable</text>
+  <rect x="496" y="62" width="290" height="180" rx="4" class="box muted"/>
+  <text x="508" y="84" class="t s">C:\Users\Ana\AppData\Local\...\WindowsApps</text>
+  <text x="508" y="108" class="t s">C:\Program Files\Git\cmd</text>
+  <text x="508" y="132" class="t s">C:\Users\Ana\AppData\Local\Programs\...\bin</text>
+  <rect x="500" y="146" width="282" height="22" rx="3" class="box accent"/>
+  <text x="508" y="162" class="t s">C:\dev\flutter\bin</text>
+  <rect x="796" y="62" width="72" height="24" rx="4" class="box accent"/><text x="832" y="79" class="t s" text-anchor="middle">New</text>
+  <rect x="796" y="94" width="72" height="24" rx="4" class="box"/><text x="832" y="111" class="t s" text-anchor="middle">Edit</text>
+  <rect x="796" y="126" width="72" height="24" rx="4" class="box"/><text x="832" y="143" class="t s" text-anchor="middle">Browse…</text>
+  <rect x="740" y="262" width="56" height="24" rx="4" class="box accent"/><text x="768" y="279" class="t s" text-anchor="middle">OK</text>
+  <rect x="808" y="262" width="60" height="24" rx="4" class="box"/><text x="838" y="279" class="t s" text-anchor="middle">Cancel</text>
+  <text x="680" y="325" class="t s" text-anchor="middle">2 · New → type C:\dev\flutter\bin → OK, OK, OK</text>
+</svg>
+<figcaption>Diagram of the Windows dialogs (not a screenshot). On a Windows in Portuguese the names are: <em>Variáveis de Ambiente</em>, <em>Variáveis de utilizador</em>, <em>Editar</em>, <em>Novo</em>.</figcaption>
+</figure>
+<div class="callout tip"><strong>The other variables in this guide</strong> <code>GRADLE_USER_HOME</code> and <code>PUB_CACHE</code>, in the box for users with accents in their name, are created in the same window: under <em>User variables</em> click <strong>New…</strong>, type the name in one box and the value in the other, and OK.</div>
+
+<h3>Step 4: Windows Defender and antivirus</h3>
+<p>Defender scans every file that Flutter and Gradle write, and that makes the first build much slower; some antivirus programs even delete <code>flutter.bat</code>. Add <code>C:\dev</code> to the exclusions: Settings → Privacy &amp; security → Windows Security → Virus &amp; threat protection → Manage settings → Exclusions → Add a folder.</p>
+</section>
+
+<section id="macos">
+<h2>macOS, step by step</h2>
+<ol class="steps">
+  <li>Terminal: <code>xcode-select --install</code>. It installs the command-line tools, which include Git. On a Mac with an Apple chip, if asked, also install Rosetta: <code>softwareupdate --install-rosetta</code>.</li>
+  <li>Install <a href="https://code.visualstudio.com" target="_blank" rel="noopener">VS Code</a> and the Flutter extension.</li>
+  <li>Install <a href="https://developer.android.com/studio" target="_blank" rel="noopener">Android Studio</a> with the Standard installation.</li>
+  <li>In VS Code: <kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <strong>Flutter: Create New Project</strong> → <strong>Download SDK</strong> → folder <code>~/dev</code> → <strong>Clone Flutter</strong> → <strong>Add SDK to PATH</strong>. Close and reopen the Terminal.
+    <br>Manual alternative: extract the zip to <code>~/dev</code> and run <code>echo 'export PATH="$HOME/dev/flutter/bin:$PATH"' >> ~/.zprofile</code>.</li>
+  <li>Android Studio SDK Manager: Android SDK Command-line Tools. Then <code>flutter doctor --android-licenses</code> and <code>flutter doctor</code>.</li>
+  <li>Optional, for iOS: install Xcode from the App Store (more than 10 GB), then <code>sudo sh -c 'xcode-select -s /Applications/Xcode.app/Contents/Developer &amp;&amp; xcodebuild -runFirstLaunch'</code>, <code>sudo xcodebuild -license</code>, <code>xcodebuild -downloadPlatform iOS</code> and <a href="https://guides.cocoapods.org/using/getting-started.html#installation" target="_blank" rel="noopener">CocoaPods</a>. It is not required for the course.</li>
+</ol>
+</section>
+
+<section id="linux">
+<h2>Linux (Ubuntu and Debian), step by step</h2>
+<ol class="steps">
+  <li>Base packages:
+<pre class="term"><code class="language-bash">sudo apt-get update -y &amp;&amp; sudo apt-get upgrade -y
+sudo apt-get install -y curl git unzip xz-utils zip libglu1-mesa</code></pre></li>
+  <li>Install <a href="https://code.visualstudio.com" target="_blank" rel="noopener">VS Code</a> (.deb package) and the Flutter extension; install <a href="https://developer.android.com/studio" target="_blank" rel="noopener">Android Studio</a> with the Standard installation.</li>
+  <li>In VS Code: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <strong>Flutter: Create New Project</strong> → <strong>Download SDK</strong> → folder <code>~/dev</code> → <strong>Clone Flutter</strong> → <strong>Add SDK to PATH</strong>. Close and reopen the terminal.
+    <br>Manual alternative: <code>tar -xf ~/Downloads/flutter_linux_*-stable.tar.xz -C ~/dev/</code> and <code>echo 'export PATH="$HOME/dev/flutter/bin:$PATH"' >> ~/.bashrc</code>.</li>
+  <li>SDK Manager: Android SDK Command-line Tools. Then <code>flutter doctor --android-licenses</code> and <code>flutter doctor</code>.</li>
+  <li>For the phone over USB: <code>sudo apt-get install -y android-sdk-platform-tools-common</code> and <code>sudo usermod -aG plugdev $USER</code>; log out and log back in.</li>
+</ol>
+</section>
+
+<section id="git">
+<h2>Git and GitHub</h2>
+<p>On every system. The goal is for you to be able to clone, change, commit and push from VS Code by the end of the week.</p>
+<ol class="steps">
+  <li><strong>GitHub account.</strong> Create one at <a href="https://github.com/signup" target="_blank" rel="noopener">github.com/signup</a> with your school or personal email. The user name will appear on your CV: choose one you can show to an employer. Confirm the email.</li>
+  <li><strong>Identity in commits.</strong> In a terminal, with your name and the email of your GitHub account:
+<pre class="term"><code class="language-bash">git config --global user.name "First Last"
+git config --global user.email "your-email@example.com"
+git config --global init.defaultBranch main</code></pre>
+    If you installed Git before VS Code, set the editor now: <code>git config --global core.editor "code --wait"</code>.</li>
+  <li><strong>Full test.</strong> On GitHub, click <strong>New repository</strong>, call it <code>pdm-test</code>, tick <em>Add a README file</em> and create it. Copy the repository URL (green <em>Code</em> button → HTTPS). Then, in VS Code: command palette → <strong>Git: Clone</strong> → paste the URL → choose the folder <code>C:\dev</code> (or <code>~/dev</code>) → <strong>Open</strong> when it asks.
+    <figure class="shot medium"><img src="../assets/img/instalacao/vs-clone.png" alt="VS Code palette with the Git: Clone command and a GitHub URL pasted in, with the Clone from URL option"><figcaption>After choosing <strong>Git: Clone</strong>, you paste the URL and confirm <em>Clone from URL</em>.</figcaption></figure></li>
+  <li>If a yellow <em>Restricted Mode</em> notice appears when you open the folder, click <strong>Manage</strong> and then <strong>Trust</strong>. VS Code asks this question for any folder it does not know yet; without trust, the extensions, including the Flutter one, stay switched off.
+    <figure class="shot medium"><img src="../assets/img/instalacao/vs-restricted.png" alt="VS Code Workspace Trust window, You are in Restricted Mode, with the Trust button"><figcaption><strong>Restricted Mode.</strong> Click <em>Trust</em> so that the extensions work in this folder.</figcaption></figure></li>
+  <li>Edit <code>README.md</code>, add a line, save (<kbd>Ctrl</kbd>+<kbd>S</kbd>). Open the <em>Source Control</em> view: the icon with three connected circles in the bar on the left, or palette → <strong>View: Show Source Control</strong>. Type a message in the box, click <strong>Commit</strong> and then <strong>Sync Changes</strong> (or <strong>Publish Branch</strong>).
+    <figure class="shot small"><img src="../assets/img/instalacao/vs-source-control.png" alt="VS Code Source Control view with the message Acrescenta uma linha ao README (adds a line to the README), the Commit button and the README.md file in the list of changes"><figcaption><strong>Source Control.</strong> Message, Commit, and then Sync Changes to send it to GitHub.</figcaption></figure></li>
+  <li>The first time, Git Credential Manager opens the browser for you to authorise access to GitHub. Authorise it. You will not need a password again on this computer.</li>
+  <li>Open the repository on GitHub and confirm that the change is there. From here on Git is working.</li>
+</ol>
+<div class="callout tip"><strong>Windows: two useful settings</strong> <code>git config --global core.longpaths true</code> avoids errors with long paths in Flutter projects; <code>core.autocrlf</code> keeps the installer's default value (<code>true</code>), which is the right one on Windows.</div>
+</section>
+
+<section id="telemovel">
+<h2>Where to run the app: phone or emulator</h2>
+<p>You need one of the two by Friday's lesson; in the first lesson neither is needed. The phone is faster and more real; the emulator will do if you have no Android phone or cable, but it needs a laptop with 16 GB of RAM to be pleasant.</p>
+<h3>Option A: Android phone</h3>
+<ol class="steps">
+  <li><strong>Developer options.</strong> Settings → About phone → tap <strong>7 times</strong> on <em>Build number</em> (on some models it is under <em>Software information</em> or <em>Version</em>).</li>
+  <li><strong>USB debugging.</strong> Settings → System → Developer options → <strong>USB debugging</strong>. On Xiaomi and Redmi also turn on <em>Install via USB</em>.</li>
+  <li><strong>Cable.</strong> Use a data cable; many cheap cables only charge. On the phone choose <em>File transfer</em> if it asks, and accept <strong>Allow USB debugging</strong> for this computer, with "Always allow".</li>
+  <li><strong>Windows:</strong> if the phone does not show up in the next step, install the <a href="https://developer.android.com/studio/run/oem-usb" target="_blank" rel="noopener">manufacturer's USB driver</a>. For Google Pixel and many others, the <em>Google USB Driver</em> is installed through the SDK Manager, SDK Tools tab.</li>
+  <li>Confirm:
+<pre class="term"><code class="language-bash">flutter devices</code></pre>
+    The model should appear with <em>android-arm64</em>. If <em>unauthorized</em> appears, there is a request waiting on the phone screen.</li>
+</ol>
+<div class="callout"><strong>No cable</strong> Android 11 or higher has <em>Wireless debugging</em> in the developer options; pair with <code>adb pair</code> following <a href="https://developer.android.com/studio/run/device#wireless" target="_blank" rel="noopener">this guide</a>. It is slower than the cable.</div>
+<h3>Option B: Android emulator</h3>
+<ol class="steps">
+  <li>On Windows, the emulator needs the <em>Windows Hypervisor Platform</em>. Android Studio asks to enable it the first time and restarts the computer. If it does not ask: Start menu → <em>Turn Windows features on or off</em> → tick <em>Windows Hypervisor Platform</em> → OK → restart.</li>
+  <li>Android Studio welcome screen → three-dot menu → <strong>Virtual Device Manager</strong>. The <em>Device Manager</em> opens; click the <strong>+</strong> to create a device.
+    <figure class="shot medium"><img src="../assets/img/instalacao/as-device-manager.png" alt="Android Studio Device Manager with a Medium Phone API 36.1 virtual device and the + button to add one"><figcaption><strong>Device Manager.</strong> The <strong>+</strong> creates a virtual device; the triangle on the right of each row starts it.</figcaption></figure></li>
+  <li>Choose <strong>Medium Phone</strong> or a recent <strong>Pixel</strong>, <strong>Next</strong>, accept the suggested system image (it downloads about 1 GB), <strong>Finish</strong>.
+    <figure class="shot medium"><img src="../assets/img/instalacao/as-add-device.png" alt="Android Studio Add Device window with the list of phones, Medium Phone and several Pixels"><figcaption><strong>Add Device.</strong> Any phone in the list will do; Medium Phone is the lightest.</figcaption></figure></li>
+  <li>Start it with the triangle in the Device Manager. When the Android screen appears, confirm in a terminal:
+<pre class="term"><code class="language-bash">flutter emulators
+flutter devices</code></pre></li>
+</ol>
+</section>
+
+<section id="verificar">
+<h2>Check and first app</h2>
+<p>The terminal can be the Windows one (Start menu → <em>Terminal</em> or <em>PowerShell</em>) or the VS Code one: <em>Terminal → New Terminal</em> menu, or <kbd>Ctrl</kbd>+<kbd>`</kbd>. It is the same thing.</p>
+<figure class="shot medium"><img src="../assets/img/instalacao/vs-terminal.png" alt="VS Code integrated terminal with the flutter --version command and the answer Flutter 3.41.4 channel stable, Dart 3.11.1"><figcaption>The terminal inside VS Code, with <code>flutter --version</code> answering. This kind of answer is what confirms that Flutter is on the PATH.</figcaption></figure>
+<ol class="steps">
+  <li>Full diagnosis:
+<pre class="term"><code class="language-bash">flutter doctor -v</code></pre></li>
+  <li>Create and run the sample app, inside the working folder:
+<pre class="term"><code class="language-bash">cd C:\dev
+flutter create hello_mobile
+cd hello_mobile
+flutter run</code></pre>
+    On macOS and Linux, <code>cd ~/dev</code>. If there is more than one device (phone and emulator), Flutter asks which one to use. The first build downloads Gradle and takes several minutes. When the app opens, tap the + button and watch the counter go up.</li>
+  <li>With the app running, open the <code>hello_mobile</code> folder in VS Code, edit <code>lib/main.dart</code>, change a piece of text, save, and press <kbd>r</kbd> in the terminal. The change appears on the phone without restarting: that is hot reload.</li>
+</ol>
+</section>
+
+<section id="problemas">
+<h2>Common problems</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Message or symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td><code>flutter</code> is not recognized as a command</td><td>PATH without <code>flutter\bin</code>, or terminal opened before the change</td><td>Close every terminal and VS Code and open them again. If it persists, check the PATH (manual section above): it has to point to the <code>bin</code> folder inside <code>flutter</code>.</td></tr>
+<tr><td><code>Building with plugins requires symlink support</code></td><td>Windows Developer Mode is off</td><td><code>start ms-settings:developers</code> and turn on Developer Mode.</td></tr>
+<tr><td><code>Unable to locate Android SDK</code></td><td>Flutter did not find the SDK folder</td><td>In the SDK Manager the path is at the top (usually <code>%LOCALAPPDATA%\Android\Sdk</code>). Run <code>flutter config --android-sdk "that\path"</code>.</td></tr>
+<tr><td><code>cmdline-tools component is missing</code></td><td>The component is missing</td><td>SDK Manager → SDK Tools → Android SDK Command-line Tools (latest) → Apply.</td></tr>
+<tr><td><code>Android license status unknown</code></td><td>Licences not accepted yet</td><td><code>flutter doctor --android-licenses</code>.</td></tr>
+<tr><td>Strange errors when creating projects, or <code>pub get</code> slow and failing</td><td>Project or SDK in a OneDrive folder, or path with spaces or accents</td><td>Move everything to <code>C:\dev</code>. Check in the OneDrive Settings that <code>C:\dev</code> is not synced.</td></tr>
+<tr><td><code>flutter.bat</code> has disappeared, or "file quarantined"</td><td>Antivirus</td><td>Add <code>C:\dev</code> to the exclusions and reinstall the SDK.</td></tr>
+<tr><td><code>Filename too long</code> in git or in the build</td><td>Windows path length limit</td><td><code>git config --global core.longpaths true</code>; keep projects close to the root, as in <code>C:\dev</code>.</td></tr>
+<tr><td>Phone does not show up in <code>flutter devices</code></td><td>Charge-only cable, USB debugging off, trust request not accepted, missing driver</td><td>Change the cable first. Then go through the phone section again, one item at a time.</td></tr>
+<tr><td><code>Unsupported class file major version</code>, or <code>Gradle version is incompatible with the Java version</code></td><td>Flutter picked up a separately installed Java (for example a JDK 25 or 26 in <code>JAVA_HOME</code>) that the project's Gradle does not support</td><td>Look at the <em>Java version</em> line in <code>flutter doctor -v</code>. Point Flutter at the Java that comes with Android Studio: <code>flutter config --jdk-dir "C:\Program Files\Android\Android Studio\jbr"</code> (on macOS, <code>/Applications/Android Studio.app/Contents/jbr/Contents/Home</code>). In the lesson repositories run <code>git stash -u</code> and then <code>git pull</code>: Gradle now comes in a version that accepts any Java from 17 to 26.</td></tr>
+<tr><td>Gradle error or interrupted download on the first build</td><td>Network</td><td>Run <code>flutter run</code> again. If it keeps happening, delete the <code>.gradle</code> folder in your home folder and try again.</td></tr>
+<tr><td>Push rejected, or it keeps asking for a password</td><td>Credential Manager not installed or authorisation not completed</td><td>Reinstall Git for Windows with Git Credential Manager selected; on push, complete the authorisation in the browser.</td></tr>
+<tr><td>Everything is very slow</td><td>Emulator or Android Studio using up the RAM</td><td>Use the phone; close Android Studio when you work in VS Code.</td></tr>
+</tbody></table></div>
+<p>If none of this solves it: <a href="https://docs.flutter.dev/install/troubleshoot" target="_blank" rel="noopener">official troubleshooting</a>, or the Moodle forum with the full error message.</p>
+</section>
+
+<section id="semana1">
+<h2>Week 1 checklist</h2>
+<div class="cols">
+<div>
+<h3>End of lesson 1 (Monday)</h3>
+<ul class="checklist">
+  <li>Android Studio, Git and VS Code installed; Android SDK downloading or downloaded.</li>
+  <li>Flutter extension in VS Code; Flutter SDK download started.</li>
+  <li>GitHub account created.</li>
+</ul>
+<h3>Homework by Tuesday</h3>
+<ul class="checklist">
+  <li><code>flutter --version</code> answers in a new terminal.</li>
+  <li>Command-line tools installed and licences accepted.</li>
+  <li><code>git config</code> with name and email done.</li>
+</ul>
+</div>
+<div>
+<h3>End of lesson 2 (Tuesday)</h3>
+<ul class="checklist">
+  <li><code>pdm-test</code> repository cloned, with a commit of yours pushed to GitHub.</li>
+</ul>
+<h3>End of lesson 3 (Wednesday)</h3>
+<ul class="checklist">
+  <li><code>flutter doctor</code> with ✓ on Flutter, Android toolchain and Android Studio.</li>
+  <li>One device in <code>flutter devices</code>: phone over USB or emulator created.</li>
+</ul>
+<h3>Lesson 4 (Friday)</h3>
+<ul class="checklist">
+  <li>Sample app running on the phone or on the emulator, with hot reload.</li>
+</ul>
+<h3>Lesson 5 (Monday, 28/9)</h3>
+<ul class="checklist">
+  <li>Clone of the lesson 5 repository and first screen of the app.</li>
+</ul>
+</div>
+</div>
+</section>
+
+<nav class="pager" id="pager"></nav>
+</main>
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/powershell.min.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" class="deck">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13 · Layered architecture and state management · PDM</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body data-aula="13">
+<header class="site"><div class="wrap">
+  <a class="brand" href="../index.html">PDM <span>·</span> DAW 2</a>
+  <nav>
+    <a href="../index.html#calendar">Calendar</a>
+    <a href="../guia-instalacao.html">Setup</a>
+    <a href="../projeto.html">Project</a>
+    <a href="../avaliacao.html">Assessment</a>
+    <a href="../api.html">API</a>
+  </nav>
+  <div class="tools"><button id="theme-toggle" type="button">Theme</button><button id="proj-toggle" type="button">Projector</button></div>
+</div></header>
+
+<div class="deck" id="deck">
+
+<section class="slide title" data-part="Start">
+  <p class="kicker">Lesson 13 · Week 7 · Monday, 19 October 2026 · 16:00 to 18:00</p>
+  <h1>Layered architecture and state management</h1>
+  <p class="lead">Theory: splitting the app into layers (presentation, domain, data), the repository pattern and dependency injection; criteria for choosing between simple and complex architectures. Practice: repository, notifier and Provider connecting the interface to the data.</p>
+  <div class="meta"><span>Repository: pdm-aula-13</span></div>
+  <aside class="notes">Start by asking two students to show the detail screen from the homework. Ask: "where is the HTTP call?" The answer (inside the widget) is the problem this lesson solves. Do not spend more than five minutes here.</aside>
+</section>
+
+<section class="slide" data-part="Objectives">
+  <h2>By the end of this lesson you can</h2>
+  <ul>
+    <li>Explain why to separate presentation, domain and data, and what each layer is allowed to know.</li>
+    <li>Write a repository with an interface and an implementation, and tell a DTO from a domain model.</li>
+    <li>Inject dependencies by constructor and distribute them with Provider, with no hidden singletons.</li>
+    <li>Model the state of a screen in a <code>ChangeNotifier</code> and connect it to the UI with <code>watch</code>, <code>read</code>, <code>Consumer</code> and <code>Selector</code>.</li>
+    <li>Test a notifier by swapping the repository for a fake.</li>
+  </ul>
+</section>
+
+<section class="slide" data-part="Theory">
+  <h2>Why layers</h2>
+  <ul>
+    <li>A widget that imports <code>package:http</code> is a warning sign: the UI knows too much.</li>
+    <li><strong>Test without a network.</strong> A test that needs Wi-Fi is not a test, it is a lottery. With layers, you replace the data source with a fake.</li>
+    <li><strong>Swap the source.</strong> API v1 to v2 (lesson 28), a local file in tests, a disk cache in lesson 16. The screens do not change.</li>
+    <li><strong>Reuse.</strong> The list of locations appears on the home screen, in the favourites and on the map. One request, three screens.</li>
+    <li>Real example: in the Spotify or Nubank app the UI asks "give me the account" and does not know whether it came from the network, the cache or the disk.</li>
+  </ul>
+  <p><strong>For the tests:</strong> layers exist to isolate changes; the UI must not know about HTTP or JSON.</p>
+</section>
+
+<section class="slide">
+  <h2>UI → Notifier → Repository → DataSource</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 350" role="img" aria-label="Four stacked layers: UI, Notifier or ViewModel, Repository as an interface and DataSources (remote API and local database), with dependencies pointing down only; alongside, in tests a FakeRepository implements the same interface">
+    <rect x="40" y="20" width="480" height="56" rx="10" class="box"/>
+    <text x="56" y="43" class="t b">UI · widgets</text>
+    <text x="56" y="63" class="t s">shows the state, triggers actions; only knows the notifier</text>
+    <path d="M280 76 L280 104" class="arrow"/>
+    <text x="292" y="95" class="t s">the arrows only point down</text>
+    <rect x="40" y="106" width="480" height="56" rx="10" class="box"/>
+    <text x="56" y="129" class="t b">Notifier / ViewModel</text>
+    <text x="56" y="149" class="t s">screen state: loading, data, error; only knows the repository</text>
+    <path d="M280 162 L280 190" class="arrow"/>
+    <rect x="40" y="192" width="480" height="56" rx="10" class="box accent"/>
+    <text x="56" y="215" class="t b">Repository · interface</text>
+    <text x="56" y="235" class="t s">picks the source, converts DTO to model; only knows the data sources</text>
+    <path d="M157 248 L157 276" class="arrow"/>
+    <path d="M402 248 L402 276" class="arrow"/>
+    <rect x="40" y="278" width="235" height="56" rx="10" class="box"/>
+    <text x="56" y="301" class="t b">DataSource · remote API</text>
+    <text x="56" y="321" class="t s">ApiClient, HTTP, JSON</text>
+    <rect x="285" y="278" width="235" height="56" rx="10" class="box"/>
+    <text x="301" y="301" class="t b">DataSource · local DB</text>
+    <text x="301" y="321" class="t s">drift, SQLite, files</text>
+    <text x="560" y="43" class="t b">In tests</text>
+    <text x="560" y="63" class="t s">the repository is replaced by a fake</text>
+    <rect x="560" y="106" width="300" height="56" rx="10" class="box muted"/>
+    <text x="576" y="129" class="t b">Notifier under test</text>
+    <text x="576" y="149" class="t s">gets the fake, not the real one (injection)</text>
+    <path d="M710 162 L710 190" class="arrow"/>
+    <rect x="560" y="192" width="300" height="56" rx="10" class="box ok"/>
+    <text x="576" y="215" class="t b mono">FakeRepository</text>
+    <text x="576" y="235" class="t s">fixed data: no network, no database</text>
+    <path d="M560 220 L524 220" class="arrow dashed"/>
+    <text x="560" y="272" class="t s">implements the same interface as the real one</text>
+  </svg>
+  <figcaption>Each layer only knows the one below. Because the repository is an interface, the test swaps it for a fake without touching the UI.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Layer</th><th>Responsibility</th><th>Only knows</th></tr></thead>
+  <tbody>
+  <tr><td><strong>UI</strong> (widgets)</td><td>Show the state, trigger actions</td><td>The notifier</td></tr>
+  <tr><td><strong>ViewModel / Notifier</strong></td><td>Screen state (loading, data, error) and presentation logic</td><td>The repository</td></tr>
+  <tr><td><strong>Repository</strong></td><td>Decide where the data comes from, convert DTO to model</td><td>Data sources</td></tr>
+  <tr><td><strong>DataSource</strong></td><td>Talk to the API, the database, the preferences</td><td>HTTP, SQL, files</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li><strong>Dependency rule:</strong> the arrows point down only. A layer never imports the one above it.</li>
+    <li>The names vary (MVVM, Clean Architecture, "layers"); the idea is the same: presentation, domain, data.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the UI depends on the domain, never on the data; the repository is the boundary between the two.</p>
+  <aside class="notes">Draw the four boxes on the board with arrows pointing down. Then ask: "can the widget call the ApiClient directly?" No. "Can the repository know about the BuildContext?" No. These two questions come up in the test.</aside>
+</section>
+
+<section class="slide">
+  <h2>Repository: one interface, several sources</h2>
+  <ul>
+    <li>One interface (<code>abstract class ForecastRepository</code>) and several implementations: remote, with cache, fake for tests.</li>
+    <li>The repository hides the origin: <code>forecast(id)</code> returns a <code>Forecast</code>, whether it comes from the network, the disk or memory.</li>
+    <li><strong>DTO</strong> (Data Transfer Object): the shape of the JSON exactly as the API sends it. It changes when the API changes.</li>
+    <li><strong>Domain model:</strong> the shape the app wants, with rich types (<code>DateTime</code>, <code>enum</code>, <code>double</code>). Stable.</li>
+    <li>The conversion lives in one place (<code>ForecastDto.toDomain()</code>). When API v2 renames fields, only the DTO changes.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the DTO mirrors the API, the model mirrors the app; the repository converts one into the other.</p>
+  <div class="callout"><strong>Analogy</strong> A single counter. The screen asks the counter for "the forecast for Horta" and neither knows nor cares whether it came from the stockroom (the cache) or from the supplier (the API). Changing supplier does not change the screen. Testing is putting in a pretend counter (the fake) that always gives the same answer.</div>
+</section>
+
+<section class="slide">
+  <h2>Dependency injection</h2>
+  <ul>
+    <li><strong>Inject</strong> = whoever uses it does not create it. <code>ForecastNotifier(repository)</code> receives the repository by constructor instead of building it inside.</li>
+    <li>A hidden global singleton (<code>ApiClient.instance</code>) is an invisible dependency: it cannot be swapped in tests and nobody knows who depends on whom.</li>
+    <li><strong>Provider:</strong> <code>Provider&lt;ForecastRepository&gt;(create: …)</code> at the root of the tree; widgets ask for it with <code>context.read</code>. It is what we use in the project.</li>
+    <li><strong>get_it:</strong> a service locator. Simple, but it hides dependencies. Acceptable in small apps; avoid it in code you want to test.</li>
+    <li>Rule: constructor always; Provider to carry the instances to the widgets; never <code>ApiClient()</code> inside a notifier.</li>
+  </ul>
+  <p><strong>For the tests:</strong> constructor injection lets you swap the repository for a fake without touching the code under test.</p>
+</section>
+
+<section class="slide">
+  <h2>Simple vs complex: when to scale up</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Situation</th><th>Choice</th></tr></thead>
+  <tbody>
+  <tr><td>State of a single widget: active tab, checkbox, animation</td><td><code>setState</code></td></tr>
+  <tr><td>State shared by several screens, small team</td><td><code>ChangeNotifier</code> + Provider (our project)</td></tr>
+  <tr><td>Many events, auditable history, large teams</td><td>BLoC / Cubit</td></tr>
+  <tr><td>Typed global providers, no <code>BuildContext</code>, many derived values</td><td>Riverpod</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Google's architecture guide for Flutter recommends MVVM, repositories and constructor injection: "start simple, scale when you need to".</li>
+    <li>Moving from <code>ChangeNotifier</code> to BLoC later is easy if the layers exist. The opposite is harder.</li>
+  </ul>
+  <p><strong>For the tests:</strong> the right architecture is the simplest one that solves the current problem, with boundaries that leave room to grow.</p>
+  <div class="callout"><strong>Analogy</strong> Where the shopping list lives. A sticky note on the fridge in one room (<code>setState</code>: only that screen sees it); a board in the kitchen that the whole house checks and that tells everyone when it changes (<code>ChangeNotifier</code> + Provider); a ledger with every change dated and who made it (BLoC: events and states). The board is enough for most houses.</div>
+  <aside class="notes">Ask the class: "does the settings form with two switches need Provider?" No, setState is enough. "And the favourites, which appear on three screens?" Yes. The criterion is how many screens share the state.</aside>
+</section>
+
+<section class="slide" data-part="Practice">
+  <h2>Lesson repository</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-13.git
+cd pdm-aula-13/starter
+flutter pub get
+flutter run</code></pre>
+  <ul>
+    <li><code>starter/</code> is Wednesday's app with <code>provider</code> in the <code>pubspec.yaml</code>, TODOs numbered 1 to 5 and failing tests in <code>test/</code>.</li>
+    <li><code>solucao/</code> is the final state, organised by feature: <code>lib/forecast/</code>, <code>lib/favorites/</code>, <code>lib/core/</code>.</li>
+    <li>Run <code>flutter test</code> now: five red tests. By the end of the lesson they are green.</li>
+  </ul>
+  <div class="callout task"><strong>Before writing code</strong> Open <code>lib/ui/locations_screen.dart</code> and underline everything that should not be in a widget. That is the list of what we are going to move.</div>
+</section>
+
+<section class="slide">
+  <h2>1. <code>ForecastRepository</code>: interface and implementation</h2>
+<pre data-title="lib/forecast/forecast_repository.dart"><code class="language-dart">abstract class ForecastRepository {
+  Future&lt;List&lt;Location&gt;&gt; locations();
+  Future&lt;Forecast&gt; forecast(int locationId);
+}
+
+class ForecastRepositoryApi implements ForecastRepository {
+  ForecastRepositoryApi(this._api);   // injected by constructor
+
+  final ApiClient _api;
+
+  @override
+  Future&lt;List&lt;Location&gt;&gt; locations() async {
+    final json = await _api.get('/v1/locations') as List&lt;dynamic&gt;;
+    return json
+        .map((e) =&gt; Location.fromJson(e as Map&lt;String, dynamic&gt;))
+        .toList();
+  }
+
+  @override
+  Future&lt;Forecast&gt; forecast(int locationId) async {
+    final json = await _api.get('/v1/forecast/$locationId') as Map&lt;String, dynamic&gt;;
+    return Forecast.fromJson(json);
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Repository: what matters</h2>
+  <ul>
+    <li>The interface says <em>what</em> (locations, forecast); the implementation says <em>how</em> (HTTP, paths, JSON). The UI only sees the interface.</li>
+    <li>The <code>ApiClient</code> comes in through the constructor. In tests a <code>MockClient</code> comes in; in lesson 16 a database comes in too.</li>
+    <li>JSON does not leave this layer. Whoever calls <code>locations()</code> receives a <code>List&lt;Location&gt;</code> and never sees a <code>Map</code>.</li>
+    <li>In the starter the DTO and the model are the same class (<code>fromJson</code>). When the API changes shape, separate them.</li>
+    <li>The implementation name says the source: <code>…Api</code>, <code>…Cache</code>, <code>…Fake</code>. You will have all three.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 1</strong> Create <code>WarningsRepository</code> with the method <code>Future&lt;List&lt;Warning&gt;&gt; warnings()</code> and the implementation <code>WarningsRepositoryApi</code> on top of <code>GET /v1/warnings</code>. The test <code>test/warnings_repository_test.dart</code> uses a <code>MockClient</code> and has to pass.</div>
+</section>
+
+<section class="slide">
+  <h2>2. <code>ForecastNotifier</code>: the state of the screen</h2>
+<pre data-title="lib/forecast/forecast_notifier.dart"><code class="language-dart">class ForecastNotifier extends ChangeNotifier {
+  ForecastNotifier(this._repo);
+
+  final ForecastRepository _repo;
+
+  bool isLoading = false;
+  String? error;
+  List&lt;Location&gt; locations = const [];
+
+  Future&lt;void&gt; load() async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    try {
+      locations = await _repo.locations();
+    } on ApiException catch (e) {
+      error = e.message;
+    } catch (_) {
+      error = 'Something went wrong. Try again.';
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Notifier: what matters</h2>
+  <ul>
+    <li><code>ChangeNotifier</code> is a Flutter class with a list of listeners. <code>notifyListeners()</code> tells them; Provider turns that into rebuilds.</li>
+    <li>The state is three fields: <code>isLoading</code>, <code>error</code>, <code>locations</code>. Tomorrow we replace them with a <code>sealed class</code> that rules out impossible combinations (loading and error at the same time).</li>
+    <li>Two notifications per load: one at the start (shows the loading) and another in the <code>finally</code> (shows the result or the error).</li>
+    <li>The notifier does not know about widgets, <code>BuildContext</code> or <code>SnackBar</code>. That is why it can be tested without <code>pumpWidget</code>.</li>
+    <li>A human error message by default. The technical one (<code>e.toString()</code>) goes to the log, not to the screen.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 2</strong> Create <code>DetailNotifier</code> with <code>load(int locationId)</code> that stores a <code>Forecast?</code>. The test <code>test/detail_notifier_test.dart</code> checks <code>isLoading</code> before and after.</div>
+</section>
+
+<section class="slide">
+  <h2>3. Provider: wiring the pieces at the root</h2>
+<pre data-title="lib/main.dart"><code class="language-dart">void main() {
+  final api = ApiClient(baseUrl: 'https://api.pdm.example'); // real URL on the API page
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider&lt;ForecastRepository&gt;(
+          create: (_) =&gt; ForecastRepositoryApi(api),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =&gt;
+              ForecastNotifier(context.read&lt;ForecastRepository&gt;())..load(),
+        ),
+      ],
+      child: const TempoApp(),
+    ),
+  );
+}</code></pre>
+  <p>The order matters: the notifier asks for the repository with <code>context.read</code>, so the repository has to come first in the list.</p>
+</section>
+
+<section class="slide">
+  <h2>3. The screen only knows the notifier</h2>
+<pre data-title="lib/forecast/locations_screen.dart"><code class="language-dart">class LocationsScreen extends StatelessWidget {
+  const LocationsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = context.watch&lt;ForecastNotifier&gt;();
+
+    if (notifier.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (notifier.error != null) {
+      return Center(
+        child: FilledButton.icon(
+          onPressed: () =&gt; context.read&lt;ForecastNotifier&gt;().load(),
+          icon: const Icon(Icons.refresh),
+          label: Text('${notifier.error} · Try again'),
+        ),
+      );
+    }
+    return ListView(
+      children: [
+        for (final l in notifier.locations)
+          ListTile(title: Text(l.name), subtitle: Text(l.island)),
+      ],
+    );
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Provider: what matters</h2>
+  <ul>
+    <li><code>context.watch&lt;T&gt;()</code> subscribes: the widget rebuilds on every <code>notifyListeners</code>. Only inside <code>build</code>.</li>
+    <li><code>context.read&lt;T&gt;()</code> does not subscribe: for calling methods in callbacks (<code>onPressed</code>, <code>initState</code>).</li>
+    <li><code>Consumer&lt;T&gt;</code> limits the rebuild to a subtree. <code>Selector&lt;T, R&gt;</code> only rebuilds when <code>R</code> changes (for example <code>locations.length</code>).</li>
+    <li>Classic mistakes: <code>watch</code> inside <code>onPressed</code> throws an exception; <code>read</code> in <code>build</code> does not update; <code>ProviderNotFoundException</code> when the widget is outside the Provider's tree.</li>
+    <li>The screen is a <code>StatelessWidget</code> again: the state lives in the notifier, the widget only describes it.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 3</strong> Connect the detail screen to <code>DetailNotifier</code>. Use <code>Selector</code> so that the header with the location name does not rebuild when only the forecast changes. Confirm with the DevTools inspector ("Highlight repaints").</div>
+  <aside class="notes">The question of the day is watch vs read. Rule to say out loud: "watch in build, read in callbacks". Show the exception live by putting a watch inside onPressed. Give 15 minutes for exercise 3.</aside>
+</section>
+
+<section class="slide">
+  <h2>4. Testing by swapping the repository for a fake</h2>
+<pre data-title="test/forecast_notifier_test.dart"><code class="language-dart">class ForecastRepositoryFake implements ForecastRepository {
+  ForecastRepositoryFake({this.fails = false});
+  final bool fails;
+
+  @override
+  Future&lt;List&lt;Location&gt;&gt; locations() async {
+    if (fails) throw const ApiException('no network');
+    return const [Location(id: 3, name: 'Ponta Delgada', island: 'São Miguel')];
+  }
+
+  @override
+  Future&lt;Forecast&gt; forecast(int id) =&gt; throw UnimplementedError();
+}
+
+void main() {
+  test('load fills locations', () async {
+    final n = ForecastNotifier(ForecastRepositoryFake());
+    await n.load();
+    expect(n.locations, hasLength(1));
+    expect(n.error, isNull);
+  });
+  test('load stores the error when the repository fails', () async {
+    final n = ForecastNotifier(ForecastRepositoryFake(fails: true));
+    await n.load();
+    expect(n.error, 'no network');
+  });
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>4. Fakes: what matters</h2>
+  <ul>
+    <li>The fake implements the same interface. The notifier does not know it is being fooled: that is exactly the point of the interface.</li>
+    <li>No network, no <code>pumpWidget</code>, no Provider: a pure unit test that runs in milliseconds.</li>
+    <li>One fake per scenario (<code>fails: true</code>) tests the error path, which is the one nobody tests by hand.</li>
+    <li>In lesson 25 we replace hand-written fakes with <code>mocktail</code>. The idea is the same.</li>
+    <li>The same fake is useful for developing the UI without a backend: swap the <code>create</code> in <code>main</code> and the app runs in demo mode.</li>
+  </ul>
+  <div class="callout task"><strong>Exercise 4</strong> Write the test "load clears the previous error": a notifier that failed once and then loads successfully has to end up with <code>error == null</code>. You need a fake that fails only on the first call.</div>
+</section>
+
+<section class="slide">
+  <h2>5. Favourites in memory, shared between two screens</h2>
+<pre data-title="lib/favorites/favorites_notifier.dart"><code class="language-dart">class FavoritesNotifier extends ChangeNotifier {
+  final Set&lt;int&gt; _ids = {};
+
+  bool contains(int locationId) =&gt; _ids.contains(locationId);
+  int get total =&gt; _ids.length;
+
+  void toggle(int locationId) {
+    if (!_ids.add(locationId)) _ids.remove(locationId);
+    notifyListeners();
+  }
+}
+
+// In the list: an icon that reacts to the state
+IconButton(
+  icon: Icon(context.watch&lt;FavoritesNotifier&gt;().contains(l.id)
+      ? Icons.star
+      : Icons.star_border),
+  onPressed: () =&gt; context.read&lt;FavoritesNotifier&gt;().toggle(l.id),
+)
+
+// On another screen: a badge with the total, which only rebuilds when the total changes
+Selector&lt;FavoritesNotifier, int&gt;(
+  selector: (_, f) =&gt; f.total,
+  builder: (_, total, __) =&gt; Badge(label: Text('$total'), child: const Icon(Icons.star)),
+)</code></pre>
+  <div class="callout task"><strong>Exercise 5</strong> Register <code>FavoritesNotifier</code> in the <code>MultiProvider</code>, put the star in the list and the badge on the "Favourites" destination of the <code>NavigationBar</code>. Mark three locations, switch tab and come back: the state has to survive. In lesson 16 it will also survive closing the app.</div>
+  <aside class="notes">If there is time left, show what happens when the FavoritesNotifier is created inside a screen instead of at the root: it is lost on navigation. It is the most convincing demonstration of "where the state lives". Keep the last 10 minutes for getting flutter test green together.</aside>
+</section>
+
+<section class="slide" data-part="End">
+  <h2>See you tomorrow</h2>
+  <div class="cols">
+    <div>
+      <h3>To do</h3>
+      <ul class="checklist">
+        <li>Migrate the warnings screen to <code>WarningsRepository</code> + <code>WarningsNotifier</code>, with the same three states and a test with a fake.</li>
+        <li>Read the <a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Flutter architecture guide</a> and note down one difference from what we did today.</li>
+        <li><code>flutter test</code> green in the starter.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>To read</h3>
+      <ul>
+        <li><a href="https://docs.flutter.dev/app-architecture/guide" target="_blank" rel="noopener">Guide to app architecture</a>: MVVM, repositories and constructor injection, with diagrams; it is the official recommendation.</li>
+        <li><a href="https://docs.flutter.dev/app-architecture/case-study" target="_blank" rel="noopener">Architecture case study</a>: a complete app organised by layers, file by file, with tests.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/simple" target="_blank" rel="noopener">Simple app state management</a>: <code>ChangeNotifier</code> and Provider step by step, with the shopping cart example.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/options" target="_blank" rel="noopener">State management options</a>: the official list (Provider, Riverpod, BLoC, and others) with a sentence about each one.</li>
+        <li><a href="https://pub.dev/packages/provider" target="_blank" rel="noopener">package provider</a>: <code>watch</code>, <code>read</code>, <code>select</code>, <code>Consumer</code> and <code>Selector</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <nav class="pager" id="pager"></nav>
+</section>
+
+</div>
+
+<footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, University of the Azores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
+<script src="../../assets/app.js"></script>
+</body>
+</html>
