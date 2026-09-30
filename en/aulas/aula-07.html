@@ -55,7 +55,7 @@ flutter pub get</code></pre>
   <ol class="steps">
     <li>Open the <code>pdm-aula-06</code> folder in VS Code and run the three commands above in the terminal, one at a time: you land on step 1 done, whether you finished it yesterday or not.</li>
     <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → your Android. If Android does not run on your laptop yet, choose <strong>Chrome</strong> (or Edge): today's steps work the same in the browser. Then <kbd>F5</kbd>.</li>
-    <li>Run <code>flutter test</code>: the <em>Passo 1</em> test is green, the others are not yet. The tests do not need a phone.</li>
+    <li>Check what you see: the forecast screen with the photo of São Miguel at the top, still without the island name over it.</li>
   </ol>
   <p>Were you not here yesterday? Before the commands above: <code>git clone https://github.com/Tiago-Rocha/pdm-aula-06.git</code> and <code>cd pdm-aula-06</code>.</p>
   <p>Android will not start? It is nearly always the Java that Gradle is using: see the <a href="../guia-instalacao.html#problemas">common problems</a> in the setup guide and call the teacher. Meanwhile, follow the lesson in Chrome.</p>
@@ -124,7 +124,7 @@ Positioned(
 currentIsland.name                   // 'São Miguel'
 forecasts.first.type.description     // 'Parcialmente nublado'</code></pre>
   <div class="callout task"><strong>Do</strong> Replace the <code>TODO 2</code> comment with the two <code>Positioned</code>, with the island name and the weather description in place of the <code>'...'</code>. Notice that <code>textTheme</code> does not exist yet in that <code>build</code>: create it as in <code>CurrentConditions</code>.</div>
-  <p><strong>In the app:</strong> the island name in white at the bottom left, on top of the gradient, and the chip at the top right. <strong>In the terminal:</strong> <code>flutter test</code>, the <em>Passo 2</em> test turns green.</p>
+  <p><strong>In the app:</strong> the island name in white at the bottom left, on top of the gradient, and the chip at the top right.</p>
   <aside class="notes">Anyone already on <code>passo-1</code> from the previous slide does not need to repeat the checkout. The line nearly everyone is missing is <code>final textTheme = Theme.of(context).textTheme;</code> at the start of the <code>build</code> of <code>IslandHeader</code>. The other typical mistake is putting the <code>Positioned</code> outside the <code>Stack</code>'s list of children: the message says "Incorrect use of ParentDataWidget". The solution is on the <code>passo-2</code> branch, identical to what the slide asks for.</aside>
 </section>
 
@@ -238,7 +238,7 @@ class DayChip extends StatelessWidget {
 
 itemBuilder: (_, i) => DayChip(forecast: forecasts[i]),</code></pre>
   <div class="callout task"><strong>Do</strong> Create the file, replace the four comments with the children of the <code>Column</code>, import it in <code>forecast_screen.dart</code> and replace the placeholder <code>itemBuilder</code> in <code>DaysRow</code> with the one above. It is the same shape as Monday's <code>LocationCard</code>: <code>final</code> fields, a <code>const</code> constructor and a <code>build</code>. The grid of islands in <code>IslandsGrid</code> is already done.</div>
-  <p><strong>In the app:</strong> five cards in the horizontal row, each with the day, the icon and the maximum. <strong>In the terminal:</strong> <code>flutter test</code>, the <em>Passo 3</em> tests (both of them) turn green.</p>
+  <p><strong>In the app:</strong> five cards in the horizontal row, each with the day, the icon and the maximum.</p>
   <aside class="notes">A new file does not come in through hot reload if nobody imports it yet: first the <code>import 'day_chip.dart';</code> in <code>forecast_screen.dart</code>, then save. When they finish, ask why <code>DaysRow</code> has a <code>SizedBox</code> with a height around the <code>ListView</code>: it is the answer from the lists slide. The solution is on the <code>passo-3</code> branch, identical to what the slide asks for.</aside>
 </section>
 
@@ -267,8 +267,8 @@ flutter pub get</code></pre>
 
 children: [for (final i in islands) IslandCard(island: i)],</code></pre>
   <div class="callout task"><strong>Do</strong> Create <code>lib/island_card.dart</code> with <code>IslandCard(island: ...)</code>, as you did with <code>DayChip</code>: a <code>final Island island</code> field, a <code>const</code> constructor, and the <code>Card</code> above in the <code>build</code>. Import it and use it in the grid. The screen does not change at all: that is the point.</div>
-  <p><strong>In the app:</strong> the grid exactly as it was. <strong>In the terminal:</strong> <code>flutter test</code>, the two <em>Passo 4</em> tests turn green. At the end compare with <code>git stash -u</code> and then <code>git checkout passo-4</code>.</p>
-  <aside class="notes">The tests for this step are called "Passo 4 (opcional)" in the repository: it was planned as homework and moved into the lesson. Inside <code>IslandCard</code>, the <code>i</code> from the <code>for</code> becomes the <code>island</code> field: it is the only place where the pasted code does not compile. Ask what was gained if the screen stayed the same: a name, a file, a widget that can be tested on its own and reused.</aside>
+  <p><strong>In the app:</strong> the grid exactly as it was. At the end compare with <code>git stash -u</code> and then <code>git checkout passo-4</code>.</p>
+  <aside class="notes">Inside <code>IslandCard</code>, the <code>i</code> from the <code>for</code> becomes the <code>island</code> field: it is the only place where the pasted code does not compile. Ask what was gained if the screen stayed the same: a name, a file, a widget that can be tested on its own and reused.</aside>
 </section>
 
 <section class="slide">
@@ -290,7 +290,7 @@ children: [for (final i in islands) IslandCard(island: i)],</code></pre>
     <div>
       <h3>To do</h3>
       <ul class="checklist">
-        <li>If you did not finish step 4, finish it until the two <em>Passo 4</em> tests turn green. Then compare with <code>git stash -u</code> and then <code>git checkout passo-4</code>.</li>
+        <li>If you did not finish step 4, finish it. Then compare with <code>git stash -u</code> and then <code>git checkout passo-4</code>.</li>
         <li>If you have not yet read <a href="https://docs.flutter.dev/ui/layout/constraints" target="_blank" rel="noopener">Understanding constraints</a>: it has 29 examples; run at least the first ten in DartPad.</li>
         <li>Monday, 5 October, is a public holiday. Tuesday, 6 October, 08:30 to 11:30: state, forms and search. Today's screen will come to life.</li>
       </ul>
