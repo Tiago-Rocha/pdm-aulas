@@ -28,7 +28,7 @@
   <h1>Deep links e notificações locais</h1>
   <p class="lead">Teoria: deep links: custom schemes, App Links e Universal Links, verificação de domínio e deferred deep links. Prática: notificação local de aviso para um favorito, abertura do detalhe a partir da notificação, esquema tempoacores:// testado com adb, e notificação agendada com a previsão de amanhã.</p>
   <div class="meta"><span>Repo: pdm-aula-22</span></div>
-  <aside class="notes">Nos primeiros minutos pede que clonem o repo e corram o starter enquanto dás a teoria: o flutter_local_notifications obriga a desugaring no Gradle e a primeira compilação demora. Quem tem Android 13+ vai ver o diálogo de permissão; no iOS as notificações locais funcionam no simulador e o deep link testa-se com xcrun. Confirma que toda a gente ainda tem a rota /localidade/:id da aula 8 e o mapa da aula 21 no projeto. A teoria acaba às 16:40.</aside>
+  <aside class="notes">Nos primeiros minutos pede que clonem o repo e corram o starter enquanto dás a teoria: o flutter_local_notifications obriga a desugaring no Gradle e a primeira compilação demora. Quem tem Android 13+ vai ver o diálogo de permissão; no iOS as notificações locais funcionam no simulador e o deep link testa-se com xcrun. Confirma que toda a gente ainda tem a rota /localidade/:id da aula 9 e o mapa da aula 21 no projeto. A teoria acaba às 16:40.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -119,7 +119,7 @@
   <h2>Deferred deep links, atribuição e casos de uso</h2>
   <ul>
     <li><strong>Deferred deep link</strong>: o utilizador toca no link, não tem a app, instala, abre, e cai no conteúdo certo. As lojas não passam o URL à app; um serviço (Branch, AppsFlyer, Adjust) regista o toque (IP, modelo, hora) e faz o <em>match</em> na primeira abertura.</li>
-    <li><strong>Atribuição de campanhas</strong>: saber de que anúncio ou cartaz veio cada instalação. É o negócio desses serviços; o ATT no iOS (aula 16) limita o match. O Firebase Dynamic Links fechou em agosto de 2025.</li>
+    <li><strong>Atribuição de campanhas</strong>: saber de que anúncio ou cartaz veio cada instalação. É o negócio desses serviços; o ATT no iOS (aula 18) limita o match. O Firebase Dynamic Links fechou em agosto de 2025.</li>
     <li><strong>Play Install Referrer</strong>: o único mecanismo oficial, só Android e só Play Store: a loja entrega uma string à app na primeira abertura.</li>
     <li><strong>Casos de uso</strong>: notificação → conteúdo (hoje); partilha ("vê a previsão da Horta"); marketing (QR no cartaz do festival); verificação de email e login mágico; callback de OAuth.</li>
     <li><strong>Login mágico só com App Link ou Universal Link.</strong> Num custom scheme, a app errada pode apanhar o token que vai no URL.</li>
@@ -163,7 +163,7 @@
   </figure>
   <ul>
     <li><strong>O SO entrega o URL à app.</strong> Android: um <code>Intent</code> com <code>ACTION_VIEW</code>, em <code>onCreate</code> se estava fechada ou <code>onNewIntent</code> se estava a correr. iOS: <code>application(_:open:)</code>, ou <code>continue userActivity</code> para Universal Links.</li>
-    <li><strong>O Flutter embrulha-o num <code>RouteInformation</code></strong> e o <code>MaterialApp.router</code> entrega-o ao <code>go_router</code>. Para o router é igual a <code>context.go(url)</code>. As rotas desenhadas como URLs públicos na aula 8 pagam-se aqui.</li>
+    <li><strong>O Flutter embrulha-o num <code>RouteInformation</code></strong> e o <code>MaterialApp.router</code> entrega-o ao <code>go_router</code>. Para o router é igual a <code>context.go(url)</code>. As rotas desenhadas como URLs públicos na aula 9 pagam-se aqui.</li>
     <li><strong>Três situações</strong>: app em primeiro plano (só navega); em segundo plano (volta ao ecrã e navega); fechada (arranque frio: o URL é a rota inicial e mais nada existe ainda, nem token nem cache).</li>
     <li>Logo, <strong>o ecrã de destino carrega-se sozinho</strong> a partir do <code>id</code>, sem depender de o utilizador ter passado pela lista. E valida: o <code>id</code> vem de fora e pode não existir.</li>
     <li><strong>Testar sem site nem servidor</strong>: <code>adb shell am start -a android.intent.action.VIEW -d "tempoacores://localidade/3"</code> no Android; <code>xcrun simctl openurl booted "tempoacores://localidade/3"</code> no simulador iOS.</li>
@@ -298,7 +298,7 @@ Future&lt;void&gt; mostrarAviso(Aviso a) =&gt; _plugin.show(
   <h2>Passo 4: detetar um aviso novo para um favorito</h2>
 <pre data-title="lib/avisos/avisos_notifier.dart"><code class="language-dart">class AvisosNotifier extends ChangeNotifier {
   AvisosNotifier(this._repositorio, this._favoritos, this._notificacoes);
-  final AvisosRepository _repositorio;      // GET /v1/warnings (aulas 13 e 15)
+  final AvisosRepository _repositorio;      // GET /v1/warnings (aulas 14 e 16)
   final FavoritosNotifier _favoritos;       // aula 17
   final ServicoNotificacoes _notificacoes;
 
@@ -377,7 +377,7 @@ GoRouter criarRouter({String rotaInicial = '/'}) =&gt; GoRouter(
             ),
           ],
         ),
-      ], // ...mais avisos, mapa e definições no StatefulShellRoute das aulas 8 e 21
+      ], // ...mais avisos, mapa e definições no StatefulShellRoute das aulas 9 e 21
     );</code></pre>
 </section>
 
@@ -431,7 +431,7 @@ adb shell pm get-app-links pt.uac.tempoacores</code></pre>
     <li><strong>Três cenários por comando</strong>: app fechada, em segundo plano, em primeiro plano noutro separador. Os três têm de acabar no detalhe da localidade 3, com a lista por baixo.</li>
     <li><code>-d</code> é o <code>data</code> do Intent; o último argumento restringe ao nosso package. Sem ele, o Android pergunta "abrir com" se outra app tiver o mesmo scheme.</li>
     <li>Num iPhone físico: escreve o URL nas Notas e toca. Escrever o URL na barra do Chrome não conta; tem de ser um link tocado.</li>
-    <li>Sem rede, o detalhe abre com a cache da aula 15 ou com o estado de erro. Nunca em branco.</li>
+    <li>Sem rede, o detalhe abre com a cache da aula 16 ou com o estado de erro. Nunca em branco.</li>
     <li>O terceiro comando é para App Links (Android 12+): mostra se o domínio está <em>verified</em>. Para o custom scheme não há verificação a mostrar.</li>
   </ul>
   <div class="callout task"><strong>Exercício 3</strong> Completa os TODOs 7 e 8: scheme no Android (e no iOS, se tiveres Mac), <code>redirect</code> no router, e o comando <code>adb</code> nos três cenários. <code>tempoacores://localidade/999</code> mostra "localidade não encontrada" com botão para a lista. Extra: <code>tempoacores://avisos</code> abre o separador de avisos.</div>

@@ -26,7 +26,7 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 06 · Semana 4 · Terça, 29 de setembro de 2026 · 08:30 às 10:30</p>
   <h1>UX mobile e layouts</h1>
-  <p class="lead">Teoria: o que os utilizadores esperam de uma app móvel: gestos, tamanhos de toque, padrões de navegação e diferenças entre Android e iOS. Prática: o modelo de layout do Flutter e os widgets Row, Column, Expanded, Stack, ListView, GridView, SafeArea e LayoutBuilder.</p>
+  <p class="lead">Teoria: o que os utilizadores esperam de uma app móvel: gestos, tamanhos de toque, padrões de navegação e diferenças entre Android e iOS. Prática: o modelo de layout do Flutter e os widgets Row, Column, Expanded, Flexible e Stack. As listas, as grelhas e os widgets próprios ficam para amanhã.</p>
   <div class="meta"><span>Repositório: pdm-aula-06</span></div>
   <aside class="notes">Pergunta quem acabou os TODOs de ontem e quem comparou com solucao/. Não importa: o main de hoje já é a app de ontem terminada. Recolhe três e responde em 5 minutos, no máximo. Depois pede a todos que abram uma app que usem muito (Instagram, banco, Uber) e a deixem no telemóvel: vais usá-la nos slides de gestos e navegação.</aside>
 </section>
@@ -37,8 +37,8 @@
     <li>Identificar as diferenças principais entre Material 3 e as Human Interface Guidelines e decidir quando seguir a plataforma.</li>
     <li>Listar os gestos e tamanhos de toque que os utilizadores esperam, e o custo de os ignorar.</li>
     <li>Explicar o modelo de layout do Flutter: constraints go down, sizes go up, parent sets position.</li>
-    <li>Construir ecrãs com <code>Row</code>, <code>Column</code>, <code>Expanded</code>, <code>Stack</code>, <code>ListView</code> e <code>GridView</code>.</li>
-    <li>Extrair um widget próprio a partir de código que já existe, dar-lhe um ficheiro e reutilizá-lo.</li>
+    <li>Distribuir espaço com <code>Row</code>, <code>Column</code>, <code>Expanded</code> e <code>Flexible</code>, e corrigir um overflow.</li>
+    <li>Ler um <code>Stack</code> com <code>Positioned</code>: quem fica por cima e onde.</li>
   </ul>
 </section>
 
@@ -102,7 +102,7 @@
     <li><strong>Lista → detalhe:</strong> o padrão mais comum em qualquer app: uma lista, tocas, entra o detalhe, voltas. Em tablet, os dois lado a lado.</li>
     <li><strong>Modal:</strong> fluxo que interrompe (login, criar novo item, filtros) e volta ao ponto de partida ao fechar.</li>
   </ul>
-  <p>Na terça, 6 de outubro, implementamos os três primeiros com <code>go_router</code>. Hoje só o layout.</p>
+  <p>Na quarta, 7 de outubro, implementamos os três primeiros com <code>go_router</code>. Hoje só o layout.</p>
 </section>
 
 <section class="slide">
@@ -124,7 +124,7 @@
 cd pdm-aula-06
 flutter pub get</code></pre>
   <p>Um único projeto na raiz: abre a pasta <code>pdm-aula-06</code> no VS Code. É a app da aula 5 já terminada, mais o ecrã de previsão em <code>lib/forecast_screen.dart</code>, onde vais trabalhar. <code>lib/data.dart</code> tem os dados estáticos e não se altera.</p>
-  <p>A aula tem quatro passos, um slide cada. Cada slide de passo começa com uma linha <code>git checkout</code> que te põe no ponto de partida desse passo, quer tenhas acabado o anterior quer não. Depois dessa linha, hot restart no VS Code: o botão ↻ da barra de depuração. Depois mostra o código que vais usar, e o que tens de fazer. O branch <code>passo-N</code> é o passo N feito; <code>passo-4</code> é o estado final.</p>
+  <p>A prática tem quatro passos, um slide cada: o primeiro hoje, os outros amanhã. Cada slide de passo começa com uma linha <code>git checkout</code> que te põe no ponto de partida desse passo, quer tenhas acabado o anterior quer não. Depois dessa linha, hot restart no VS Code: o botão ↻ da barra de depuração. Depois mostra o código que vais usar, e o que tens de fazer. O branch <code>passo-N</code> é o passo N feito; <code>passo-4</code> é o estado final.</p>
   <ol class="steps">
     <li>Abre a pasta no VS Code. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → o teu Android. Depois <kbd>F5</kbd>: corre a configuração "Tempo Açores (debug)" que já vem no projeto. Olha para o telemóvel: por baixo da temperatura há riscas amarelas e pretas. É um overflow, e é o passo 1.</li>
     <li>Corre <code>flutter test</code>: quatro testes vermelhos, um por passo.</li>
@@ -182,6 +182,7 @@ Scaffold(
   </ul>
   <p><strong>Para os testes:</strong> as constraints descem, os tamanhos sobem, o pai posiciona. Um filho nunca escolhe onde fica.</p>
   <div class="callout"><strong>Analogia</strong> O pai diz ao filho "podes ter entre 0 e 300 de largura": são as constraints a descer. O filho responde "fico com 200": é o tamanho a subir. O pai decide então onde o põe. Um filho nunca escolhe a sua posição e nunca pode ser maior do que o pai permite.</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Com <code>Align(alignment: Alignment.topRight)</code> o quadrado de 100 × 100 fica encostado ao canto superior direito: o tamanho é o mesmo, só muda onde o pai o põe. Sem <code>width</code> nem <code>height</code>, o <code>Container</code> não tem filho nem tamanho pedido, por isso fica o maior que os limites deixam: o <code>Center</code> dá-lhe de 0 até ao ecrã todo e ele ocupa o ecrã todo. Faz as duas alterações ao vivo e mostra os limites no Layout Explorer.</aside>
 </section>
 
 <section class="slide">
@@ -207,6 +208,7 @@ Scaffold(
   ],
 )</code></pre>
   <div class="callout"><strong>Pergunta à turma</strong> O que muda se trocar <code>spaceBetween</code> por <code>spaceEvenly</code>? Se o <code>Container</code> cinzento tivesse <code>Expanded</code> em vez de <code>Flexible</code>, que largura ficava? Como fazia para o teal ocupar três partes e o laranja uma?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> <code>spaceBetween</code> encosta o primeiro e o último às pontas e põe o espaço todo no meio; <code>spaceEvenly</code> reparte o espaço em partes iguais antes, entre e depois, por isso "Hoje" e "21 °C" afastam-se das margens. Cinzento com <code>Expanded</code>: ficava com a mesma largura, uma parte em quatro do que sobra (2 + 1 + 1), porque os 300 pedidos já são mais do que essa parte e o <code>Flexible</code> já o limitava a ela. A diferença só se vê com um filho mais pequeno do que a parte: com <code>width: 40</code>, o <code>Flexible</code> deixa-o com 40 e o <code>Expanded</code> estica-o. Três partes para o teal: <code>flex: 3</code>; o laranja fica com o <code>flex</code> 1 por defeito.</aside>
 </section>
 
 <section class="slide">
@@ -267,139 +269,8 @@ Expanded(child: _Measure('Mín', '${today.tMin.round()} °C')),</code></pre>
     <li><code>Stack</code> sobrepõe filhos pela ordem da lista: o último fica por cima. <code>Positioned</code> ancora a uma ou mais margens.</li>
     <li>O gradiente por cima da imagem é uma técnica comum em apps de viagens para garantir contraste no texto.</li>
   </ul>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Sem <code>StackFit.expand</code> os filhos sem <code>Positioned</code> deixam de ser obrigados a ocupar o <code>Stack</code>: a imagem fica com o tamanho que couber mantendo a proporção, encostada em cima à esquerda, e pode sobrar uma faixa vazia ao lado; o gradiente, que não tem filho, encolhe para zero e desaparece. Texto em cima à direita: <code>Positioned(top: 16, right: 16)</code>. Trocando a ordem, o gradiente fica por baixo da imagem e deixa de se ver: o último da lista é o que fica por cima.</aside>
   </section>
-
-<section class="slide">
-  <h2>Passo 2: nome e chip sobre a imagem</h2>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-1 &amp;&amp; flutter pub get</code></pre>
-<pre data-title="lib/forecast_screen.dart · IslandHeader, dentro do Stack"><code class="language-dart">// Pista: um filho com Positioned fica onde disseres; os outros ficam por baixo
-Positioned(
-  left: 16,
-  bottom: 16,
-  child: Text('...', style: textTheme.headlineMedium?.copyWith(color: Colors.white)),
-),
-Positioned(
-  top: 12,
-  right: 12,
-  child: Chip(label: Text('...')),
-),
-
-// Os dados que precisas, em lib/data.dart
-currentIsland.name                   // 'São Miguel'
-forecasts.first.type.description     // 'Parcialmente nublado'</code></pre>
-  <div class="callout task"><strong>Faz</strong> Acrescenta os dois <code>Positioned</code> ao fim da lista de filhos do <code>Stack</code>, com o nome da ilha e a descrição do tempo. Repara que <code>textTheme</code> ainda não existe nesse <code>build</code>: cria-o como no <code>CurrentConditions</code>.</div>
-  <p><strong>No telemóvel:</strong> o nome da ilha em branco em baixo à esquerda, por cima do gradiente, e o chip em cima à direita. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 2</em> fica verde.</p>
-</section>
-
-<section class="slide">
-  <h2>4. ListView e GridView</h2>
-<pre><code class="language-dart">// Poucos itens conhecidos: constrói todos de uma vez
-ListView(
-  children: const [ListTile(title: Text('Ponta Delgada')), ListTile(title: Text('Horta'))],
-)
-
-// Lista longa: constrói só os itens visíveis, à medida do scroll
-ListView.separated(
-  itemCount: forecasts.length,
-  separatorBuilder: (_, _) => const Divider(height: 1),
-  itemBuilder: (context, i) {
-    final f = forecasts[i];
-    return ListTile(
-      leading: Icon(f.type.icon),
-      title: Text(f.weekday),
-      trailing: Text('${f.tMin.round()}° / ${f.tMax.round()}°'),
-    );
-  },
-)
-
-// Grelha para as nove ilhas
-GridView.count(
-  crossAxisCount: 3,
-  children: [for (final i in islands) Card(child: Center(child: Text(i.name)))],
-)</code></pre>
-  <div class="callout"><strong>Pergunta à turma</strong> Se a lista tivesse mil dias, qual das duas versões congelava a app? Como ponho a lista dos dias na horizontal? Como faço a grelha ter duas colunas num telemóvel e quatro num tablet sem escrever dois layouts?</div>
-</section>
-
-<section class="slide">
-  <h2>4. Listas: o que interessa</h2>
-  <ul>
-    <li><code>ListView(children: [...])</code> constrói todos os filhos, mesmo os que não se veem. Para 10 itens serve; para 1000, congela a app.</li>
-    <li><code>ListView.builder</code> e <code>.separated</code> chamam o <code>itemBuilder</code> só para os itens visíveis e reciclam-nos ao fazer scroll. É assim que o feed do Instagram aguenta milhares de posts.</li>
-    <li><code>ListTile</code> é a linha de lista Material pronta: <code>leading</code>, <code>title</code>, <code>subtitle</code>, <code>trailing</code>, <code>onTap</code>. Usa-a antes de inventar a tua.</li>
-    <li><code>GridView.count</code> fixa o número de colunas; <code>GridView.extent</code> fixa a largura máxima de cada célula e calcula as colunas, o que é melhor para tablets.</li>
-    <li><code>scrollDirection: Axis.horizontal</code> transforma qualquer lista numa fila deslizante.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> <code>ListView.builder</code> constrói os itens sob demanda; <code>ListView</code> com <code>children</code> constrói todos.</p>
-  </section>
-
-<section class="slide">
-  <h2>Passo 3: escrever o DayChip</h2>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-2 &amp;&amp; flutter pub get</code></pre>
-<pre data-title="lib/day_chip.dart (novo) e lib/forecast_screen.dart · DaysRow"><code class="language-dart">// Pista: a mesma forma do LocationCard de ontem
-class DayChip extends StatelessWidget {
-  const DayChip({super.key, required this.forecast});
-
-  final DayForecast forecast;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
-      child: Card(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // dia da semana: forecast.weekday
-            // ícone: forecast.type.icon
-            // máxima: '${forecast.tMax.round()}°'
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Em DaysRow, troca o Card provisório por:
-itemBuilder: (_, i) => DayChip(forecast: forecasts[i]),</code></pre>
-  <div class="callout task"><strong>Faz</strong> Cria o ficheiro, completa os três filhos da <code>Column</code> com <code>Text</code> e <code>Icon</code>, importa-o em <code>forecast_screen.dart</code> e usa-o no <code>itemBuilder</code>. A grelha das ilhas em <code>IslandsGrid</code> já está feita: lê-a.</div>
-  <p><strong>No telemóvel:</strong> cinco cartões na fila horizontal, cada um com o dia, o ícone e a máxima. <strong>No terminal:</strong> <code>flutter test</code>, o teste <em>Passo 3 (os dois)</em> fica verde.</p>
-</section>
-
-<section class="slide">
-  <h2>Passo 4: extrair o IslandCard (opcional, trabalho de casa)</h2>
-<pre class="term"><code class="language-bash">git stash -u &amp;&amp; git checkout passo-3 &amp;&amp; flutter pub get</code></pre>
-<pre data-title="lib/forecast_screen.dart · IslandsGrid, o que já lá está"><code class="language-dart">children: [
-  for (final i in islands)
-    Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: Image.asset(i.image, fit: BoxFit.cover)),
-          Padding(padding: const EdgeInsets.all(8), child: Text(i.name, textAlign: TextAlign.center)),
-        ],
-      ),
-    ),
-],
-
-// Pista: o objetivo é a grelha ficar assim
-children: [for (final i in islands) IslandCard(island: i)],</code></pre>
-  <div class="callout task"><strong>Faz</strong> Cria <code>lib/island_card.dart</code> com <code>IslandCard(island: ...)</code>, como fizeste com o <code>DayChip</code>: um campo <code>final Island island</code>, construtor <code>const</code>, e o <code>Card</code> de cima no <code>build</code>. Importa-o e usa-o na grelha. O ecrã não muda nada: é isso mesmo.</div>
-  <p><strong>No telemóvel:</strong> a grelha igual ao que estava. <strong>No terminal:</strong> <code>flutter test</code>, os dois testes <em>Passo 4</em> ficam verdes. No fim compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</p>
-</section>
-
-<section class="slide">
-  <h2>6. Onde ficámos</h2>
-  <ol class="steps">
-    <li><code>IslandHeader</code>: <code>Stack</code> com a imagem, o gradiente, o nome e o chip (passo 2).</li>
-    <li><code>CurrentConditions</code>: nome e temperatura numa <code>Row</code>, mínima, máxima e chuva com <code>Expanded</code> (passo 1).</li>
-    <li><code>DaysRow</code>: <code>ListView.separated</code> horizontal com cinco <code>DayChip</code> (passo 3).</li>
-    <li><code>DetailCard</code> e <code>IslandsGrid</code>: já vinham feitos. Um <code>GridView</code> dentro de um <code>ListView</code> precisa de <code>shrinkWrap</code> e de não fazer scroll ele próprio.</li>
-    <li>Tudo dentro de um <code>ListView</code> vertical. No passo 4, o <code>Card</code> da grelha passa a ser um <code>IslandCard</code> com ficheiro próprio.</li>
-  </ol>
-  <p>O branch <code>passo-4</code> é o estado final. Compara o teu código com ele. Ainda não há toque nem estado: isso é amanhã.</p>
-  <aside class="notes">Os erros típicos de hoje: esquecer o Expanded no passo 1 e pôr um width fixo; no passo 2, Positioned fora do Stack; no passo 3, esquecer o import do day_chip.dart no forecast_screen.dart.</aside>
-</section>
 
 <section class="slide" data-part="Fim">
   <h2>Até amanhã</h2>
@@ -407,9 +278,9 @@ children: [for (final i in islands) IslandCard(island: i)],</code></pre>
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>Faz o passo 4: extrai o <code>IslandCard</code> da grelha, até os dois testes <em>Passo 4</em> ficarem verdes. Depois compara com <code>git stash -u &amp;&amp; git checkout passo-4</code>.</li>
+        <li>Se o teste <em>Passo 1</em> ainda não está verde, acaba o passo 1. Depois compara com <code>git stash -u &amp;&amp; git checkout passo-1</code>.</li>
         <li>Lê <a href="https://docs.flutter.dev/ui/layout/constraints" target="_blank" rel="noopener">Understanding constraints</a>. Tem 29 exemplos; corre pelo menos os primeiros dez no DartPad.</li>
-        <li>Amanhã às 16:00: estado, formulários e pesquisa. O ecrã de hoje vai ganhar vida.</li>
+        <li>Amanhã às 16:00 continuamos no mesmo repositório, a partir do passo 2: o nome e o chip sobre a imagem, a fila dos dias e a grelha das ilhas.</li>
       </ul>
     </div>
     <div>

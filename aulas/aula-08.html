@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 08 · Navegação e temas · PDM</title>
+<title>Aula 08 · Estado: do setState às arquiteturas · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,350 +25,394 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 08 · Semana 5 · Terça, 6 de outubro de 2026 · 08:30 às 11:30</p>
-  <h1>Navegação e temas</h1>
-  <p class="lead">Teoria: organização dos ecrãs numa pilha, efeito do botão de retroceder no estado, e rotas declaradas como URLs. Prática: Navigator, go_router com parâmetros, barra de navegação com três separadores e tema Material 3 claro e escuro.</p>
+  <h1>Estado: do setState às arquiteturas</h1>
+  <p class="lead">Teoria: o que é estado numa app, onde deve viver, e comparação entre setState, Provider, BLoC e Riverpod. Prática: StatefulWidget, ciclo de vida do State, campos de texto, formulários com validação e pesquisa numa lista.</p>
   <div class="meta"><span>Repositório: pdm-aula-08</span></div>
-  <aside class="notes">Pergunta quem fez o campo de e-mail com validação. Mostra uma RegExp razoável em 1 minuto e avisa que validar e-mails a sério é um poço sem fundo. Depois pede a todos que abram a app do banco ou o Instagram e contem quantos ecrãs conseguem empilhar antes de carregar em voltar. Vais usar isso no primeiro slide de teoria.</aside>
+  <aside class="notes">Aula de três horas: faz uma pausa de 10 minutos às 10:00. Pergunta quem acabou o passo 4 da última aula (o <code>IslandCard</code>) e pede a um aluno que o mostre. Se ninguém fez, mostra o branch <code>passo-4</code> em 2 minutos e segue. Escreve no quadro a pergunta do dia: "quando o utilizador muda o interruptor de °C para °F, quem tem de saber?" Vais voltar a ela no slide dos cinco níveis.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Explicar a pilha de navegação, o que <code>push</code> e <code>pop</code> fazem ao estado, e como Android e iOS tratam o "voltar".</li>
-    <li>Reconhecer os padrões lista → detalhe, tabs com pilhas independentes, modais e bottom sheets.</li>
-    <li>Justificar rotas declarativas com URL e o que é um deep link.</li>
-    <li>Navegar com <code>Navigator</code> e com <code>go_router</code>, passando e devolvendo dados.</li>
-    <li>Definir um tema Material 3 a partir de uma cor semente, com modo claro, escuro e do sistema.</li>
+    <li>Distinguir estado efémero de estado de aplicação e dizer onde cada um deve viver.</li>
+    <li>Comparar <code>setState</code>, Provider, BLoC e Riverpod e escolher com critério.</li>
+    <li>Explicar o fluxo de dados unidirecional e porque o estado deve ser imutável.</li>
+    <li>Escrever um <code>StatefulWidget</code> com <code>initState</code>, <code>setState</code> e <code>dispose</code> corretos.</li>
+    <li>Construir um formulário validado e uma pesquisa que filtra uma lista em tempo real.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>A pilha de navegação</h2>
+  <h2>Estado efémero vs estado de aplicação</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Efémero (de um widget)</th><th>De aplicação (partilhado)</th></tr></thead>
+  <tbody>
+  <tr><td>Exemplos</td><td>Separador selecionado, texto meio escrito, posição de scroll, se um cartão está expandido</td><td>Utilizador autenticado, favoritos, unidade de temperatura, previsões carregadas, carrinho de compras</td></tr>
+  <tr><td>Quem precisa dele</td><td>Um widget e os filhos</td><td>Vários ecrãs, sem relação de parentesco</td></tr>
+  <tr><td>Sobrevive a</td><td>Rebuilds; morre com o widget</td><td>Navegação entre ecrãs; muitas vezes ao fecho da app (persistência, aula 16)</td></tr>
+  <tr><td>Onde vive</td><td>No <code>State</code> do widget, com <code>setState</code></td><td>Num objeto fora da árvore de widgets, observado por quem precisa</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> estado efémero fica no widget com <code>setState</code>; estado de aplicação fica fora da árvore e é partilhado.</p>
+  <aside class="notes">Volta à pergunta do quadro: o interruptor °C/°F. É efémero? Não: o ecrã de previsão, o detalhe e o widget de ecrã inicial precisam todos dele. Exemplo prático: pergunta onde vive o "carrinho" numa app de compras. Todos percebem que não pode ser no botão "adicionar".</aside>
+</section>
+
+<section class="slide">
+  <h2>O problema dos cinco níveis</h2>
+  <ul>
+    <li>A unidade de temperatura é escolhida em <code>EcraDefinicoes</code> e usada em <code>CartaoLocalidade</code>, que está dentro de <code>ListaLocalidades</code>, dentro de <code>EcraPrevisao</code>, dentro de <code>Shell</code>, dentro de <code>TempoApp</code>.</li>
+    <li>Com <code>setState</code> só, a variável tem de subir até ao antepassado comum (<code>TempoApp</code>) e descer por parâmetro através de cinco construtores que não a usam para nada. Chama-se <em>prop drilling</em>.</li>
+    <li>Cada widget intermédio passa a depender de algo que não é seu. Acrescentar um campo novo obriga a mexer em cinco ficheiros.</li>
+    <li>E quando a unidade muda, <code>setState</code> em <code>TempoApp</code> reconstrói a app inteira, não só os cartões.</li>
+  </ul>
+  <p>A resposta a este problema é a razão de existirem as bibliotecas de gestão de estado. Todas resolvem a mesma coisa: pôr o estado num sítio acessível e reconstruir só quem o lê.</p>
+</section>
+
+<section class="slide">
+  <h2><code>setState</code>: quando chega e quando deixa de chegar</h2>
+  <ul>
+    <li><strong>Chega</strong> quando o estado é de um ecrã ou de um widget e ninguém mais precisa dele: um contador, um formulário, um painel que abre e fecha, um filtro de pesquisa local.</li>
+    <li><strong>Chega</strong> para protótipos e para ecrãs isolados. Não é "má prática"; é a ferramenta mais simples e o Flutter foi desenhado para ela.</li>
+    <li><strong>Deixa de chegar</strong> quando dois ecrãs sem parentesco precisam do mesmo dado, quando o estado tem de sobreviver à navegação, ou quando queres testar a lógica sem construir widgets.</li>
+    <li><strong>Deixa de chegar</strong> quando o <code>build</code> reconstrói uma árvore grande por causa de um booleano.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> <code>setState</code> marca o widget como sujo e agenda um rebuild do seu subtree no próximo frame. Não reconstrói a app inteira, mas reconstrói tudo abaixo.</p>
+</section>
+
+<section class="slide">
+  <h2>ChangeNotifier, Provider e InheritedWidget</h2>
+  <ul>
+    <li><code>InheritedWidget</code> é o mecanismo do próprio Flutter para pôr um valor na árvore e deixar qualquer descendente lê-lo com <code>context</code>. <code>Theme.of(context)</code> e <code>MediaQuery.of(context)</code> são isto.</li>
+    <li><code>ChangeNotifier</code> é uma classe com <code>notifyListeners()</code>. O teu estado estende-a: <code>class Definicoes extends ChangeNotifier { bool fahrenheit = false; void alternar() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
+    <li><code>Provider</code> junta os dois: põe o notifier na árvore e <code>context.watch&lt;Definicoes&gt;()</code> reconstrói só o widget que o chamou quando há <code>notifyListeners</code>.</li>
+    <li>Resolve os cinco níveis: o <code>CartaoLocalidade</code> lê a unidade diretamente; os intermédios nem sabem que existe.</li>
+    <li>É recomendado pela equipa do Flutter para começar e é o que vamos usar no projeto.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> Provider é um <code>InheritedWidget</code> com açúcar; <code>ChangeNotifier</code> avisa os ouvintes; <code>watch</code> reconstrói, <code>read</code> não.</p>
+</section>
+
+<section class="slide">
+  <h2>BLoC, Cubit e Riverpod</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Abordagem</th><th>Como funciona</th><th>Quando faz sentido</th></tr></thead>
+  <tbody>
+  <tr><td><strong>setState</strong></td><td>O <code>State</code> guarda e reconstrói o subtree</td><td>Ecrã isolado, poucos widgets, protótipos</td></tr>
+  <tr><td><strong>Provider</strong> + ChangeNotifier</td><td>Objeto observável na árvore; <code>watch</code> reconstrói só quem lê</td><td>Vários ecrãs partilham estado; equipas pequenas; o nosso projeto</td></tr>
+  <tr><td><strong>BLoC</strong> / Cubit</td><td>Eventos entram, estados imutáveis saem por um <code>Stream</code>; cada transição é previsível e testável; mais ficheiros</td><td>Equipas grandes, requisitos fortes de teste, apps bancárias</td></tr>
+  <tr><td><strong>Riverpod</strong></td><td>Providers globais e tipados, sem depender do <code>BuildContext</code>; erros apanhados em compilação</td><td>Quem já domina Provider e quer mais segurança e composição</td></tr>
+  </tbody></table></div>
+  <p>Todas fazem a mesma coisa por baixo: um objeto que guarda estado e avisa quem o observa. A diferença está na cerimónia e nas garantias.</p>
+  <div class="callout"><strong>Analogia</strong> Onde fica a lista de compras. Um post-it no frigorífico de um quarto: só quem entra nesse quarto o vê (<code>setState</code>). Um quadro na cozinha que toda a casa consulta e que avisa quando muda (<code>ChangeNotifier</code> com Provider). Um livro de registos com todas as alterações, datadas e assinadas (BLoC: eventos e estados). O quadro chega para a maioria das casas.</div>
+</section>
+
+<section class="slide">
+  <h2>Fluxo unidirecional e imutabilidade</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 280" role="img" aria-label="À esquerda, uma pilha de três ecrãs: Lista de localidades em baixo, Detalhe no meio, Definições no topo, com push a empilhar e pop a tirar. À direita, três separadores, Previsão, Avisos e Definições, cada um com a sua pilha independente">
-    <text x="60" y="36" class="t b">Uma pilha: push põe em cima, pop tira</text>
-    <rect x="60" y="200" width="260" height="44" rx="8" class="box"/>
-    <text x="190" y="218" class="t b" text-anchor="middle">Lista de localidades</text>
-    <text x="190" y="236" class="t s" text-anchor="middle">vivo, scroll mantido</text>
-    <rect x="80" y="140" width="260" height="44" rx="8" class="box"/>
-    <text x="210" y="158" class="t b" text-anchor="middle">Detalhe</text>
-    <text x="210" y="176" class="t s" text-anchor="middle">vivo por baixo, State mantido</text>
-    <rect x="100" y="80" width="260" height="44" rx="8" class="box accent"/>
-    <text x="230" y="98" class="t b" text-anchor="middle">Definições</text>
-    <text x="230" y="116" class="t s" text-anchor="middle">topo: o que o utilizador vê</text>
-    <line x1="40" y1="244" x2="40" y2="84" class="arrow accent"/>
-    <text x="40" y="68" class="t b" text-anchor="middle">push</text>
-    <line x1="390" y1="84" x2="390" y2="244" class="arrow"/>
-    <text x="390" y="264" class="t b" text-anchor="middle">pop</text>
-    <text x="60" y="268" class="t s">pop destrói o ecrã de cima: dispose() corre</text>
-    <text x="520" y="36" class="t b">Três separadores, três pilhas</text>
-    <text x="520" y="64" class="t s">cada separador guarda a sua pilha;</text>
-    <text x="520" y="82" class="t s">mudar de separador não faz pop</text>
-    <rect x="538" y="180" width="88" height="24" rx="6" class="box"/>
-    <text x="582" y="196" class="t s" text-anchor="middle">Lista</text>
-    <rect x="542" y="150" width="88" height="24" rx="6" class="box"/>
-    <text x="586" y="166" class="t s" text-anchor="middle">Detalhe</text>
-    <rect x="546" y="120" width="88" height="24" rx="6" class="box accent"/>
-    <text x="590" y="136" class="t s" text-anchor="middle">Mapa</text>
-    <rect x="651" y="180" width="88" height="24" rx="6" class="box"/>
-    <text x="695" y="196" class="t s" text-anchor="middle">Lista</text>
-    <rect x="655" y="150" width="88" height="24" rx="6" class="box accent"/>
-    <text x="699" y="166" class="t s" text-anchor="middle">Aviso</text>
-    <rect x="764" y="180" width="88" height="24" rx="6" class="box accent"/>
-    <text x="808" y="196" class="t s" text-anchor="middle">Definições</text>
-    <rect x="520" y="222" width="350" height="44" rx="10" class="box muted"/>
-    <rect x="530" y="228" width="104" height="32" rx="8" class="box accent"/>
-    <text x="582" y="249" class="t" text-anchor="middle">Previsão</text>
-    <rect x="643" y="228" width="104" height="32" rx="8" class="box"/>
-    <text x="695" y="249" class="t" text-anchor="middle">Avisos</text>
-    <rect x="756" y="228" width="104" height="32" rx="8" class="box"/>
-    <text x="808" y="249" class="t" text-anchor="middle">Definições</text>
+  <svg viewBox="0 0 900 280" role="img" aria-label="Ciclo de fluxo unidirecional: a UI dispara uma ação do utilizador, a ação produz um estado novo e imutável no notifier, notifyListeners avisa quem observa e a UI é reconstruída. Ao lado, onde vive o estado: efémero no State de um widget, de aplicação num notifier partilhado acima dos ecrãs">
+    <rect x="40" y="40" width="200" height="56" rx="10" class="box accent"/>
+    <text x="140" y="64" class="t b" text-anchor="middle">UI (widget)</text>
+    <text x="140" y="84" class="t s" text-anchor="middle">função do estado atual</text>
+    <rect x="340" y="40" width="200" height="56" rx="10" class="box"/>
+    <text x="440" y="64" class="t b" text-anchor="middle">Ação do utilizador</text>
+    <text x="440" y="84" class="t s" text-anchor="middle">toque, texto, gesto</text>
+    <rect x="340" y="200" width="200" height="56" rx="10" class="box"/>
+    <text x="440" y="224" class="t b" text-anchor="middle">Estado novo (notifier)</text>
+    <text x="440" y="244" class="t s" text-anchor="middle">imutável: copyWith</text>
+    <rect x="40" y="200" width="200" height="56" rx="10" class="box"/>
+    <text x="140" y="224" class="t b" text-anchor="middle">notifyListeners()</text>
+    <text x="140" y="244" class="t s" text-anchor="middle">avisa quem observa</text>
+    <line x1="242" y1="68" x2="338" y2="68" class="arrow accent"/>
+    <text x="290" y="60" class="t s" text-anchor="middle">dispara</text>
+    <line x1="440" y1="98" x2="440" y2="198" class="arrow accent"/>
+    <text x="452" y="152" class="t s">muda o estado</text>
+    <line x1="338" y1="228" x2="242" y2="228" class="arrow accent"/>
+    <text x="290" y="220" class="t s" text-anchor="middle">notifica</text>
+    <line x1="140" y1="198" x2="140" y2="98" class="arrow accent"/>
+    <text x="152" y="152" class="t s">rebuild da UI</text>
+    <text x="290" y="152" class="t s" text-anchor="middle">um só sentido</text>
+    <text x="600" y="52" class="t b">Onde vive o estado</text>
+    <rect x="600" y="66" width="270" height="76" rx="10" class="box"/>
+    <text x="620" y="90" class="t b">Efémero</text>
+    <text x="620" y="110" class="t s">State de um widget, com setState</text>
+    <text x="620" y="128" class="t s">scroll, texto meio escrito, separador</text>
+    <line x1="760" y1="144" x2="760" y2="174" class="arrow"/>
+    <text x="750" y="163" class="t s" text-anchor="end">sobe se vários ecrãs precisam</text>
+    <rect x="600" y="176" width="270" height="76" rx="10" class="box accent"/>
+    <text x="620" y="200" class="t b">De aplicação</text>
+    <text x="620" y="220" class="t s">notifier partilhado acima dos ecrãs</text>
+    <text x="620" y="238" class="t s">favoritos, unidade, utilizador</text>
   </svg>
-  <figcaption>Uma pilha por fluxo: o ecrã de baixo fica vivo até fazeres pop; cada separador da barra tem a sua própria pilha.</figcaption>
+  <figcaption>A UI nunca toca no estado nem o estado na UI: tudo passa pela ação e pela notificação.</figcaption>
   </figure>
   <ul>
-    <li>Os ecrãs de uma app são uma <strong>pilha</strong>: <code>push</code> põe um ecrã novo em cima, <code>pop</code> tira o de cima e volta ao anterior. A lista de localidades → o detalhe → o mapa: três ecrãs na pilha.</li>
-    <li>O ecrã de baixo continua vivo, com o seu <code>State</code>, o scroll e o texto escrito. Ao fazer <code>pop</code>, está exatamente como o deixaste.</li>
-    <li>O ecrã que sai com <code>pop</code> é destruído: <code>dispose</code> corre e o estado perde-se. Se o utilizador precisa do que lá estava, tens de o devolver ao ecrã anterior ou guardá-lo fora.</li>
-    <li>Um ecrã pode devolver um resultado ao sair: o ecrã de escolha de localidade faz <code>pop(context, localidade)</code> e quem chamou recebe-a no <code>await</code>.</li>
-    <li>Pilhas muito fundas (10 ecrãs) são um sintoma: o utilizador perdeu-se. Apps bem desenhadas raramente passam de 3 ou 4.</li>
+    <li><strong>Um só sentido:</strong> a UI dispara uma ação (toque, texto) → a ação muda o estado → a UI reconstrói a partir do estado novo. A UI nunca muda o estado diretamente nem o estado toca na UI.</li>
+    <li>Com um só sentido, qualquer ecrã é uma função do estado: dado o mesmo estado, vês o mesmo ecrã. É o que torna testes e depuração possíveis.</li>
+    <li><strong>Imutável:</strong> em vez de mudar um campo de <code>Previsao</code>, crias uma nova com <code>copyWith</code>. Um objeto que ninguém altera pode ser partilhado, comparado e guardado num histórico sem sustos.</li>
+    <li>O <code>Definicoes</code> do slide anterior é mutável por dentro (é um <code>ChangeNotifier</code>), mas o que expõe são valores. BLoC e Riverpod levam a imutabilidade até ao fim.</li>
   </ul>
-  <p><strong>Para os testes:</strong> <code>push</code> mantém o ecrã anterior vivo; <code>pop</code> destrói o ecrã atual e pode devolver um valor.</p>
-  <div class="callout"><strong>Analogia</strong> Uma pilha de folhas em cima da mesa. <code>push</code> põe uma folha por cima; <code>pop</code> tira a de cima e deita-a fora. A folha de baixo continua na mesa com tudo o que tinha escrito. O botão de retroceder do Android é um <code>pop</code>.</div>
-  <aside class="notes">Desenha a pilha no quadro com três retângulos empilhados. Pergunta o resultado da contagem de ecrãs que pediste no início: normalmente entre 3 e 6. Discute 2 minutos porque as apps de banco vão a fundo (fluxos de transferência) e o Instagram não.</aside>
+  <p><strong>Para os testes:</strong> fluxo unidirecional é ação → estado → UI; imutabilidade significa criar cópias com <code>copyWith</code> em vez de alterar objetos.</p>
+  <div class="callout"><strong>Analogia</strong> Não se rabisca o quadro da cozinha. Escreve-se um quadro novo com a alteração (<code>copyWith</code>) e substitui-se o antigo. Quem estava a olhar para o antigo percebe que mudou, porque o objeto é outro; e o antigo pode ficar guardado num histórico.</div>
 </section>
 
 <section class="slide">
-  <h2>Voltar: botão Android, gesto iOS, e o estado</h2>
+  <h2>Critério para escolher, e o que vamos usar</h2>
   <ul>
-    <li><strong>Android:</strong> botão ou gesto de retroceder do sistema, a partir de qualquer margem. Desde o Android 14, o <em>predictive back</em> mostra uma pré-visualização do ecrã anterior antes de largares. O Flutter suporta-o com <code>PopScope</code>.</li>
-    <li><strong>iOS:</strong> não há botão de sistema. O utilizador desliza a partir da margem esquerda ou toca na seta da barra. O Flutter faz o gesto sozinho em <code>MaterialPageRoute</code> no iOS.</li>
-    <li>Voltar na raiz da app: no Android sai da app (ou minimiza); no iOS não existe. Nunca ponhas um botão "sair" numa app.</li>
-    <li>Um formulário meio preenchido e o utilizador carrega em voltar: perde tudo. <code>PopScope</code> com <code>canPop: false</code> e um diálogo "Descartar alterações?" é o padrão. Gmail faz isto com rascunhos.</li>
-    <li>Quando a app é morta em background e reaberta, a pilha volta ao início a não ser que a restaures (aula 4, <em>state restoration</em>). Os utilizadores odeiam voltar ao ecrã inicial.</li>
+    <li><strong>Quantos ecrãs partilham o estado?</strong> Um: <code>setState</code>. Vários: Provider ou acima.</li>
+    <li><strong>Precisas de testar a lógica sem widgets?</strong> Então a lógica tem de viver fora dos widgets: Provider, BLoC ou Riverpod.</li>
+    <li><strong>Tamanho da equipa e do projeto.</strong> Três pessoas e 10 ecrãs: Provider. Vinte pessoas e 200 ecrãs: BLoC ou Riverpod pelas regras que impõem.</li>
+    <li><strong>O que a equipa já sabe</strong> pesa mais do que o que está na moda.</li>
+    <li>No projeto usamos <code>setState</code> para estado efémero e <strong>Provider com ChangeNotifier</strong> para o resto: é simples, é o recomendado no guia de arquitetura do Flutter, e dá para chegar a BLoC mais tarde sem reescrever tudo.</li>
   </ul>
-  <p><strong>Para os testes:</strong> o "voltar" é do sistema, não da app; a app pode intercetá-lo com <code>PopScope</code>, mas não pode ignorá-lo.</p>
-</section>
-
-<section class="slide">
-  <h2>Padrões de navegação</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Padrão</th><th>Como se comporta</th><th>Exemplo</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Lista → detalhe</strong></td><td><code>push</code> do detalhe; <code>pop</code> volta à lista no mesmo sítio do scroll</td><td>Qualquer app de e-mail, a nossa lista de localidades</td></tr>
-  <tr><td><strong>Tabs com pilhas independentes</strong></td><td>Cada separador tem a sua pilha; mudar de separador não destrói a pilha do outro; voltar a tocar no separador ativo volta à raiz</td><td>Instagram, YouTube: abres um vídeo em Início, vais a Subscrições, voltas e o vídeo ainda lá está</td></tr>
-  <tr><td><strong>Modal</strong></td><td>Ecrã inteiro que sobe de baixo, com "Cancelar" e "Guardar"; ao fechar, volta ao ponto de partida</td><td>Criar evento no Calendário, compor e-mail</td></tr>
-  <tr><td><strong>Bottom sheet</strong></td><td>Painel que ocupa parte do ecrã, o resto fica visível e escurecido; arrasta para fechar</td><td>Partilhar, filtros do Airbnb, opções de um item</td></tr>
-  <tr><td><strong>Diálogo</strong></td><td>Interrompe com uma pergunta curta e duas ações no máximo</td><td>"Apagar conversa?", pedidos de permissão</td></tr>
-  </tbody></table></div>
-</section>
-
-<section class="slide">
-  <h2>Rotas imperativas vs declarativas</h2>
-  <ul>
-    <li><strong>Imperativo</strong> (<code>Navigator.push</code>): dizes o que fazer, ecrã a ecrã. Simples, mas a pilha só existe em memória: não tem nome, não se pode partilhar nem restaurar.</li>
-    <li><strong>Declarativo</strong> (<code>go_router</code>): declaras um mapa de rotas com caminhos, como num site: <code>/</code>, <code>/localidade/:id</code>, <code>/definicoes</code>. Navegar é mudar o URL; a pilha é derivada dele.</li>
-    <li><strong>URL como estado:</strong> a mesma app em Flutter Web mostra o URL na barra; no telemóvel, um deep link abre diretamente <code>/localidade/horta</code>; um teste automatizado começa num ecrã sem tocar em cinco botões.</li>
-    <li><code>go_router</code> é mantido pela equipa do Flutter, trata do botão de retroceder, das tabs com pilhas independentes e dos redirecionamentos (ecrã de login).</li>
-    <li>Os dois convivem: podes usar <code>showDialog</code> e <code>showModalBottomSheet</code> (imperativos) dentro de uma app com <code>go_router</code>.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> rotas declarativas descrevem os ecrãs como URLs e derivam a pilha do URL; são a base de deep links e da web.</p>
-</section>
-
-<section class="slide">
-  <h2>Deep links em uma frase</h2>
-  <p class="lead">Um deep link é um URL que abre a app diretamente num ecrã específico, em vez de no ecrã inicial.</p>
-  <ul>
-    <li><code>https://tempoacores.pt/localidade/horta</code> num SMS, numa notificação ou no browser: se a app estiver instalada, abre no detalhe da Horta; se não, abre o site.</li>
-    <li>Com <code>go_router</code>, o URL recebido é tratado exatamente como <code>context.go('/localidade/horta')</code>. É por isso que o caminho das rotas deve ser desenhado como se fosse público.</li>
-    <li>Precisa de configuração nativa (Android App Links, iOS Universal Links) e de um ficheiro no servidor a provar que o domínio é teu.</li>
-  </ul>
-  <div class="callout">Detalhe, configuração e testes na aula 22. Nesta aula define-se apenas a estrutura dos caminhos.</div>
-  <div class="callout"><strong>Analogia</strong> Uma morada completa, com rua, número, andar e porta, em vez de "vai à cidade e procura". O URL leva à app e ao ecrã certo, e os segmentos do caminho (<code>/localidade/horta</code>) são o número e a porta.</div>
-</section>
-
-<section class="slide">
-  <h2>Temas (1 de 2): ThemeData e ColorScheme</h2>
-  <ul>
-    <li><code>ThemeData</code> é o conjunto de cores, tipografia, formas e estilos de componentes de toda a app. Vive no <code>MaterialApp</code> e qualquer widget o lê com <code>Theme.of(context)</code>.</li>
-    <li><code>ColorScheme.fromSeed(seedColor: ...)</code> gera, a partir de uma cor, as 30 e tal cores do Material 3: primary, secondary, tertiary, error, surface, os <code>on*</code> para texto por cima, os <code>*Container</code> para fundos suaves. Garante contraste entre pares.</li>
-    <li>Os widgets Material usam o esquema sozinhos: um <code>FilledButton</code> é <code>primary</code> com texto <code>onPrimary</code>; um <code>Card</code> é <code>surfaceContainer</code>. Se não pões cores à mão, a app fica coerente de graça.</li>
-    <li>A tipografia vem do <code>textTheme</code>: <code>displayLarge</code> até <code>labelSmall</code>. Usa-os em vez de <code>fontSize</code> fixos.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> <code>ColorScheme.fromSeed</code> gera a paleta Material 3 inteira a partir de uma cor; os widgets lêem o tema com <code>Theme.of(context)</code>.</p>
-</section>
-
-<section class="slide">
-  <h2>Temas (2 de 2): claro, escuro e consistência</h2>
-  <ul>
-    <li><code>theme</code> e <code>darkTheme</code> no <code>MaterialApp</code>; <code>themeMode</code> decide qual: <code>ThemeMode.system</code> segue o telemóvel, <code>light</code> e <code>dark</code> forçam.</li>
-    <li>Um tema escuro não é o claro invertido: superfícies cinzento-escuro (não preto puro), cores primárias mais claras e menos saturadas, sombras substituídas por tons. <code>fromSeed</code> com <code>brightness: Brightness.dark</code> trata disto.</li>
-    <li>Cores fixas (<code>Colors.white</code>, <code>Color(0xFF...)</code>) num widget partem no modo escuro. Regra: cores só do <code>colorScheme</code>; exceções (o amarelo de um aviso meteorológico) declaradas num sítio só.</li>
-    <li>O modo escuro é a preferência de acessibilidade mais usada e poupa bateria em ecrãs OLED. As lojas esperam-no.</li>
-    <li>Consistência: um tema, um sítio para o alterar, todos os ecrãs iguais. O momento em que um ecrã "parece de outra app" é um bug de tema.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> <code>ThemeMode.system</code> segue a preferência do sistema; cores fixas nos widgets são o erro clássico do modo escuro.</p>
-  <aside class="notes">Mostra a Tempo Açores da solução a mudar de tema ao alterar a definição do sistema no telemóvel, sem reiniciar. Depois mostra um widget com Colors.white em modo escuro: texto branco sobre branco. É uma imagem que fica.</aside>
+  <div class="callout">Hoje só <code>setState</code>. Provider entra na aula 13, quando tivermos dados da API para partilhar.</div>
 </section>
 
 <section class="slide" data-part="Prática">
-  <h2>Ligar os ecrãs</h2>
+  <h2>O ecrã ganha vida</h2>
 <pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-08.git
 cd pdm-aula-08/starter
 flutter pub get
 flutter run</code></pre>
-  <p><code>starter/</code> traz os três ecrãs das aulas anteriores (previsão, avisos, definições) sem ligação entre eles, <code>go_router</code> já no <code>pubspec.yaml</code>, <code>TODO</code>s numerados e testes a falhar; <code>solucao/</code> é o estado final.</p>
+  <p><code>starter/</code> parte do ecrã da última aula e acrescenta um ecrã de definições vazio, com <code>TODO</code>s numerados e testes de widget a falhar; <code>solucao/</code> é o estado final.</p>
   <ol class="steps">
-    <li>Corre e confirma que só vês a lista de localidades. Tocar numa localidade ainda não faz nada.</li>
-    <li>Abre <code>lib/main.dart</code>, <code>lib/router.dart</code> (vazio) e <code>lib/ecra_localidades.dart</code>.</li>
+    <li>Corre e confirma que vês o ecrã de previsão e um botão de definições na <code>AppBar</code> que ainda não faz nada.</li>
+    <li>Abre <code>lib/ecra_definicoes.dart</code> e <code>lib/pesquisa_localidades.dart</code>: é onde vais trabalhar.</li>
   </ol>
-  <aside class="notes">Enquanto compilam, avisa que o passo 1 (Navigator) vai ser substituído pelo passo 2 (go_router) de propósito: é para sentirem a diferença. Alguns vão perguntar porque não ir direto ao go_router; a resposta é que o Navigator continua por baixo e aparece em qualquer código que encontrem.</aside>
+  <aside class="notes">Enquanto compilam, abre o DevTools na tua máquina e liga "Track widget rebuilds" no Widget Inspector. Vais precisar disto no bloco do setState para mostrar ao vivo o que é reconstruído a cada toque. Dá 8 minutos ao clone e arranque.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Navigator.push e pop com resultado</h2>
-<pre data-title="lib/ecra_localidades.dart"><code class="language-dart">// No ecrã de lista: empurra o detalhe e espera um resultado
-onTap: () async {
-  final favorito = await Navigator.push&lt;bool&gt;(
-    context,
-    MaterialPageRoute(builder: (_) => EcraDetalhe(localidade: l)),
-  );
-  if (favorito == true &amp;&amp; context.mounted) {         // o ecrã pode já não existir
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${l.nome} adicionada aos favoritos')),
-    );
-  }
-},
+  <h2>1. StatelessWidget vs StatefulWidget</h2>
+<pre data-title="lib/seletor_unidade.dart"><code class="language-dart">class SeletorUnidade extends StatefulWidget {
+  const SeletorUnidade({super.key});
 
-// No ecrã de detalhe: volta e devolve o resultado
-AppBar(
-  title: Text(localidade.nome),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.star_border),
-      tooltip: 'Adicionar aos favoritos',
-      onPressed: () => Navigator.pop(context, true),
-    ),
-  ],
-)</code></pre>
-</section>
+  @override
+  State&lt;SeletorUnidade&gt; createState() => _SeletorUnidadeState();
+}
 
-<section class="slide">
-  <h2>1. Navigator: o que interessa</h2>
-  <ul>
-    <li><code>Navigator.push</code> devolve um <code>Future</code> que completa quando o ecrã novo faz <code>pop</code>. O valor do <code>pop</code> é o resultado; se o utilizador voltar com o gesto, é <code>null</code>.</li>
-    <li><code>MaterialPageRoute</code> dá a transição da plataforma: deslizar de baixo no Android, da direita no iOS, com o gesto de voltar incluído.</li>
-    <li>Depois de um <code>await</code>, o widget pode ter sido destruído. <code>context.mounted</code> evita usar um <code>context</code> morto; o lint <code>use_build_context_synchronously</code> obriga-te a verificar.</li>
-    <li>A seta de voltar na <code>AppBar</code> aparece sozinha quando há um ecrã por baixo. Não a desenhes à mão.</li>
-    <li><code>Navigator.pop(context)</code> sem valor serve para "Cancelar".</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: toque numa localidade abre o detalhe; a estrela devolve <code>true</code>; a lista mostra um <code>SnackBar</code>. Depois faz <code>push</code> do ecrã de definições a partir da <code>AppBar</code> e devolve a unidade escolhida.</div>
-</section>
+class _SeletorUnidadeState extends State&lt;SeletorUnidade&gt; {
+  bool _fahrenheit = false;                     // o estado vive aqui, não no widget
 
-<section class="slide">
-  <h2>2. go_router: rotas com parâmetros</h2>
-<pre data-title="lib/router.dart"><code class="language-dart">import 'package:go_router/go_router.dart';
-
-final router = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const EcraLocalidades(),
-      routes: [
-        GoRoute(
-          path: 'localidade/:id',                       // /localidade/ponta-delgada
-          builder: (context, state) {
-            final id = state.pathParameters['id']!;
-            return EcraDetalhe(id: id);
-          },
+  @override
+  Widget build(BuildContext context) {
+    final t = _fahrenheit ? 21.0 * 9 / 5 + 32 : 21.0;
+    return Column(
+      children: [
+        Text('${t.toStringAsFixed(0)} ${_fahrenheit ? '°F' : '°C'}'),
+        Switch(
+          value: _fahrenheit,
+          onChanged: (v) => setState(() => _fahrenheit = v),   // muda e pede rebuild
         ),
       ],
-    ),
-    GoRoute(path: '/definicoes', builder: (_, __) => const EcraDefinicoes()),
-  ],
-);
-
-// em main.dart, no lugar de MaterialApp(home: ...)
-MaterialApp.router(routerConfig: router, theme: tema);</code></pre>
+    );
+  }
+}</code></pre>
 </section>
 
 <section class="slide">
-  <h2>2. go_router: o que interessa</h2>
+  <h2>1. Stateful: o que interessa</h2>
   <ul>
-    <li>Rotas aninhadas (<code>routes:</code> dentro de uma <code>GoRoute</code>) constroem a pilha: abrir <code>/localidade/horta</code> por deep link põe a lista por baixo e o detalhe por cima. Voltar funciona.</li>
-    <li><code>:id</code> é um parâmetro de caminho, lido em <code>state.pathParameters</code>. Query strings (<code>?dia=2</code>) ficam em <code>state.uri.queryParameters</code>. Passa identificadores, não objetos: o ecrã de detalhe vai buscar a localidade pelo <code>id</code>.</li>
-    <li><code>context.go('/definicoes')</code> substitui a pilha pela do URL novo. <code>context.push('/definicoes')</code> empilha por cima da pilha atual e pode devolver um resultado, como o <code>Navigator</code>.</li>
-    <li>Regra prática: <code>go</code> para mudar de secção (tabs, deep links, depois do login); <code>push</code> para "abrir por cima e voltar".</li>
-    <li>Os testes do starter navegam por URL. É a vantagem de os ecrãs terem nome.</li>
+    <li>O widget continua imutável. O que muda é o objeto <code>State</code>, que o Flutter cria uma vez e mantém vivo entre rebuilds. É por isso que o hot reload preserva o que escreveste.</li>
+    <li><code>setState(() { ... })</code> faz duas coisas: executa a alteração e marca o widget para reconstruir no próximo frame. Alterar a variável sem <code>setState</code> muda o valor, mas o ecrã não acompanha.</li>
+    <li>Só o subtree deste widget é reconstruído. Quanto mais abaixo estiver o <code>StatefulWidget</code>, menos trabalho.</li>
+    <li>O <code>Switch</code> não guarda nada: mostra <code>value</code> e avisa em <code>onChanged</code>. Todos os controlos Material são assim: <em>controlled widgets</em>.</li>
+    <li>Atalho no VS Code: escreve <code>stful</code> e carrega em <kbd>Tab</kbd>.</li>
   </ul>
-  <p><strong>Para os testes:</strong> <code>go</code> substitui a pilha; <code>push</code> empilha. Parâmetros de caminho vêm em <code>pathParameters</code>.</p>
-  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: apaga o código do exercício 1, cria o <code>router.dart</code> e navega com <code>context.push('/localidade/${l.id}')</code>. O detalhe recebe o <code>id</code> e procura a localidade em <code>dados.dart</code>. Trata o caso de um <code>id</code> que não existe.</div>
+  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: transforma o <code>CartaoDetalhe</code> num <code>StatefulWidget</code> com um booleano <code>_expandido</code>; ao tocar, mostra ou esconde a linha do vento e da humidade. Liga "Track widget rebuilds" no DevTools e vê o que é reconstruído a cada toque.</div>
 </section>
 
 <section class="slide">
-  <h2>3. NavigationBar com pilhas independentes</h2>
-<pre data-title="lib/router.dart"><code class="language-dart">StatefulShellRoute.indexedStack(
-  builder: (context, state, shell) => Scaffold(
-    body: shell,                                    // o separador atual, com a sua pilha
-    bottomNavigationBar: NavigationBar(
-      selectedIndex: shell.currentIndex,
-      onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
-      destinations: const [
-        NavigationDestination(icon: Icon(Icons.wb_sunny_outlined), label: 'Previsão'),
-        NavigationDestination(icon: Icon(Icons.warning_amber), label: 'Avisos'),
-        NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Definições'),
-      ],
-    ),
+  <h2>2. Ciclo de vida do State</h2>
+<pre data-title="lib/pesquisa_localidades.dart"><code class="language-dart">class _PesquisaState extends State&lt;Pesquisa&gt; {
+  late final TextEditingController _controlador;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();                       // 1. uma vez, antes do primeiro build
+    _controlador = TextEditingController();
+    _controlador.addListener(_aoEscrever);
+  }
+
+  void _aoEscrever() {                       // 2. cada tecla: espera 300 ms antes de filtrar
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controlador.dispose();                  // 4. liberta; sem isto, fuga de memória
+    super.dispose();
+  }
+
+  // 3. build corre entre initState e dispose, tantas vezes quantas forem precisas
+}</code></pre>
+  <aside class="notes">Mostra o erro que aparece se chamares setState depois do dispose (um Timer que dispara depois de sair do ecrã). É o crash mais comum nos projetos de anos anteriores. Dá 10 minutos a este bloco.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. Ciclo de vida: o que interessa</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Método</th><th>Quando corre</th><th>Para quê</th></tr></thead>
+  <tbody>
+  <tr><td><code>initState</code></td><td>Uma vez, quando o State é criado</td><td>Criar controllers, subscrever streams, lançar o primeiro pedido</td></tr>
+  <tr><td><code>didChangeDependencies</code></td><td>Depois do initState e sempre que um <code>InheritedWidget</code> de que dependes muda (tema, locale)</td><td>Ler <code>Theme.of</code> ou <code>MediaQuery.of</code>, que não podem ser lidos no initState</td></tr>
+  <tr><td><code>build</code></td><td>Sempre que é preciso desenhar</td><td>Só descrever a UI. Nada de pedidos de rede aqui</td></tr>
+  <tr><td><code>didUpdateWidget</code></td><td>Quando o pai reconstrói com parâmetros novos</td><td>Reagir a um parâmetro que mudou (nova localidade selecionada)</td></tr>
+  <tr><td><code>dispose</code></td><td>Uma vez, quando o widget sai da árvore</td><td>Libertar controllers, timers, subscrições, focus nodes</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> tudo o que crias em <code>initState</code> libertas em <code>dispose</code>; <code>build</code> pode correr muitas vezes e não deve ter efeitos secundários.</p>
+</section>
+
+<section class="slide">
+  <h2>3. TextField e pesquisa numa lista</h2>
+<pre data-title="lib/pesquisa_localidades.dart"><code class="language-dart">String _filtro = '';                          // estado: o que o utilizador escreveu
+
+List&lt;String&gt; get _filtradas => localidades   // de lib/dados.dart
+    .where((l) => l.toLowerCase().contains(_filtro.toLowerCase()))
+    .toList();
+
+@override
+Widget build(BuildContext context) {
+  return Column(
+    children: [
+      TextField(
+        decoration: const InputDecoration(
+          prefixIcon: Icon(Icons.search),
+          hintText: 'Pesquisar localidade',
+          border: OutlineInputBorder(),
+        ),
+        onChanged: (texto) => setState(() => _filtro = texto),
+      ),
+      Expanded(
+        child: ListView(
+          children: [for (final l in _filtradas) ListTile(title: Text(l))],
+        ),
+      ),
+    ],
+  );
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Pesquisa: o que interessa</h2>
+  <ul>
+    <li>Para reagir ao texto chega <code>onChanged</code>. Precisas de um <code>TextEditingController</code> quando queres ler o texto noutro sítio, limpá-lo (botão X) ou pôr um valor inicial. E aí, <code>dispose</code>.</li>
+    <li>A lista filtrada é um <em>getter</em> calculado a partir do estado. Não guardes a lista filtrada como estado: são dois valores que podem ficar dessincronizados.</li>
+    <li>Filtrar 100 localidades a cada tecla é instantâneo. Filtrar 100 000, ou pedir à API, exige o <em>debounce</em> do slide anterior.</li>
+    <li>O <code>Expanded</code> à volta do <code>ListView</code> é obrigatório: sem ele, altura infinita dentro da <code>Column</code>.</li>
+    <li><code>InputDecoration</code> controla o aspeto: ícone, hint, label, borda, texto de ajuda e de erro.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: pesquisa com <code>TextEditingController</code>, botão para limpar (<code>suffixIcon</code>) que só aparece quando há texto, e um estado vazio "Nenhuma localidade encontrada" quando o filtro não devolve nada.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Form, TextFormField e validação</h2>
+<pre data-title="lib/ecra_definicoes.dart"><code class="language-dart">final _chave = GlobalKey&lt;FormState&gt;();
+
+Form(
+  key: _chave,
+  child: Column(
+    children: [
+      TextFormField(
+        decoration: const InputDecoration(labelText: 'Nome da localidade'),
+        validator: (v) {
+          if (v == null || v.trim().isEmpty) return 'Obrigatório';
+          if (v.trim().length &lt; 3) return 'Pelo menos 3 letras';
+          return null;                                  // null significa válido
+        },
+      ),
+      FilledButton(
+        onPressed: () {
+          final form = _chave.currentState!;
+          if (form.validate()) {                        // corre todos os validators
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Formulário válido')),
+            );
+          }
+        },
+        child: const Text('Guardar'),
+      ),
+    ],
   ),
-  branches: [
-    StatefulShellBranch(routes: [GoRoute(path: '/', builder: (_, __) => const EcraLocalidades())]),
-    StatefulShellBranch(routes: [GoRoute(path: '/avisos', builder: (_, __) => const EcraAvisos())]),
-    StatefulShellBranch(routes: [GoRoute(path: '/definicoes', builder: (_, __) => const EcraDefinicoes())]),
-  ],
 )</code></pre>
 </section>
 
 <section class="slide">
-  <h2>3. Barra de navegação: o que interessa</h2>
+  <h2>4. Formulários: o que interessa</h2>
   <ul>
-    <li><code>ShellRoute</code> embrulha um conjunto de rotas num widget comum (a barra). <code>StatefulShellRoute.indexedStack</code> vai mais longe: cada separador tem a sua própria pilha e o seu estado, preservados ao mudar de separador. É o padrão do Instagram.</li>
-    <li>A rota de detalhe entra como filha da rota <code>/</code> dentro do primeiro <em>branch</em>: o detalhe abre por cima da lista e a barra continua visível.</li>
-    <li><code>initialLocation: true</code> ao tocar no separador já ativo volta à raiz desse separador. É o comportamento que os utilizadores esperam.</li>
-    <li><code>NavigationBar</code> é o Material 3; <code>BottomNavigationBar</code> é o Material 2 antigo. Três a cinco destinos, com ícone e etiqueta.</li>
-    <li>Em tablets, troca-a por <code>NavigationRail</code> à esquerda com o <code>LayoutBuilder</code> da aula 6.</li>
+    <li><code>Form</code> agrupa campos; <code>GlobalKey&lt;FormState&gt;</code> dá acesso ao estado do formulário a partir do botão. É dos poucos usos legítimos de <code>GlobalKey</code>.</li>
+    <li>Cada <code>TextFormField</code> tem um <code>validator</code> que devolve uma mensagem de erro ou <code>null</code>. <code>validate()</code> corre todos, mostra os erros por baixo dos campos e devolve <code>true</code> se estiver tudo bem.</li>
+    <li><code>autovalidateMode: AutovalidateMode.onUserInteraction</code> valida enquanto o utilizador escreve, depois da primeira tentativa. Sem isto, só valida ao submeter.</li>
+    <li><code>keyboardType: TextInputType.number</code> e <code>textInputAction: TextInputAction.next</code> mudam o teclado do telemóvel. Em mobile, isto é UX.</li>
+    <li><code>onSaved</code> e <code>form.save()</code> copiam os valores para variáveis quando não queres um controller por campo.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: os três separadores com <code>StatefulShellRoute</code>. Abre um detalhe em Previsão, muda para Avisos, volta: o detalhe tem de continuar aberto. O teste verifica exatamente isso.</div>
+  <p><strong>Para os testes:</strong> um <code>validator</code> devolve <code>null</code> quando o valor é válido e uma <code>String</code> com o erro quando não é.</p>
+  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: formulário com nome e código postal (formato <code>9500-123</code>, valida com uma <code>RegExp</code>), teclado adequado, <code>autovalidateMode</code>, e um <code>SnackBar</code> com os valores ao guardar.</div>
 </section>
 
 <section class="slide">
-  <h2>4. Tema Material 3 claro e escuro</h2>
-<pre data-title="lib/main.dart"><code class="language-dart">const semente = Color(0xFF0B63C9);
+  <h2>5. Switch, Checkbox e Slider ligados a estado</h2>
+<pre data-title="lib/ecra_definicoes.dart"><code class="language-dart">bool _notificacoes = true;
+double _raio = 25;
+bool _fahrenheit = false;
 
-MaterialApp.router(
-  routerConfig: router,
-  theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: semente), useMaterial3: true),
-  darkTheme: ThemeData(
-    colorScheme: ColorScheme.fromSeed(seedColor: semente, brightness: Brightness.dark),
-    useMaterial3: true,
+SwitchListTile(
+  title: const Text('Avisos meteorológicos'),
+  value: _notificacoes,
+  onChanged: (v) => setState(() => _notificacoes = v),
+),
+CheckboxListTile(
+  title: const Text('Mostrar em Fahrenheit'),
+  value: _fahrenheit,
+  onChanged: (v) => setState(() => _fahrenheit = v ?? false),
+),
+ListTile(
+  title: Text('Raio de pesquisa: ${_raio.round()} km'),
+  subtitle: Slider(
+    value: _raio,
+    min: 5,
+    max: 100,
+    divisions: 19,
+    label: '${_raio.round()} km',
+    onChanged: (v) => setState(() => _raio = v),
   ),
-  themeMode: _modo,                            // ThemeMode.system, .light ou .dark
-)
-
-// Toggle manual: _modo vive num StatefulWidget acima do MaterialApp
-SegmentedButton&lt;ThemeMode&gt;(
-  segments: const [
-    ButtonSegment(value: ThemeMode.system, label: Text('Sistema')),
-    ButtonSegment(value: ThemeMode.light, label: Text('Claro')),
-    ButtonSegment(value: ThemeMode.dark, label: Text('Escuro')),
-  ],
-  selected: {_modo},
-  onSelectionChanged: (s) => setState(() => _modo = s.first),
-)</code></pre>
+),</code></pre>
+  <p>Todos seguem o mesmo contrato: <code>value</code> vem do estado, <code>onChanged</code> muda o estado com <code>setState</code>. O widget nunca guarda nada.</p>
+  <div class="callout task"><strong>Exercício 4</strong> Resolve o <code>TODO 4</code>: os três controlos no ecrã de definições, com o <code>SegmentedButton</code> °C/°F em vez da checkbox. Passa a unidade escolhida ao ecrã de previsão por parâmetro e vê o que custa (é o problema dos cinco níveis).</div>
 </section>
 
 <section class="slide">
-  <h2>4. Tema: o que interessa</h2>
-  <ul>
-    <li>Duas linhas de <code>fromSeed</code> e a app tem modo claro e escuro coerentes. A partir daí, evitar cores fixas: nada de <code>Colors.white</code> nos widgets.</li>
-    <li>Nos widgets, <code>final cores = Theme.of(context).colorScheme;</code> e depois <code>cores.primaryContainer</code> para o fundo e <code>cores.onPrimaryContainer</code> para o texto por cima. Os pares <code>x</code> / <code>onX</code> garantem contraste.</li>
-    <li>O <code>SegmentedButton</code> está no ecrã de definições, mas o <code>_modo</code> tem de estar acima do <code>MaterialApp</code>. Hoje sobe por callback (o problema dos cinco níveis); na aula 12 passa para um <code>ChangeNotifier</code> e na 14 fica gravado.</li>
-    <li>Estilos de componentes (<code>cardTheme</code>, <code>appBarTheme</code>, <code>inputDecorationTheme</code>) definem-se uma vez no <code>ThemeData</code>, não widget a widget.</li>
-    <li>Testa os dois modos sempre: liga o modo escuro do telemóvel e percorre todos os ecrãs.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 4</strong> Resolve o <code>TODO 4</code>: tema claro e escuro com a cor semente da app, <code>themeMode</code> a partir do <code>SegmentedButton</code> das definições, e um <code>cardTheme</code> com cantos de 16. Procura cores fixas nos ecrãs e substitui-as pelo <code>colorScheme</code>.</div>
-</section>
-
-<section class="slide">
-  <h2>5. Exercício final: a app inteira ligada</h2>
+  <h2>6. Exercício final: ecrã de definições</h2>
   <ol class="steps">
-    <li>Três separadores com <code>StatefulShellRoute</code>: Previsão (lista → detalhe), Avisos (lista estática), Definições (formulário e tema).</li>
-    <li>O detalhe mostra a previsão a 5 dias da aula 6 para a localidade do <code>id</code>, e tem a estrela que devolve um resultado ao voltar.</li>
-    <li>O tema segue o <code>SegmentedButton</code> das definições e muda sem reiniciar a app.</li>
-    <li>Testa: deep link manual com <code>flutter run --route=/localidade/horta</code> (ou o botão "Abrir" do starter) abre o detalhe com a lista por baixo.</li>
+    <li><code>EcraDefinicoes</code> é um <code>StatefulWidget</code> com o formulário, os controlos e a pesquisa de localidade favorita, tudo num <code>ListView</code>.</li>
+    <li>A pesquisa usa o widget <code>Pesquisa</code> do passo 3; ao tocar numa localidade, o nome fica no campo do formulário (precisas do controller).</li>
+    <li>"Guardar" valida, mostra o <code>SnackBar</code> e volta ao ecrã anterior com <code>Navigator.pop(context)</code>. Amanhã vemos o que isto faz.</li>
+    <li>Confirma que todos os controllers e timers são libertados em <code>dispose</code>. O teste <code>test/definicoes_test.dart</code> verifica.</li>
   </ol>
-  <div class="callout task"><strong>Exercício 5</strong> Termina até <code>flutter test</code> ficar verde. Depois, com o detalhe aberto, roda o telemóvel: o que acontece à pilha? E com hot restart?</div>
-  <aside class="notes">Reserva 25 minutos. Erros típicos: usar go em vez de push para o detalhe (a barra desaparece porque a rota não está no branch), e o _modo declarado dentro do build. Fecha com a pergunta da rotação: a pilha sobrevive, o State também; hot restart apaga tudo.</aside>
+  <div class="callout task"><strong>Exercício 5</strong> Termina o ecrã até <code>flutter test</code> ficar verde. Depois, faz hot reload com o formulário meio preenchido e hot restart: o que se perde em cada um, e porquê?</div>
+  <aside class="notes">Reserva 25 minutos. Dúvidas típicas: o GlobalKey criado dentro do build (cria uma chave nova a cada rebuild e o formulário "esquece" os erros); setState depois de pop. Termina com a pergunta do hot reload: o State sobrevive ao reload, não ao restart.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até amanhã</h2>
+  <p>Amanhã, quarta, 7 de outubro, a aula é à hora habitual: das 16:00 às 18:00.</p>
   <div class="cols">
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>Adiciona a rota <code>/avisos/:id</code> com um ecrã de detalhe de aviso (título, nível, descrição, localidades afetadas), aninhada no separador Avisos. É o <code>TODO 5</code>.</li>
-        <li>Lê <a href="https://pub.dev/packages/go_router" target="_blank" rel="noopener">go_router: getting started</a> no pub.dev, incluindo a secção sobre redirecionamentos. Vais precisar dela para o login na aula 17.</li>
-        <li>Amanhã começa o mini-projeto individual: vem com o repositório da aula 8 a funcionar, porque é o ponto de partida.</li>
+        <li>Adiciona ao formulário um campo "e-mail para avisos" com validação própria (tem <code>@</code> e um ponto depois) e teclado <code>emailAddress</code>. É o <code>TODO 5</code>.</li>
+        <li>Lê <a href="https://docs.flutter.dev/data-and-backend/state-mgmt/options" target="_blank" rel="noopener">State management options</a> e anota uma vantagem e uma desvantagem de cada abordagem. Sai nos testes.</li>
+        <li>Amanhã às 16:00: navegação entre ecrãs e temas. O ecrã de definições de hoje vai ligar-se ao resto.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/ui/navigation" target="_blank" rel="noopener">Navigation and routing</a>: Navigator vs Router, quando usar cada um.</li>
-        <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a>: o que vamos configurar na aula 22.</li>
-        <li><a href="https://docs.flutter.dev/cookbook/design/themes" target="_blank" rel="noopener">Use themes to share colors and font styles</a>: a receita oficial de temas.</li>
-        <li><a href="https://pub.dev/documentation/go_router/latest/" target="_blank" rel="noopener">go_router: documentação</a>: rotas aninhadas, <code>StatefulShellRoute</code>, redirecionamentos e parâmetros, com exemplos.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/simple" target="_blank" rel="noopener">Simple app state management</a>: Provider explicado pela equipa do Flutter.</li>
+        <li><a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Flutter architecture guide</a>: onde a equipa do Flutter recomenda pôr o estado e a lógica; aprofundamos na aula 13.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/forms/validation" target="_blank" rel="noopener">Build a form with validation</a>: a receita oficial.</li>
+        <li><a href="https://pub.dev/packages/provider" target="_blank" rel="noopener">provider</a> no pub.dev: o package que vamos usar a partir da aula 13.</li>
+        <li><a href="https://codewithandrea.com/videos/flutter-state-management-basics/" target="_blank" rel="noopener">Flutter state management basics</a> (Code With Andrea): setState, ValueNotifier, ChangeNotifier, Provider e BLoC comparados com exemplos curtos.</li>
       </ul>
     </div>
   </div>

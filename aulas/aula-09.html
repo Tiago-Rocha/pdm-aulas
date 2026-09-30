@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 09 · Acessibilidade, i18n e mini-projeto · PDM</title>
+<title>Aula 09 · Navegação e temas · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,323 +25,330 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 09 · Semana 5 · Quarta, 7 de outubro de 2026 · 16:00 às 18:00</p>
-  <h1>Acessibilidade, i18n e mini-projeto</h1>
-  <p class="lead">Teoria (30 minutos): acessibilidade para quem usa leitor de ecrã e internacionalização da app. Prática (duas horas e meia): mini-projeto individual, a app Tempo Açores a partir de um JSON local, com lista, detalhe, pesquisa, tema e duas línguas. É a primeira entrega avaliada.</p>
+  <h1>Navegação e temas</h1>
+  <p class="lead">Teoria: organização dos ecrãs numa pilha, efeito do botão de retroceder no estado, e rotas declaradas como URLs. Prática: Navigator, go_router com parâmetros, barra de navegação com três separadores e tema Material 3 claro e escuro.</p>
   <div class="meta"><span>Repositório: pdm-aula-09</span></div>
-  <aside class="notes">Aula de três horas: faz uma pausa de 10 minutos às 10:00. Nos primeiros 5 minutos confirma que todos têm a aula 8 a correr (é o ponto de partida) e explica que hoje a prática é individual e avaliada: sem pares, mas com perguntas ao docente. Mostra o enunciado no Moodle e a data limite: domingo 11/10 às 23:59.</aside>
+  <aside class="notes">Pergunta quem fez o campo de e-mail com validação. Mostra uma RegExp razoável em 1 minuto e avisa que validar e-mails a sério é um poço sem fundo. Depois pede a todos que abram a app do banco ou o Instagram e contem quantos ecrãs conseguem empilhar antes de carregar em voltar. Vais usar isso no primeiro slide de teoria.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Justificar porque a acessibilidade é obrigatória por lei e pelas lojas, e o que custa ignorá-la.</li>
-    <li>Tornar um ecrã Flutter legível por TalkBack e VoiceOver com <code>Semantics</code>, tooltips e ordem de foco.</li>
-    <li>Garantir contraste, alvos de toque e layouts que não partem com letra grande.</li>
-    <li>Internacionalizar uma app com <code>gen-l10n</code>, ficheiros <code>.arb</code>, plurais e placeholders, e formatar datas e números com <code>intl</code>.</li>
-    <li>Entregar uma app completa a partir de dados JSON locais, com README e captura de ecrã.</li>
+    <li>Explicar a pilha de navegação, o que <code>push</code> e <code>pop</code> fazem ao estado, e como Android e iOS tratam o "voltar".</li>
+    <li>Reconhecer os padrões lista → detalhe, tabs com pilhas independentes, modais e bottom sheets.</li>
+    <li>Justificar rotas declarativas com URL e o que é um deep link.</li>
+    <li>Navegar com <code>Navigator</code> e com <code>go_router</code>, passando e devolvendo dados.</li>
+    <li>Definir um tema Material 3 a partir de uma cor semente, com modo claro, escuro e do sistema.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>Acessibilidade é obrigatória, e é boa engenharia</h2>
-  <ul>
-    <li><strong>Lei:</strong> o European Accessibility Act está em vigor desde junho de 2025. Apps de comércio, banca, transportes e serviços ao consumidor na UE têm de ser acessíveis. Multas e retirada do mercado são reais.</li>
-    <li><strong>Lojas:</strong> a Apple e a Google avaliam acessibilidade nas revisões de destaque e nas rejeições. A Apple publica "Accessibility Nutrition Labels" desde 2025.</li>
-    <li><strong>Pessoas:</strong> cerca de 1 em cada 6 pessoas tem alguma deficiência. E todos usamos o telemóvel ao sol, com uma mão, com o ecrã partido, ou com a letra do sistema aumentada.</li>
-    <li><strong>Engenharia:</strong> uma app acessível tem widgets com nomes, estrutura clara e sem cor como único sinal. Isso é o mesmo que uma app testável e fácil de manter.</li>
-    <li>O Flutter já faz muito sozinho: botões, textos e campos ganham semântica automaticamente. Tu tratas do que falta.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> o European Accessibility Act (2025) obriga apps de serviços ao consumidor na UE a serem acessíveis; a semântica no Flutter é gerada automaticamente para os widgets Material e completada com <code>Semantics</code>.</p>
-  <aside class="notes">Liga o TalkBack no teu telemóvel ao vivo e navega dois ecrãs da solução da aula 8 sem olhar. Os alunos ouvem "botão" sem nome no ícone da estrela. É a demonstração mais eficaz de toda a aula; 3 minutos.</aside>
-</section>
-
-<section class="slide">
-  <h2><code>Semantics</code> no Flutter</h2>
-<pre><code class="language-dart">// O Flutter gera semântica para Text, botões e campos. Tu acrescentas o que falta:
-IconButton(
-  icon: const Icon(Icons.star_border),
-  tooltip: 'Adicionar aos favoritos',        // lido pelo leitor de ecrã e mostrado em long press
-  onPressed: adicionar,
-),
-
-Semantics(
-  label: 'Ponta Delgada, 21 graus, céu limpo',
-  button: true,
-  child: ExcludeSemantics(                   // o ícone e os textos já estão no label
-    child: CartaoLocalidade(previsao: p),
-  ),
-),
-
-Image.asset('assets/img/sao_miguel.jpg', semanticLabel: 'Lagoa das Sete Cidades'),
-
-MergeSemantics(                              // dois textos lidos como um só
-  child: Row(children: const [Text('Mín '), Text('17°')]),
-),</code></pre>
-  <ul>
-    <li>Ordem de foco: o leitor segue a ordem da árvore. Se o layout visual não bate certo, <code>Semantics(sortKey: OrdinalSortKey(1))</code> corrige.</li>
-    <li>Testa com <strong>TalkBack</strong> (Android: Definições → Acessibilidade) ou <strong>VoiceOver</strong> (iOS: triplo clique no botão lateral). Cinco minutos de utilização com o ecrã tapado revelam mais do que a leitura da documentação.</li>
-  </ul>
-  <div class="callout"><strong>Analogia</strong> O leitor de ecrã é um guia que descreve a sala a quem não vê. Um botão só com ícone é um objeto sem nome: o guia diz "botão" e mais nada. A etiqueta semântica (<code>tooltip</code>, <code>label</code>) dá-lhe o nome; <code>MergeSemantics</code> junta várias peças numa só descrição.</div>
-  <aside class="notes">Pergunta: o que ouve o leitor de ecrã num cartão com ícone de sol, "Ponta Delgada" e "21°"? Sem Semantics: três elementos separados, o ícone sem nome. Com o label: uma frase. Mostra no DevTools o "Show semantics" para verem a árvore semântica.</aside>
-</section>
-
-<section class="slide">
-  <h2>Contraste, toque e letra grande</h2>
-  <ul>
-    <li><strong>Contraste:</strong> 4,5:1 para texto normal, 3:1 para texto grande e ícones (WCAG AA). O <code>ColorScheme.fromSeed</code> garante os pares <code>x</code>/<code>onX</code>; cores à mão são a fonte dos problemas. Verifica com o Accessibility Scanner (Android) ou o inspector do Xcode.</li>
-    <li><strong>Alvos de toque:</strong> 48 dp no mínimo. <code>IconButton</code> e <code>ListTile</code> já cumprem; um <code>GestureDetector</code> à volta de um ícone de 20 dp não. <code>MaterialTapTargetSize.padded</code> é o valor por defeito do tema.</li>
-    <li><strong>Letra grande:</strong> o utilizador pode pôr o texto a 200%. <code>MediaQuery.textScalerOf(context)</code> diz-te o fator. Layouts com alturas fixas (<code>SizedBox(height: 40)</code> à volta de um <code>Text</code>) partem; usa <code>Wrap</code>, <code>Expanded</code>, <code>FittedBox</code> ou deixa a altura livre.</li>
-    <li>Testa com a letra do sistema no máximo. Se um cartão fica com texto cortado, é um bug, não uma preferência estranha.</li>
-    <li><strong>Cor não é sinal:</strong> um aviso "vermelho" precisa também de ícone ou texto. Daltonismo afeta 8% dos homens.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> contraste mínimo 4,5:1, alvo mínimo 48 dp, e o layout tem de sobreviver a <code>textScaler</code> de 2,0.</p>
-</section>
-
-<section class="slide">
-  <h2>i18n (1 de 2): gen-l10n e ficheiros .arb</h2>
+  <h2>A pilha de navegação</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 260" role="img" aria-label="Pipeline de internacionalização: os ficheiros app_pt.arb e app_en.arb passam pelo flutter gen-l10n, que gera a classe AppLocalizations usada pelos widgets; o locale do telemóvel escolhe a língua">
-    <rect x="40" y="50" width="185" height="54" rx="10" class="box"/>
-    <text x="55" y="73" class="t b mono">app_pt.arb</text>
-    <text x="55" y="93" class="t s">"previsao": "Previsão"</text>
-    <rect x="40" y="130" width="185" height="54" rx="10" class="box"/>
-    <text x="55" y="153" class="t b mono">app_en.arb</text>
-    <text x="55" y="173" class="t s">"previsao": "Forecast"</text>
-    <path d="M225 77 L272 108" class="arrow"/>
-    <path d="M225 157 L272 126" class="arrow"/>
-    <rect x="275" y="90" width="175" height="54" rx="10" class="box"/>
-    <text x="290" y="113" class="t b mono">flutter gen-l10n</text>
-    <text x="290" y="133" class="t s">corre em cada pub get</text>
-    <path d="M450 117 L508 117" class="arrow accent"/>
-    <rect x="510" y="90" width="190" height="54" rx="10" class="box accent"/>
-    <text x="525" y="113" class="t b mono">AppLocalizations</text>
-    <text x="525" y="133" class="t s">uma classe por língua</text>
-    <path d="M700 117 L738 117" class="arrow accent"/>
-    <rect x="740" y="90" width="135" height="54" rx="10" class="box"/>
-    <text x="752" y="113" class="t b">Widgets</text>
-    <text x="752" y="133" class="t mono">l10n.previsao</text>
-    <rect x="470" y="190" width="250" height="50" rx="10" class="box muted"/>
-    <text x="485" y="211" class="t b">Locale do telemóvel</text>
-    <text x="485" y="231" class="t s">pt → app_pt · en → app_en</text>
-    <path d="M595 190 L595 146" class="arrow dashed"/>
-    <text x="605" y="172" class="t s">escolhe a língua</text>
+  <svg viewBox="0 0 900 280" role="img" aria-label="À esquerda, uma pilha de três ecrãs: Lista de localidades em baixo, Detalhe no meio, Definições no topo, com push a empilhar e pop a tirar. À direita, três separadores, Previsão, Avisos e Definições, cada um com a sua pilha independente">
+    <text x="60" y="36" class="t b">Uma pilha: push põe em cima, pop tira</text>
+    <rect x="60" y="200" width="260" height="44" rx="8" class="box"/>
+    <text x="190" y="218" class="t b" text-anchor="middle">Lista de localidades</text>
+    <text x="190" y="236" class="t s" text-anchor="middle">vivo, scroll mantido</text>
+    <rect x="80" y="140" width="260" height="44" rx="8" class="box"/>
+    <text x="210" y="158" class="t b" text-anchor="middle">Detalhe</text>
+    <text x="210" y="176" class="t s" text-anchor="middle">vivo por baixo, State mantido</text>
+    <rect x="100" y="80" width="260" height="44" rx="8" class="box accent"/>
+    <text x="230" y="98" class="t b" text-anchor="middle">Definições</text>
+    <text x="230" y="116" class="t s" text-anchor="middle">topo: o que o utilizador vê</text>
+    <line x1="40" y1="244" x2="40" y2="84" class="arrow accent"/>
+    <text x="40" y="68" class="t b" text-anchor="middle">push</text>
+    <line x1="390" y1="84" x2="390" y2="244" class="arrow"/>
+    <text x="390" y="264" class="t b" text-anchor="middle">pop</text>
+    <text x="60" y="268" class="t s">pop destrói o ecrã de cima: dispose() corre</text>
+    <text x="520" y="36" class="t b">Três separadores, três pilhas</text>
+    <text x="520" y="64" class="t s">cada separador guarda a sua pilha;</text>
+    <text x="520" y="82" class="t s">mudar de separador não faz pop</text>
+    <rect x="538" y="180" width="88" height="24" rx="6" class="box"/>
+    <text x="582" y="196" class="t s" text-anchor="middle">Lista</text>
+    <rect x="542" y="150" width="88" height="24" rx="6" class="box"/>
+    <text x="586" y="166" class="t s" text-anchor="middle">Detalhe</text>
+    <rect x="546" y="120" width="88" height="24" rx="6" class="box accent"/>
+    <text x="590" y="136" class="t s" text-anchor="middle">Mapa</text>
+    <rect x="651" y="180" width="88" height="24" rx="6" class="box"/>
+    <text x="695" y="196" class="t s" text-anchor="middle">Lista</text>
+    <rect x="655" y="150" width="88" height="24" rx="6" class="box accent"/>
+    <text x="699" y="166" class="t s" text-anchor="middle">Aviso</text>
+    <rect x="764" y="180" width="88" height="24" rx="6" class="box accent"/>
+    <text x="808" y="196" class="t s" text-anchor="middle">Definições</text>
+    <rect x="520" y="222" width="350" height="44" rx="10" class="box muted"/>
+    <rect x="530" y="228" width="104" height="32" rx="8" class="box accent"/>
+    <text x="582" y="249" class="t" text-anchor="middle">Previsão</text>
+    <rect x="643" y="228" width="104" height="32" rx="8" class="box"/>
+    <text x="695" y="249" class="t" text-anchor="middle">Avisos</text>
+    <rect x="756" y="228" width="104" height="32" rx="8" class="box"/>
+    <text x="808" y="249" class="t" text-anchor="middle">Definições</text>
   </svg>
-  <figcaption>As strings vivem nos .arb; o Dart só usa chaves geradas. O locale do telemóvel decide qual das línguas aparece.</figcaption>
+  <figcaption>Uma pilha por fluxo: o ecrã de baixo fica vivo até fazeres pop; cada separador da barra tem a sua própria pilha.</figcaption>
   </figure>
-<pre data-title="pubspec.yaml e l10n.yaml"><code class="language-yaml"># pubspec.yaml
-dependencies:
-  flutter_localizations:
-    sdk: flutter
-  intl: any                     # a versão que o SDK fixar
-flutter:
-  generate: true                # corre gen-l10n em cada pub get
-
-# l10n.yaml (na raiz do projeto)
-arb-dir: lib/l10n
-template-arb-file: app_pt.arb
-output-localizations-file: app_localizations.dart</code></pre>
-<pre data-title="lib/l10n/app_pt.arb"><code class="language-json">{
-  "@@locale": "pt",
-  "tituloApp": "Tempo Açores",
-  "pesquisar": "Pesquisar localidade",
-  "previsaoDias": "{n, plural, =1{Previsão para 1 dia} other{Previsão para {n} dias}}",
-  "@previsaoDias": {"placeholders": {"n": {"type": "int"}}},
-  "atualizadoHa": "Atualizado há {minutos} min",
-  "@atualizadoHa": {"placeholders": {"minutos": {"type": "int"}}}
-}</code></pre>
-  <div class="callout"><strong>Analogia</strong> Não se escreve o texto na parede; escreve-se numa placa que se pode trocar. Os ficheiros <code>.arb</code> são as placas em cada língua, e <code>gen-l10n</code> faz o suporte onde a placa encaixa (<code>AppLocalizations</code>). O locale do telemóvel escolhe a placa.</div>
+  <ul>
+    <li>Os ecrãs de uma app são uma <strong>pilha</strong>: <code>push</code> põe um ecrã novo em cima, <code>pop</code> tira o de cima e volta ao anterior. A lista de localidades → o detalhe → o mapa: três ecrãs na pilha.</li>
+    <li>O ecrã de baixo continua vivo, com o seu <code>State</code>, o scroll e o texto escrito. Ao fazer <code>pop</code>, está exatamente como o deixaste.</li>
+    <li>O ecrã que sai com <code>pop</code> é destruído: <code>dispose</code> corre e o estado perde-se. Se o utilizador precisa do que lá estava, tens de o devolver ao ecrã anterior ou guardá-lo fora.</li>
+    <li>Um ecrã pode devolver um resultado ao sair: o ecrã de escolha de localidade faz <code>pop(context, localidade)</code> e quem chamou recebe-a no <code>await</code>.</li>
+    <li>Pilhas muito fundas (10 ecrãs) são um sintoma: o utilizador perdeu-se. Apps bem desenhadas raramente passam de 3 ou 4.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> <code>push</code> mantém o ecrã anterior vivo; <code>pop</code> destrói o ecrã atual e pode devolver um valor.</p>
+  <div class="callout"><strong>Analogia</strong> Uma pilha de folhas em cima da mesa. <code>push</code> põe uma folha por cima; <code>pop</code> tira a de cima e deita-a fora. A folha de baixo continua na mesa com tudo o que tinha escrito. O botão de retroceder do Android é um <code>pop</code>.</div>
+  <aside class="notes">Desenha a pilha no quadro com três retângulos empilhados. Pergunta o resultado da contagem de ecrãs que pediste no início: normalmente entre 3 e 6. Discute 2 minutos porque as apps de banco vão a fundo (fluxos de transferência) e o Instagram não.</aside>
 </section>
 
 <section class="slide">
-  <h2>i18n (2 de 2): usar as strings</h2>
-<pre data-title="lib/main.dart e widgets"><code class="language-dart">import 'l10n/app_localizations.dart';                       // gerado em lib/l10n/
-
-MaterialApp.router(
-  routerConfig: router,
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,     // [pt, en], lidos dos .arb
-  onGenerateTitle: (context) => AppLocalizations.of(context)!.tituloApp,
-)
-
-// num widget
-final l10n = AppLocalizations.of(context)!;
-Text(l10n.tituloApp);
-Text(l10n.previsaoDias(5));                                  // Previsão para 5 dias
-Text(l10n.atualizadoHa(12));                                 // Atualizado há 12 min</code></pre>
+  <h2>Voltar: botão Android, gesto iOS, e o estado</h2>
   <ul>
-    <li>O ficheiro modelo (<code>app_pt.arb</code>) define as chaves; cada outra língua é um <code>.arb</code> com as mesmas chaves. Faltar uma chave dá aviso ao gerar, não crash em runtime.</li>
-    <li>Plurais com ICU: <code>=0</code>, <code>=1</code>, <code>other</code>. Em português "1 dia" e "2 dias"; noutras línguas há mais formas, e o formato trata delas.</li>
-    <li>A língua vem do sistema. Para forçar, <code>locale: const Locale('en')</code> no <code>MaterialApp</code> (útil para testar).</li>
+    <li><strong>Android:</strong> botão ou gesto de retroceder do sistema, a partir de qualquer margem. Desde o Android 14, o <em>predictive back</em> mostra uma pré-visualização do ecrã anterior antes de largares. O Flutter suporta-o com <code>PopScope</code>.</li>
+    <li><strong>iOS:</strong> não há botão de sistema. O utilizador desliza a partir da margem esquerda ou toca na seta da barra. O Flutter faz o gesto sozinho em <code>MaterialPageRoute</code> no iOS.</li>
+    <li>Voltar na raiz da app: no Android sai da app (ou minimiza); no iOS não existe. Nunca ponhas um botão "sair" numa app.</li>
+    <li>Um formulário meio preenchido e o utilizador carrega em voltar: perde tudo. <code>PopScope</code> com <code>canPop: false</code> e um diálogo "Descartar alterações?" é o padrão. Gmail faz isto com rascunhos.</li>
+    <li>Quando a app é morta em background e reaberta, a pilha volta ao início a não ser que a restaures (aula 4, <em>state restoration</em>). Os utilizadores odeiam voltar ao ecrã inicial.</li>
   </ul>
-  <p><strong>Para os testes:</strong> as strings vivem em ficheiros <code>.arb</code>, uma língua por ficheiro; <code>gen-l10n</code> gera a classe <code>AppLocalizations</code>; nunca há texto visível hard-coded nos widgets.</p>
+  <p><strong>Para os testes:</strong> o "voltar" é do sistema, não da app; a app pode intercetá-lo com <code>PopScope</code>, mas não pode ignorá-lo.</p>
 </section>
 
 <section class="slide">
-  <h2>Formatos com intl, e RTL em uma frase</h2>
-<pre><code class="language-dart">import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart';
+  <h2>Padrões de navegação</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Padrão</th><th>Como se comporta</th><th>Exemplo</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Lista → detalhe</strong></td><td><code>push</code> do detalhe; <code>pop</code> volta à lista no mesmo sítio do scroll</td><td>Qualquer app de e-mail, a nossa lista de localidades</td></tr>
+  <tr><td><strong>Tabs com pilhas independentes</strong></td><td>Cada separador tem a sua pilha; mudar de separador não destrói a pilha do outro; voltar a tocar no separador ativo volta à raiz</td><td>Instagram, YouTube: abres um vídeo em Início, vais a Subscrições, voltas e o vídeo ainda lá está</td></tr>
+  <tr><td><strong>Modal</strong></td><td>Ecrã inteiro que sobe de baixo, com "Cancelar" e "Guardar"; ao fechar, volta ao ponto de partida</td><td>Criar evento no Calendário, compor e-mail</td></tr>
+  <tr><td><strong>Bottom sheet</strong></td><td>Painel que ocupa parte do ecrã, o resto fica visível e escurecido; arrasta para fechar</td><td>Partilhar, filtros do Airbnb, opções de um item</td></tr>
+  <tr><td><strong>Diálogo</strong></td><td>Interrompe com uma pergunta curta e duas ações no máximo</td><td>"Apagar conversa?", pedidos de permissão</td></tr>
+  </tbody></table></div>
+</section>
 
-await initializeDateFormatting('pt_PT');               // uma vez, no main, antes do runApp
-
-final hoje = DateTime(2026, 10, 6);
-DateFormat.EEEE('pt_PT').format(hoje);                 // terça-feira
-DateFormat('d MMM', 'pt_PT').format(hoje);             // 6 out.
-DateFormat.yMMMMd('en').format(hoje);                  // October 6, 2026
-NumberFormat('0.0', 'pt_PT').format(21.456);           // 21,5
-NumberFormat.decimalPattern('en').format(1234.5);      // 1,234.5
-
-// Melhor: o locale do ecrã, não um fixo
-final locale = Localizations.localeOf(context).toString();
-DateFormat.EEEE(locale).format(hoje);</code></pre>
+<section class="slide">
+  <h2>Rotas imperativas vs declarativas</h2>
   <ul>
-    <li>Datas, números, moedas e unidades mudam de língua para língua: a vírgula decimal, a ordem dia/mês, o nome do dia. Nunca os montes à mão com <code>'$dia/$mes'</code>.</li>
-    <li><strong>RTL:</strong> árabe e hebraico escrevem-se da direita para a esquerda; o Flutter espelha o layout sozinho se usares <code>EdgeInsetsDirectional</code> e <code>start</code>/<code>end</code> em vez de <code>left</code>/<code>right</code>.</li>
+    <li><strong>Imperativo</strong> (<code>Navigator.push</code>): dizes o que fazer, ecrã a ecrã. Simples, mas a pilha só existe em memória: não tem nome, não se pode partilhar nem restaurar.</li>
+    <li><strong>Declarativo</strong> (<code>go_router</code>): declaras um mapa de rotas com caminhos, como num site: <code>/</code>, <code>/localidade/:id</code>, <code>/definicoes</code>. Navegar é mudar o URL; a pilha é derivada dele.</li>
+    <li><strong>URL como estado:</strong> a mesma app em Flutter Web mostra o URL na barra; no telemóvel, um deep link abre diretamente <code>/localidade/horta</code>; um teste automatizado começa num ecrã sem tocar em cinco botões.</li>
+    <li><code>go_router</code> é mantido pela equipa do Flutter, trata do botão de retroceder, das tabs com pilhas independentes e dos redirecionamentos (ecrã de login).</li>
+    <li>Os dois convivem: podes usar <code>showDialog</code> e <code>showModalBottomSheet</code> (imperativos) dentro de uma app com <code>go_router</code>.</li>
   </ul>
-  <p><strong>Para os testes:</strong> <code>intl</code> formata datas e números por locale; <code>initializeDateFormatting</code> é obrigatório para locales que não sejam inglês.</p>
+  <p><strong>Para os testes:</strong> rotas declarativas descrevem os ecrãs como URLs e derivam a pilha do URL; são a base de deep links e da web.</p>
+</section>
+
+<section class="slide">
+  <h2>Deep links em uma frase</h2>
+  <p class="lead">Um deep link é um URL que abre a app diretamente num ecrã específico, em vez de no ecrã inicial.</p>
+  <ul>
+    <li><code>https://tempoacores.pt/localidade/horta</code> num SMS, numa notificação ou no browser: se a app estiver instalada, abre no detalhe da Horta; se não, abre o site.</li>
+    <li>Com <code>go_router</code>, o URL recebido é tratado exatamente como <code>context.go('/localidade/horta')</code>. É por isso que o caminho das rotas deve ser desenhado como se fosse público.</li>
+    <li>Precisa de configuração nativa (Android App Links, iOS Universal Links) e de um ficheiro no servidor a provar que o domínio é teu.</li>
+  </ul>
+  <div class="callout">Detalhe, configuração e testes na aula 22. Nesta aula define-se apenas a estrutura dos caminhos.</div>
+  <div class="callout"><strong>Analogia</strong> Uma morada completa, com rua, número, andar e porta, em vez de "vai à cidade e procura". O URL leva à app e ao ecrã certo, e os segmentos do caminho (<code>/localidade/horta</code>) são o número e a porta.</div>
+</section>
+
+<section class="slide">
+  <h2>Temas (1 de 2): ThemeData e ColorScheme</h2>
+  <ul>
+    <li><code>ThemeData</code> é o conjunto de cores, tipografia, formas e estilos de componentes de toda a app. Vive no <code>MaterialApp</code> e qualquer widget o lê com <code>Theme.of(context)</code>.</li>
+    <li><code>ColorScheme.fromSeed(seedColor: ...)</code> gera, a partir de uma cor, as 30 e tal cores do Material 3: primary, secondary, tertiary, error, surface, os <code>on*</code> para texto por cima, os <code>*Container</code> para fundos suaves. Garante contraste entre pares.</li>
+    <li>Os widgets Material usam o esquema sozinhos: um <code>FilledButton</code> é <code>primary</code> com texto <code>onPrimary</code>; um <code>Card</code> é <code>surfaceContainer</code>. Se não pões cores à mão, a app fica coerente de graça.</li>
+    <li>A tipografia vem do <code>textTheme</code>: <code>displayLarge</code> até <code>labelSmall</code>. Usa-os em vez de <code>fontSize</code> fixos.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> <code>ColorScheme.fromSeed</code> gera a paleta Material 3 inteira a partir de uma cor; os widgets lêem o tema com <code>Theme.of(context)</code>.</p>
+</section>
+
+<section class="slide">
+  <h2>Temas (2 de 2): claro, escuro e consistência</h2>
+  <ul>
+    <li><code>theme</code> e <code>darkTheme</code> no <code>MaterialApp</code>; <code>themeMode</code> decide qual: <code>ThemeMode.system</code> segue o telemóvel, <code>light</code> e <code>dark</code> forçam.</li>
+    <li>Um tema escuro não é o claro invertido: superfícies cinzento-escuro (não preto puro), cores primárias mais claras e menos saturadas, sombras substituídas por tons. <code>fromSeed</code> com <code>brightness: Brightness.dark</code> trata disto.</li>
+    <li>Cores fixas (<code>Colors.white</code>, <code>Color(0xFF...)</code>) num widget partem no modo escuro. Regra: cores só do <code>colorScheme</code>; exceções (o amarelo de um aviso meteorológico) declaradas num sítio só.</li>
+    <li>O modo escuro é a preferência de acessibilidade mais usada e poupa bateria em ecrãs OLED. As lojas esperam-no.</li>
+    <li>Consistência: um tema, um sítio para o alterar, todos os ecrãs iguais. O momento em que um ecrã "parece de outra app" é um bug de tema.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> <code>ThemeMode.system</code> segue a preferência do sistema; cores fixas nos widgets são o erro clássico do modo escuro.</p>
+  <aside class="notes">Mostra a Tempo Açores da solução a mudar de tema ao alterar a definição do sistema no telemóvel, sem reiniciar. Depois mostra um widget com Colors.white em modo escuro: texto branco sobre branco. É uma imagem que fica.</aside>
 </section>
 
 <section class="slide" data-part="Prática">
-  <h2>Mini-projeto individual: Tempo Açores offline</h2>
+  <h2>Ligar os ecrãs</h2>
 <pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-09.git
 cd pdm-aula-09/starter
 flutter pub get
 flutter run</code></pre>
-  <p>Desta vez o <code>starter/</code> é o ponto de partida do teu mini-projeto: traz <code>assets/previsoes.json</code> com nove localidades e cinco dias cada, os modelos vazios, o <code>l10n.yaml</code> configurado, <code>TODO</code>s numerados e testes a falhar. A <code>solucao/</code> só é publicada depois da entrega.</p>
+  <p><code>starter/</code> traz os três ecrãs das aulas anteriores (previsão, avisos, definições) sem ligação entre eles, <code>go_router</code> já no <code>pubspec.yaml</code>, <code>TODO</code>s numerados e testes a falhar; <code>solucao/</code> é o estado final.</p>
   <ol class="steps">
-    <li>Cria um repositório <strong>privado</strong> na tua conta GitHub chamado <code>pdm-miniprojeto</code> e adiciona o docente como colaborador. Copia o conteúdo de <code>starter/</code> para lá e faz o primeiro commit.</li>
-    <li>Trabalha sozinho. Podes perguntar ao docente e consultar o que quiseres, incluindo IA, mas tens de explicar cada linha na aula 10.</li>
-    <li>Faz commit a cada passo concluído. O histórico conta na avaliação.</li>
+    <li>Corre e confirma que só vês a lista de localidades. Tocar numa localidade ainda não faz nada.</li>
+    <li>Abre <code>lib/main.dart</code>, <code>lib/router.dart</code> (vazio) e <code>lib/ecra_localidades.dart</code>.</li>
   </ol>
-  <aside class="notes">Dá 10 minutos ao arranque. Insiste no repositório privado com o docente como colaborador: é assim que vais ver o histórico. Quem não tem conta GitHub configurada com SSH ou token vai perder tempo aqui; tem o guia de instalação aberto.</aside>
+  <aside class="notes">Enquanto compilam, avisa que o passo 1 (Navigator) vai ser substituído pelo passo 2 (go_router) de propósito: é para sentirem a diferença. Alguns vão perguntar porque não ir direto ao go_router; a resposta é que o Navigator continua por baixo e aparece em qualquer código que encontrem.</aside>
 </section>
 
 <section class="slide">
-  <h2>Requisitos</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Obrigatório (para nota positiva)</th><th>Extras (para subir)</th></tr></thead>
-  <tbody>
-  <tr><td>Lista de localidades carregada de <code>assets/previsoes.json</code>, com ilha e temperatura atual</td><td>Favoritos em memória com estrela, mostrados no topo da lista</td></tr>
-  <tr><td>Detalhe com previsão a 5 dias (fila horizontal de dias e cartão do dia escolhido)</td><td>Layout em duas colunas acima de 600 dp e em landscape</td></tr>
-  <tr><td>Pesquisa por nome com estado vazio</td><td>Ícones e cores por tipo de tempo, lidos do enum</td></tr>
-  <tr><td>Tema claro e escuro com <code>ColorScheme.fromSeed</code> e escolha nas definições</td><td>Semântica completa: a app usa-se de olhos fechados com TalkBack</td></tr>
-  <tr><td>Todas as strings em <code>app_pt.arb</code> e <code>app_en.arb</code>; datas formatadas com <code>intl</code></td><td>Transição <code>Hero</code> da imagem da ilha entre lista e detalhe</td></tr>
-  </tbody></table></div>
-  <p>Tudo o que está nos obrigatórios foi dado nas aulas 5 a 8. Os extras são para quem acabar antes das 11:00.</p>
-</section>
-
-<section class="slide">
-  <h2>Passo 1: carregar JSON dos assets</h2>
-<pre data-title="lib/previsao/dados/previsoes_locais.dart"><code class="language-dart">import 'dart:convert';
-import 'package:flutter/services.dart';
-
-class PrevisoesLocais {
-  Future&lt;List&lt;Localidade&gt;&gt; carregar() async {
-    final texto = await rootBundle.loadString('assets/previsoes.json');
-    final json = jsonDecode(texto) as Map&lt;String, dynamic&gt;;
-    final lista = json['localidades'] as List&lt;dynamic&gt;;
-    return lista
-        .map((e) => Localidade.fromJson(e as Map&lt;String, dynamic&gt;))
-        .toList();
+  <h2>1. Navigator.push e pop com resultado</h2>
+<pre data-title="lib/ecra_localidades.dart"><code class="language-dart">// No ecrã de lista: empurra o detalhe e espera um resultado
+onTap: () async {
+  final favorito = await Navigator.push&lt;bool&gt;(
+    context,
+    MaterialPageRoute(builder: (_) => EcraDetalhe(localidade: l)),
+  );
+  if (favorito == true &amp;&amp; context.mounted) {         // o ecrã pode já não existir
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${l.nome} adicionada aos favoritos')),
+    );
   }
-}
+},
 
-// no ecrã da lista
-FutureBuilder&lt;List&lt;Localidade&gt;&gt;(
-  future: _futuro,                              // criado uma vez no initState, nunca no build
-  builder: (context, snapshot) {
-    if (snapshot.hasError) return Text('Erro: ${snapshot.error}');
-    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-    final localidades = snapshot.data!;
-    return ListaLocalidades(localidades: localidades);
-  },
+// No ecrã de detalhe: volta e devolve o resultado
+AppBar(
+  title: Text(localidade.nome),
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.star_border),
+      tooltip: 'Adicionar aos favoritos',
+      onPressed: () => Navigator.pop(context, true),
+    ),
+  ],
 )</code></pre>
-  <aside class="notes">Erro clássico: criar o Future dentro do build; a cada rebuild volta a ler o ficheiro e o ecrã pisca. Mostra-o de propósito e corrige com initState. Segundo erro: o ficheiro não está declarado em pubspec.yaml e o loadString lança "Unable to load asset".</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 1: o que interessa</h2>
+  <h2>1. Navigator: o que interessa</h2>
   <ul>
-    <li><code>rootBundle.loadString</code> lê um ficheiro declarado em <code>pubspec.yaml</code> na secção <code>assets:</code>. É assíncrono porque em release os assets vêm de dentro do binário.</li>
-    <li>Os modelos <code>Localidade</code> e <code>Previsao</code> com <code>fromJson</code> são os da aula 4, com a validação do trabalho de casa: um campo em falta lança <code>FormatException</code> com o nome do campo.</li>
-    <li><code>FutureBuilder</code> desenha os estados do <code>Future</code>: a carregar, com erro, com dados. É a versão mínima dos quatro estados da aula 6; na aula 13 fazemos melhor.</li>
-    <li>O <code>Future</code> cria-se uma vez (<code>initState</code>) e guarda-se num campo. Criá-lo no <code>build</code> repete a leitura a cada rebuild.</li>
-    <li>A classe <code>PrevisoesLocais</code> é a única que sabe de onde vêm os dados. Na aula 11 troca-se por uma que fala com a API sem mexer nos ecrãs.</li>
+    <li><code>Navigator.push</code> devolve um <code>Future</code> que completa quando o ecrã novo faz <code>pop</code>. O valor do <code>pop</code> é o resultado; se o utilizador voltar com o gesto, é <code>null</code>.</li>
+    <li><code>MaterialPageRoute</code> dá a transição da plataforma: deslizar de baixo no Android, da direita no iOS, com o gesto de voltar incluído.</li>
+    <li>Depois de um <code>await</code>, o widget pode ter sido destruído. <code>context.mounted</code> evita usar um <code>context</code> morto; o lint <code>use_build_context_synchronously</code> obriga-te a verificar.</li>
+    <li>A seta de voltar na <code>AppBar</code> aparece sozinha quando há um ecrã por baixo. Não a desenhes à mão.</li>
+    <li><code>Navigator.pop(context)</code> sem valor serve para "Cancelar".</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Resolve os <code>TODO 1</code> a <code>3</code>: modelos com <code>fromJson</code> validado, <code>PrevisoesLocais.carregar()</code>, e a lista de localidades com <code>FutureBuilder</code>. Os testes de <code>test/modelos_test.dart</code> têm de ficar verdes antes de avançares.</div>
+  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: toque numa localidade abre o detalhe; a estrela devolve <code>true</code>; a lista mostra um <code>SnackBar</code>. Depois faz <code>push</code> do ecrã de definições a partir da <code>AppBar</code> e devolve a unidade escolhida.</div>
 </section>
 
 <section class="slide">
-  <h2>Passo 2: lista, pesquisa e detalhe</h2>
-  <ol class="steps">
-    <li><strong>Lista</strong> (<code>TODO 4</code>): <code>ListView.builder</code> com um <code>LocalidadeTile</code> por localidade: imagem da ilha, nome, ilha, temperatura atual e ícone do tempo. Aula 6.</li>
-    <li><strong>Pesquisa</strong> (<code>TODO 5</code>): <code>TextField</code> na <code>AppBar</code> ou acima da lista, filtro por nome sem acentos nem maiúsculas, estado vazio com mensagem e botão para limpar. Aula 7.</li>
-    <li><strong>Detalhe</strong> (<code>TODO 6</code>): rota <code>/localidade/:id</code> com <code>go_router</code>; cabeçalho <code>Stack</code> com a imagem, fila horizontal de <code>DiaChip</code>, cartão do dia escolhido com <code>setState</code>. Aulas 6, 7 e 8.</li>
-    <li><strong>Navegação</strong> (<code>TODO 7</code>): <code>StatefulShellRoute</code> com Previsão e Definições (o separador Avisos fica de fora hoje). Aula 8.</li>
-  </ol>
-  <div class="callout task"><strong>Exercício 2</strong> Termina os <code>TODO 4</code> a <code>7</code> até às 10:30. Commit a cada TODO. Se um passo te bloqueia mais de 10 minutos, salta-o e volta no fim.</div>
-  <aside class="notes">Este é o bloco longo: 60 minutos. Circula e não resolvas por eles; aponta para o slide da aula certa. Às 10:00, pausa de 10 minutos. Quem estiver muito atrasado às 10:30: prioriza lista e detalhe, deixa a pesquisa para casa.</aside>
+  <h2>2. go_router: rotas com parâmetros</h2>
+<pre data-title="lib/router.dart"><code class="language-dart">import 'package:go_router/go_router.dart';
+
+final router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const EcraLocalidades(),
+      routes: [
+        GoRoute(
+          path: 'localidade/:id',                       // /localidade/ponta-delgada
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return EcraDetalhe(id: id);
+          },
+        ),
+      ],
+    ),
+    GoRoute(path: '/definicoes', builder: (_, __) => const EcraDefinicoes()),
+  ],
+);
+
+// em main.dart, no lugar de MaterialApp(home: ...)
+MaterialApp.router(routerConfig: router, theme: tema);</code></pre>
 </section>
 
 <section class="slide">
-  <h2>Passo 3: tema e strings em pt e en</h2>
-<pre data-title="lib/l10n/app_en.arb"><code class="language-json">{
-  "@@locale": "en",
-  "tituloApp": "Azores Weather",
-  "pesquisar": "Search location",
-  "semResultados": "No location matches \"{texto}\"",
-  "@semResultados": {"placeholders": {"texto": {"type": "String"}}},
-  "previsaoDias": "{n, plural, =1{1-day forecast} other{{n}-day forecast}}",
-  "@previsaoDias": {"placeholders": {"n": {"type": "int"}}},
-  "tema": "Theme",
-  "temaSistema": "System",
-  "temaClaro": "Light",
-  "temaEscuro": "Dark"
-}</code></pre>
+  <h2>2. go_router: o que interessa</h2>
   <ul>
-    <li>Procura todos os <code>Text('...')</code> com texto visível e passa-os para o <code>.arb</code>. A pesquisa do VS Code por <code>Text('</code> encontra-os.</li>
-    <li>O dia da semana nos <code>DiaChip</code> vem de <code>DateFormat.E(locale)</code>; nunca de uma lista de nomes em português.</li>
-    <li>Muda a língua do telemóvel para inglês e percorre a app. O que ficou em português é um <code>TODO</code>.</li>
+    <li>Rotas aninhadas (<code>routes:</code> dentro de uma <code>GoRoute</code>) constroem a pilha: abrir <code>/localidade/horta</code> por deep link põe a lista por baixo e o detalhe por cima. Voltar funciona.</li>
+    <li><code>:id</code> é um parâmetro de caminho, lido em <code>state.pathParameters</code>. Query strings (<code>?dia=2</code>) ficam em <code>state.uri.queryParameters</code>. Passa identificadores, não objetos: o ecrã de detalhe vai buscar a localidade pelo <code>id</code>.</li>
+    <li><code>context.go('/definicoes')</code> substitui a pilha pela do URL novo. <code>context.push('/definicoes')</code> empilha por cima da pilha atual e pode devolver um resultado, como o <code>Navigator</code>.</li>
+    <li>Regra prática: <code>go</code> para mudar de secção (tabs, deep links, depois do login); <code>push</code> para "abrir por cima e voltar".</li>
+    <li>Os testes do starter navegam por URL. É a vantagem de os ecrãs terem nome.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 3</strong> Resolve os <code>TODO 8</code> e <code>9</code>: tema claro/escuro com o <code>SegmentedButton</code> nas definições (aula 8) e todas as strings nos dois <code>.arb</code>. O teste <code>test/l10n_test.dart</code> confirma que as duas línguas têm as mesmas chaves.</div>
+  <p><strong>Para os testes:</strong> <code>go</code> substitui a pilha; <code>push</code> empilha. Parâmetros de caminho vêm em <code>pathParameters</code>.</p>
+  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: apaga o código do exercício 1, cria o <code>router.dart</code> e navega com <code>context.push('/localidade/${l.id}')</code>. O detalhe recebe o <code>id</code> e procura a localidade em <code>dados.dart</code>. Trata o caso de um <code>id</code> que não existe.</div>
 </section>
 
 <section class="slide">
-  <h2>Passo 4: acessibilidade mínima</h2>
-  <ul class="checklist">
-    <li>Todos os <code>IconButton</code> têm <code>tooltip</code>; todas as imagens têm <code>semanticLabel</code>.</li>
-    <li>Cada <code>LocalidadeTile</code> e <code>DiaChip</code> é lido como uma frase: <code>Semantics(label: ...)</code> com <code>ExcludeSemantics</code> nos filhos.</li>
-    <li>Com a letra do sistema no máximo, nenhum texto fica cortado e nenhum cartão dá overflow.</li>
-    <li>Com o modo escuro ligado, nenhum texto desaparece (procura <code>Colors.</code> nos widgets).</li>
-    <li>O tipo de tempo tem ícone e texto, não só cor.</li>
-    <li>Cinco minutos com TalkBack ou VoiceOver ligado, de olhos fechados: consegues chegar ao detalhe da Horta?</li>
+  <h2>3. NavigationBar com pilhas independentes</h2>
+<pre data-title="lib/router.dart"><code class="language-dart">StatefulShellRoute.indexedStack(
+  builder: (context, state, shell) => Scaffold(
+    body: shell,                                    // o separador atual, com a sua pilha
+    bottomNavigationBar: NavigationBar(
+      selectedIndex: shell.currentIndex,
+      onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
+      destinations: const [
+        NavigationDestination(icon: Icon(Icons.wb_sunny_outlined), label: 'Previsão'),
+        NavigationDestination(icon: Icon(Icons.warning_amber), label: 'Avisos'),
+        NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Definições'),
+      ],
+    ),
+  ),
+  branches: [
+    StatefulShellBranch(routes: [GoRoute(path: '/', builder: (_, __) => const EcraLocalidades())]),
+    StatefulShellBranch(routes: [GoRoute(path: '/avisos', builder: (_, __) => const EcraAvisos())]),
+    StatefulShellBranch(routes: [GoRoute(path: '/definicoes', builder: (_, __) => const EcraDefinicoes())]),
+  ],
+)</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Barra de navegação: o que interessa</h2>
+  <ul>
+    <li><code>ShellRoute</code> embrulha um conjunto de rotas num widget comum (a barra). <code>StatefulShellRoute.indexedStack</code> vai mais longe: cada separador tem a sua própria pilha e o seu estado, preservados ao mudar de separador. É o padrão do Instagram.</li>
+    <li>A rota de detalhe entra como filha da rota <code>/</code> dentro do primeiro <em>branch</em>: o detalhe abre por cima da lista e a barra continua visível.</li>
+    <li><code>initialLocation: true</code> ao tocar no separador já ativo volta à raiz desse separador. É o comportamento que os utilizadores esperam.</li>
+    <li><code>NavigationBar</code> é o Material 3; <code>BottomNavigationBar</code> é o Material 2 antigo. Três a cinco destinos, com ícone e etiqueta.</li>
+    <li>Em tablets, troca-a por <code>NavigationRail</code> à esquerda com um <code>LayoutBuilder</code>.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 4</strong> Resolve o <code>TODO 10</code> percorrendo esta lista. O último ponto é trabalho de casa e escreves o resultado no README: o que funcionou e o que não.</div>
+  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: os três separadores com <code>StatefulShellRoute</code>. Abre um detalhe em Previsão, muda para Avisos, volta: o detalhe tem de continuar aberto. O teste verifica exatamente isso.</div>
 </section>
 
 <section class="slide">
-  <h2>Critérios de entrega</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Critério</th><th>Como se verifica</th></tr></thead>
-  <tbody>
-  <tr><td>Corre no telemóvel</td><td>O docente instala a partir do teu repositório com <code>flutter run</code>. Se não compilar, não há avaliação.</td></tr>
-  <tr><td>Sem avisos de lint</td><td><code>flutter analyze</code> devolve "No issues found". Avisos contam contra, erros anulam.</td></tr>
-  <tr><td>Testes verdes</td><td><code>flutter test</code> passa os testes do starter. Testes apagados contam como falhados.</td></tr>
-  <tr><td>README com captura de ecrã</td><td>Nome, o que fizeste dos obrigatórios e dos extras, uma captura da lista e uma do detalhe (em release, sem o banner DEBUG), e o resultado do teste com TalkBack.</td></tr>
-  <tr><td>Histórico de commits</td><td>Pelo menos um commit por passo, com mensagens que dizem o que mudou.</td></tr>
-  </tbody></table></div>
-  <p>A rubrica completa está em <a href="../avaliacao.html">Avaliação</a>. O mini-projeto vale 15% da nota final e é individual.</p>
-  <aside class="notes">Lê os cinco critérios em voz alta e pergunta se há dúvidas; fica registado que foram explicados. Mostra um README de exemplo de um ano anterior (anonimizado): meia página chega. Avisa que o banner DEBUG nas capturas é o erro mais comum.</aside>
+  <h2>4. Tema Material 3 claro e escuro</h2>
+<pre data-title="lib/main.dart"><code class="language-dart">const semente = Color(0xFF0B63C9);
+
+MaterialApp.router(
+  routerConfig: router,
+  theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: semente), useMaterial3: true),
+  darkTheme: ThemeData(
+    colorScheme: ColorScheme.fromSeed(seedColor: semente, brightness: Brightness.dark),
+    useMaterial3: true,
+  ),
+  themeMode: _modo,                            // ThemeMode.system, .light ou .dark
+)
+
+// Toggle manual: _modo vive num StatefulWidget acima do MaterialApp
+SegmentedButton&lt;ThemeMode&gt;(
+  segments: const [
+    ButtonSegment(value: ThemeMode.system, label: Text('Sistema')),
+    ButtonSegment(value: ThemeMode.light, label: Text('Claro')),
+    ButtonSegment(value: ThemeMode.dark, label: Text('Escuro')),
+  ],
+  selected: {_modo},
+  onSelectionChanged: (s) => setState(() => _modo = s.first),
+)</code></pre>
 </section>
 
 <section class="slide">
-  <h2>Entrega no Moodle</h2>
+  <h2>4. Tema: o que interessa</h2>
+  <ul>
+    <li>Duas linhas de <code>fromSeed</code> e a app tem modo claro e escuro coerentes. A partir daí, evitar cores fixas: nada de <code>Colors.white</code> nos widgets.</li>
+    <li>Nos widgets, <code>final cores = Theme.of(context).colorScheme;</code> e depois <code>cores.primaryContainer</code> para o fundo e <code>cores.onPrimaryContainer</code> para o texto por cima. Os pares <code>x</code> / <code>onX</code> garantem contraste.</li>
+    <li>O <code>SegmentedButton</code> está no ecrã de definições, mas o <code>_modo</code> tem de estar acima do <code>MaterialApp</code>. Hoje sobe por callback (o problema dos cinco níveis); na aula 13 passa para um <code>ChangeNotifier</code> e na 16 fica gravado.</li>
+    <li>Estilos de componentes (<code>cardTheme</code>, <code>appBarTheme</code>, <code>inputDecorationTheme</code>) definem-se uma vez no <code>ThemeData</code>, não widget a widget.</li>
+    <li>Testa os dois modos sempre: liga o modo escuro do telemóvel e percorre todos os ecrãs.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 4</strong> Resolve o <code>TODO 4</code>: tema claro e escuro com a cor semente da app, <code>themeMode</code> a partir do <code>SegmentedButton</code> das definições, e um <code>cardTheme</code> com cantos de 16. Procura cores fixas nos ecrãs e substitui-as pelo <code>colorScheme</code>.</div>
+</section>
+
+<section class="slide">
+  <h2>5. Exercício final: a app inteira ligada</h2>
   <ol class="steps">
-    <li>Confirma que o repositório é privado, que o docente é colaborador, e que o último commit está no GitHub (<code>git push</code>).</li>
-    <li>Corre <code>flutter analyze</code> e <code>flutter test</code> uma última vez na pasta do projeto, e cola o resultado no fim do README.</li>
-    <li>Gera as capturas com <code>flutter run --release</code> e guarda-as em <code>docs/</code> dentro do repositório.</li>
-    <li>No Moodle, atividade "Mini-projeto": cola o link do repositório. Só o link; nada de ficheiros zip.</li>
+    <li>Três separadores com <code>StatefulShellRoute</code>: Previsão (lista → detalhe), Avisos (lista estática), Definições (formulário e tema).</li>
+    <li>O detalhe mostra a previsão a 5 dias das aulas 6 e 7 para a localidade do <code>id</code>, e tem a estrela que devolve um resultado ao voltar.</li>
+    <li>O tema segue o <code>SegmentedButton</code> das definições e muda sem reiniciar a app.</li>
+    <li>Testa: deep link manual com <code>flutter run --route=/localidade/horta</code> (ou o botão "Abrir" do starter) abre o detalhe com a lista por baixo.</li>
   </ol>
-  <div class="callout warn"><strong>Prazo</strong> Domingo, 11 de outubro, às 23:59. Entregas até 48 h depois têm penalização de 20%; depois disso não são avaliadas. O commit que conta é o último antes do prazo.</div>
+  <div class="callout task"><strong>Exercício 5</strong> Termina até <code>flutter test</code> ficar verde. Depois, com o detalhe aberto, roda o telemóvel: o que acontece à pilha? E com hot restart?</div>
+  <aside class="notes">Reserva 25 minutos. Erros típicos: usar go em vez de push para o detalhe (a barra desaparece porque a rota não está no branch), e o _modo declarado dentro do build. Fecha com a pergunta da rotação: a pilha sobrevive, o State também; hot restart apaga tudo.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -350,18 +357,18 @@ FutureBuilder&lt;List&lt;Localidade&gt;&gt;(
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>Termina o mini-projeto e entrega o link no Moodle até domingo 11/10 às 23:59. Segunda vamos usá-lo na aula de qualidade, por isso traz o que tiveres, mesmo incompleto.</li>
-        <li>Testa a app com TalkBack ou VoiceOver ligado durante 5 minutos, de olhos fechados, e escreve o resultado no README: o que conseguiste fazer e o que ficou inacessível.</li>
-        <li>Muda a língua do telemóvel para inglês e percorre todos os ecrãs. Cada texto em português é um TODO.</li>
+        <li>Adiciona a rota <code>/avisos/:id</code> com um ecrã de detalhe de aviso (título, nível, descrição, localidades afetadas), aninhada no separador Avisos. É o <code>TODO 5</code>.</li>
+        <li>Lê <a href="https://pub.dev/packages/go_router" target="_blank" rel="noopener">go_router: getting started</a> no pub.dev, incluindo a secção sobre redirecionamentos. Vais precisar dela para o login na aula 17.</li>
+        <li>Segunda começa o mini-projeto individual: vem com o repositório da aula 9 a funcionar, porque é o ponto de partida.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/ui/accessibility-and-internationalization/accessibility" target="_blank" rel="noopener">Accessibility in Flutter</a>: semântica, leitores de ecrã e como testar.</li>
-        <li><a href="https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization" target="_blank" rel="noopener">Internationalizing Flutter apps</a>: gen-l10n passo a passo, plurais, selects e datas.</li>
-        <li><a href="https://m3.material.io/foundations/accessible-design/overview" target="_blank" rel="noopener">Material 3: accessible design</a>: contraste, alvos de toque e texto escalável segundo o Material.</li>
-        <li><a href="https://pub.dev/packages/intl" target="_blank" rel="noopener">intl</a> no pub.dev: <code>DateFormat</code> e <code>NumberFormat</code> com todos os padrões.</li>
+        <li><a href="https://docs.flutter.dev/ui/navigation" target="_blank" rel="noopener">Navigation and routing</a>: Navigator vs Router, quando usar cada um.</li>
+        <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a>: o que vamos configurar na aula 22.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/design/themes" target="_blank" rel="noopener">Use themes to share colors and font styles</a>: a receita oficial de temas.</li>
+        <li><a href="https://pub.dev/documentation/go_router/latest/" target="_blank" rel="noopener">go_router: documentação</a>: rotas aninhadas, <code>StatefulShellRoute</code>, redirecionamentos e parâmetros, com exemplos.</li>
       </ul>
     </div>
   </div>

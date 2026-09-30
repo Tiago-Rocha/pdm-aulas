@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 18 · Concorrência, performance e sprint 1 · PDM</title>
+<title>Aula 18 · Segurança, performance e sprint 1 · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,24 +25,140 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 18 · Semana 8 · Quarta, 28 de outubro de 2026 · 16:00 às 18:00</p>
-  <h1>Concorrência, performance e sprint 1</h1>
-  <p class="lead">Teoria (30 minutos): desempenho em Flutter: isolates, rebuilds, listas e imagens, medições em modo profile. Prática: sprint 1, com um exercício de medição na app de cada grupo. A sprint 1 fecha na aula seguinte.</p>
+  <h1>Segurança, performance e sprint 1</h1>
+  <p class="lead">Teoria em duas partes. Segurança: o que um APK expõe, OWASP Mobile Top 10, segredos, pinning, permissões mínimas e privacidade. Desempenho em Flutter: isolates, rebuilds, listas e imagens, medições em modo profile. Prática: sprint 1, com um exercício de medição na app de cada grupo; a auditoria de segredos e permissões fica para casa. A sprint 1 fecha na aula seguinte.</p>
   <div class="meta"><span>Sprint 1 · último dia</span></div>
-  <aside class="notes">Começa pelo estado da sprint: pergunta a cada grupo, em dez segundos, se a app corre no telemóvel e quantos PRs faltam. Anota no quadro. Isso define quem precisa de ti na segunda parte. A teoria é curta hoje: não deixes passar dos 30 minutos.</aside>
+  <aside class="notes">Duas matérias numa aula: 35 minutos para a segurança, 30 para a performance, e o resto para a sprint. Não deixes a teoria passar das 17:10. Traz um APK de exemplo com um segredo lá dentro (o starter da aula 12 com o segredo hardcoded serve). Abre-o com unzip e strings no projetor nos primeiros dois minutos, sem explicar: deixa o segredo aparecer no ecrã. Depois começa a matéria. O estado da sprint fica para a ronda de um minuto por grupo, depois da teoria.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
+    <li>Identificar os riscos do OWASP Mobile Top 10 que mais aparecem em apps Flutter.</li>
+    <li>Tirar os segredos do repositório e passá-los com <code>--dart-define</code> ou ficheiro ignorado pelo git.</li>
+    <li>Explicar o que o certificate pinning protege e o que custa manter.</li>
+    <li>Pedir só as permissões necessárias, no momento certo, e cumprir o mínimo de privacidade: RGPD, App Tracking Transparency e formulários das lojas.</li>
     <li>Explicar o que é um isolate e quando usar <code>compute()</code> em vez de <code>async</code>/<code>await</code>.</li>
     <li>Identificar rebuilds desnecessários e reduzi-los com <code>const</code>, divisão de widgets e <code>Selector</code>.</li>
-    <li>Escolher as opções certas para listas longas e imagens de rede sem esgotar a memória.</li>
     <li>Medir a tua app em modo profile com o performance overlay e o DevTools, e dizer o que é jank.</li>
     <li>Fechar a sprint 1 com PRs merged, app a correr e demo preparada.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Teoria">
+<section class="slide" data-part="Segurança">
+  <h2>OWASP Mobile Top 10: os que mais aparecem</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Risco (lista de 2024)</th><th>Como aparece numa app Flutter</th><th>Defesa</th></tr></thead>
+  <tbody>
+  <tr><td><strong>M1</strong> Credenciais mal usadas</td><td>Client-id e segredo no código; password guardada em claro</td><td>Secure storage, tokens curtos, segredos fora do binário</td></tr>
+  <tr><td><strong>M3</strong> Autenticação e autorização inseguras</td><td>Verificar "é admin" só no cliente; confiar num campo do JWT sem o servidor validar</td><td>O servidor decide sempre; o cliente só mostra ou esconde</td></tr>
+  <tr><td><strong>M5</strong> Comunicação insegura</td><td>HTTP em claro; aceitar qualquer certificado (<code>badCertificateCallback</code> a devolver <code>true</code>)</td><td>HTTPS sempre; pinning quando se justifica</td></tr>
+  <tr><td><strong>M8</strong> Configuração insegura</td><td>Backup a incluir tokens; logs com dados pessoais; <code>debuggable</code> em release</td><td>Release limpo, backup filtrado, logs só em debug</td></tr>
+  <tr><td><strong>M9</strong> Armazenamento inseguro</td><td>Token em <code>shared_preferences</code>; base de dados com dados pessoais em claro</td><td>Keychain/Keystore; cifrar o que importa</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> os três que mais aparecem são segredos no código, armazenamento inseguro e comunicação insegura.</p>
+</section>
+
+<section class="slide">
+  <h2>Segredos: o que um atacante tira de um APK em 5 minutos</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Um APK aberto como zip mostra classes compiladas, a biblioteca Dart, assets e uma chave em texto; um atacante lê tudo com apktool ou strings em cinco minutos. O caminho certo: segredo no servidor ou dart-define no build, nunca no repositório">
+    <rect x="40" y="20" width="360" height="255" rx="10" class="box"/>
+    <text x="60" y="46" class="t b">app.apk é um zip</text>
+    <text x="380" y="46" class="t mono" text-anchor="end">unzip app.apk</text>
+    <rect x="60" y="64" width="320" height="40" rx="6" class="box muted"/>
+    <text x="72" y="81" class="t mono">classes.dex</text>
+    <text x="72" y="97" class="t s">Kotlin compilado: o jadx descompila</text>
+    <rect x="60" y="110" width="320" height="40" rx="6" class="box muted"/>
+    <text x="72" y="127" class="t mono">lib/arm64/libapp.so</text>
+    <text x="72" y="143" class="t s">Dart AOT: as strings continuam legíveis</text>
+    <rect x="60" y="156" width="320" height="40" rx="6" class="box muted"/>
+    <text x="72" y="173" class="t mono">assets/</text>
+    <text x="72" y="189" class="t s">imagens, JSON e um .env esquecido</text>
+    <rect x="60" y="202" width="320" height="40" rx="6" class="box danger"/>
+    <text x="72" y="219" class="t mono">API_KEY = "sk_live_…"</text>
+    <text x="72" y="235" class="t s">chave em texto: pública</text>
+    <text x="60" y="262" class="t s">Tudo o que vai no binário é público.</text>
+    <line x1="400" y1="50" x2="580" y2="50" class="arrow"/>
+    <text x="490" y="40" class="t s" text-anchor="middle">apktool / strings</text>
+    <text x="490" y="66" class="t s" text-anchor="middle">em 5 minutos</text>
+    <rect x="580" y="20" width="280" height="60" rx="10" class="box danger"/>
+    <text x="600" y="44" class="t b">Atacante</text>
+    <text x="600" y="66" class="t s">lê a chave e usa-a como se fosse a app</text>
+    <text x="580" y="118" class="t b">Em vez disso</text>
+    <rect x="580" y="130" width="280" height="54" rx="10" class="box ok"/>
+    <text x="600" y="152" class="t b">Segredo no servidor</text>
+    <text x="600" y="172" class="t s">a app pede; a chave nunca sai de lá</text>
+    <rect x="580" y="194" width="280" height="54" rx="10" class="box ok"/>
+    <text x="600" y="216" class="t b">--dart-define no build</text>
+    <text x="600" y="236" class="t s">.env.json fora do git; no CI, Secrets</text>
+    <rect x="580" y="258" width="280" height="54" rx="10" class="box warn"/>
+    <text x="600" y="280" class="t b">Nunca no repositório</text>
+    <text x="600" y="300" class="t s">commitado? está comprometido: roda-o</text>
+  </svg>
+  <figcaption>Tudo o que está no APK é público: o segredo fica no servidor ou entra por dart-define no build, e nunca vai para o git.</figcaption>
+  </figure>
+  <ul>
+    <li>Um APK é um zip: <code>unzip app.apk</code>, <code>strings libapp.so | grep -i secret</code>. O <code>jadx</code> descompila o Kotlin; o Dart compilado em AOT continua a ter as strings legíveis.</li>
+    <li>Consequência: tudo o que vai no binário é público. Um "segredo" no cliente não é segredo, é ofuscação.</li>
+    <li><strong>Nunca no repositório:</strong> <code>.env.json</code> no <code>.gitignore</code>; <code>--dart-define-from-file=.env.json</code> em desenvolvimento; no CI vêm de GitHub Secrets.</li>
+    <li><strong>Se já foi commitado,</strong> está comprometido: rodar o segredo (pedir outro ao docente). Apagar do histórico não chega: alguém já clonou.</li>
+    <li>O que pode ir no cliente: chaves públicas com restrição (Maps limitada ao package), identificadores sem poder. O que não pode: chaves de API com escrita, passwords, client secrets de OAuth.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> tudo o que está no APK é público; segredos vivem no servidor ou entram por <code>dart-define</code> e nunca no git.</p>
+  <div class="callout"><strong>Analogia</strong> Um APK é um zip: qualquer pessoa o abre e vê o que está lá dentro. Pôr um segredo no código é escrever a password num papel e colá-lo à porta. Ofuscar é escrever o papel com letra pequena: continua na porta. O único sítio onde a password não está à vista é do lado de dentro, no servidor.</div>
+  <aside class="notes">Pergunta incómoda que vale a pena fazer: "então o client-id e o segredo do grupo, que vão por dart-define, também ficam no APK?" Sim. É por isso que a API do curso emite tokens curtos por grupo e pode revogar: o segredo do grupo é um segredo de sala de aula, não de produção. Em produção o login é do utilizador, não da app.</aside>
+</section>
+
+<section class="slide">
+  <h2>HTTPS sempre; certificate pinning quando vale a pena</h2>
+  <ul>
+    <li><strong>HTTPS é obrigatório:</strong> o Android bloqueia tráfego em claro desde a versão 9; o iOS exige TLS 1.2+ via App Transport Security. Desligar isto para "testar" é o erro M5.</li>
+    <li>HTTPS protege de quem está no meio (Wi-Fi do café), mas confia em qualquer CA instalada no sistema. Um proxy com certificado instalado (Charles, mitmproxy) vê tudo.</li>
+    <li><strong>Pinning:</strong> a app só aceita o certificado ou a chave pública que conhece. O proxy deixa de funcionar; uma CA comprometida também.</li>
+    <li><strong>Custo:</strong> quando o certificado roda, as versões antigas da app deixam de ligar. Precisa de pin de reserva, plano de rotação e forced update (aula 30).</li>
+    <li>Quem faz: bancos, saúde, apps com ataque dirigido. Uma app de meteorologia não precisa. Em Flutter: <code>SecurityContext</code> ou <code>http_certificate_pinning</code>.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> pinning protege contra CAs comprometidas e proxies, ao custo de manutenção sempre que o certificado roda.</p>
+</section>
+
+<section class="slide">
+  <h2>Permissões mínimas, pedidas no momento certo</h2>
+  <ul>
+    <li>Cada permissão é uma pergunta ao utilizador e uma linha na revisão da loja. Pede só o que a funcionalidade precisa: localização aproximada chega para "localidade mais próxima".</li>
+    <li><strong>No momento certo:</strong> quando toca em "Perto de mim", não no arranque. Um ecrã a explicar antes do diálogo do sistema (pre-prompt) sobe a taxa de aceitação.</li>
+    <li><strong>Justificação obrigatória:</strong> <code>NSLocationWhenInUseUsageDescription</code> no iOS e a declaração de uso no Google Play. Texto vago ("precisamos da localização") é motivo de rejeição.</li>
+    <li><strong>Negação:</strong> a app continua a funcionar (lista completa em vez de "perto de mim"). Negação permanente: botão que abre as Definições, sem insistir.</li>
+    <li>O que as lojas rejeitam: permissões sem funcionalidade visível, localização em background sem razão forte, SMS e registo de chamadas fora das apps por defeito.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> permissão mínima, pedida em contexto, com justificação, e a app funciona se for negada.</p>
+</section>
+
+<section class="slide">
+  <h2>Privacidade: RGPD, ATT, labels e data safety</h2>
+  <ul>
+    <li><strong>RGPD:</strong> base legal para cada dado recolhido, minimização, direito a apagar. Consentimento explícito e não pré-marcado para analytics e marketing.</li>
+    <li><strong>App Tracking Transparency</strong> (iOS 14.5+): diálogo obrigatório antes de rastrear o utilizador entre apps. Sem "Permitir", sem IDFA. A Apple rejeita quem tenta contornar.</li>
+    <li><strong>Privacy nutrition labels</strong> (App Store) e <strong>Data safety form</strong> (Play): declaras o que recolhes e porquê. Uma declaração falsa é motivo de remoção.</li>
+    <li>Na prática: política de privacidade com URL público, mesmo para uma app de tempo. Logs e crash reports sem dados pessoais.</li>
+    <li>No Tempo Açores: localização usada uma vez para a localidade mais próxima e não guardada; favoritos ligados ao grupo, não a pessoas.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> o ATT pede-se antes de rastrear; as labels e o data safety form têm de bater certo com o que a app faz.</p>
+  <aside class="notes">Mostra a página de privacidade de uma app conhecida na App Store (a do Instagram é a mais impressionante). Depois a de uma app de meteorologia bem feita. Dois minutos, e a diferença fica clara.</aside>
+</section>
+
+<section class="slide">
+  <h2>Ofuscação e deteção de root em uma frase cada</h2>
+  <ul>
+    <li><code>flutter build apk --obfuscate --split-debug-info=build/symbols</code> renomeia os símbolos Dart. Dificulta ler o binário; não esconde strings nem segredos.</li>
+    <li>Guarda a pasta <code>split-debug-info</code> por versão: sem ela os stack traces dos crashes em produção são ilegíveis (aula 26).</li>
+    <li>A minificação Android (R8) está ativa por defeito em release. Alguns plugins precisam de regras ProGuard; o <code>flutter build</code> avisa.</li>
+    <li><strong>Root e jailbreak:</strong> detetar dispositivo comprometido e limitar funcionalidades. Os bancos fazem-no; é contornável; não substitui nenhuma das defesas anteriores.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> ofuscação dificulta a engenharia inversa mas não protege segredos; a deteção de root é uma camada extra, não uma garantia.</p>
+</section>
+
+<section class="slide" data-part="Performance">
   <h2>Isolates: memória separada, trabalho pesado fora da UI</h2>
   <figure class="diagram">
   <svg viewBox="0 0 900 330" role="img" aria-label="Dois isolates lado a lado, o principal com a UI e o de trabalho a correr compute com jsonDecode, cada um com memória própria e mensagens copiadas entre eles; por baixo, uma linha do tempo em que a UI continua a 60 fps enquanto o worker trabalha">
@@ -199,7 +315,7 @@ Future&lt;List&lt;Previsao&gt;&gt; parsePrevisoes(String corpo) =&gt; compute(_p
     <li><strong>Encontra um rebuild desnecessário</strong>: um widget que se reconstrói sem os seus dados mudarem. Corrige com <code>const</code>, extraindo um widget, ou com <code>Selector</code>.</li>
     <li><strong>Encontra um widget que pode ser <code>const</code></strong> e ainda não é. Corre <code>flutter analyze</code>: o lint <code>prefer_const_constructors</code> ajuda.</li>
   </ol>
-  <div class="callout task"><strong>Exercício 1</strong> Abre um PR com as duas correções e, na descrição, uma captura do overlay antes e depois. Um colega de outro grupo revê. Se a tua app não tem lista com dados reais ainda, mede a <code>solucao/</code> da aula 13.</div>
+  <div class="callout task"><strong>Exercício 1</strong> Abre um PR com as duas correções e, na descrição, uma captura do overlay antes e depois. Um colega de outro grupo revê. Se a tua app não tem lista com dados reais ainda, mede a <code>solucao/</code> da aula 14.</div>
 </section>
 
 <section class="slide">
@@ -224,7 +340,7 @@ Future&lt;List&lt;Previsao&gt;&gt; parsePrevisoes(String corpo) =&gt; compute(_p
         <li><code>main</code> compila e corre no telemóvel de cada membro.</li>
         <li><code>flutter analyze</code> sem avisos.</li>
         <li>Estados de loading, erro e vazio tratados nos ecrãs entregues.</li>
-        <li>Nenhum segredo no repositório (auditoria da aula 16).</li>
+        <li>Nenhum segredo no repositório (a auditoria do slide seguinte).</li>
       </ul>
     </div>
     <div>
@@ -240,6 +356,22 @@ Future&lt;List&lt;Previsao&gt;&gt; parsePrevisoes(String corpo) =&gt; compute(_p
   <aside class="notes">Diz que a review não é avaliação de funcionalidades, mas de processo: PRs, revisões, estados de erro. Um grupo com menos funcionalidades e tudo revisto está melhor do que um com muita coisa em branches por rever.</aside>
 </section>
 
+<section class="slide">
+  <h2>Para casa: auditoria de segredos e permissões</h2>
+  <ol class="steps">
+    <li><strong>Segredos no histórico e no código.</strong> Corre no repositório do grupo:
+<pre class="term"><code class="language-bash">git log -p | grep -inE 'secret|token|password|api_key' | head -20
+grep -rniE 'secret|password' lib/ android/app/src/main/ ios/Runner/</code></pre>
+      Qualquer resultado com um valor real é um achado. Um nome de variável não é.</li>
+    <li><strong><code>.gitignore</code></strong> tem de incluir <code>.env.json</code>, <code>*.jks</code>, <code>key.properties</code> e <code>*.keystore</code>. Confirma com <code>git check-ignore -v .env.json</code>.</li>
+    <li><strong><code>AndroidManifest.xml</code>:</strong> lista cada <code>&lt;uses-permission&gt;</code>. Para cada um, há uma funcionalidade que o usa? Verifica também <code>android:allowBackup</code> e <code>usesCleartextTraffic</code>.</li>
+    <li><strong><code>Info.plist</code>:</strong> cada chave <code>NS…UsageDescription</code> tem um texto real e específico? Não há <code>NSAllowsArbitraryLoads</code>?</li>
+    <li><strong>Regista</strong> o resultado na issue "Auditoria de segurança": o que foi encontrado, o que foi corrigido, quem corrigiu. Fecha-a por PR.</li>
+  </ol>
+  <p>São 15 minutos por grupo. Faz-se em casa, ou no fim da aula se o exercício de medição acabar cedo.</p>
+  <div class="callout task"><strong>Exercício 2</strong> Até segunda, antes da review: auditoria feita, issue preenchida e, se houve segredo, rodado (pede um novo ao docente) e movido para <code>.env.json</code> com <code>--dart-define-from-file</code>.</div>
+</section>
+
 <section class="slide" data-part="Fim">
   <h2>Até segunda</h2>
   <div class="cols">
@@ -248,12 +380,16 @@ Future&lt;List&lt;Previsao&gt;&gt; parsePrevisoes(String corpo) =&gt; compute(_p
       <ul class="checklist">
         <li>Sprint 1 fecha segunda: PRs merged, app a correr em <code>main</code>, demo de 5 minutos preparada e ensaiada.</li>
         <li>PR do exercício de medição aberto e revisto por alguém de fora do grupo.</li>
+        <li>Auditoria de segredos e permissões feita no repositório do grupo: qualquer segredo encontrado fica fora do repositório e é rodado; issue "Auditoria de segurança" fechada por PR.</li>
         <li>Instala o <code>scrcpy</code> ou ativa o espelhamento do telemóvel para a demo não depender do cabo do docente.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
+        <li><a href="https://owasp.org/www-project-mobile-top-10/" target="_blank" rel="noopener">OWASP Mobile Top 10</a>: a lista completa de 2024, com exemplos e defesas por risco; M1, M5 e M9 são os desta aula.</li>
+        <li><a href="https://docs.flutter.dev/security" target="_blank" rel="noopener">Flutter: Security</a>: como o Flutter trata vulnerabilidades, e as recomendações oficiais para uma app em produção.</li>
+        <li><a href="https://docs.flutter.dev/deployment/obfuscate" target="_blank" rel="noopener">Obfuscate Dart code</a>: o que a ofuscação faz e não faz, e como guardar os símbolos para ler crashes.</li>
         <li><a href="https://docs.flutter.dev/perf/best-practices" target="_blank" rel="noopener">Performance best practices</a>: a lista oficial do que evitar em build, listas e animações.</li>
         <li><a href="https://docs.flutter.dev/perf/ui-performance" target="_blank" rel="noopener">Flutter performance profiling</a>: o overlay e a timeline do DevTools explicados, com o que procurar em cada gráfico.</li>
         <li><a href="https://docs.flutter.dev/perf/isolates" target="_blank" rel="noopener">Concurrency and isolates</a> (Flutter) e <a href="https://dart.dev/language/isolates" target="_blank" rel="noopener">Isolates</a> (dart.dev): quando compensa, <code>compute</code> e <code>Isolate.run</code>, e o que pode passar entre isolates.</li>

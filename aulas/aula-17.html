@@ -179,7 +179,7 @@ cd pdm-aula-17/starter
 flutter pub get
 flutter run --dart-define-from-file=.env.json</code></pre>
   <ul>
-    <li><code>starter/</code> é a app da aula 15 (cache e <code>TokenStorage</code>) com TODOs de 1 a 5 e testes a falhar. Cria o <code>.env.json</code> com o <code>PDM_CLIENT_ID</code> e o <code>PDM_SECRET</code> do teu grupo; já está no <code>.gitignore</code>.</li>
+    <li><code>starter/</code> é a app da aula 16 (cache e <code>TokenStorage</code>) com TODOs de 1 a 5 e testes a falhar. Cria o <code>.env.json</code> com o <code>PDM_CLIENT_ID</code> e o <code>PDM_SECRET</code> do teu grupo; já está no <code>.gitignore</code>.</li>
     <li><code>solucao/</code> é o estado final: token renovado sozinho, favoritos iguais em dois telemóveis, logout que limpa tudo.</li>
     <li>O <code>ApiClient</code> do starter já tem <code>delete</code>, além de <code>get</code> e <code>post</code>.</li>
   </ul>
@@ -191,7 +191,7 @@ flutter run --dart-define-from-file=.env.json</code></pre>
 <pre data-title="lib/auth/auth_service.dart"><code class="language-dart">class AuthService {
   AuthService(this._api, this._storage);
   final ApiClient _api;
-  final TokenStorage _storage;   // flutter_secure_storage, da aula 15
+  final TokenStorage _storage;   // flutter_secure_storage, da aula 16
 
   static const _clientId = String.fromEnvironment('PDM_CLIENT_ID');
   static const _secret = String.fromEnvironment('PDM_SECRET');
@@ -215,7 +215,7 @@ flutter run --dart-define-from-file=.env.json</code></pre>
   <h2>1. Token: o que interessa</h2>
   <ul>
     <li><code>tokenAtual()</code> devolve o que está guardado ou pede um novo. Nunca há dois caminhos para obter token: só este.</li>
-    <li>O token vai para o <code>TokenStorage</code> (Keychain/Keystore), nunca para <code>shared_preferences</code> nem para a base de dados. Foi a matéria da aula 15.</li>
+    <li>O token vai para o <code>TokenStorage</code> (Keychain/Keystore), nunca para <code>shared_preferences</code> nem para a base de dados. Foi a matéria da aula 16.</li>
     <li><code>String.fromEnvironment</code> é resolvido em compilação: o valor fica no binário. Para a API do curso é aceitável (token de grupo, revogável); em produção o login é do utilizador.</li>
     <li>Um token guardado pode já estar expirado quando a app arranca. Não faz mal: o interceptor do passo 2 trata do 401.</li>
     <li>Opcional: ler o <code>exp</code> do payload (base64url do segundo segmento) e renovar antes de expirar. Poupa um 401 por sessão.</li>
@@ -256,7 +256,7 @@ final api = ApiClient(baseUrl: baseUrl, client: AuthClient(http.Client(), auth))
 <section class="slide">
   <h2>2. Interceptor: o que interessa</h2>
   <ul>
-    <li><code>BaseClient.send</code> é o ponto por onde passam todos os pedidos do <code>http</code>. É o interceptor da aula 11, agora com código.</li>
+    <li><code>BaseClient.send</code> é o ponto por onde passam todos os pedidos do <code>http</code>. É o interceptor da aula 12, agora com código.</li>
     <li>O pedido de token <strong>não leva token</strong>. Sem a primeira linha do <code>send</code>, <code>tokenAtual()</code> chamava <code>obterToken()</code>, que passava pelo <code>send</code>, que chamava <code>tokenAtual()</code>: recursão infinita.</li>
     <li>Um <code>BaseRequest</code> só pode ser enviado uma vez. Por isso <code>_enviarCom</code> cria um pedido novo com os mesmos método, URL, headers e corpo.</li>
     <li>Renova <strong>uma vez</strong>. Se o segundo pedido também dá 401, o problema não é o token expirado: é o segredo errado ou o grupo revogado, e a app tem de mostrar isso.</li>
@@ -357,7 +357,7 @@ class FavoritosRepositoryApi implements FavoritosRepository {
     <li><strong>Rollback:</strong> guarda-se o estado anterior (<code>antes</code>); se o servidor recusa, repõe-se e avisa-se. Nunca fica uma estrela acesa que o servidor não conhece.</li>
     <li><code>alternar</code> devolve <code>bool</code> em vez de guardar a mensagem no notifier: o widget que disparou a ação é quem mostra o <code>SnackBar</code>, com <code>context.mounted</code> depois do <code>await</code>.</li>
     <li><code>context.select</code> reconstrói o botão só quando <em>este</em> favorito muda, não quando qualquer um muda.</li>
-    <li>O <code>POST</code> não é repetido pelo <code>ApiClient</code> (aula 13); se falhar, o rollback é a resposta certa. Um <code>DELETE</code> repetido não faz mal: é idempotente.</li>
+    <li>O <code>POST</code> não é repetido pelo <code>ApiClient</code> (aula 14); se falhar, o rollback é a resposta certa. Um <code>DELETE</code> repetido não faz mal: é idempotente.</li>
   </ul>
   <div class="callout task"><strong>Exercício 3</strong> Regista o <code>FavoritosRepositoryApi</code> e o notifier no <code>main</code>, chama <code>carregar()</code> no arranque, e escreve o teste "alternar faz rollback quando o repository falha" com um fake cujo <code>adicionar</code> lança.</div>
 </section>

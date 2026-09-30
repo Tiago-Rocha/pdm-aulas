@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 16 · Segurança mobile e sprint 1 · PDM</title>
+<title>Aula 16 · Persistência local e cache offline · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,173 +25,365 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 16 · Semana 8 · Segunda, 26 de outubro de 2026 · 16:00 às 18:00</p>
-  <h1>Segurança mobile e sprint 1</h1>
-  <p class="lead">Teoria (30 minutos): o que um APK expõe, OWASP Mobile Top 10, segredos, tokens, pinning, permissões mínimas e privacidade. Prática: sprint 1, com auditoria de segredos e permissões nos repositórios do grupo.</p>
-  <div class="meta"><span>Projeto: Tempo Açores</span></div>
-  <aside class="notes">Traz um APK de exemplo com um segredo lá dentro (o starter da aula 11 com o segredo hardcoded serve). Abre-o com unzip e strings no projetor nos primeiros dois minutos, sem explicar: deixa o segredo aparecer no ecrã. Depois começa a matéria.</aside>
+  <h1>Persistência local e cache offline</h1>
+  <p class="lead">Teoria: opções de persistência em mobile: chave-valor, SQLite, NoSQL local, ficheiros e armazenamento seguro; critérios de escolha. Prática: preferências com shared_preferences, cache de previsões numa base de dados local com estratégia cache-first, e token em armazenamento seguro.</p>
+  <div class="meta"><span>Repositório: pdm-aula-16</span></div>
+  <aside class="notes">Cinco minutos para grupos que na quarta não conseguiram o primeiro pedido à API: resolve antes da matéria. Depois abre com uma pergunta: "onde é que a app do Spotify guarda as músicas descarregadas, e porque não as vês no explorador de ficheiros?" É a sandbox, slide 4.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Identificar os riscos do OWASP Mobile Top 10 que mais aparecem em apps Flutter.</li>
-    <li>Tirar os segredos do repositório e passá-los com <code>--dart-define</code> ou ficheiro ignorado pelo git.</li>
-    <li>Explicar o que o certificate pinning protege e o que custa manter.</li>
-    <li>Pedir só as permissões necessárias, no momento certo e com justificação.</li>
-    <li>Cumprir o mínimo de privacidade: RGPD, App Tracking Transparency e formulários das lojas.</li>
+    <li>Escolher onde guardar cada tipo de dado: preferências, base de dados, ficheiros ou armazenamento seguro.</li>
+    <li>Explicar a sandbox da app, o que sobrevive a atualizações e o que vai para o backup.</li>
+    <li>Justificar porque um token nunca vai para <code>shared_preferences</code>.</li>
+    <li>Implementar um repository cache-first com <code>drift</code> e mostrar a idade dos dados.</li>
+    <li>Deixar a app a funcionar em modo avião com os dados que já tinha.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>OWASP Mobile Top 10: os que mais aparecem</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Risco (lista de 2024)</th><th>Como aparece numa app Flutter</th><th>Defesa</th></tr></thead>
-  <tbody>
-  <tr><td><strong>M1</strong> Credenciais mal usadas</td><td>Client-id e segredo no código; password guardada em claro</td><td>Secure storage, tokens curtos, segredos fora do binário</td></tr>
-  <tr><td><strong>M3</strong> Autenticação e autorização inseguras</td><td>Verificar "é admin" só no cliente; confiar num campo do JWT sem o servidor validar</td><td>O servidor decide sempre; o cliente só mostra ou esconde</td></tr>
-  <tr><td><strong>M5</strong> Comunicação insegura</td><td>HTTP em claro; aceitar qualquer certificado (<code>badCertificateCallback</code> a devolver <code>true</code>)</td><td>HTTPS sempre; pinning quando se justifica</td></tr>
-  <tr><td><strong>M8</strong> Configuração insegura</td><td>Backup a incluir tokens; logs com dados pessoais; <code>debuggable</code> em release</td><td>Release limpo, backup filtrado, logs só em debug</td></tr>
-  <tr><td><strong>M9</strong> Armazenamento inseguro</td><td>Token em <code>shared_preferences</code>; base de dados com dados pessoais em claro</td><td>Keychain/Keystore; cifrar o que importa</td></tr>
-  </tbody></table></div>
-  <p><strong>Para os testes:</strong> os três que mais aparecem são segredos no código, armazenamento inseguro e comunicação insegura.</p>
-</section>
-
-<section class="slide">
-  <h2>Segredos: o que um atacante tira de um APK em 5 minutos</h2>
+  <h2>Onde guardar o quê</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 330" role="img" aria-label="Um APK aberto como zip mostra classes compiladas, a biblioteca Dart, assets e uma chave em texto; um atacante lê tudo com apktool ou strings em cinco minutos. O caminho certo: segredo no servidor ou dart-define no build, nunca no repositório">
-    <rect x="40" y="20" width="360" height="255" rx="10" class="box"/>
-    <text x="60" y="46" class="t b">app.apk é um zip</text>
-    <text x="380" y="46" class="t mono" text-anchor="end">unzip app.apk</text>
-    <rect x="60" y="64" width="320" height="40" rx="6" class="box muted"/>
-    <text x="72" y="81" class="t mono">classes.dex</text>
-    <text x="72" y="97" class="t s">Kotlin compilado: o jadx descompila</text>
-    <rect x="60" y="110" width="320" height="40" rx="6" class="box muted"/>
-    <text x="72" y="127" class="t mono">lib/arm64/libapp.so</text>
-    <text x="72" y="143" class="t s">Dart AOT: as strings continuam legíveis</text>
-    <rect x="60" y="156" width="320" height="40" rx="6" class="box muted"/>
-    <text x="72" y="173" class="t mono">assets/</text>
-    <text x="72" y="189" class="t s">imagens, JSON e um .env esquecido</text>
-    <rect x="60" y="202" width="320" height="40" rx="6" class="box danger"/>
-    <text x="72" y="219" class="t mono">API_KEY = "sk_live_…"</text>
-    <text x="72" y="235" class="t s">chave em texto: pública</text>
-    <text x="60" y="262" class="t s">Tudo o que vai no binário é público.</text>
-    <line x1="400" y1="50" x2="580" y2="50" class="arrow"/>
-    <text x="490" y="40" class="t s" text-anchor="middle">apktool / strings</text>
-    <text x="490" y="66" class="t s" text-anchor="middle">em 5 minutos</text>
-    <rect x="580" y="20" width="280" height="60" rx="10" class="box danger"/>
-    <text x="600" y="44" class="t b">Atacante</text>
-    <text x="600" y="66" class="t s">lê a chave e usa-a como se fosse a app</text>
-    <text x="580" y="118" class="t b">Em vez disso</text>
-    <rect x="580" y="130" width="280" height="54" rx="10" class="box ok"/>
-    <text x="600" y="152" class="t b">Segredo no servidor</text>
-    <text x="600" y="172" class="t s">a app pede; a chave nunca sai de lá</text>
-    <rect x="580" y="194" width="280" height="54" rx="10" class="box ok"/>
-    <text x="600" y="216" class="t b">--dart-define no build</text>
-    <text x="600" y="236" class="t s">.env.json fora do git; no CI, Secrets</text>
-    <rect x="580" y="258" width="280" height="54" rx="10" class="box warn"/>
-    <text x="600" y="280" class="t b">Nunca no repositório</text>
-    <text x="600" y="300" class="t s">commitado? está comprometido: roda-o</text>
+  <svg viewBox="0 0 900 200" role="img" aria-label="Quatro tipos de armazenamento com exemplos: chave-valor com shared_preferences, SQLite com drift, ficheiros com path_provider e armazenamento seguro com flutter_secure_storage para o token, que nunca vai para shared_preferences">
+    <rect x="30" y="20" width="190" height="160" rx="10" class="box"/>
+    <text x="44" y="46" class="t b">Chave-valor</text>
+    <text x="44" y="70" class="t mono">shared_preferences</text>
+    <text x="44" y="98" class="t s">unidade °C/°F</text>
+    <text x="44" y="118" class="t s">tema claro/escuro</text>
+    <text x="44" y="138" class="t s">última localidade</text>
+    <text x="44" y="164" class="t s">valores pequenos</text>
+    <rect x="232" y="20" width="190" height="160" rx="10" class="box"/>
+    <text x="246" y="46" class="t b">SQLite</text>
+    <text x="246" y="70" class="t mono">drift</text>
+    <text x="246" y="98" class="t s">previsões em cache</text>
+    <text x="246" y="118" class="t s">avisos</text>
+    <text x="246" y="138" class="t s">histórico</text>
+    <text x="246" y="164" class="t s">dados que se consultam</text>
+    <rect x="434" y="20" width="190" height="160" rx="10" class="box"/>
+    <text x="448" y="46" class="t b">Ficheiros</text>
+    <text x="448" y="70" class="t mono">path_provider</text>
+    <text x="448" y="98" class="t s">imagens</text>
+    <text x="448" y="118" class="t s">exportações, logs</text>
+    <text x="448" y="138" class="t s">na sandbox da app</text>
+    <text x="448" y="164" class="t s">bytes grandes</text>
+    <rect x="636" y="20" width="230" height="160" rx="10" class="box danger"/>
+    <text x="650" y="46" class="t b">Seguro</text>
+    <text x="650" y="70" class="t mono">flutter_secure_storage</text>
+    <text x="650" y="98" class="t s">token de acesso</text>
+    <text x="650" y="118" class="t s">refresh token</text>
+    <text x="650" y="138" class="t s">Keychain / Keystore</text>
+    <text x="650" y="164" class="t s b">nunca em shared_preferences</text>
   </svg>
-  <figcaption>Tudo o que está no APK é público: o segredo fica no servidor ou entra por dart-define no build, e nunca vai para o git.</figcaption>
+  <figcaption>Valores pequenos em preferências, dados que se consultam em SQLite, bytes em ficheiros, segredos no armazenamento seguro.</figcaption>
   </figure>
-  <ul>
-    <li>Um APK é um zip: <code>unzip app.apk</code>, <code>strings libapp.so | grep -i secret</code>. O <code>jadx</code> descompila o Kotlin; o Dart compilado em AOT continua a ter as strings legíveis.</li>
-    <li>Consequência: tudo o que vai no binário é público. Um "segredo" no cliente não é segredo, é ofuscação.</li>
-    <li><strong>Nunca no repositório:</strong> <code>.env.json</code> no <code>.gitignore</code>; <code>--dart-define-from-file=.env.json</code> em desenvolvimento; no CI vêm de GitHub Secrets.</li>
-    <li><strong>Se já foi commitado,</strong> está comprometido: rodar o segredo (pedir outro ao docente). Apagar do histórico não chega: alguém já clonou.</li>
-    <li>O que pode ir no cliente: chaves públicas com restrição (Maps limitada ao package), identificadores sem poder. O que não pode: chaves de API com escrita, passwords, client secrets de OAuth.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> tudo o que está no APK é público; segredos vivem no servidor ou entram por <code>dart-define</code> e nunca no git.</p>
-  <div class="callout"><strong>Analogia</strong> Um APK é um zip: qualquer pessoa o abre e vê o que está lá dentro. Pôr um segredo no código é escrever a password num papel e colá-lo à porta. Ofuscar é escrever o papel com letra pequena: continua na porta. O único sítio onde a password não está à vista é do lado de dentro, no servidor.</div>
-  <aside class="notes">Pergunta incómoda que vale a pena fazer: "então o client-id e o segredo do grupo, que vão por dart-define, também ficam no APK?" Sim. É por isso que a API do curso emite tokens curtos por grupo e pode revogar: o segredo do grupo é um segredo de sala de aula, não de produção. Em produção o login é do utilizador, não da app.</aside>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Tipo de dado</th><th>Exemplo no Tempo Açores</th><th>Ferramenta</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Preferências chave-valor</strong></td><td>Unidade °C/°F, tema, última localidade</td><td><code>shared_preferences</code> (SharedPreferences no Android, NSUserDefaults no iOS)</td></tr>
+  <tr><td><strong>Dados estruturados com consultas</strong></td><td>Cache de previsões e avisos, histórico</td><td>SQLite: <code>sqflite</code> (SQL à mão) ou <code>drift</code> (tipado, reativo)</td></tr>
+  <tr><td><strong>Documentos e objetos</strong></td><td>Listas de objetos sem relações</td><td><code>hive</code>, <code>isar</code> (NoSQL local, muito rápido)</td></tr>
+  <tr><td><strong>Ficheiros</strong></td><td>Imagens, exportações, logs</td><td><code>path_provider</code> + <code>dart:io</code></td></tr>
+  <tr><td><strong>Segredos</strong></td><td>Token de acesso, refresh token</td><td><code>flutter_secure_storage</code> (Keychain no iOS, Keystore no Android)</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> preferências para valores pequenos, SQLite para dados que se consultam, secure storage para segredos.</p>
+  <div class="callout"><strong>Analogia</strong> Três sítios numa casa. A gaveta da cozinha (<code>shared_preferences</code>) guarda coisas pequenas e pouco importantes, à mão. O arquivo com pastas (SQLite) guarda muitos registos que se procuram por nome ou data. O cofre (Keychain e Keystore) guarda o token. Deixar o token na gaveta é deixar a chave de casa debaixo do tapete.</div>
 </section>
 
 <section class="slide">
-  <h2>HTTPS sempre; certificate pinning quando vale a pena</h2>
+  <h2>Sandbox: onde ficam os ficheiros da app</h2>
   <ul>
-    <li><strong>HTTPS é obrigatório:</strong> o Android bloqueia tráfego em claro desde a versão 9; o iOS exige TLS 1.2+ via App Transport Security. Desligar isto para "testar" é o erro M5.</li>
-    <li>HTTPS protege de quem está no meio (Wi-Fi do café), mas confia em qualquer CA instalada no sistema. Um proxy com certificado instalado (Charles, mitmproxy) vê tudo.</li>
-    <li><strong>Pinning:</strong> a app só aceita o certificado ou a chave pública que conhece. O proxy deixa de funcionar; uma CA comprometida também.</li>
-    <li><strong>Custo:</strong> quando o certificado roda, as versões antigas da app deixam de ligar. Precisa de pin de reserva, plano de rotação e forced update (aula 30).</li>
-    <li>Quem faz: bancos, saúde, apps com ataque dirigido. Uma app de meteorologia não precisa. Em Flutter: <code>SecurityContext</code> ou <code>http_certificate_pinning</code>.</li>
+    <li>Cada app tem a sua pasta privada. Outra app não a lê; o utilizador não a vê sem root. Android: <code>/data/data/&lt;package&gt;/</code>; iOS: <code>Documents/</code>, <code>Library/</code>, <code>tmp/</code>.</li>
+    <li><code>path_provider</code> abstrai isto: <code>getApplicationDocumentsDirectory()</code> persiste e vai para o backup; <code>getApplicationSupportDirectory()</code> persiste sem aparecer ao utilizador; <code>getTemporaryDirectory()</code> pode ser limpa pelo sistema.</li>
+    <li><strong>Atualizações</strong> mantêm tudo menos o temporário. <strong>Desinstalar</strong> apaga tudo, com uma exceção: o Keychain do iOS fica.</li>
+    <li><strong>Backup:</strong> o iCloud copia <code>Documents/</code>; o Android Auto Backup copia até 25 MB. Cache e tokens devem ficar de fora (<code>android:fullBackupContent</code>, <code>isExcludedFromBackup</code>).</li>
+    <li>Exemplo: um jogo guarda o progresso em Documents (vai no backup) e as texturas descarregadas em Support (não vai, descarrega outra vez).</li>
   </ul>
-  <p><strong>Para os testes:</strong> pinning protege contra CAs comprometidas e proxies, ao custo de manutenção sempre que o certificado roda.</p>
+  <p><strong>Para os testes:</strong> Documents persiste e vai no backup; tmp pode desaparecer a qualquer momento.</p>
 </section>
 
 <section class="slide">
-  <h2>Permissões mínimas, pedidas no momento certo</h2>
+  <h2>Keychain e Keystore: porque um token nunca vai para preferências</h2>
   <ul>
-    <li>Cada permissão é uma pergunta ao utilizador e uma linha na revisão da loja. Pede só o que a funcionalidade precisa: localização aproximada chega para "localidade mais próxima".</li>
-    <li><strong>No momento certo:</strong> quando toca em "Perto de mim", não no arranque. Um ecrã a explicar antes do diálogo do sistema (pre-prompt) sobe a taxa de aceitação.</li>
-    <li><strong>Justificação obrigatória:</strong> <code>NSLocationWhenInUseUsageDescription</code> no iOS e a declaração de uso no Google Play. Texto vago ("precisamos da localização") é motivo de rejeição.</li>
-    <li><strong>Negação:</strong> a app continua a funcionar (lista completa em vez de "perto de mim"). Negação permanente: botão que abre as Definições, sem insistir.</li>
-    <li>O que as lojas rejeitam: permissões sem funcionalidade visível, localização em background sem razão forte, SMS e registo de chamadas fora das apps por defeito.</li>
+    <li><code>shared_preferences</code> é um ficheiro XML (Android) ou plist (iOS) em texto. Num telemóvel com root lê-se com <code>cat</code>; nos backups vai em claro.</li>
+    <li><strong>Keychain (iOS):</strong> cifrado com uma chave ligada ao hardware (Secure Enclave). Pode exigir o dispositivo desbloqueado. Sobrevive à desinstalação: cuidado com sessões fantasma.</li>
+    <li><strong>Keystore (Android):</strong> as chaves vivem em hardware (TEE ou StrongBox) e nunca saem. <code>flutter_secure_storage</code> cifra os valores com AES e guarda a chave AES no Keystore.</li>
+    <li>Regra: token, refresh token, chaves do utilizador vão para secure storage. Nunca para preferências, nunca para a base de dados em claro.</li>
+    <li>Limite: quem tem o telemóvel desbloqueado tem acesso à app. Protege contra backups, outras apps, e ferramentas de extração.</li>
   </ul>
-  <p><strong>Para os testes:</strong> permissão mínima, pedida em contexto, com justificação, e a app funciona se for negada.</p>
+  <p><strong>Para os testes:</strong> um token nunca vai para <code>shared_preferences</code>; vai para Keychain ou Keystore via <code>flutter_secure_storage</code>.</p>
+  <aside class="notes">Demonstração de 2 minutos que vale a matéria toda: com adb num emulador, `adb shell run-as com.exemplo.app cat shared_prefs/FlutterSharedPreferences.xml` e aparece tudo em claro. Depois o mesmo para o ficheiro do secure storage: lixo cifrado.</aside>
 </section>
 
 <section class="slide">
-  <h2>Privacidade: RGPD, ATT, labels e data safety</h2>
+  <h2>Cache-first, network-first, invalidação e migrações</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 385" role="img" aria-label="Sequência cache-first: o ecrã pede dados, o repository lê a cache local e mostra já com a idade dos dados, pede à rede em fundo, grava na cache e notifica o ecrã; sem rede, fica com a cache marcada como antiga">
+    <rect x="25" y="16" width="170" height="40" rx="8" class="box accent"/>
+    <text x="110" y="41" class="t b" text-anchor="middle">Ecrã</text>
+    <rect x="245" y="16" width="170" height="40" rx="8" class="box"/>
+    <text x="330" y="41" class="t b" text-anchor="middle">Repository</text>
+    <rect x="475" y="16" width="170" height="40" rx="8" class="box"/>
+    <text x="560" y="41" class="t b" text-anchor="middle">Cache local (drift)</text>
+    <rect x="705" y="16" width="170" height="40" rx="8" class="box"/>
+    <text x="790" y="41" class="t b" text-anchor="middle">Rede (API)</text>
+    <line x1="110" y1="56" x2="110" y2="372" class="box muted"/>
+    <line x1="330" y1="56" x2="330" y2="372" class="box muted"/>
+    <line x1="560" y1="56" x2="560" y2="372" class="box muted"/>
+    <line x1="790" y1="56" x2="790" y2="372" class="box muted"/>
+    <path d="M110 90 L328 90" class="arrow"/>
+    <text x="220" y="84" class="t s" text-anchor="middle">1 · pede a previsão</text>
+    <path d="M330 126 L558 126" class="arrow"/>
+    <text x="445" y="120" class="t s" text-anchor="middle">2 · lê a cache local</text>
+    <path d="M560 162 L332 162" class="arrow dashed"/>
+    <text x="445" y="156" class="t s" text-anchor="middle">3 · dados + obtidoEm</text>
+    <path d="M330 198 L112 198" class="arrow accent"/>
+    <text x="220" y="192" class="t s" text-anchor="middle">4 · mostra já: «há 12 min»</text>
+    <path d="M330 234 L788 234" class="arrow"/>
+    <text x="675" y="228" class="t s" text-anchor="middle">5 · GET /v1/forecast, em fundo</text>
+    <path d="M790 270 L332 270" class="arrow dashed"/>
+    <text x="675" y="264" class="t s" text-anchor="middle">6 · dados frescos</text>
+    <path d="M330 306 L558 306" class="arrow"/>
+    <text x="445" y="300" class="t s" text-anchor="middle">7 · grava na cache</text>
+    <path d="M330 342 L112 342" class="arrow accent"/>
+    <text x="220" y="336" class="t s" text-anchor="middle">8 · notifica: dados novos</text>
+    <rect x="600" y="290" width="275" height="50" rx="8" class="box danger"/>
+    <text x="612" y="311" class="t b">Sem rede: o passo 5 falha</text>
+    <text x="612" y="330" class="t s">fica com a cache, marcada como antiga</text>
+  </svg>
+  <figcaption>Cache-first: o ecrã recebe primeiro o que há em cache e só depois os dados frescos. Sem rede, fica pela cache.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Estratégia</th><th>Fluxo</th><th>Quando</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Cache-first</strong></td><td>Mostra a cache, pede à rede em fundo, atualiza</td><td>Previsões, listas: rapidez percebida</td></tr>
+  <tr><td><strong>Network-first</strong></td><td>Pede à rede; se falhar, mostra a cache</td><td>Dados críticos que mudam: saldo, stock</td></tr>
+  <tr><td><strong>Cache-only / Network-only</strong></td><td>Nunca vai à rede / nunca guarda</td><td>Mapas descarregados / pagamentos</td></tr>
+  </tbody></table></div>
   <ul>
-    <li><strong>RGPD:</strong> base legal para cada dado recolhido, minimização, direito a apagar. Consentimento explícito e não pré-marcado para analytics e marketing.</li>
-    <li><strong>App Tracking Transparency</strong> (iOS 14.5+): diálogo obrigatório antes de rastrear o utilizador entre apps. Sem "Permitir", sem IDFA. A Apple rejeita quem tenta contornar.</li>
-    <li><strong>Privacy nutrition labels</strong> (App Store) e <strong>Data safety form</strong> (Play): declaras o que recolhes e porquê. Uma declaração falsa é motivo de remoção.</li>
-    <li>Na prática: política de privacidade com URL público, mesmo para uma app de tempo. Logs e crash reports sem dados pessoais.</li>
-    <li>No Tempo Açores: localização usada uma vez para a localidade mais próxima e não guardada; favoritos ligados ao grupo, não a pessoas.</li>
+    <li><strong>Invalidação por tempo:</strong> guarda <code>obtidoEm</code> e compara: previsão válida 30 min, avisos 5 min, localidades 24 h.</li>
+    <li><strong>Migrações:</strong> a versão 1.2 da app muda a tabela, mas há utilizadores na 1.0 com a base antiga. <code>schemaVersion</code> + <code>MigrationStrategy</code> no drift; nunca apagar dados do utilizador sem aviso.</li>
   </ul>
-  <p><strong>Para os testes:</strong> o ATT pede-se antes de rastrear; as labels e o data safety form têm de bater certo com o que a app faz.</p>
-  <aside class="notes">Mostra a página de privacidade de uma app conhecida na App Store (a do Instagram é a mais impressionante). Depois a de uma app de meteorologia bem feita. Dois minutos, e a diferença fica clara.</aside>
+  <p><strong>Para os testes:</strong> cache-first mostra rápido e atualiza depois; network-first garante dados frescos; a invalidação por tempo decide quando a cache expira.</p>
+  <div class="callout"><strong>Analogia</strong> O frigorífico. Mostra-se já o que há no frigorífico, com a data no rótulo (<code>obtidoEm</code>), e entretanto vai-se às compras (o pedido à rede em fundo); quando se volta, substitui-se o que lá estava. Sem rede, come-se o que há, e o rótulo diz de quando é. A validade no rótulo é a invalidação por tempo: dentro do prazo não se vai às compras.</div>
 </section>
 
 <section class="slide">
-  <h2>Ofuscação e deteção de root em uma frase cada</h2>
+  <h2>Tamanho, limpeza e o botão "Limpar dados"</h2>
   <ul>
-    <li><code>flutter build apk --obfuscate --split-debug-info=build/symbols</code> renomeia os símbolos Dart. Dificulta ler o binário; não esconde strings nem segredos.</li>
-    <li>Guarda a pasta <code>split-debug-info</code> por versão: sem ela os stack traces dos crashes em produção são ilegíveis (aula 26).</li>
-    <li>A minificação Android (R8) está ativa por defeito em release. Alguns plugins precisam de regras ProGuard; o <code>flutter build</code> avisa.</li>
-    <li><strong>Root e jailbreak:</strong> detetar dispositivo comprometido e limitar funcionalidades. Os bancos fazem-no; é contornável; não substitui nenhuma das defesas anteriores.</li>
+    <li>Não há limite fixo, mas o sistema mostra "Armazenamento: 480 MB" nas definições e o utilizador limpa. No iOS, <code>tmp/</code> é apagado sob pressão de espaço.</li>
+    <li>Ordem de grandeza: preferências em KB, base de dados em MB, imagens em cache com limite (<code>cached_network_image</code>: 200 itens ou 7 dias).</li>
+    <li>Limpeza própria: apagar previsões com mais de 7 dias, opção "Limpar cache" nas definições.</li>
+    <li>"Limpar dados" no Android apaga tudo, incluindo o secure storage. No iOS só desinstalando, e o Keychain fica.</li>
+    <li>A app tem de arrancar bem com tudo vazio: é o primeiro arranque outra vez. Se falha sem cache, o erro é da app.</li>
   </ul>
-  <p><strong>Para os testes:</strong> ofuscação dificulta a engenharia inversa mas não protege segredos; a deteção de root é uma camada extra, não uma garantia.</p>
+  <p><strong>Para os testes:</strong> a app tem de funcionar depois de o utilizador limpar os dados, exatamente como no primeiro arranque.</p>
 </section>
 
-<section class="slide" data-part="Sprint">
-  <h2>Sprint 1: ponto de situação</h2>
+<section class="slide" data-part="Prática">
+  <h2>Repositório da aula</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-16.git
+cd pdm-aula-16/starter
+flutter pub get
+flutter run</code></pre>
   <ul>
-    <li><strong>Objetivos da sprint 1</strong> (até 02/11): lista de localidades da API, detalhe com 5 dias, navegação e tema, estados tratados em todos os ecrãs, favoritos locais. Hoje é o meio da sprint.</li>
-    <li><strong>Ronda de 1 minuto por grupo:</strong> o que está feito, o que está em curso, o que está bloqueado. Sem demo, sem justificações. Cronómetro no projetor.</li>
-    <li>O docente anota bloqueios e resolve-os ao vivo durante a sprint, começando pelos que afetam mais grupos.</li>
-    <li>Sinais de alarme: PRs abertos há mais de dois dias sem revisão, um membro sem commits, tudo na coluna "Em curso" e nada em "Feito".</li>
+    <li><code>starter/</code> é a app resiliente da aula 14 com <code>shared_preferences</code>, <code>drift</code>, <code>drift_flutter</code> e <code>flutter_secure_storage</code> já no <code>pubspec.yaml</code>, TODOs de 1 a 5 e testes a falhar.</li>
+    <li><code>solucao/</code> é o estado final: a app funciona em modo avião e diz há quanto tempo os dados foram obtidos.</li>
+    <li>O <code>drift</code> gera código: <code>dart run build_runner build</code> depois de mexer nas tabelas. O starter já traz o ficheiro gerado.</li>
   </ul>
-  <div class="callout tip"><strong>Regra da sprint</strong> Se uma issue está "quase" há dois dias, divide-a: a parte que funciona vai para PR hoje, o resto vira issue nova.</div>
-  <aside class="notes">Quinze minutos no máximo para a ronda: com 8 grupos são 8 minutos mais transições. Corta quem passa do minuto. Anota no quadro os bloqueios repetidos (normalmente: 401 por token expirado, ProviderNotFoundException, conflitos no pubspec.lock) e resolve-os uma vez para todos.</aside>
+  <div class="callout task"><strong>Antes de começar</strong> Nas definições do telemóvel, vê quanto espaço a app do starter ocupa. Volta a ver no fim da aula.</div>
 </section>
 
 <section class="slide">
-  <h2>Auditoria de 15 minutos: segredos e permissões</h2>
+  <h2>1. <code>shared_preferences</code>: unidade, tema, última localidade</h2>
+<pre data-title="lib/definicoes/definicoes.dart"><code class="language-dart">class Definicoes {
+  Definicoes(this._prefs);
+  final SharedPreferences _prefs;
+
+  static Future&lt;Definicoes&gt; carregar() async =&gt;
+      Definicoes(await SharedPreferences.getInstance());
+
+  bool get usaFahrenheit =&gt; _prefs.getBool('usaFahrenheit') ?? false;
+  ThemeMode get tema =&gt; ThemeMode.values.byName(_prefs.getString('tema') ?? 'system');
+  int? get ultimaLocalidadeId =&gt; _prefs.getInt('ultimaLocalidadeId');
+
+  Future&lt;void&gt; guardarUnidade({required bool fahrenheit}) =&gt;
+      _prefs.setBool('usaFahrenheit', fahrenheit);
+  Future&lt;void&gt; guardarTema(ThemeMode modo) =&gt; _prefs.setString('tema', modo.name);
+  Future&lt;void&gt; guardarUltimaLocalidade(int id) =&gt; _prefs.setInt('ultimaLocalidadeId', id);
+}
+
+// main.dart: carregar antes do runApp, para o tema estar certo no primeiro frame
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final definicoes = await Definicoes.carregar();
+  runApp(Provider.value(value: definicoes, child: const TempoApp()));
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>1. Preferências: o que interessa</h2>
+  <ul>
+    <li>Chave-valor com tipos simples: <code>bool</code>, <code>int</code>, <code>double</code>, <code>String</code>, <code>List&lt;String&gt;</code>. Nada de JSON grande aqui.</li>
+    <li>Leitura síncrona depois do <code>getInstance()</code>; escrita assíncrona. Por isso carregamos antes do <code>runApp</code>: o tema tem de estar certo no primeiro frame.</li>
+    <li><code>WidgetsFlutterBinding.ensureInitialized()</code> é obrigatório antes de qualquer plugin no <code>main</code>.</li>
+    <li>Enums guardam-se pelo <code>name</code> e lêem-se com <code>values.byName</code>. Nunca pelo índice: reordenar o enum partia as preferências guardadas.</li>
+    <li>No starter, <code>DefinicoesNotifier</code> envolve esta classe e chama <code>notifyListeners</code> para a UI reagir. A versão 2.3+ do package tem também <code>SharedPreferencesWithCache</code>; a API antiga continua a funcionar.</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 1</strong> Liga o switch °C/°F e o seletor de tema do ecrã de definições às preferências. Fecha a app (swipe, não só home) e abre: têm de estar como ficaram. Depois guarda a última localidade aberta e abre a app diretamente nela.</div>
+</section>
+
+<section class="slide">
+  <h2>2. <code>drift</code>: a tabela de previsões</h2>
+<pre data-title="lib/core/base_dados.dart"><code class="language-dart">import 'package:drift/drift.dart';
+import 'package:drift_flutter/drift_flutter.dart';
+
+part 'base_dados.g.dart';
+
+class Previsoes extends Table {
+  IntColumn get localidadeId =&gt; integer()();
+  TextColumn get json =&gt; text()();
+  DateTimeColumn get obtidoEm =&gt; dateTime()();
+
+  @override
+  Set&lt;Column&gt; get primaryKey =&gt; {localidadeId};
+}
+
+@DriftDatabase(tables: [Previsoes])
+class BaseDados extends _$BaseDados {
+  BaseDados() : super(driftDatabase(name: 'tempo_acores'));
+
+  @override
+  int get schemaVersion =&gt; 1;
+}</code></pre>
+<pre class="term"><code class="language-bash">dart run build_runner build --delete-conflicting-outputs</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. <code>drift</code>: inserir, ler, apagar</h2>
+<pre data-title="lib/core/previsoes_cache.dart"><code class="language-dart">extension PrevisoesCache on BaseDados {
+  Future&lt;Previsao?&gt; lerPrevisao(int localidadeId) async {
+    final linha = await (select(previsoes)
+          ..where((p) =&gt; p.localidadeId.equals(localidadeId)))
+        .getSingleOrNull();
+    if (linha == null) return null;
+    return Previsao.fromJson(jsonDecode(linha.json) as Map&lt;String, dynamic&gt;)
+        .copyWith(obtidoEm: linha.obtidoEm);
+  }
+
+  Future&lt;void&gt; guardarPrevisao(Previsao p) =&gt;
+      into(previsoes).insertOnConflictUpdate(PrevisoesCompanion.insert(
+        localidadeId: p.localidadeId,
+        json: jsonEncode(p.toJson()),
+        obtidoEm: DateTime.now(),
+      ));
+
+  Future&lt;int&gt; apagarAntigas({Duration maxIdade = const Duration(days: 7)}) =&gt;
+      (delete(previsoes)
+            ..where((p) =&gt; p.obtidoEm.isSmallerThanValue(DateTime.now().subtract(maxIdade))))
+          .go();
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>2. Base de dados: o que interessa</h2>
+  <ul>
+    <li>Uma tabela por tipo de cache, com a chave natural (<code>localidadeId</code>) como chave primária e <code>insertOnConflictUpdate</code> para "guardar ou substituir".</li>
+    <li>Guardar o JSON inteiro numa coluna é pragmático para cache: a estrutura da previsão não interessa ao SQL, só a chave e a data.</li>
+    <li>O <code>drift</code> gera <code>previsoes</code>, <code>PrevisoesCompanion</code> e os tipos das colunas. Um erro de nome de coluna é erro de compilação, não de runtime como no <code>sqflite</code>.</li>
+    <li><code>obtidoEm</code> é o que permite dizer "de há 12 min" e invalidar: sem ele a cache é eterna.</li>
+    <li>Quando mudares a tabela: <code>schemaVersion: 2</code> e uma <code>MigrationStrategy</code> com <code>onUpgrade</code>. Nunca apagar a base para "resolver".</li>
+  </ul>
+  <div class="callout task"><strong>Exercício 2</strong> Cria a tabela <code>Avisos</code> (<code>id</code>, <code>json</code>, <code>obtidoEm</code>) e a extensão <code>AvisosCache</code> com <code>lerTodos</code>, <code>substituirTodos(List&lt;Aviso&gt;)</code> e <code>apagarAntigos</code>. Volta a correr o <code>build_runner</code>. O teste <code>test/avisos_cache_test.dart</code> usa uma base em memória (<code>NativeDatabase.memory()</code>).</div>
+  <aside class="notes">Se o build_runner falhar em alguém, é quase sempre o `part` com o nome errado ou o ficheiro gerado antigo. `--delete-conflicting-outputs` resolve o segundo. Dá 20 minutos a este bloco.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. Repository cache-first</h2>
+<pre data-title="lib/previsao/previsao_repository_cache.dart"><code class="language-dart">class PrevisaoRepositoryCache implements PrevisaoRepository {
+  PrevisaoRepositoryCache(this._api, this._db);
+  final PrevisaoApiDataSource _api;   // Future&lt;Previsao&gt; previsao(int id), da aula 12
+  final BaseDados _db;
+  static const validade = Duration(minutes: 30);
+
+  @override
+  Stream&lt;Previsao&gt; previsao(int localidadeId) async* {
+    final emCache = await _db.lerPrevisao(localidadeId);
+    if (emCache != null) yield emCache;                       // 1. mostra já o que há
+
+    final valida = emCache != null &amp;&amp;
+        DateTime.now().difference(emCache.obtidoEm) &lt; validade;
+    if (valida) return;                                       // 2. ainda fresca: fica
+
+    try {
+      final fresca = await _api.previsao(localidadeId);       // 3. vai à rede
+      await _db.guardarPrevisao(fresca);
+      yield fresca.copyWith(obtidoEm: DateTime.now());
+    } catch (_) {
+      if (emCache == null) rethrow;                           // sem cache e sem rede: erro
+    }
+  }
+}</code></pre>
+</section>
+
+<section class="slide">
+  <h2>3. Cache-first: o que interessa</h2>
+  <ul>
+    <li>O repository devolve um <code>Stream</code> porque pode emitir <strong>duas vezes</strong>: a cache logo, os dados frescos depois. Com <code>Future</code> só havia uma resposta.</li>
+    <li><code>async*</code> e <code>yield</code> tornam isto legível: é código sequencial que emite valores pelo caminho.</li>
+    <li>Se a cache é recente, não há pedido de rede. É aqui que a invalidação por tempo vive, não na UI.</li>
+    <li>Falha de rede com cache: engole-se e o utilizador fica com dados antigos e a hora. Falha de rede sem cache: erro, como na aula 14.</li>
+    <li>O notifier consome o stream com <code>await for</code> e notifica a cada emissão:</li>
+  </ul>
+<pre data-title="lib/previsao/detalhe_notifier.dart"><code class="language-dart">Future&lt;void&gt; carregar(int id) async {
+  try {
+    await for (final p in _repo.previsao(id)) {
+      estado = Dados(p, obtidoEm: p.obtidoEm);
+      notifyListeners();
+    }
+  } catch (e) {
+    if (estado is! Dados) estado = Erro(mensagemPara(e));
+    notifyListeners();
+  }
+}</code></pre>
+  <div class="callout task"><strong>Exercício 3</strong> Regista <code>PrevisaoRepositoryCache</code> no <code>main</code> em vez do <code>…Api</code>, sem tocar no ecrã. Mostra "Atualizado há X min" no detalhe com a cor de aviso quando passa de 30 min.</div>
+</section>
+
+<section class="slide">
+  <h2>4. Modo avião ligado: a app continua a mostrar dados</h2>
   <ol class="steps">
-    <li><strong>Segredos no histórico e no código.</strong> Corre no repositório do grupo:
-<pre class="term"><code class="language-bash">git log -p | grep -inE 'secret|token|password|api_key' | head -20
-grep -rniE 'secret|password' lib/ android/app/src/main/ ios/Runner/</code></pre>
-      Qualquer resultado com um valor real é um achado. Um nome de variável não é.</li>
-    <li><strong><code>.gitignore</code></strong> tem de incluir <code>.env.json</code>, <code>*.jks</code>, <code>key.properties</code> e <code>*.keystore</code>. Confirma com <code>git check-ignore -v .env.json</code>.</li>
-    <li><strong><code>AndroidManifest.xml</code>:</strong> lista cada <code>&lt;uses-permission&gt;</code>. Para cada um, há uma funcionalidade que o usa? Verifica também <code>android:allowBackup</code> e <code>usesCleartextTraffic</code>.</li>
-    <li><strong><code>Info.plist</code>:</strong> cada chave <code>NS…UsageDescription</code> tem um texto real e específico? Não há <code>NSAllowsArbitraryLoads</code>?</li>
-    <li><strong>Regista</strong> o resultado na issue "Auditoria de segurança": o que foi encontrado, o que foi corrigido, quem corrigiu. Fecha-a por PR.</li>
+    <li><strong>Com rede,</strong> abre a previsão de duas localidades. Confirma no log que foram guardadas (<code>guardarPrevisao</code> chamado duas vezes).</li>
+    <li><strong>Liga o modo avião.</strong> Fecha a app com swipe (não só o botão home) e abre de novo.</li>
+    <li><strong>As duas localidades</strong> mostram os dados com "de há X min". Uma terceira, nunca aberta, mostra o erro humano "Sem ligação", não um crash.</li>
+    <li><strong>Desliga o modo avião</strong> e puxa para atualizar: "Atualizado agora". Passados 30 minutos, o próximo <code>carregar</code> vai sozinho à rede.</li>
   </ol>
-  <div class="callout task"><strong>Exercício 1</strong> Auditoria feita, issue preenchida e, se houve segredo, rodado (pede um novo ao docente) e movido para <code>.env.json</code> com <code>--dart-define-from-file</code>.</div>
+  <div class="callout task"><strong>Exercício 4</strong> Faz os quatro passos e grava um vídeo de 30 segundos do telemóvel (é o tipo de prova que vai no PR do projeto). Depois: chama <code>apagarAntigas()</code> no arranque da app e confirma que uma previsão de há 8 dias desaparece (muda a data no <code>sqlite</code> pelo DevTools ou por um teste).</div>
+  <aside class="notes">Este é o momento "uau" da aula: dá-lhe 15 minutos e deixa-os ver a app do colega do lado. Erro comum: fechar só com home e achar que testaram o arranque a frio. Explica a diferença entre background e processo morto (aula 4).</aside>
 </section>
 
 <section class="slide">
-  <h2>Trabalho de sprint e o que o docente faz</h2>
+  <h2>5. <code>flutter_secure_storage</code> para o token</h2>
+<pre data-title="lib/auth/token_storage.dart"><code class="language-dart">class TokenStorage {
+  TokenStorage([FlutterSecureStorage? storage])
+      : _storage = storage ??
+            const FlutterSecureStorage(
+              iOptions: IOSOptions(
+                accessibility: KeychainAccessibility.first_unlock_this_device,
+              ),
+            );
+  final FlutterSecureStorage _storage;
+  static const _chave = 'access_token';
+
+  Future&lt;String?&gt; ler() =&gt; _storage.read(key: _chave);
+  Future&lt;void&gt; guardar(String token) =&gt; _storage.write(key: _chave, value: token);
+  Future&lt;void&gt; apagar() =&gt; _storage.delete(key: _chave);
+}</code></pre>
   <ul>
-    <li><strong>Depois da auditoria:</strong> sprint 1 até ao fim da aula. PRs pequenos, revisão entre membros, board atualizado antes de sair.</li>
-    <li><strong>O docente circula:</strong> 10 minutos por grupo. Vê o board, um PR aberto e para a app a correr no telemóvel. Faz uma pergunta a cada membro sobre o código que assinou.</li>
-    <li><strong>Bloqueios frequentes</strong> e como se resolvem ao vivo: conflito em <code>pubspec.lock</code> (aceitar o de <code>main</code> e correr <code>flutter pub get</code>); 401 (token expirado, aula 17 automatiza); <code>ProviderNotFoundException</code> (o widget está fora da árvore do Provider); modelo que não bate com o JSON (ler o Swagger, não adivinhar).</li>
-    <li><strong>Telemetria da API:</strong> o docente mostra a cada grupo o número de pedidos e de erros por endpoint desde o kickoff. Serve para perceber, por exemplo, um ecrã que pede a previsão a cada rebuild.</li>
+    <li>API igual a um mapa assíncrono: <code>read</code>, <code>write</code>, <code>delete</code>. Por baixo, Keychain no iOS e Keystore + AES no Android.</li>
+    <li><code>first_unlock_this_device</code>: acessível depois do primeiro desbloqueio e não migra para outro telemóvel via backup. É o que queres para um token.</li>
+    <li>Amanhã, o <code>AuthClient</code> lê daqui, renova em 401 e volta a guardar. Hoje só fica o token do arranque.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Até ao fim da aula: cada membro reviu pelo menos um PR de um colega com um comentário concreto (nome, estado de erro, dispose, null check), e o board reflete a realidade.</div>
-  <aside class="notes">Usa a telemetria com cuidado: o objetivo é mostrar padrões (pedidos em loop, 401 repetidos), não comparar grupos. Um grupo com poucos pedidos pode estar a trabalhar com o fake repository, o que é bom sinal. Dez minutos antes do fim, pede a cada grupo uma frase sobre o que muda até amanhã.</aside>
+  <div class="callout task"><strong>Exercício 5</strong> Guarda o token obtido no arranque com <code>TokenStorage</code> e, no arranque seguinte, usa-o sem pedir outro. Confirma com <code>adb shell run-as</code> que não há nenhum ficheiro com o token em claro na pasta da app.</div>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -200,18 +392,19 @@ grep -rniE 'secret|password' lib/ android/app/src/main/ ios/Runner/</code></pre>
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>Sprint 1 continua: PRs revistos por colegas, board atualizado, nada em "Em curso" há mais de dois dias.</li>
-        <li>Qualquer segredo encontrado na auditoria fora do repositório e rodado; issue "Auditoria de segurança" fechada por PR.</li>
-        <li>Amanhã: autenticação com renovação de token e favoritos sincronizados. Traz o <code>TokenStorage</code> da aula 15 a funcionar.</li>
+        <li>Cache de avisos com o mesmo padrão: tabela, extensão, <code>AvisosRepositoryCache</code> com validade de 5 minutos, e "Atualizado há X min" no ecrã.</li>
+        <li>Lê a comparação <a href="https://pub.dev/packages/drift" target="_blank" rel="noopener">drift</a> vs <a href="https://pub.dev/packages/sqflite" target="_blank" rel="noopener">sqflite</a> vs <a href="https://pub.dev/packages/hive_ce" target="_blank" rel="noopener">hive</a> e anota qual escolherias para o projeto e porquê.</li>
+        <li>Na quarta falamos de segurança e de segredos no repositório do grupo: confirma hoje que o <code>.env.json</code> está no <code>.gitignore</code>.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://owasp.org/www-project-mobile-top-10/" target="_blank" rel="noopener">OWASP Mobile Top 10</a>: a lista completa de 2024, com exemplos e defesas por risco; M1, M5 e M9 são os desta aula.</li>
-        <li><a href="https://docs.flutter.dev/security" target="_blank" rel="noopener">Flutter: Security</a>: como o Flutter trata vulnerabilidades, e as recomendações oficiais para uma app em produção.</li>
-        <li><a href="https://docs.flutter.dev/deployment/obfuscate" target="_blank" rel="noopener">Obfuscate Dart code</a>: o que a ofuscação faz e não faz, e como guardar os símbolos para ler crashes.</li>
-        <li><a href="https://developer.android.com/privacy-and-security/security-tips" target="_blank" rel="noopener">Android security tips</a> e <a href="https://developer.apple.com/app-store/user-privacy-and-data-use/" target="_blank" rel="noopener">User privacy and data use</a> (Apple): armazenamento, permissões e rede num sistema; ATT e labels no outro.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/persistence" target="_blank" rel="noopener">Persistence cookbook</a>: as receitas oficiais para chave-valor, SQLite (com <code>sqflite</code>, para comparar com o <code>drift</code>) e ficheiros.</li>
+        <li><a href="https://drift.simonbinder.eu" target="_blank" rel="noopener">drift</a>: a documentação do package, com tabelas, consultas tipadas, streams reativos e migrações.</li>
+        <li><a href="https://pub.dev/packages/flutter_secure_storage" target="_blank" rel="noopener">flutter_secure_storage</a>: a API, as opções de acessibilidade do Keychain e o que é feito em cada plataforma.</li>
+        <li><a href="https://developer.android.com/privacy-and-security/keystore" target="_blank" rel="noopener">Android Keystore</a> e <a href="https://developer.apple.com/documentation/security/keychain-services" target="_blank" rel="noopener">Keychain Services</a>: o que cada sistema faz por baixo do <code>flutter_secure_storage</code>.</li>
+        <li><a href="https://developer.android.com/training/data-storage" target="_blank" rel="noopener">Data and file storage overview</a>: a sandbox do Android, backup e o que é apagado quando.</li>
       </ul>
     </div>
   </div>

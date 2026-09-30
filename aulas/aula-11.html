@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 11 · Network layer e a API do curso · PDM</title>
+<title>Aula 11 · Qualidade: lints, organização e git flow · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,475 +25,351 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 11 · Semana 6 · Terça, 13 de outubro de 2026 · 08:30 às 10:30</p>
-  <h1>Network layer e a API do curso</h1>
-  <p class="lead">Teoria: camada de rede: HTTP, JSON, códigos de estado, timeouts, retries e interceptors; catálogo de APIs e OpenAPI. Prática: ligação da app à API do curso e apresentação das localidades dos Açores obtidas do servidor.</p>
+  <h1>Qualidade: lints, organização e git flow</h1>
+  <p class="lead">Teoria: qualidade de código: lints, organização por funcionalidade, extração de widgets e revisão de código; fluxo de git para equipas com branch por tarefa, pull request pequeno e revisão por um colega. Prática: refactor guiado do mini-projeto e resolução de um conflito de merge.</p>
   <div class="meta"><span>Repositório: pdm-aula-11</span></div>
-  <aside class="notes">Antes de começar, abre o Swagger da API no projetor e confirma que responde. Pergunta quem já usou fetch ou axios na web: quase todos. O que muda em mobile (rede intermitente, bateria, app suspensa a meio de um pedido) é o fio condutor dos primeiros 10 minutos. O client-id da turma só vai para o quadro na parte prática.</aside>
+  <aside class="notes">Pergunta quem já tem o mini-projeto a compilar e quem já fez push. Pede a dois alunos que mostrem a app: 1 minuto cada, sem comentários de código ainda. Depois pergunta: "se eu te pedisse para acrescentar um separador Avisos, em quantos ficheiros mexias?" A resposta é o ponto de partida da aula.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Explicar os métodos HTTP, os códigos de estado mais comuns e o que a app deve fazer com cada um.</li>
-    <li>Distinguir REST, GraphQL, gRPC e WebSockets e dizer quando cada um aparece em mobile.</li>
-    <li>Ler um contrato OpenAPI e usar o Swagger UI para experimentar a API do curso.</li>
-    <li>Fazer pedidos HTTP em Flutter, converter JSON em modelos Dart e mostrar o resultado com <code>FutureBuilder</code>.</li>
-    <li>Centralizar base URL, headers e timeout num <code>ApiClient</code> único.</li>
+    <li>Configurar <code>analysis_options.yaml</code> com lints estritos e explicar porque cada aviso importante existe.</li>
+    <li>Organizar um projeto Flutter por funcionalidade e dizer o que ganha face à organização por camada.</li>
+    <li>Extrair widgets reutilizáveis com parâmetros nomeados e construtores <code>const</code>.</li>
+    <li>Rever o código de um colega com comentários úteis sobre nomes, erros, <code>dispose</code> e null safety.</li>
+    <li>Trabalhar com branch por tarefa, pull requests, commits convencionais, e resolver um conflito de merge.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>HTTP em 10 minutos (1 de 2): métodos e idempotência</h2>
+  <h2>Lints: o compilador que te conhece</h2>
+  <ul>
+    <li>O analisador do Dart apanha erros de tipo. Os <strong>lints</strong> vão mais longe: apanham código que compila mas está errado, é lento ou vai dar problemas. São regras, e escolhes quais.</li>
+    <li><code>flutter_lints</code> vem com o <code>flutter create</code>: as regras recomendadas pela equipa do Flutter. Poucas, consensuais, sem falsos positivos.</li>
+    <li><code>very_good_analysis</code> (Very Good Ventures) é o conjunto estrito usado na indústria: 200 e tal regras, incluindo estilo, documentação e trailing commas. Mais ruído no início, menos discussões em revisão de código.</li>
+    <li>A configuração vive em <code>analysis_options.yaml</code> na raiz. O VS Code mostra os avisos ao escrever; <code>flutter analyze</code> mostra-os todos; o CI (aula 25) recusa PRs com avisos.</li>
+    <li>Zero avisos é a definição de pronto no projeto. Não porque cada aviso é grave, mas porque um projeto com 200 avisos esconde os 3 que interessam.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> lints são regras de análise estática configuradas em <code>analysis_options.yaml</code>; <code>flutter_lints</code> é o conjunto base, <code>very_good_analysis</code> o estrito.</p>
+  <aside class="notes">Abre o mini-projeto da solução com very_good_analysis ligado e mostra a lista de avisos: são dezenas. Pergunta quais é que os alunos acham que importam. Depois mostra o mesmo com flutter_lints: quase nenhum. A diferença é a conversa deste slide e do seguinte.</aside>
+</section>
+
+<section class="slide">
+  <h2><code>analysis_options.yaml</code></h2>
+<pre data-title="analysis_options.yaml"><code class="language-yaml">include: package:flutter_lints/flutter.yaml   # ou package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: true          # nada de dynamic a passar por String sem cast explícito
+    strict-inference: true
+    strict-raw-types: true      # List sem &lt;T&gt; é aviso
+  errors:
+    unused_import: error        # sobe de aviso para erro
+    use_build_context_synchronously: error
+  exclude:
+    - "**/*.g.dart"             # código gerado não se analisa
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_final_locals: true
+    avoid_print: true
+    require_trailing_commas: true
+    always_declare_return_types: true
+    avoid_dynamic_calls: true</code></pre>
+  <p><code>include</code> herda um conjunto; <code>analyzer.errors</code> muda a gravidade; <code>linter.rules</code> liga ou desliga regras uma a uma. A lista completa está em dart.dev/tools/linter-rules.</p>
+</section>
+
+<section class="slide">
+  <h2>Avisos que interessam, e porquê</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Regra</th><th>Porque existe</th></tr></thead>
+  <tbody>
+  <tr><td><code>prefer_const_constructors</code></td><td>Um widget <code>const</code> é criado uma vez e reutilizado em todos os rebuilds. Menos trabalho por frame; menos jank.</td></tr>
+  <tr><td><code>use_build_context_synchronously</code></td><td>Usar o <code>context</code> depois de um <code>await</code> pode apontar para um widget que já não existe. Crash intermitente, difícil de reproduzir.</td></tr>
+  <tr><td><code>avoid_print</code></td><td><code>print</code> fica no binário de release e vai para os logs do sistema. Usa <code>debugPrint</code> ou um logger que se desliga em produção.</td></tr>
+  <tr><td><code>strict-casts</code> e <code>avoid_dynamic_calls</code></td><td>JSON é <code>dynamic</code>; sem casts explícitos o erro aparece em runtime no telemóvel do utilizador, não na compilação.</td></tr>
+  <tr><td><code>unused_import</code>, <code>unused_local_variable</code>, <code>dead_code</code></td><td>Ruído que esconde bugs e confunde quem lê. Se não é usado, apaga-se.</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> <code>use_build_context_synchronously</code> existe porque o widget pode ter sido destruído durante o <code>await</code>; <code>const</code> evita reconstruções.</p>
+</section>
+
+<section class="slide">
+  <h2>Organização: por camada ou por funcionalidade</h2>
+  <div class="cols">
+    <div>
+      <h3>Por camada</h3>
+<pre><code class="language-plaintext">lib/
+  models/      previsao.dart, localidade.dart, aviso.dart
+  services/    previsoes_locais.dart, api_client.dart
+  ui/          ecra_lista.dart, ecra_detalhe.dart,
+               ecra_avisos.dart, ecra_definicoes.dart
+  widgets/     previsao_card.dart, dia_chip.dart</code></pre>
+      <p>Simples de começar. Com 30 ecrãs, cada funcionalidade está espalhada por quatro pastas e uma alteração toca em todas.</p>
+    </div>
+    <div>
+      <h3>Por funcionalidade</h3>
+<pre><code class="language-plaintext">lib/
+  app/           app.dart, router.dart, tema.dart
+  previsao/      modelos/, dados/, ui/
+  avisos/        modelos/, dados/, ui/
+  definicoes/    ui/
+  partilhado/    widgets/, extensoes/, l10n/</code></pre>
+      <p>Cada pasta é uma funcionalidade completa, com as suas camadas dentro. Uma equipa por pasta; apagar uma funcionalidade é apagar uma pasta.</p>
+    </div>
+  </div>
+  <p><strong>Para os testes:</strong> por camada agrupa pelo tipo de código; por funcionalidade agrupa pelo que a app faz. O projeto usa por funcionalidade com camadas dentro de cada uma, que é o que o guia de arquitetura do Flutter recomenda.</p>
+</section>
+
+<section class="slide">
+  <h2>Widgets reutilizáveis</h2>
+  <ul>
+    <li><strong>Extrai quando repete</strong> ou quando um <code>build</code> passa de 50 linhas. Um <code>build</code> de 300 linhas não se lê, não se testa e reconstrói tudo de cada vez.</li>
+    <li><strong>Classe, não método.</strong> <code>Widget _cartao()</code> dentro do <code>State</code> parece mais curto, mas não pode ser <code>const</code>, reconstrói sempre, e não aparece no inspector. <code>class PrevisaoCard extends StatelessWidget</code> resolve os três.</li>
+    <li><strong>Parâmetros nomeados e <code>required</code>:</strong> <code>PrevisaoCard(previsao: p, onTap: abrir)</code> lê-se sem abrir a classe. Dados de entrada como campos <code>final</code>; ações como callbacks <code>VoidCallback</code> ou <code>ValueChanged&lt;T&gt;</code>.</li>
+    <li><strong>Construtor <code>const</code></strong> sempre que os campos são finais. O lint <code>prefer_const_constructors</code> avisa-te onde podes usá-lo.</li>
+    <li><strong>Ficheiros pequenos:</strong> um widget público por ficheiro, nome do ficheiro em <code>snake_case</code> igual ao da classe. <code>previsao_card.dart</code> tem <code>PrevisaoCard</code>.</li>
+    <li>O widget não sabe de onde vêm os dados nem para onde vai a navegação. Recebe valores e devolve eventos. É o que o torna reutilizável e testável.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> extrai widgets para classes, não para métodos: permitem <code>const</code>, evitam rebuilds e aparecem no inspector.</p>
+</section>
+
+<section class="slide">
+  <h2>Code review: o que procurar</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Procura</th><th>Exemplo de comentário</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Nomes</strong> que dizem o que a coisa é</td><td>"<code>lista2</code> → <code>localidadesFiltradas</code>? Assim quem lê não precisa de abrir o where."</td></tr>
+  <tr><td><strong>Estados de erro e vazio</strong> tratados</td><td>"Se o JSON falhar, o <code>FutureBuilder</code> fica em branco. Um <code>Text</code> com a mensagem e um botão de repetir?"</td></tr>
+  <tr><td><strong><code>dispose</code></strong> para cada controller, timer e subscrição</td><td>"O <code>_controlador</code> criado no <code>initState</code> não é libertado. Fuga de memória a cada abertura do ecrã."</td></tr>
+  <tr><td><strong>Null checks</strong> com <code>!</code> e casts a esconder problemas</td><td>"Este <code>json['tMax']!</code> falha quando o campo faltar. <code>?? 0</code> ou uma <code>FormatException</code> com o nome do campo?"</td></tr>
+  <tr><td><strong>Widgets grandes</strong> e código repetido</td><td>"Este <code>build</code> tem 140 linhas e o cartão aparece três vezes. Extrair <code>PrevisaoCard</code>?"</td></tr>
+  </tbody></table></div>
+  <aside class="notes">Projeta um ficheiro de 150 linhas do starter e faz a revisão ao vivo com a turma: eles apontam, tu escreves o comentário. 5 minutos. Reparem que cada comentário termina com uma pergunta ou uma sugestão concreta, nunca com "isto está mal".</aside>
+</section>
+
+<section class="slide">
+  <h2>Code review: como comentar</h2>
+  <ul>
+    <li><strong>Comenta o código, não a pessoa.</strong> "Este método faz duas coisas" em vez de "fizeste isto mal".</li>
+    <li><strong>Pergunta antes de afirmar.</strong> "Há razão para o <code>Future</code> ser criado no <code>build</code>?" Às vezes há, e aprendes; às vezes não, e o autor corrige sem se sentir atacado.</li>
+    <li><strong>Sugere, com código quando ajuda.</strong> O GitHub tem "suggestion" blocks que o autor aceita com um clique.</li>
+    <li><strong>Distingue o que bloqueia do que é gosto.</strong> "bloqueante: crash sem rede" vs "nit: prefiro <code>final</code> aqui". Um PR não fica parado por causa de vírgulas.</li>
+    <li><strong>Elogia o que está bem.</strong> Uma revisão só com problemas ensina menos do que uma que diz "esta extração ficou limpa, faz o mesmo no detalhe".</li>
+    <li>Rever é ler com atenção, não correr. Se não percebes um bloco, o comentário é "não percebi isto; consegues explicar ou simplificar?". Provavelmente mais ninguém percebe.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> uma boa revisão distingue bloqueante de opcional, comenta o código e não o autor, e termina com uma sugestão concreta.</p>
+</section>
+
+<section class="slide">
+  <h2>Git para equipas (1 de 2): branches e pull requests</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 310" role="img" aria-label="Anatomia de HTTP: um pedido com método, URL, headers e corpo vai ao servidor, que responde com código de estado, headers e corpo JSON; ao lado, as famílias 2xx, 4xx, 429 e 5xx">
-    <rect x="30" y="30" width="310" height="120" rx="10" class="box accent"/>
-    <text x="45" y="54" class="t b">Pedido</text>
-    <text x="45" y="76" class="t mono">GET /v1/forecast/12 HTTP/1.1</text>
-    <text x="45" y="96" class="t mono">Authorization: Bearer &lt;token&gt;</text>
-    <text x="45" y="116" class="t mono">Accept: application/json</text>
-    <text x="45" y="138" class="t s">corpo: vazio num GET, JSON num POST</text>
-    <path d="M340 90 L398 90" class="arrow accent"/>
-    <polygon points="385,83 399,90 385,97" class="ah accent"/>
-    <rect x="400" y="50" width="140" height="200" rx="10" class="box"/>
-    <text x="470" y="146" class="t b" text-anchor="middle">Servidor</text>
-    <text x="470" y="166" class="t s" text-anchor="middle">API do curso</text>
-    <path d="M400 240 L342 240" class="arrow"/>
-    <polygon points="355,233 341,240 355,247" class="ah"/>
-    <rect x="30" y="180" width="310" height="120" rx="10" class="box ok"/>
-    <text x="45" y="204" class="t b">Resposta</text>
-    <text x="45" y="226" class="t mono">HTTP/1.1 200 OK</text>
-    <text x="45" y="246" class="t mono">Content-Type: application/json</text>
-    <text x="45" y="266" class="t mono">ETag: "a1b2"</text>
-    <text x="45" y="288" class="t mono">corpo: {"temp": 21, "icone": "sol"}</text>
-    <text x="590" y="54" class="t b">Códigos de estado</text>
-    <rect x="590" y="70" width="280" height="44" rx="8" class="box ok"/>
-    <text x="605" y="98" class="t b mono">2xx</text>
-    <text x="660" y="98" class="t">correu bem</text>
-    <rect x="590" y="126" width="280" height="44" rx="8" class="box warn"/>
-    <text x="605" y="154" class="t b mono">4xx</text>
-    <text x="660" y="154" class="t">erro do pedido</text>
-    <rect x="590" y="182" width="280" height="44" rx="8" class="box accent"/>
-    <text x="605" y="210" class="t b mono">429</text>
-    <text x="660" y="210" class="t">limite: espera</text>
-    <rect x="590" y="238" width="280" height="44" rx="8" class="box danger"/>
-    <text x="605" y="266" class="t b mono">5xx</text>
-    <text x="660" y="266" class="t">erro do servidor</text>
+  <svg viewBox="0 0 900 280" role="img" aria-label="Fluxo Git em equipa: main protegido; o branch feat/pesquisa sai de main e volta por pull request, passando pela revisão de um colega e pelo CI verde; um segundo branch fix/overflow-landscape corre em paralelo e entra pelo mesmo caminho">
+    <text x="40" y="30" class="t b">main</text>
+    <text x="90" y="30" class="t s">protegido: tudo entra por pull request</text>
+    <rect x="600" y="10" width="260" height="30" rx="8" class="box danger"/>
+    <text x="730" y="30" class="t s b" text-anchor="middle">push direto para main: rejeitado</text>
+    <path d="M40 70 L860 70" class="arrow accent"/>
+    <path d="M140 70 L190 150 L428 150" class="arrow"/>
+    <text x="200" y="140" class="t mono">feat/pesquisa</text>
+    <rect x="430" y="128" width="120" height="44" rx="8" class="box accent"/>
+    <text x="490" y="146" class="t b" text-anchor="middle">Pull request</text>
+    <text x="490" y="164" class="t s" text-anchor="middle">pequeno, descrito</text>
+    <path d="M550 150 L578 150" class="arrow"/>
+    <rect x="580" y="128" width="130" height="44" rx="8" class="box ok"/>
+    <text x="645" y="146" class="t b" text-anchor="middle">Revisão</text>
+    <text x="645" y="164" class="t s" text-anchor="middle">por um colega</text>
+    <path d="M710 150 L738 150" class="arrow"/>
+    <rect x="740" y="128" width="120" height="44" rx="8" class="box ok"/>
+    <text x="800" y="146" class="t b" text-anchor="middle">CI verde</text>
+    <text x="800" y="164" class="t s" text-anchor="middle">analyze + test</text>
+    <path d="M800 128 L800 74" class="arrow accent"/>
+    <text x="810" y="104" class="t s">merge</text>
+    <path d="M60 70 L110 250 L560 250" class="arrow"/>
+    <text x="120" y="240" class="t mono">fix/overflow-landscape</text>
+    <text x="575" y="255" class="t s">em curso: entra pelo mesmo caminho</text>
+    <circle cx="100" cy="70" r="6" class="box accent"/>
+    <circle cx="800" cy="70" r="6" class="box accent"/>
+    <circle cx="240" cy="150" r="6" class="box"/>
+    <circle cx="310" cy="150" r="6" class="box"/>
+    <circle cx="380" cy="150" r="6" class="box"/>
+    <circle cx="200" cy="250" r="6" class="box"/>
+    <circle cx="300" cy="250" r="6" class="box"/>
+    <circle cx="400" cy="250" r="6" class="box"/>
+    <circle cx="500" cy="250" r="6" class="box"/>
   </svg>
-  <figcaption>Pedido: método, URL, headers e corpo opcional. Resposta: código de estado, headers e corpo em JSON.</figcaption>
+  <figcaption>Cada tarefa nasce de main num branch curto e só volta por pull request, depois da revisão de um colega e do CI verde.</figcaption>
   </figure>
   <ul>
-    <li>Um pedido é <strong>método + URL + headers + corpo</strong> (opcional). A resposta é <strong>código + headers + corpo</strong>.</li>
-    <li><code>GET</code> lê e nunca altera. <code>POST</code> cria ou executa. <code>PUT</code> substitui. <code>PATCH</code> altera parte. <code>DELETE</code> apaga.</li>
-    <li><strong>Idempotente</strong>: repetir o pedido dá o mesmo resultado. <code>GET</code>, <code>PUT</code> e <code>DELETE</code> são; <code>POST</code> não é.</li>
-    <li>Por isso um <code>GET</code> que falhou pode ser repetido às cegas. Um <code>POST</code> repetido pode criar dois favoritos, ou cobrar duas vezes.</li>
-    <li>Exemplo real: a app do IPMA faz <code>GET</code> à previsão; um pagamento MB WAY é um <code>POST</code> que a app nunca repete sozinha.</li>
+    <li><strong><code>main</code> protegido.</strong> Ninguém faz push direto. Tudo entra por pull request revisto. No GitHub: Settings → Branches → "Require a pull request before merging". No projeto de grupo é obrigatório.</li>
+    <li><strong>Um branch por tarefa</strong>, curto, com nome que diz o que é: <code>feat/detalhe-aviso</code>, <code>fix/overflow-landscape</code>, <code>chore/lints</code>. Nasce de <code>main</code> e morre depois do merge.</li>
+    <li><strong>PR pequeno.</strong> Menos de 300 linhas, uma coisa só. Um PR de 2000 linhas não é revisto; é aprovado sem ler. Divide antes de abrir.</li>
+    <li><strong>Descrição:</strong> o quê, porquê, como testar, captura de ecrã se for UI. O título vira a mensagem do commit de merge.</li>
+    <li><strong>Revisão de um colega</strong> antes de entrar. Quem escreveu não aprova o próprio PR. O CI (aula 25) corre <code>analyze</code> e <code>test</code> e bloqueia se falhar.</li>
   </ul>
-  <p><strong>Para os testes:</strong> a idempotência decide o que a app pode repetir automaticamente quando a rede falha.</p>
-  <div class="callout"><strong>Analogia</strong> Um restaurante. O menu é a documentação da API (o contrato OpenAPI); o pedido é o request, com método, URL e headers; a cozinha é o servidor. O prato chega numa caixa etiquetada (a resposta JSON, <code>Content-Type: application/json</code>) com um código na tampa: 200 está tudo bem, 404 não há, 500 a cozinha avariou, 429 pedidos a mais. A app não come da caixa: tira o conteúdo para o prato, que é o modelo Dart.</div>
-  <aside class="notes">Pergunta: "se o pedido de pagamento deu timeout, o dinheiro saiu ou não?" A resposta é "não sabes", e é isso que torna o POST perigoso de repetir. Voltamos a isto na aula 13 com as chaves de idempotência.</aside>
+  <p><strong>Para os testes:</strong> branch por tarefa a partir de <code>main</code>, PR pequeno revisto por outra pessoa, <code>main</code> protegido sem push direto.</p>
+  <div class="callout"><strong>Analogia</strong> Um commit é uma fotografia de todo o projeto com legenda e data; não se apaga nenhuma e pode-se voltar a qualquer uma. Um branch é um caderno à parte onde se experimenta sem estragar o caderno principal. O pull request é pedir a um colega que leia o caderno antes de o conteúdo ser copiado para o principal.</div>
 </section>
 
 <section class="slide">
-  <h2>HTTP em 10 minutos (2 de 2): códigos, headers, JSON</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Código</th><th>Significa</th><th>O que a app faz</th></tr></thead>
-  <tbody>
-  <tr><td><strong>2xx</strong> (200, 201, 204)</td><td>Correu bem; 204 não traz corpo</td><td>Usa os dados</td></tr>
-  <tr><td><strong>400, 404, 422</strong></td><td>O pedido está errado ou o recurso não existe</td><td>Bug nosso ou estado vazio; não repetir</td></tr>
-  <tr><td><strong>401, 403</strong></td><td>Sem token válido / sem permissão</td><td>Renovar token ou fazer login; 403 não adianta repetir</td></tr>
-  <tr><td><strong>429</strong></td><td>Demasiados pedidos</td><td>Esperar o <code>Retry-After</code> e repetir</td></tr>
-  <tr><td><strong>5xx</strong></td><td>Erro do servidor</td><td>Repetir com backoff, mostrar dados antigos</td></tr>
-  </tbody></table></div>
+  <h2>Git para equipas (2 de 2): commits, rebase e conflitos</h2>
   <ul>
-    <li>Headers do dia a dia: <code>Content-Type: application/json</code>, <code>Accept</code>, <code>Authorization</code>, <code>Cache-Control</code>, <code>ETag</code>.</li>
-    <li>O corpo é JSON em UTF-8: objetos, listas, números, strings, booleanos e <code>null</code>. Tudo o que vem de fora pode faltar.</li>
+    <li><strong>Conventional commits:</strong> <code>tipo(âmbito): descrição</code> no imperativo, até 72 caracteres. Tipos: <code>feat</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, <code>test</code>, <code>chore</code>. Exemplo: <code>feat(avisos): detalhe de aviso com localidades afetadas</code>. Permite gerar changelogs e perceber o histórico sem abrir diffs.</li>
+    <li><strong>Merge</strong> junta dois históricos com um commit de merge: preserva tudo, mas o grafo fica com laços. <strong>Rebase</strong> reescreve os teus commits por cima do <code>main</code> atual: histórico linear, mas nunca em commits que já foram partilhados.</li>
+    <li>Regra do projeto: <code>git pull --rebase</code> no teu branch para atualizar; "Squash and merge" no GitHub para entrar em <code>main</code>. Um commit limpo por PR.</li>
+    <li><strong>Conflitos</strong> acontecem quando dois branches mudam as mesmas linhas. Não são um erro: são o git a pedir-te para decidir. Abres o ficheiro, escolhes, apagas as marcas, <code>git add</code>, continuas.</li>
+    <li>Conflitos grandes são sintoma de PRs grandes ou de dois membros a mexer no mesmo ficheiro. Divide o trabalho por funcionalidade (pasta) e desaparecem quase todos.</li>
   </ul>
-  <p><strong>Para os testes:</strong> 4xx é culpa do pedido, 5xx é culpa do servidor, 429 não é culpa de ninguém: é um limite.</p>
-</section>
-
-<section class="slide">
-  <h2>REST, GraphQL, gRPC e WebSockets</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th></th><th>REST</th><th>GraphQL</th><th>gRPC</th><th>WebSockets</th></tr></thead>
-  <tbody>
-  <tr><td>Formato</td><td>JSON sobre HTTP, um URL por recurso</td><td>Uma rota <code>/graphql</code>, query em JSON</td><td>Protobuf binário sobre HTTP/2</td><td>Canal aberto, bidirecional</td></tr>
-  <tr><td>Ponto forte</td><td>Simples, cache HTTP, ferramentas por todo o lado</td><td>O cliente pede só os campos que quer</td><td>Rápido, contratos gerados, streaming</td><td>Tempo real</td></tr>
-  <tr><td>Onde aparece em mobile</td><td>Quase tudo; a API do curso</td><td>Apps com muitos ecrãs diferentes (GitHub, Shopify)</td><td>Serviços internos, IoT, apps da Google</td><td>Chat, cotações, jogos, colaboração</td></tr>
-  <tr><td>Custo</td><td>Pedir a mais ou a menos (over/under-fetching)</td><td>Cache difícil, servidor mais complexo</td><td>Ferramentas, difícil de inspecionar</td><td>Bateria, reconexão, sem cache</td></tr>
-  </tbody></table></div>
-  <p><strong>Para os testes:</strong> REST é o predefinido em mobile; GraphQL resolve over-fetching; gRPC é binário e rápido; WebSockets são para tempo real.</p>
-</section>
-
-<section class="slide">
-  <h2>Catálogo de APIs e OpenAPI</h2>
-  <ul>
-    <li><strong>Contrato:</strong> um ficheiro <code>openapi.yaml</code> descreve rotas, parâmetros, esquemas de dados e códigos de resposta. É a fonte de verdade.</li>
-    <li><strong>Swagger UI:</strong> página gerada a partir do contrato onde experimentas cada rota sem escrever código. A API do curso tem uma em <code>/docs</code>.</li>
-    <li><strong>Geração de clientes:</strong> <code>openapi-generator</code> produz o código Dart a partir do contrato. Nós escrevemos à mão para perceber o que está lá dentro.</li>
-    <li><strong>Versionamento no URL:</strong> <code>/v1</code>. Quando algo muda de forma incompatível nasce <code>/v2</code> e <code>/v1</code> vive mais uns meses. Vais migrar na aula 28.</li>
-    <li><strong>Catálogo:</strong> uma empresa tem dezenas de APIs (Apigee, Postman, Backstage). Como cliente, lês o contrato antes de escrever a primeira linha.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> código de cliente que não bate certo com o contrato OpenAPI é um bug do cliente.</p>
-  <aside class="notes">Mostra o Swagger da API do curso ao vivo: expande GET /v1/locations, carrega em "Try it out", mostra a resposta. Dois minutos que poupam muitas perguntas na prática.</aside>
-</section>
-
-<section class="slide">
-  <h2>Timeouts, retries e cancelamento</h2>
-  <ul>
-    <li>Na web, um pedido pendurado é uma tab que gira. Em mobile é uma app "morta" e uma avaliação de uma estrela.</li>
-    <li><strong>Timeout:</strong> sem ele um pedido pode esperar minutos. Valores típicos: 10 s para ligar, 15 a 30 s no total.</li>
-    <li><strong>Retry com backoff:</strong> 1 s, 2 s, 4 s, com aleatoriedade. Só para falhas transitórias (timeout, 5xx, 429) e só em pedidos idempotentes. Detalhe na aula 13.</li>
-    <li><strong>Cancelamento:</strong> o utilizador saiu do ecrã; a resposta chega para um widget que já não existe. É a origem do erro <em>setState() called after dispose()</em>.</li>
-    <li>Porquê mais em mobile: a rede muda (Wi-Fi para 4G a meio), túneis, ecrã bloqueado, o sistema suspende a app com o pedido a meio.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> timeout limita a espera, retry repete falhas transitórias, cancelamento evita trabalho para ecrãs que já não existem.</p>
-</section>
-
-<section class="slide">
-  <h2>Interceptors e cliente HTTP único</h2>
-  <ul>
-    <li>Um <strong>interceptor</strong> vê todos os pedidos e respostas num só sítio: acrescenta headers, regista logs, renova o token, mede tempos.</li>
-    <li>Headers comuns: <code>Authorization: Bearer …</code>, <code>X-Platform</code> (android/ios), <code>X-App-Version</code>. Permitem ao backend saber que versão está a falhar e onde.</li>
-    <li><strong>Um só cliente</strong> na app: reutiliza ligações (keep-alive), tem a configuração num sítio e troca-se por um fake nos testes.</li>
-    <li>Com <code>http</code>: uma subclasse de <code>BaseClient</code> que sobrepõe <code>send</code>. Com <code>dio</code>: <code>InterceptorsWrapper</code> com <code>onRequest</code>, <code>onResponse</code>, <code>onError</code>.</li>
-    <li>Logging só em debug. Um token impresso na consola de release acaba num crash report.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> o interceptor é o ponto único de passagem; é onde vivem autenticação, logs e retries.</p>
-</section>
-
-<section class="slide">
-  <h2>A API do curso</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 250" role="img" aria-label="Cadeia de chamadas: a app Flutter fala por HTTPS com token Bearer com a API do curso, uma FastAPI com autenticação, cache, favoritos, telemetria e modo caos; só a API chama o IPMA, com cache de 30 a 60 minutos">
-    <rect x="30" y="60" width="190" height="120" rx="10" class="box accent"/>
-    <text x="45" y="86" class="t b">App Flutter</text>
-    <text x="45" y="110" class="t s">token do grupo (JWT)</text>
-    <text x="45" y="130" class="t s">X-Platform, X-App-Version</text>
-    <text x="45" y="150" class="t s">um só ApiClient</text>
-    <path d="M220 96 L328 96" class="arrow accent"/>
-    <text x="275" y="84" class="t s" text-anchor="middle">HTTPS + Bearer</text>
-    <path d="M330 130 L222 130" class="arrow dashed"/>
-    <text x="275" y="150" class="t s" text-anchor="middle">JSON</text>
-    <rect x="330" y="60" width="260" height="120" rx="10" class="box"/>
-    <text x="345" y="86" class="t b">API do curso · FastAPI</text>
-    <text x="345" y="110" class="t s">auth (JWT) · cache · favoritos</text>
-    <text x="345" y="130" class="t s">telemetria por grupo</text>
-    <text x="345" y="150" class="t s">modo caos: latência, 429, 500</text>
-    <path d="M590 96 L698 96" class="arrow"/>
-    <text x="645" y="84" class="t s" text-anchor="middle">cache 30–60 min</text>
-    <path d="M700 130 L592 130" class="arrow dashed"/>
-    <text x="645" y="150" class="t s" text-anchor="middle">JSON aberto</text>
-    <rect x="700" y="60" width="170" height="120" rx="10" class="box"/>
-    <text x="715" y="86" class="t b">IPMA</text>
-    <text x="715" y="110" class="t s">dados abertos</text>
-    <text x="715" y="130" class="t s">previsão, avisos,</text>
-    <text x="715" y="150" class="t s">sismos</text>
-    <rect x="30" y="200" width="840" height="34" rx="8" class="box muted"/>
-    <text x="450" y="222" class="t s" text-anchor="middle">A app nunca chama o IPMA diretamente: um só ponto de entrada, um só token, um só formato.</text>
-  </svg>
-  <figcaption>A API do curso fica no meio: autentica, guarda em cache e conta pedidos. O IPMA só vê a API, nunca as apps.</figcaption>
-  </figure>
-  <p>Base URL <code>https://api.pdm.example</code> (URL real na página <a href="../api.html">API</a>). Swagger em <code>/docs</code>. Envolve os dados abertos do IPMA e acrescenta autenticação, favoritos e telemetria.</p>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Endpoint</th><th>Devolve</th></tr></thead>
-  <tbody>
-  <tr><td><code>POST /v1/auth/token</code></td><td>JWT a partir de <code>client_id</code> e <code>secret</code> do grupo</td></tr>
-  <tr><td><code>GET /v1/locations</code></td><td>Localidades dos Açores com id, nome, ilha e coordenadas</td></tr>
-  <tr><td><code>GET /v1/forecast/{locationId}</code></td><td>Previsão a 5 dias de uma localidade</td></tr>
-  <tr><td><code>GET /v1/warnings</code> · <code>GET /v1/seismic</code></td><td>Avisos meteorológicos · sismos recentes</td></tr>
-  <tr><td><code>GET/POST/DELETE /v1/me/favorites</code></td><td>Favoritos do grupo autenticado (aula 17)</td></tr>
-  </tbody></table></div>
-  <div class="callout"><strong>Transparência</strong> Cada pedido leva <code>Authorization: Bearer</code>, <code>X-Platform</code> e <code>X-App-Version</code>. O backend conta pedidos por grupo para dar feedback, não para avaliar por volume. O docente pode ligar um <strong>modo caos</strong> por grupo (latência, 429, 500): é assim que treinamos resiliência na aula 13.</div>
-  <aside class="notes">Deixa claro que o modo caos é anunciado e não é partida: os grupos sabem quando está ligado. Hoje usam-se o client-id e o segredo da turma; os de grupo chegam na aula 14.</aside>
-</section>
-
-<section class="slide">
-  <h2>Do JSON ao objeto Dart</h2>
-  <p>A resposta chega como texto: uma <code>String</code> com JSON no corpo e <code>Content-Type: application/json</code> no header. Até ser um objeto que a app pode usar passa sempre pelos mesmos dois passos: descodificar e tipar.</p>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 220" role="img" aria-label="Cadeia de conversão em seis caixas: o corpo da resposta é uma String com JSON; jsonDecode transforma-a num Map ou List dinâmico; Previsao.fromJson converte esse mapa num objeto Previsao tipado; uma lista de Previsao alimenta os widgets">
-    <rect x="30" y="24" width="270" height="64" rx="10" class="box accent"/>
-    <text x="44" y="46" class="t b mono">String</text>
-    <text x="44" y="64" class="t s">corpo da resposta</text>
-    <text x="44" y="80" class="t s mono">Content-Type: application/json</text>
-    <path d="M300 56 L338 56" class="arrow"/>
-    <rect x="340" y="24" width="210" height="64" rx="10" class="box"/>
-    <text x="354" y="46" class="t b mono">jsonDecode</text>
-    <text x="354" y="64" class="t s mono">dart:convert</text>
-    <text x="354" y="80" class="t s">texto → estrutura dinâmica</text>
-    <path d="M550 56 L588 56" class="arrow"/>
-    <rect x="590" y="24" width="280" height="64" rx="10" class="box"/>
-    <text x="604" y="46" class="t b mono">Map&lt;String, dynamic&gt;</text>
-    <text x="604" y="64" class="t s mono">ou List&lt;dynamic&gt;</text>
-    <text x="604" y="80" class="t s">lê-se por chave; nada é verificado</text>
-    <path d="M730 88 L730 110 L145 110 L145 130" class="arrow"/>
-    <rect x="30" y="132" width="230" height="64" rx="10" class="box"/>
-    <text x="44" y="154" class="t b mono">Previsao.fromJson</text>
-    <text x="44" y="172" class="t s">factory: valida e constrói</text>
-    <text x="44" y="188" class="t s">FormatException se faltar algo</text>
-    <path d="M260 164 L298 164" class="arrow"/>
-    <rect x="300" y="132" width="190" height="64" rx="10" class="box ok"/>
-    <text x="314" y="154" class="t b mono">Previsao</text>
-    <text x="314" y="172" class="t s">objeto tipado</text>
-    <text x="314" y="188" class="t s">campos com o tipo certo</text>
-    <path d="M490 164 L528 164" class="arrow"/>
-    <rect x="530" y="132" width="200" height="64" rx="10" class="box ok"/>
-    <text x="544" y="154" class="t b mono">List&lt;Previsao&gt;</text>
-    <text x="544" y="172" class="t s mono">.map(…).toList()</text>
-    <text x="544" y="188" class="t s">objetos, nunca texto</text>
-    <path d="M730 164 L768 164" class="arrow"/>
-    <rect x="770" y="132" width="100" height="64" rx="10" class="box accent"/>
-    <text x="820" y="160" class="t b" text-anchor="middle">widgets</text>
-    <text x="820" y="180" class="t s mono" text-anchor="middle">ListView</text>
-  </svg>
-  <figcaption>Dois passos: <code>jsonDecode</code> passa de texto a estrutura dinâmica; <code>fromJson</code> passa de dinâmico a tipado. Daqui para a frente a app só vê objetos.</figcaption>
-  </figure>
-<pre data-title="de texto a objeto"><code class="language-dart">// O corpo de GET /v1/forecast/3 é texto. Uma previsão, resumida:
-// {
-//   "locationId": 3,
-//   "atualizadoEm": "2026-10-12T15:00:00Z",
-//   "dias": [ { "data": "2026-10-12", "tMin": 17.2, "tMax": 22.8, "tipo": "chuva" } ]
-// }
-final corpo = utf8.decode(resposta.bodyBytes);        // String
-final previsao = Previsao.fromJson(                   // Previsao, tipada
-  jsonDecode(corpo) as Map&lt;String, dynamic&gt;,          // Map, sem tipos verificados
-);
-previsao.dias.first.tMin;                             // double, não dynamic</code></pre>
-  <div class="callout"><strong>Analogia</strong> JSON é texto com etiquetas, como um formulário preenchido à mão. <code>jsonDecode</code> transforma o texto num dicionário (<code>Map&lt;String, dynamic&gt;</code>): já se consegue ler por chave, mas nada é verificado. <code>Previsao.fromJson</code> passa o formulário a limpo para uma ficha tipada: cada campo no sítio certo, com o tipo certo, e um erro claro se faltar algo. A partir daí o resto da app trabalha com fichas, nunca com texto.</div>
+  <p><strong>Para os testes:</strong> rebase reescreve o histórico e não se faz em commits partilhados; um conflito resolve-se editando o ficheiro, apagando as marcas e fazendo <code>git add</code>.</p>
 </section>
 
 <section class="slide" data-part="Prática">
-  <h2>Repositório da aula</h2>
+  <h2>Refactor guiado</h2>
 <pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-11.git
 cd pdm-aula-11/starter
 flutter pub get
 flutter run</code></pre>
+  <p>O <code>starter/</code> é um mini-projeto de referência propositadamente mal arrumado: lints desligados, um <code>ecra_detalhe.dart</code> com 300 linhas, tudo em <code>lib/</code> na raiz, um <code>TextEditingController</code> sem <code>dispose</code>. Tem <code>TODO</code>s numerados e testes a falhar; <code>solucao/</code> é o estado final. Os passos 1 e 2 fazem-se aqui, para todos verem os mesmos avisos; os passos 3 a 5 fazem-se no <strong>teu</strong> repositório do mini-projeto.</p>
+  <ol class="steps">
+    <li>Corre <code>flutter analyze</code> no starter: "No issues found". Está a mentir por omissão: os lints estão desligados.</li>
+    <li>Abre <code>analysis_options.yaml</code>. Tem uma linha.</li>
+  </ol>
+  <aside class="notes">Dá 8 minutos ao arranque. O starter compila e corre bem: é importante que vejam que "funciona" e "está bem" são coisas diferentes. Pede que contem as linhas do ecra_detalhe.dart antes de começar.</aside>
+</section>
+
+<section class="slide">
+  <h2>1. Ligar lints estritos e corrigir</h2>
+<pre class="term"><code class="language-bash">flutter pub add --dev very_good_analysis
+flutter analyze
+dart fix --dry-run          # o que o dart consegue corrigir sozinho
+dart fix --apply
+flutter analyze</code></pre>
+<pre data-title="analysis_options.yaml"><code class="language-yaml">include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    public_member_api_docs: false     # documentar tudo é demais para uma app; fica para packages
+    lines_longer_than_80_chars: false # o formatador trata das linhas</code></pre>
   <ul>
-    <li><code>starter/</code> tem TODOs numerados de 1 a 5 e testes a falhar em <code>test/</code>. Cada TODO corresponde a um bloco desta prática.</li>
-    <li><code>solucao/</code> é o estado final. Consulta-a quando estiveres bloqueado mais de cinco minutos, não antes.</li>
-    <li>O <code>pubspec.yaml</code> já tem <code>http</code>. Confirma com <code>flutter pub deps | grep http</code>.</li>
+    <li><code>dart fix</code> corrige o mecânico: <code>const</code> em falta, imports não usados, trailing commas. O resto corrige-se manualmente, um aviso de cada vez.</li>
+    <li>Desligar uma regra é legítimo quando tens uma razão e a escreves ao lado. Desligar uma regra porque dá muitos avisos não é razão.</li>
   </ul>
-  <div class="callout task"><strong>Primeiro pedido, sem código.</strong> Abre o Swagger em <code>/docs</code>, executa <code>GET /v1/locations</code> e lê a resposta. É essa forma que vamos converter em Dart.</div>
+  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: liga <code>very_good_analysis</code> e chega a zero avisos no starter. Conta quantos eram e quantos o <code>dart fix</code> resolveu sozinho. Os que sobram são os que interessam: lê cada um e percebe porque existe antes de o corrigir.</div>
 </section>
 
 <section class="slide">
-  <h2>O que a API devolve</h2>
-<pre data-title="GET /v1/locations"><code class="language-json">[
-  { "id": 3, "nome": "Ponta Delgada", "ilha": "São Miguel", "lat": 37.74, "lon": -25.67 },
-  { "id": 7, "nome": "Angra do Heroísmo", "ilha": "Terceira", "lat": 38.66, "lon": -27.22 }
-]</code></pre>
-<pre data-title="GET /v1/forecast/3"><code class="language-json">{
-  "locationId": 3,
-  "atualizadoEm": "2026-10-12T15:00:00Z",
-  "dias": [
-    { "data": "2026-10-12", "tMin": 17.2, "tMax": 22.8, "tipo": "chuva", "probPrecipitacao": 60 },
-    { "data": "2026-10-13", "tMin": 16.9, "tMax": 23.1, "tipo": "nublado", "probPrecipitacao": 20 }
-  ]
-}</code></pre>
-  <p>Uma lista de objetos e um objeto com uma lista dentro. Os nomes dos campos são os do contrato: se o contrato mudar, o nosso código tem de mudar com ele.</p>
-</section>
+  <h2>2. Extrair widgets</h2>
+<pre data-title="lib/previsao/ui/previsao_card.dart"><code class="language-dart">class PrevisaoCard extends StatelessWidget {
+  const PrevisaoCard({
+    required this.previsao,
+    this.selecionado = false,
+    this.onTap,
+    super.key,
+  });
 
-<section class="slide">
-  <h2>1. Um pedido com o package <code>http</code></h2>
-<pre data-title="lib/data/localidades_api.dart"><code class="language-dart">import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-const baseUrl = 'https://api.pdm.example'; // URL real na página API
-
-Future&lt;List&lt;Localidade&gt;&gt; obterLocalidades() async {
-  final uri = Uri.parse('$baseUrl/v1/locations');
-  final resposta = await http.get(uri).timeout(const Duration(seconds: 10));
-
-  if (resposta.statusCode != 200) {
-    throw ApiException('GET /v1/locations devolveu ${resposta.statusCode}',
-        statusCode: resposta.statusCode);
-  }
-
-  final json = jsonDecode(utf8.decode(resposta.bodyBytes)) as List&lt;dynamic&gt;;
-  return json
-      .map((e) =&gt; Localidade.fromJson(e as Map&lt;String, dynamic&gt;))
-      .toList();
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. Um pedido: o que interessa</h2>
-  <ul>
-    <li><code>http.get</code> devolve um <code>Future&lt;Response&gt;</code>. Só com <code>await</code> tens o <code>statusCode</code> e o <code>body</code>.</li>
-    <li><code>.timeout(…)</code> lança <code>TimeoutException</code> se a resposta não chegar. Sem isto, um túnel deixa a app à espera para sempre.</li>
-    <li><code>jsonDecode</code> devolve <code>dynamic</code>: uma <code>List</code> ou um <code>Map&lt;String, dynamic&gt;</code>. O <code>as</code> confirma o que esperas e falha cedo se não for.</li>
-    <li><code>utf8.decode(bodyBytes)</code> em vez de <code>body</code> evita acentos estragados quando o servidor não declara o charset.</li>
-    <li>Verifica sempre o código de estado antes de tocar no corpo. Um 500 também tem corpo, e não é o que esperas.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Escreve <code>obterAvisos()</code> para <code>GET /v1/warnings</code>, que devolve <code>List&lt;Aviso&gt;</code>. Imprime quantos avisos há. O modelo <code>Aviso</code> já existe no starter.</div>
-</section>
-
-<section class="slide">
-  <h2>2. Modelos a partir de JSON, com validação</h2>
-<pre data-title="lib/models/localidade.dart"><code class="language-dart">class Localidade {
-  final int id;
-  final String nome;
-  final String ilha;
-
-  const Localidade({required this.id, required this.nome, required this.ilha});
-
-  factory Localidade.fromJson(Map&lt;String, dynamic&gt; json) {
-    final id = json['id'];
-    final nome = json['nome'];
-    if (id is! int || nome is! String) {
-      throw const FormatException('Localidade sem id ou nome');
-    }
-    return Localidade(id: id, nome: nome, ilha: json['ilha'] as String? ?? 'desconhecida');
-  }
-
-  Map&lt;String, dynamic&gt; toJson() =&gt; {'id': id, 'nome': nome, 'ilha': ilha};
-}
-
-class ApiException implements Exception {
-  const ApiException(this.mensagem, {this.statusCode});
-  final String mensagem;
-  final int? statusCode;
-  @override
-  String toString() =&gt; 'ApiException($statusCode): $mensagem';
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. Modelos: o que interessa</h2>
-  <ul>
-    <li><code>fromJson</code> é um <code>factory</code>: valida e constrói. Se o JSON está mal, lança <code>FormatException</code> com uma mensagem que diz o que faltou.</li>
-    <li><code>is!</code> promove o tipo: depois do <code>if</code>, o compilador sabe que <code>id</code> é <code>int</code>. Sem <code>!</code>, sem <code>as</code> às cegas.</li>
-    <li>Campos opcionais com valor por defeito (<code>?? 'desconhecida'</code>); campos obrigatórios falham cedo. Decide caso a caso.</li>
-    <li>A exceção própria (<code>ApiException</code>) leva o <code>statusCode</code>: na aula 13 a UI escolhe a mensagem por código.</li>
-    <li>Regra: a app nunca deve falhar porque o servidor mandou um campo a mais ou a menos. Testa com JSON estragado.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Em <code>Previsao.fromJson</code>, valida que <code>dias</code> é uma lista e que cada dia tem <code>tMin</code> e <code>tMax</code> numéricos. Corre <code>flutter test test/previsao_test.dart</code>: usa o ficheiro <code>test/fixtures/previsao_mau.json</code> e tem de ficar verde.</div>
-  <aside class="notes">Dúvida frequente: "porque não uso json_serializable?" Resposta: podes, no projeto; hoje escrevemos à mão para perceber o que o gerador faz. Mostra num minuto o que o tMin do IPMA é (uma string!) e porque a API do curso o converte para número.</aside>
-</section>
-
-<section class="slide">
-  <h2>3. <code>FutureBuilder</code>: o primeiro ecrã ligado à API</h2>
-<pre data-title="lib/ui/localidades_screen.dart"><code class="language-dart">class _LocalidadesScreenState extends State&lt;LocalidadesScreen&gt; {
-  late final Future&lt;List&lt;Localidade&gt;&gt; _futuro = obterLocalidades();
+  final Previsao previsao;
+  final bool selecionado;
+  final VoidCallback? onTap;                     // ação: quem usa decide o que faz
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder&lt;List&lt;Localidade&gt;&gt;(
-      future: _futuro,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Não foi possível carregar: ${snapshot.error}'));
-        }
-        final lista = snapshot.data ?? const &lt;Localidade&gt;[];
-        return ListView.builder(
-          itemCount: lista.length,
-          itemBuilder: (_, i) =&gt; ListTile(
-            title: Text(lista[i].nome),
-            subtitle: Text(lista[i].ilha),
-          ),
-        );
-      },
+    final cores = Theme.of(context).colorScheme;
+    return Card(
+      color: selecionado ? cores.primaryContainer : null,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text('${previsao.dia.day}: ${previsao.tMin.round()}° a ${previsao.tMax.round()}°'),
+        ),
+      ),
     );
   }
 }</code></pre>
 </section>
 
 <section class="slide">
-  <h2>3. <code>FutureBuilder</code>: o que interessa</h2>
+  <h2>2. Extrair: o que interessa</h2>
   <ul>
-    <li><code>connectionState</code> é <code>waiting</code> enquanto o Future corre e <code>done</code> quando termina, com <code>hasData</code> ou <code>hasError</code>.</li>
-    <li>O Future cria-se <strong>uma vez</strong>, num campo do <code>State</code>. Se o criares dentro de <code>build</code>, cada rebuild faz um pedido novo à API.</li>
-    <li><code>snapshot.data</code> é nullable. <code>?? const []</code> em vez de <code>!</code>.</li>
-    <li>Mostrar <code>snapshot.error</code> cru serve para aprender; em produção a mensagem é escolhida pela app (aula 13).</li>
-    <li><code>FutureBuilder</code> chega para um ecrã isolado. Amanhã movemos isto para um notifier, para partilhar entre ecrãs e testar sem rede.</li>
+    <li>O VS Code faz a extração: seleciona o widget, <kbd>Ctrl</kbd>+<kbd>.</kbd> → "Extract Widget", dá o nome. Depois moves o resultado para o ficheiro certo e trocas os campos capturados por parâmetros.</li>
+    <li>Ordem dos parâmetros: os <code>required</code> primeiro, os opcionais depois, <code>super.key</code> no fim. É a convenção do <code>very_good_analysis</code>.</li>
+    <li>O widget não importa <code>go_router</code> nem <code>dados.dart</code>. Recebe uma <code>Previsao</code> e um <code>onTap</code>. Quem o usa decide para onde navegar.</li>
+    <li>Depois de extrair, o <code>build</code> do ecrã fica com 30 linhas que se leem como um índice: cabeçalho, fila de dias, cartão do dia. É o objetivo.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 3</strong> Mostra o número de localidades no título da <code>AppBar</code> quando os dados chegam, e no estado de erro um botão "Tentar de novo" que recria o Future com <code>setState</code>.</div>
-  <aside class="notes">Erro clássico ao vivo: põe `future: obterLocalidades()` diretamente no FutureBuilder, faz hot reload duas vezes e mostra no terminal do backend (ou no log) os pedidos repetidos. Fica na memória.</aside>
+<pre><code class="language-plaintext">lib/
+  app/                 app.dart, router.dart, tema.dart
+  previsao/
+    modelos/           previsao.dart, localidade.dart, tipo_tempo.dart
+    dados/             previsoes_locais.dart
+    ui/                ecra_localidades.dart, ecra_detalhe.dart,
+                       previsao_card.dart, dia_chip.dart, localidade_tile.dart
+  definicoes/ui/       ecra_definicoes.dart
+  partilhado/          extensoes/data_pt.dart, widgets/estado_vazio.dart</code></pre>
+  <div class="callout task"><strong>Exercício 2</strong> Resolve os <code>TODO 2</code> a <code>4</code>: extrai <code>PrevisaoCard</code>, <code>DiaChip</code> e <code>LocalidadeTile</code> para os seus ficheiros, move tudo para a estrutura por funcionalidade acima, e corrige os imports. <code>flutter analyze</code> continua a zero e os testes ficam verdes.</div>
 </section>
 
 <section class="slide">
-  <h2>4. <code>ApiClient</code>: base URL, headers e timeout num só sítio</h2>
-<pre data-title="lib/data/api_client.dart"><code class="language-dart">class ApiClient {
-  ApiClient({required this.baseUrl, http.Client? client, this.token})
-      : _client = client ?? http.Client();
+  <h2>3. Branch, pull request e revisão</h2>
+<pre class="term"><code class="language-bash">cd ~/pdm-miniprojeto                       # o teu repositório, não o starter
+git switch -c chore/lints-e-estrutura
+flutter pub add --dev very_good_analysis   # repete os passos 1 e 2 no teu projeto
+git add -A
+git commit -m "chore: liga very_good_analysis e organiza por funcionalidade"
+git push -u origin chore/lints-e-estrutura
+gh pr create --fill --base main            # ou o botão "Compare &amp; pull request" no GitHub</code></pre>
+  <ol class="steps">
+    <li>No GitHub, Settings → Branches → adiciona uma regra para <code>main</code> com "Require a pull request before merging" e "Require approvals: 1".</li>
+    <li>Adiciona um colega como colaborador do teu repositório e pede-lhe revisão no PR. Ele faz o mesmo contigo.</li>
+    <li>Revê o PR do colega: pelo menos dois comentários com a tabela do slide 8, um bloqueante e um "nit". Aprova só depois de ele responder.</li>
+    <li>Faz "Squash and merge" do teu PR quando estiver aprovado. Apaga o branch.</li>
+  </ol>
+  <div class="callout task"><strong>Exercício 3</strong> PR aberto, revisto por um colega com dois comentários, respondido, aprovado e merged. O <code>main</code> do teu mini-projeto fica com os lints ligados e a estrutura nova.</div>
+  <aside class="notes">Faz pares na hora: quem está ao lado. Dá 25 minutos. A confusão típica é o colaborador não conseguir comentar porque o repositório é privado e ainda não aceitou o convite; verifica o e-mail. Mostra um PR bem descrito de um projeto real como exemplo.</aside>
+</section>
 
-  final String baseUrl;
-  final http.Client _client;
-  String? token;
+<section class="slide">
+  <h2>4. Simular e resolver um conflito</h2>
+<pre class="term"><code class="language-bash">git switch main &amp;&amp; git pull
+git switch -c feat/titulo-pt     # muda o título em lib/app/app.dart para 'Tempo Açores' e commita
+git switch main
+git switch -c feat/titulo-en     # muda a MESMA linha para 'Azores Weather' e commita
+git switch main &amp;&amp; git merge feat/titulo-pt      # entra sem conflito
+git merge feat/titulo-en                            # CONFLICT (content): lib/app/app.dart</code></pre>
+<pre data-title="lib/app/app.dart (durante o conflito)"><code class="language-dart">      title: 'Tempo Açores',
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+      // versão que está em main
+=======
+      title: 'Azores Weather',
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feat/titulo-en</code></pre>
+  <ol class="steps">
+    <li>Abre o ficheiro. O VS Code mostra "Accept Current", "Accept Incoming", "Accept Both". Decide: aqui, o título vem do <code>.arb</code>, por isso nenhuma das duas está certa.</li>
+    <li>Escreve a versão final, apaga as três marcas, guarda. <code>flutter analyze</code> para confirmar que compila.</li>
+    <li><code>git add lib/app/app.dart</code> e <code>git commit</code>. Se estivesses num rebase: <code>git rebase --continue</code>.</li>
+  </ol>
+  <div class="callout task"><strong>Exercício 4</strong> Provoca e resolve o conflito acima no teu repositório. Depois apaga os dois branches. Se ficares perdido a meio: <code>git merge --abort</code> volta ao estado anterior, sempre.</div>
+  <aside class="notes">Deixa-os provocar o conflito sozinhos; é o momento em que percebem que não é grave. Circula e mostra o git merge --abort a quem entrar em pânico. Dá 15 minutos. Se sobrar tempo, mostra o mesmo com rebase e o --force-with-lease no push.</aside>
+</section>
 
-  Map&lt;String, String&gt; get _headers =&gt; {
-        'Accept': 'application/json',
-        'X-Platform': defaultTargetPlatform.name,
-        'X-App-Version': '1.0.0',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
-
-  Future&lt;dynamic&gt; get(String caminho) async {
-    final resposta = await _client
-        .get(Uri.parse('$baseUrl$caminho'), headers: _headers)
-        .timeout(const Duration(seconds: 10));
-    if (resposta.statusCode &gt;= 400) {
-      throw ApiException('GET $caminho falhou', statusCode: resposta.statusCode);
-    }
-    return jsonDecode(utf8.decode(resposta.bodyBytes));
-  }
+<section class="slide">
+  <h2>5. dart format e format-on-save</h2>
+<pre class="term"><code class="language-bash">dart format lib test                 # formata tudo; sem argumentos, o projeto inteiro
+dart format --set-exit-if-changed .  # no CI: falha se algo não estiver formatado</code></pre>
+<pre data-title=".vscode/settings.json"><code class="language-json">{
+  "editor.formatOnSave": true,
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.rulers": [80],
+    "editor.codeActionsOnSave": { "source.fixAll": "explicit" }
+  },
+  "dart.lineLength": 80
 }</code></pre>
-</section>
-
-<section class="slide">
-  <h2>4. <code>ApiClient</code>: o que interessa</h2>
   <ul>
-    <li>Uma instância para toda a app, criada no <code>main</code> e passada por construtor a quem precisa. Amanhã o Provider trata da distribuição.</li>
-    <li>O <code>http.Client</code> é injetável: nos testes passas um <code>MockClient</code> do package <code>http/testing</code> e não há rede.</li>
-    <li><code>defaultTargetPlatform.name</code> (de <code>package:flutter/foundation.dart</code>) dá <code>android</code> ou <code>iOS</code>. A versão vem do <code>package_info_plus</code> no projeto.</li>
-    <li>Os erros 4xx e 5xx viram <code>ApiException</code> com <code>statusCode</code>. <code>TimeoutException</code> e <code>SocketException</code> (sem rede) passam como estão. Tratamos os três na aula 13.</li>
-    <li>O <code>token</code> é mutável de propósito: hoje é atribuído no arranque; na aula 17 passa a ser renovado por um interceptor.</li>
+    <li>O formatador do Dart não tem opções de estilo. Acabam as discussões sobre chavetas e indentação: todos têm o mesmo código.</li>
+    <li>A trailing comma decide o formato: com vírgula no fim, um argumento por linha; sem ela, tudo numa linha. É por isso que <code>require_trailing_commas</code> está ligado.</li>
+    <li>Commita o <code>.vscode/settings.json</code>: a equipa inteira fica com a mesma configuração.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 4</strong> Substitui as chamadas diretas a <code>http.get</code> por <code>ApiClient.get</code>. Acrescenta um método genérico <code>Future&lt;List&lt;T&gt;&gt; getList&lt;T&gt;(String caminho, T Function(Map&lt;String, dynamic&gt;) fromJson)</code> e usa-o em <code>obterLocalidades</code>.</div>
-</section>
-
-<section class="slide">
-  <h2>5. Token da turma e previsão de uma localidade</h2>
-<pre data-title="lib/data/api_client.dart · lib/main.dart"><code class="language-dart">// Em ApiClient
-Future&lt;Map&lt;String, dynamic&gt;&gt; post(String caminho, {Object? body}) async {
-  final resposta = await _client
-      .post(Uri.parse('$baseUrl$caminho'),
-          headers: {..._headers, 'Content-Type': 'application/json'},
-          body: jsonEncode(body))
-      .timeout(const Duration(seconds: 10));
-  if (resposta.statusCode &gt;= 400) {
-    throw ApiException('POST $caminho falhou', statusCode: resposta.statusCode);
-  }
-  return jsonDecode(utf8.decode(resposta.bodyBytes)) as Map&lt;String, dynamic&gt;;
-}
-
-// No arranque da app: o client-id e o segredo vêm do docente, nunca do código
-final api = ApiClient(baseUrl: 'https://api.pdm.example'); // URL real na página API
-final auth = await api.post('/v1/auth/token', body: {
-  'client_id': const String.fromEnvironment('PDM_CLIENT_ID'),
-  'secret': const String.fromEnvironment('PDM_SECRET'),
-});
-api.token = auth['access_token'] as String;
-
-final previsao = await api.get('/v1/forecast/3') as Map&lt;String, dynamic&gt;;
-print(previsao['dias']);</code></pre>
-<pre class="term"><code class="language-bash">flutter run --dart-define=PDM_CLIENT_ID=daw2-turma --dart-define=PDM_SECRET=o-segredo-do-quadro</code></pre>
-</section>
-
-<section class="slide">
-  <h2>5. Token e previsão: o que interessa</h2>
-  <ul>
-    <li><code>POST /v1/auth/token</code> recebe JSON com <code>client_id</code> e <code>secret</code> e devolve <code>access_token</code>: um JWT que expira. Vemos o que tem dentro na aula 17.</li>
-    <li>O segredo entra pela linha de comandos com <code>--dart-define</code> e <code>String.fromEnvironment</code>. Nunca no código, nunca no git. Porquê, na aula 16.</li>
-    <li>Com o token no <code>ApiClient</code>, todos os pedidos seguintes levam <code>Authorization: Bearer</code> sem mais código.</li>
-    <li>Um 401 significa token em falta ou expirado. Hoje resolve-se reiniciando a app; na aula 17 fica automático.</li>
-    <li>Spread <code>{..._headers, 'Content-Type': …}</code>: um mapa novo com os headers comuns mais um. Idiomático em Dart.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 5</strong> Ecrã de lista de localidades vinda da API, com indicador de loading, agrupada por ilha (cabeçalho por ilha), com o token obtido no arranque. Quando terminares, compara com <code>solucao/</code> e anota o que fizeste diferente.</div>
-  <aside class="notes">Dá 25 minutos para o exercício 5. Quem acabar cedo liga o toque numa localidade a GET /v1/forecast/{id} e imprime os dias no terminal: é o TPC adiantado. Cinco minutos antes do fim, pede a dois alunos que mostrem o ecrã no telemóvel.</aside>
+  <div class="callout task"><strong>Exercício 5</strong> Liga format-on-save, corre <code>dart format .</code> no mini-projeto e commita o resultado num PR próprio, <code>chore: formata com dart format</code>. É um PR pequeno e simples de rever.</div>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -502,19 +378,19 @@ print(previsao['dias']);</code></pre>
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>Liga o ecrã de detalhe a <code>GET /v1/forecast/{id}</code>: ao tocar numa localidade, mostra os 5 dias com <code>tMin</code> e <code>tMax</code>.</li>
-        <li>Explora o Swagger da API em <code>/docs</code>: executa cada endpoint uma vez e anota um campo que não esperavas.</li>
-        <li>Deixa os testes do starter verdes: <code>flutter test</code>.</li>
+        <li>Deixa o mini-projeto sem avisos com <code>very_good_analysis</code> e com a estrutura por funcionalidade. É o estado em que o entregas no domingo.</li>
+        <li>Revê o PR do teu colega até sexta: dois comentários, resposta ao que ele te disse, e aprova quando estiver bem. A revisão conta para a tua nota, não só para a dele.</li>
+        <li>Amanhã começa a rede: instala o Postman ou o Bruno e abre a documentação da <a href="../api.html">API do curso</a>.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/cookbook/networking/fetch-data" target="_blank" rel="noopener">Fetch data from the internet</a>: o cookbook oficial, com <code>http.get</code>, <code>fromJson</code> e <code>FutureBuilder</code>.</li>
-        <li><a href="https://docs.flutter.dev/data-and-backend/serialization/json" target="_blank" rel="noopener">JSON and serialization</a>: <code>fromJson</code> à mão vs <code>json_serializable</code>, e quando cada um compensa.</li>
-        <li><a href="https://dart.dev/libraries/serialization/json" target="_blank" rel="noopener">Using JSON</a> (dart.dev): <code>jsonDecode</code>, <code>jsonEncode</code> e os tipos que saem de <code>dart:convert</code>.</li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview" target="_blank" rel="noopener">MDN: HTTP overview</a> e <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener">HTTP status codes</a>: a referência para métodos, headers e cada código de estado.</li>
-        <li><a href="https://pub.dev/packages/http" target="_blank" rel="noopener">package http</a>: <code>Client</code>, <code>BaseClient</code> e <code>MockClient</code> para testes.</li>
+        <li><a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Architecting Flutter apps</a>: a recomendação oficial de organização, que aprofundamos na aula 13.</li>
+        <li><a href="https://dart.dev/effective-dart" target="_blank" rel="noopener">Effective Dart</a>: estilo, documentação, uso e design. A secção "Style" é a mais curta e a mais importante.</li>
+        <li><a href="https://docs.github.com/get-started/start-your-journey/hello-world" target="_blank" rel="noopener">GitHub: Hello World</a>: branch, commit, pull request e merge no browser, passo a passo.</li>
+        <li><a href="https://git-scm.com/book/pt-pt/v2" target="_blank" rel="noopener">Pro Git, cap. 1 e 2</a> (tradução parcial em português): os conceitos base de commit, histórico e remotos, para perceber o que o VS Code faz por baixo.</li>
+        <li><a href="https://pub.dev/packages/very_good_analysis" target="_blank" rel="noopener">very_good_analysis</a> no pub.dev: a lista de regras e a razão de cada uma.</li>
       </ul>
     </div>
   </div>
