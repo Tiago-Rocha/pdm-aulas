@@ -51,15 +51,13 @@
     light: "☀︎ Light", dark: "☾ Dark", projOn: "▣ Normal", projOff: "▢ Projector",
     copy: "Copy", copied: "Copied ✓", toc: "On this page",
     prev: "← Previous", next: "Next →", lesson: "Lesson",
-    nextUp: "Next lesson", done: "<strong>Semester over.</strong> Thank you all.",
-    other: "PT", otherTitle: "Versão em português"
+    nextUp: "Next lesson", done: "<strong>Semester over.</strong> Thank you all."
   } : {
     dias: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
     light: "☀︎ Claro", dark: "☾ Escuro", projOn: "▣ Normal", projOff: "▢ Projeção",
     copy: "Copiar", copied: "Copiado ✓", toc: "Nesta página",
     prev: "← Anterior", next: "Seguinte →", lesson: "Aula",
-    nextUp: "Próxima aula", done: "<strong>Semestre terminado.</strong> Obrigado a todos.",
-    other: "EN", otherTitle: "English version"
+    nextUp: "Próxima aula", done: "<strong>Semestre terminado.</strong> Obrigado a todos."
   };
   var DIAS = T.dias;
   function title(l) { return EN && l.te ? l.te : l.t; }
@@ -198,20 +196,35 @@
 
   // ----- Troca de língua -----
   // A raiz do site é a pasta que contém assets/app.js; en/ espelha-a com os mesmos nomes de ficheiro.
-  var tools = document.querySelector("header.site .tools");
+  // As bandeiras são SVG (os emojis de bandeira não aparecem no Windows).
+  var FLAGS = {
+    pt: '<svg viewBox="0 0 60 40" aria-hidden="true"><rect width="60" height="40" fill="#da291c"/><rect width="24" height="40" fill="#046a38"/><circle cx="24" cy="20" r="8" fill="#ffe900"/><path d="M19.5 15h9v6a4.5 4.5 0 0 1-9 0z" fill="#da291c" stroke="#fff" stroke-width="1.2"/></svg>',
+    en: '<svg viewBox="0 0 60 40" aria-hidden="true"><rect width="60" height="40" fill="#012169"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0L60 40M60 0L0 40" stroke="#c8102e" stroke-width="3"/><path d="M30 0v40M0 20h60" stroke="#fff" stroke-width="13"/><path d="M30 0v40M0 20h60" stroke="#c8102e" stroke-width="7"/></svg>'
+  };
   var self = document.querySelector('script[src$="assets/app.js"]');
-  if (tools && self) {
-    var siteRoot = self.src.replace(/assets\/app\.js.*$/, "");
+  var siteRoot = self ? self.src.replace(/assets\/app\.js.*$/, "") : null;
+  // Devolve o par de botões PT | EN, ou null se a página não estiver dentro do site.
+  // O endereço é calculado no clique, para levar o slide em que se está (#sN).
+  function langSwitch() {
     var page = location.href.split("#")[0].split("?")[0];
-    if (page.indexOf(siteRoot) === 0) {
-      var rel = page.slice(siteRoot.length);
-      var lang = document.createElement("a");
-      lang.className = "lang"; lang.textContent = T.other; lang.title = T.otherTitle;
-      lang.setAttribute("hreflang", EN ? "pt-PT" : "en");
-      lang.href = siteRoot + (EN ? rel.replace(/^en\//, "") : "en/" + rel) + location.hash;
-      tools.insertBefore(lang, tools.firstChild);
-    }
+    if (!siteRoot || page.indexOf(siteRoot) !== 0) return null;
+    var rel = page.slice(siteRoot.length).replace(/^en\//, "");
+    var box = document.createElement("span"); box.className = "lang-switch";
+    [["pt", "PT", "Versão em português", "pt-PT", ""], ["en", "EN", "English version", "en", "en/"]].forEach(function (o) {
+      var a = document.createElement("a");
+      a.innerHTML = FLAGS[o[0]] + "<span>" + o[1] + "</span>";
+      a.title = o[2]; a.setAttribute("hreflang", o[3]); a.setAttribute("lang", o[3]);
+      a.href = siteRoot + o[4] + rel + location.hash;
+      if ((o[0] === "en") === EN) { a.className = "on"; a.setAttribute("aria-current", "true"); }
+      a.addEventListener("click", function () { a.href = siteRoot + o[4] + rel + location.hash; });
+      box.appendChild(a);
+    });
+    return box;
   }
+  // Nas aulas a troca fica na barra dos slides, ao lado dos comandos; nas outras páginas, no cabeçalho.
+  var tools = document.querySelector("header.site .tools");
+  var headerSwitch = tools && !document.getElementById("deck") && langSwitch();
+  if (headerSwitch) tools.insertBefore(headerSwitch, tools.firstChild);
 
   // ----- Marca o link ativo no menu -----
   var here = location.pathname.split("/").pop() || "index.html";
@@ -227,7 +240,7 @@
     a.target = "_blank"; a.rel = "noopener";
   });
 
-  window.PDM = { LESSONS: LESSONS, ORG: ORG };
+  window.PDM = { LESSONS: LESSONS, ORG: ORG, langSwitch: langSwitch };
 })();
 
 /* ===== Motor de slides das aulas =====
@@ -273,6 +286,8 @@
     '</div></div>';
   deck.parentNode.insertBefore(bar, deck);
   var segs = bar.querySelector(".segs"), counter = bar.querySelector(".counter");
+  var deckSwitch = window.PDM && window.PDM.langSwitch && window.PDM.langSwitch();
+  if (deckSwitch) bar.querySelector(".ctrl").appendChild(deckSwitch);
   parts.forEach(function (p) {
     var el = document.createElement("div"); el.className = "seg"; el.style.flex = String(p.count);
     el.title = p.name + " · " + p.count + (p.count === 1 ? " slide" : " slides");
