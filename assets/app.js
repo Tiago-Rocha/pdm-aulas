@@ -202,11 +202,6 @@
   "use strict";
   var deck = document.getElementById("deck");
   if (!deck) return;
-  // Modo docente: ativa-se uma vez com ?docente no URL (ou desativa com ?docente=0) e fica guardado.
-  var q = /[?&]docente(=([^&]*))?/.exec(location.search);
-  if (q) { try { localStorage.setItem("pdm-docente", q[2] === "0" ? "0" : "1"); } catch (e) {} }
-  var docente = false; try { docente = localStorage.getItem("pdm-docente") === "1"; } catch (e) {}
-  if (docente) document.documentElement.classList.add("docente");
   var slides = Array.prototype.slice.call(deck.querySelectorAll(".slide"));
   if (!slides.length) return;
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -241,7 +236,7 @@
     segs.appendChild(el); p.el = el;
   });
   var hint = document.createElement("p"); hint.className = "deck-hint";
-  hint.innerHTML = "← → navegar · clica numa parte da barra para saltar · d documento · f ecrã inteiro<span class=\"docente-only\"> · n notas do docente</span>";
+  hint.innerHTML = "← → navegar · clica numa parte da barra para saltar · d documento · n notas do docente · f ecrã inteiro";
   deck.parentNode.insertBefore(hint, deck.nextSibling);
 
   var cur = -1;
@@ -300,7 +295,7 @@
       case "Home": e.preventDefault(); go(0); break;
       case "End": e.preventDefault(); go(slides.length - 1); break;
       case "d": toggleDoc(); break;
-      case "n": if (docente) toggleNotes(); break;
+      case "n": toggleNotes(); break;
       case "f": toggleFull(); break;
     }
   });
