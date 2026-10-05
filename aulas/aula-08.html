@@ -26,9 +26,9 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 08 · Semana 5 · Terça, 6 de outubro de 2026 · 08:30 às 11:30</p>
   <h1>Estado: do setState às arquiteturas</h1>
-  <p class="lead">Teoria: o que é estado numa app, onde deve viver, e comparação entre setState, Provider, BLoC e Riverpod. Prática: StatefulWidget, ciclo de vida do State, campos de texto, formulários com validação e pesquisa numa lista.</p>
+  <p class="lead">Teoria: o que é estado numa app, onde deve viver, e comparação entre setState, Provider, BLoC e Riverpod. Prática, no ecrã da última aula: um cartão que abre e fecha, a unidade °C/°F, uma pesquisa na grelha das ilhas e um formulário com validação.</p>
   <div class="meta"><span>Repositório: pdm-aula-08</span></div>
-  <aside class="notes">Aula de três horas: faz uma pausa de 10 minutos às 10:00. Pergunta quem acabou o passo 4 da última aula (o <code>IslandCard</code>) e pede a um aluno que o mostre. Se ninguém fez, mostra o branch <code>passo-4</code> em 2 minutos e segue. Escreve no quadro a pergunta do dia: "quando o utilizador muda o interruptor de °C para °F, quem tem de saber?" Vais voltar a ela no slide dos cinco níveis.</aside>
+  <aside class="notes">Aula de três horas. Tempos de referência: teoria até às 09:15; clone e passo 1 até às 09:40; passo 2 até às 10:00; pausa de 10 minutos; passo 3 até às 10:45; passo 4 e fecho até às 11:30. Escreve no quadro a pergunta do dia: "quando o utilizador muda de °C para °F, quem tem de saber?" Voltas a ela no slide de passar por parâmetro e no passo 2. O repositório é novo (<code>pdm-aula-08</code>) e já parte do ecrã do fim da aula 7, por isso não é preciso ter acabado o <code>IslandCard</code>.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -37,8 +37,8 @@
     <li>Distinguir estado efémero de estado de aplicação e dizer onde cada um deve viver.</li>
     <li>Comparar <code>setState</code>, Provider, BLoC e Riverpod e escolher com critério.</li>
     <li>Explicar o fluxo de dados unidirecional e porque o estado deve ser imutável.</li>
-    <li>Escrever um <code>StatefulWidget</code> com <code>initState</code>, <code>setState</code> e <code>dispose</code> corretos.</li>
-    <li>Construir um formulário validado e uma pesquisa que filtra uma lista em tempo real.</li>
+    <li>Transformar um widget em <code>StatefulWidget</code> e usar <code>initState</code>, <code>setState</code> e <code>dispose</code> corretamente.</li>
+    <li>Filtrar uma lista enquanto o utilizador escreve e validar um formulário.</li>
   </ul>
 </section>
 
@@ -47,30 +47,32 @@
   <div class="table-wrap"><table>
   <thead><tr><th></th><th>Efémero (de um widget)</th><th>De aplicação (partilhado)</th></tr></thead>
   <tbody>
-  <tr><td>Exemplos</td><td>Separador selecionado, texto meio escrito, posição de scroll, se um cartão está expandido</td><td>Utilizador autenticado, favoritos, unidade de temperatura, previsões carregadas, carrinho de compras</td></tr>
+  <tr><td>Exemplos</td><td>Separador selecionado, texto meio escrito, posição de scroll, se um cartão está aberto</td><td>Utilizador autenticado, favoritos, unidade de temperatura, previsões carregadas, carrinho de compras</td></tr>
   <tr><td>Quem precisa dele</td><td>Um widget e os filhos</td><td>Vários ecrãs, sem relação de parentesco</td></tr>
   <tr><td>Sobrevive a</td><td>Rebuilds; morre com o widget</td><td>Navegação entre ecrãs; muitas vezes ao fecho da app (persistência, aula 16)</td></tr>
   <tr><td>Onde vive</td><td>No <code>State</code> do widget, com <code>setState</code></td><td>Num objeto fora da árvore de widgets, observado por quem precisa</td></tr>
   </tbody></table></div>
+  <div class="callout"><strong>Pergunta à turma</strong> No nosso ecrã de previsão: se o cartão de detalhe está aberto ou fechado é efémero ou de aplicação? E a unidade °C/°F? E o texto escrito na pesquisa de ilhas?</div>
   <p><strong>Para os testes:</strong> estado efémero fica no widget com <code>setState</code>; estado de aplicação fica fora da árvore e é partilhado.</p>
-  <aside class="notes">Volta à pergunta do quadro: o interruptor °C/°F. É efémero? Não: o ecrã de previsão, o detalhe e o widget de ecrã inicial precisam todos dele. Exemplo prático: pergunta onde vive o "carrinho" numa app de compras. Todos percebem que não pode ser no botão "adicionar".</aside>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Cartão aberto ou fechado: efémero, só o próprio cartão quer saber, e não faz mal perdê-lo ao sair do ecrã. Unidade °C/°F: de aplicação, porque o cabeçalho, a fila dos dias, o cartão de detalhe e mais tarde o ecrã de definições (aula 9) precisam todos dela, e o utilizador espera que fique escolhida da próxima vez que abre a app. Texto da pesquisa: efémero, é da caixa de pesquisa. Hoje fazemos os três com <code>setState</code>, e a unidade vai mostrar onde é que isso começa a custar. Exemplo para quem hesitar: onde vive o carrinho numa app de compras? Não pode ser no botão "adicionar".</aside>
 </section>
 
 <section class="slide">
-  <h2>O problema dos cinco níveis</h2>
+  <h2>O problema de passar por parâmetro</h2>
   <ul>
-    <li>A unidade de temperatura é escolhida em <code>EcraDefinicoes</code> e usada em <code>CartaoLocalidade</code>, que está dentro de <code>ListaLocalidades</code>, dentro de <code>EcraPrevisao</code>, dentro de <code>Shell</code>, dentro de <code>TempoApp</code>.</li>
-    <li>Com <code>setState</code> só, a variável tem de subir até ao antepassado comum (<code>TempoApp</code>) e descer por parâmetro através de cinco construtores que não a usam para nada. Chama-se <em>prop drilling</em>.</li>
-    <li>Cada widget intermédio passa a depender de algo que não é seu. Acrescentar um campo novo obriga a mexer em cinco ficheiros.</li>
-    <li>E quando a unidade muda, <code>setState</code> em <code>TempoApp</code> reconstrói a app inteira, não só os cartões.</li>
+    <li>No nosso ecrã, a unidade °C/°F vai ser escolhida na <code>AppBar</code> do <code>ForecastScreen</code> e usada em <code>CurrentConditions</code>, no <code>DetailCard</code> e no <code>DayChip</code>, que está dentro da <code>DaysRow</code>.</li>
+    <li>Com <code>setState</code> só, a variável tem de viver no antepassado comum (<code>ForecastScreen</code>) e descer por parâmetro, construtor a construtor. A <code>DaysRow</code> passa a receber a unidade só para a entregar ao <code>DayChip</code>. Numa app maior são cinco ou seis níveis: chama-se <em>prop drilling</em>.</li>
+    <li>Cada widget intermédio passa a depender de algo que não é seu. Acrescentar um campo novo obriga a mexer em todos os construtores do caminho.</li>
+    <li>E quando a unidade muda, <code>setState</code> no <code>ForecastScreen</code> reconstrói o ecrã inteiro, não só os textos com temperaturas.</li>
   </ul>
   <p>A resposta a este problema é a razão de existirem as bibliotecas de gestão de estado. Todas resolvem a mesma coisa: pôr o estado num sítio acessível e reconstruir só quem o lê.</p>
+  <aside class="notes">Volta à pergunta do quadro: quem tem de saber da unidade? Desenha a árvore no quadro: <code>WeatherApp</code> → <code>ForecastScreen</code> → <code>ListView</code> → <code>CurrentConditions</code>, <code>DaysRow</code> → <code>DayChip</code>, <code>DetailCard</code>. No passo 2 fazem só o <code>CurrentConditions</code>, e a fila dos dias fica em °C de propósito: é o custo deste slide à vista.</aside>
 </section>
 
 <section class="slide">
   <h2><code>setState</code>: quando chega e quando deixa de chegar</h2>
   <ul>
-    <li><strong>Chega</strong> quando o estado é de um ecrã ou de um widget e ninguém mais precisa dele: um contador, um formulário, um painel que abre e fecha, um filtro de pesquisa local.</li>
+    <li><strong>Chega</strong> quando o estado é de um ecrã ou de um widget e ninguém mais precisa dele: um contador, um formulário, um cartão que abre e fecha, um filtro de pesquisa local.</li>
     <li><strong>Chega</strong> para protótipos e para ecrãs isolados. Não é "má prática"; é a ferramenta mais simples e o Flutter foi desenhado para ela.</li>
     <li><strong>Deixa de chegar</strong> quando dois ecrãs sem parentesco precisam do mesmo dado, quando o estado tem de sobreviver à navegação, ou quando queres testar a lógica sem construir widgets.</li>
     <li><strong>Deixa de chegar</strong> quando o <code>build</code> reconstrói uma árvore grande por causa de um booleano.</li>
@@ -81,10 +83,10 @@
 <section class="slide">
   <h2>ChangeNotifier, Provider e InheritedWidget</h2>
   <ul>
-    <li><code>InheritedWidget</code> é o mecanismo do próprio Flutter para pôr um valor na árvore e deixar qualquer descendente lê-lo com <code>context</code>. <code>Theme.of(context)</code> e <code>MediaQuery.of(context)</code> são isto.</li>
-    <li><code>ChangeNotifier</code> é uma classe com <code>notifyListeners()</code>. O teu estado estende-a: <code>class Definicoes extends ChangeNotifier { bool fahrenheit = false; void alternar() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
-    <li><code>Provider</code> junta os dois: põe o notifier na árvore e <code>context.watch&lt;Definicoes&gt;()</code> reconstrói só o widget que o chamou quando há <code>notifyListeners</code>.</li>
-    <li>Resolve os cinco níveis: o <code>CartaoLocalidade</code> lê a unidade diretamente; os intermédios nem sabem que existe.</li>
+    <li><code>InheritedWidget</code> é o mecanismo do próprio Flutter para pôr um valor na árvore e deixar qualquer descendente lê-lo com <code>context</code>. O <code>Theme.of(context)</code> que usamos em todos os <code>build</code> é isto.</li>
+    <li><code>ChangeNotifier</code> é uma classe com <code>notifyListeners()</code>. O teu estado estende-a: <code>class UnitSettings extends ChangeNotifier { bool fahrenheit = false; void toggle() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
+    <li><code>Provider</code> junta os dois: põe o notifier na árvore e <code>context.watch&lt;UnitSettings&gt;()</code> reconstrói só o widget que o chamou quando há <code>notifyListeners</code>.</li>
+    <li>Resolve o problema do slide anterior: o <code>DayChip</code> lê a unidade diretamente; a <code>DaysRow</code> nem sabe que existe.</li>
     <li>É recomendado pela equipa do Flutter para começar e é o que vamos usar no projeto.</li>
   </ul>
   <p><strong>Para os testes:</strong> Provider é um <code>InheritedWidget</code> com açúcar; <code>ChangeNotifier</code> avisa os ouvintes; <code>watch</code> reconstrói, <code>read</code> não.</p>
@@ -146,11 +148,10 @@
   <ul>
     <li><strong>Um só sentido:</strong> a UI dispara uma ação (toque, texto) → a ação muda o estado → a UI reconstrói a partir do estado novo. A UI nunca muda o estado diretamente nem o estado toca na UI.</li>
     <li>Com um só sentido, qualquer ecrã é uma função do estado: dado o mesmo estado, vês o mesmo ecrã. É o que torna testes e depuração possíveis.</li>
-    <li><strong>Imutável:</strong> em vez de mudar um campo de <code>Previsao</code>, crias uma nova com <code>copyWith</code>. Um objeto que ninguém altera pode ser partilhado, comparado e guardado num histórico sem sustos.</li>
-    <li>O <code>Definicoes</code> do slide anterior é mutável por dentro (é um <code>ChangeNotifier</code>), mas o que expõe são valores. BLoC e Riverpod levam a imutabilidade até ao fim.</li>
+    <li><strong>Imutável:</strong> em vez de mudar um campo de um <code>DayForecast</code>, crias um novo com <code>copyWith</code>. Um objeto que ninguém altera pode ser partilhado, comparado e guardado num histórico sem sustos. Os campos <code>final</code> do <code>DayForecast</code> em <code>lib/data.dart</code> já são isto.</li>
+    <li>O <code>UnitSettings</code> do slide anterior é mutável por dentro (é um <code>ChangeNotifier</code>), mas o que expõe são valores. BLoC e Riverpod levam a imutabilidade até ao fim.</li>
   </ul>
   <p><strong>Para os testes:</strong> fluxo unidirecional é ação → estado → UI; imutabilidade significa criar cópias com <code>copyWith</code> em vez de alterar objetos.</p>
-  <div class="callout"><strong>Analogia</strong> Não se rabisca o quadro da cozinha. Escreve-se um quadro novo com a alteração (<code>copyWith</code>) e substitui-se o antigo. Quem estava a olhar para o antigo percebe que mudou, porque o objeto é outro; e o antigo pode ficar guardado num histórico.</div>
 </section>
 
 <section class="slide">
@@ -166,253 +167,272 @@
 </section>
 
 <section class="slide" data-part="Prática">
-  <h2>O ecrã ganha vida</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-08.git
-cd pdm-aula-08/starter
-flutter pub get
-flutter run</code></pre>
-  <p><code>starter/</code> parte do ecrã da última aula e acrescenta um ecrã de definições vazio, com <code>TODO</code>s numerados e testes de widget a falhar; <code>solucao/</code> é o estado final.</p>
+  <h2>Começar: o repositório de hoje</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-08.git
+cd pdm-aula-08
+flutter pub get</code></pre>
   <ol class="steps">
-    <li>Corre e confirma que vês o ecrã de previsão e um botão de definições na <code>AppBar</code> que ainda não faz nada.</li>
-    <li>Abre <code>lib/ecra_definicoes.dart</code> e <code>lib/pesquisa_localidades.dart</code>: é onde vais trabalhar.</li>
+    <li>Abre a pasta <code>pdm-aula-08</code> no VS Code. É a app do fim da aula 7, mais um formulário de avisos no fundo do ecrã. Trabalhas em <code>lib/forecast_screen.dart</code> e <code>lib/alerts_form.dart</code>, nos comentários <code>TODO 1</code> a <code>TODO 4</code>.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → o teu Android ou, se ainda não corre no teu portátil, o <strong>Chrome</strong>. Depois <kbd>F5</kbd>.</li>
+    <li>Confirma o que vês: o ecrã de previsão da última aula, com o cartão de detalhe com as quatro linhas e, no fundo, o cartão "Receber avisos".</li>
   </ol>
-  <aside class="notes">Enquanto compilam, abre o DevTools na tua máquina e liga "Track widget rebuilds" no Widget Inspector. Vais precisar disto no bloco do setState para mostrar ao vivo o que é reconstruído a cada toque. Dá 8 minutos ao clone e arranque.</aside>
+  <p>O Android não arranca? Quase sempre é o Java que o Gradle está a usar: vê os <a href="../guia-instalacao.html#problemas">problemas frequentes</a> do guia de instalação e chama o docente. Entretanto segue a aula no Chrome: todos os passos de hoje funcionam igual no browser.</p>
+  <aside class="notes">Dá 8 minutos ao clone e ao arranque. É um repositório novo: ninguém precisa de ter acabado a aula 7, e o trabalho da aula 6 fica onde está. Enquanto compilam, abre o DevTools na tua máquina e liga "Highlight repaints" ou "Track widget rebuilds" no Widget Inspector: no passo 1 e no passo 2 mostras ao vivo o que é reconstruído a cada toque. Experimenta já carregar em "Subscrever" com os campos vazios: aparece "Avisos enviados para " sem e-mail. É o defeito que o passo 4 corrige.</aside>
 </section>
 
 <section class="slide">
   <h2>1. StatelessWidget vs StatefulWidget</h2>
-<pre data-title="lib/seletor_unidade.dart"><code class="language-dart">class SeletorUnidade extends StatefulWidget {
-  const SeletorUnidade({super.key});
+<pre data-title="lib/forecast_screen.dart · DetailCard, no branch passo-1"><code class="language-dart">class DetailCard extends StatefulWidget {
+  const DetailCard({super.key});
 
   @override
-  State&lt;SeletorUnidade&gt; createState() => _SeletorUnidadeState();
+  State&lt;DetailCard&gt; createState() =&gt; _DetailCardState();
 }
 
-class _SeletorUnidadeState extends State&lt;SeletorUnidade&gt; {
-  bool _fahrenheit = false;                     // o estado vive aqui, não no widget
+class _DetailCardState extends State&lt;DetailCard&gt; {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    final t = _fahrenheit ? 21.0 * 9 / 5 + 32 : 21.0;
-    return Column(
-      children: [
-        Text('${t.toStringAsFixed(0)} ${_fahrenheit ? '°F' : '°C'}'),
-        Switch(
-          value: _fahrenheit,
-          onChanged: (v) => setState(() => _fahrenheit = v),   // muda e pede rebuild
-        ),
-      ],
-    );
+    // ... o build de antes, que agora pode ler e mudar _expanded
   }
 }</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. Stateful: o que interessa</h2>
   <ul>
-    <li>O widget continua imutável. O que muda é o objeto <code>State</code>, que o Flutter cria uma vez e mantém vivo entre rebuilds. É por isso que o hot reload preserva o que escreveste.</li>
+    <li>O widget continua imutável. O que muda é o objeto <code>State</code>, que o Flutter cria uma vez e mantém vivo entre rebuilds. É por isso que o hot reload não perde o que está no ecrã.</li>
     <li><code>setState(() { ... })</code> faz duas coisas: executa a alteração e marca o widget para reconstruir no próximo frame. Alterar a variável sem <code>setState</code> muda o valor, mas o ecrã não acompanha.</li>
     <li>Só o subtree deste widget é reconstruído. Quanto mais abaixo estiver o <code>StatefulWidget</code>, menos trabalho.</li>
-    <li>O <code>Switch</code> não guarda nada: mostra <code>value</code> e avisa em <code>onChanged</code>. Todos os controlos Material são assim: <em>controlled widgets</em>.</li>
-    <li>Atalho no VS Code: escreve <code>stful</code> e carrega em <kbd>Tab</kbd>.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: transforma o <code>CartaoDetalhe</code> num <code>StatefulWidget</code> com um booleano <code>_expandido</code>; ao tocar, mostra ou esconde a linha do vento e da humidade. Liga "Track widget rebuilds" no DevTools e vê o que é reconstruído a cada toque.</div>
+  <div class="callout"><strong>Pergunta à turma</strong> Porque é que <code>_expanded</code> fica no <code>_DetailCardState</code> e não no <code>DetailCard</code>? O que acontece se fizeres <code>_expanded = !_expanded</code> sem <code>setState</code>?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> O <code>DetailCard</code> é recriado em cada rebuild do pai (e tem construtor <code>const</code>: os campos são <code>final</code>), por isso não pode guardar nada que mude. O <code>State</code> é criado uma vez e o Flutter reaproveita-o enquanto o widget estiver no mesmo sítio da árvore. Sem <code>setState</code> a variável muda, mas ninguém pede um novo <code>build</code>: o ecrã fica igual até alguma outra coisa o reconstruir (por exemplo um hot reload, e aí "aparece de repente"). Vale a pena mostrar isto ao vivo.</aside>
 </section>
 
 <section class="slide">
-  <h2>2. Ciclo de vida do State</h2>
-<pre data-title="lib/pesquisa_localidades.dart"><code class="language-dart">class _PesquisaState extends State&lt;Pesquisa&gt; {
-  late final TextEditingController _controlador;
-  Timer? _debounce;
+  <h2>Passo 1: o cartão que abre e fecha</h2>
+<pre data-title="lib/forecast_screen.dart · DetailCard, no sítio do TODO 1"><code class="language-dart">// Pista: Ctrl+. em cima de "DetailCard" → Convert to StatefulWidget
+bool _expanded = false;
 
-  @override
-  void initState() {
-    super.initState();                       // 1. uma vez, antes do primeiro build
-    _controlador = TextEditingController();
-    _controlador.addListener(_aoEscrever);
-  }
+return Card(
+  clipBehavior: Clip.antiAlias, // keeps the ripple inside the corners
+  child: InkWell(
+    onTap: () =&gt; setState(() =&gt; _expanded = !_expanded),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Mínima e Máxima, como estão
+          if (_expanded) ...[
+            // Vento e Chuva, cada um com o SizedBox antes
+          ],
+          Icon(_expanded ? Icons.expand_less : Icons.expand_more),
+        ],
+      ),
+    ),
+  ),
+);</code></pre>
+  <div class="callout task"><strong>Faz</strong> Transforma o <code>DetailCard</code> num <code>StatefulWidget</code> com o atalho do VS Code, acrescenta o campo <code>_expanded</code>, embrulha o <code>Padding</code> num <code>InkWell</code> e põe as linhas do vento e da chuva dentro do <code>if (_expanded) ...[ ]</code>.</div>
+  <p><strong>Na app:</strong> o cartão começa só com a mínima e a máxima e uma seta para baixo; um toque mostra o vento e a chuva e a seta vira para cima; outro toque fecha.</p>
+  <aside class="notes">O atalho: cursor em cima do nome da classe, <kbd>Ctrl</kbd>+<kbd>.</kbd> (no Mac <kbd>Cmd</kbd>+<kbd>.</kbd>), "Convert to StatefulWidget". Também há o snippet <code>stful</code>. O <code>...[ ]</code> é o <em>spread</em>: põe vários filhos de uma vez dentro do <code>if</code>. Erros típicos: pôr <code>bool _expanded</code> dentro do <code>build</code> (volta a <code>false</code> em cada rebuild e o cartão nunca abre) e esquecer o <code>setState</code>. Com "Track widget rebuilds" ligado mostra que só o cartão é reconstruído. Quem acabar cedo: <code>AnimatedSize</code> à volta da <code>Column</code> para abrir com animação. A solução está no branch <code>passo-1</code>.</aside>
+</section>
 
-  void _aoEscrever() {                       // 2. cada tecla: espera 300 ms antes de filtrar
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () => setState(() {}));
-  }
+<section class="slide">
+  <h2>2. Subir o estado: a unidade °C/°F</h2>
+  <ul>
+    <li>A unidade não é só de um widget: o <code>CurrentConditions</code> mostra temperaturas, mas o botão para a escolher fica na <code>AppBar</code>, que é do <code>ForecastScreen</code>.</li>
+    <li>Regra do <code>setState</code>: o estado vive no <strong>antepassado comum</strong> mais próximo de quem o muda e de quem o mostra. Aqui é o <code>ForecastScreen</code>, que passa a <code>StatefulWidget</code>.</li>
+    <li>Quem só mostra recebe o valor por <strong>parâmetro</strong>, num campo <code>final</code>, como o <code>DayChip</code> recebe o <code>forecast</code>. Não guarda nada.</li>
+    <li>O <code>SegmentedButton</code> é um <em>controlled widget</em>: mostra o que está em <code>selected</code> e avisa em <code>onSelectionChanged</code>. O <code>Switch</code>, a <code>Checkbox</code> e o <code>Slider</code> funcionam da mesma maneira.</li>
+  </ul>
+  <div class="callout"><strong>Pergunta à turma</strong> Depois deste passo, o <code>CurrentConditions</code> mostra °F. E a fila dos dias e o cartão de detalhe? O que teríamos de mudar para o <code>DayChip</code> também mostrar °F?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> A fila dos dias e o <code>DetailCard</code> continuam em °C: não recebem a unidade. Para o <code>DayChip</code> mostrar °F seria preciso acrescentar <code>fahrenheit</code> ao construtor da <code>DaysRow</code>, passá-lo no <code>ForecastScreen</code>, acrescentá-lo ao construtor do <code>DayChip</code> e passá-lo no <code>itemBuilder</code>: dois construtores alterados, e a <code>DaysRow</code> recebe um valor que não usa. É o <em>prop drilling</em> do slide da teoria, e é exatamente o que o Provider resolve na aula 13. Fica de propósito por fazer no repositório; quem acabar cedo pode fazê-lo.</aside>
+</section>
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _controlador.dispose();                  // 4. liberta; sem isto, fuga de memória
-    super.dispose();
-  }
+<section class="slide">
+  <h2>Passo 2: o botão °C/°F</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-1
+flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · ForecastScreen, no sítio do TODO 2"><code class="language-dart">// Pista: Ctrl+. em cima de "ForecastScreen" → Convert to StatefulWidget
+bool _fahrenheit = false; // the state lives in the State, not in the widget
 
-  // 3. build corre entre initState e dispose, tantas vezes quantas forem precisas
+appBar: AppBar(
+  title: const Text('Tempo Açores'),
+  actions: [
+    SegmentedButton&lt;bool&gt;(
+      segments: const [
+        ButtonSegment(value: false, label: Text('°C')),
+        ButtonSegment(value: true, label: Text('°F')),
+      ],
+      selected: {_fahrenheit},
+      showSelectedIcon: false,
+      onSelectionChanged: (s) =&gt; setState(() =&gt; _fahrenheit = s.first),
+    ),
+    const SizedBox(width: 8),
+  ],
+),</code></pre>
+<pre data-title="lib/forecast_screen.dart · CurrentConditions recebe a unidade"><code class="language-dart">const CurrentConditions({super.key, required this.fahrenheit});
+
+final bool fahrenheit; // chosen in ForecastScreen, received here
+
+String temp(double c) =&gt;
+    fahrenheit ? '...' : '${c.round()} °C';
+
+// e no ListView do ForecastScreen:
+child: CurrentConditions(fahrenheit: _fahrenheit),</code></pre>
+  <div class="callout task"><strong>Faz</strong> Converte o <code>ForecastScreen</code>, põe o <code>SegmentedButton</code> nas <code>actions</code> da <code>AppBar</code>, acrescenta o parâmetro <code>fahrenheit</code> ao <code>CurrentConditions</code> e passa-lhe <code>_fahrenheit</code>. No lugar do <code>'...'</code>, a conversão: °F = °C × 9 / 5 + 32, arredondada, com <code>°F</code> no fim.</div>
+  <p><strong>Na app:</strong> carregas em °F e o 23 °C grande passa a 73 °F, a mínima a 63 °F e a máxima a 73 °F. A fila dos dias continua em °C.</p>
+  <aside class="notes">Quem já está no <code>passo-1</code> pelo passo anterior não precisa de repetir o checkout. Erro que todos vão ter: o <code>children: const [</code> do <code>ListView</code> deixa de compilar, porque <code>CurrentConditions(fahrenheit: _fahrenheit)</code> não é constante. Tira o <code>const</code> da lista e põe-no nos filhos que continuam constantes. O <code>selected</code> é um <code>Set</code> (<code>{_fahrenheit}</code>) porque o <code>SegmentedButton</code> também serve para escolhas múltiplas. A conversão: <code>'${(c * 9 / 5 + 32).round()} °F'</code>. Pausa de 10 minutos a seguir a este passo.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. Ciclo de vida do State</h2>
+<pre data-title="lib/forecast_screen.dart · _IslandsGridState, no branch passo-3"><code class="language-dart">late final TextEditingController _search;
+
+@override
+void initState() {
+  super.initState(); // once, before the first build
+  _search = TextEditingController();
+}
+
+@override
+void dispose() {
+  _search.dispose(); // what initState creates, dispose frees
+  super.dispose();
 }</code></pre>
-  <aside class="notes">Mostra o erro que aparece se chamares setState depois do dispose (um Timer que dispara depois de sair do ecrã). É o crash mais comum nos projetos de anos anteriores. Dá 10 minutos a este bloco.</aside>
-</section>
-
-<section class="slide">
-  <h2>2. Ciclo de vida: o que interessa</h2>
   <div class="table-wrap"><table>
   <thead><tr><th>Método</th><th>Quando corre</th><th>Para quê</th></tr></thead>
   <tbody>
   <tr><td><code>initState</code></td><td>Uma vez, quando o State é criado</td><td>Criar controllers, subscrever streams, lançar o primeiro pedido</td></tr>
-  <tr><td><code>didChangeDependencies</code></td><td>Depois do initState e sempre que um <code>InheritedWidget</code> de que dependes muda (tema, locale)</td><td>Ler <code>Theme.of</code> ou <code>MediaQuery.of</code>, que não podem ser lidos no initState</td></tr>
   <tr><td><code>build</code></td><td>Sempre que é preciso desenhar</td><td>Só descrever a UI. Nada de pedidos de rede aqui</td></tr>
   <tr><td><code>didUpdateWidget</code></td><td>Quando o pai reconstrói com parâmetros novos</td><td>Reagir a um parâmetro que mudou (nova localidade selecionada)</td></tr>
   <tr><td><code>dispose</code></td><td>Uma vez, quando o widget sai da árvore</td><td>Libertar controllers, timers, subscrições, focus nodes</td></tr>
   </tbody></table></div>
+  <div class="callout"><strong>Pergunta à turma</strong> Porque é que o controller não pode ser criado dentro do <code>build</code>? E o que acontece se te esqueceres do <code>dispose</code>?</div>
   <p><strong>Para os testes:</strong> tudo o que crias em <code>initState</code> libertas em <code>dispose</code>; <code>build</code> pode correr muitas vezes e não deve ter efeitos secundários.</p>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> O <code>build</code> corre a cada <code>setState</code>, ou seja, a cada tecla: um controller novo em cada <code>build</code> perde o texto escrito e o cursor, e a caixa parece "não aceitar" letras. Sem <code>dispose</code> o controller fica em memória com os seus ouvintes depois de o ecrã desaparecer: é uma fuga de memória, que não se vê hoje mas se acumula numa app que abre e fecha ecrãs. O <code>late final</code> diz ao Dart que o campo é preenchido uma vez, mais tarde (no <code>initState</code>). Se perguntarem: há ainda o <code>didChangeDependencies</code>, que corre depois do <code>initState</code> e quando um <code>InheritedWidget</code> (tema, locale) muda; é onde se lê <code>Theme.of</code> se for preciso fora do <code>build</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. TextField e pesquisa numa lista</h2>
-<pre data-title="lib/pesquisa_localidades.dart"><code class="language-dart">String _filtro = '';                          // estado: o que o utilizador escreveu
+  <h2>3. TextField e pesquisa: o que interessa</h2>
+  <ul>
+    <li>O <code>TextEditingController</code> guarda o texto da caixa. Precisas dele para ler o texto noutro sítio, limpá-lo (botão X) ou pôr um valor inicial. E aí, <code>dispose</code>.</li>
+    <li><code>onChanged</code> corre a cada tecla. Como o texto já está no controller, só precisas de pedir um rebuild: <code>setState(() {})</code>.</li>
+    <li>A lista filtrada é um <em>getter</em> calculado a partir do estado. Não guardes a lista filtrada como estado: são dois valores que podem ficar dessincronizados.</li>
+    <li>Filtrar nove ilhas a cada tecla é instantâneo. Filtrar 100 000, ou pedir à API, exige esperar que o utilizador pare de escrever (<em>debounce</em>, com um <code>Timer</code>).</li>
+    <li><code>InputDecoration</code> controla o aspeto: <code>prefixIcon</code>, <code>suffixIcon</code>, <code>hintText</code>, <code>labelText</code>, borda e texto de erro.</li>
+  </ul>
+</section>
 
-List&lt;String&gt; get _filtradas => localidades   // de lib/dados.dart
-    .where((l) => l.toLowerCase().contains(_filtro.toLowerCase()))
+<section class="slide">
+  <h2>Passo 3: pesquisar ilhas</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-2
+flutter pub get</code></pre>
+<pre data-title="lib/forecast_screen.dart · IslandsGrid, no sítio do TODO 3"><code class="language-dart">// Pista: Convert to StatefulWidget, e o controller do slide anterior
+List&lt;Island&gt; get _filtered =&gt; islands
+    .where((i) =&gt; '...')
     .toList();
 
-@override
-Widget build(BuildContext context) {
-  return Column(
-    children: [
-      TextField(
-        decoration: const InputDecoration(
-          prefixIcon: Icon(Icons.search),
-          hintText: 'Pesquisar localidade',
-          border: OutlineInputBorder(),
-        ),
-        onChanged: (texto) => setState(() => _filtro = texto),
-      ),
-      Expanded(
-        child: ListView(
-          children: [for (final l in _filtradas) ListTile(title: Text(l))],
-        ),
-      ),
-    ],
-  );
-}</code></pre>
-</section>
+// no build: uma Column com o TextField em cima e o GridView em baixo
+child: TextField(
+  controller: _search,
+  decoration: InputDecoration(
+    prefixIcon: const Icon(Icons.search),
+    hintText: 'Pesquisar ilha',
+    border: const OutlineInputBorder(),
+    // suffixIcon: null sem texto; com texto, um IconButton que limpa
+  ),
+  onChanged: (_) =&gt; setState(() {}), // the text is in _search
+),
 
-<section class="slide">
-  <h2>3. Pesquisa: o que interessa</h2>
-  <ul>
-    <li>Para reagir ao texto chega <code>onChanged</code>. Precisas de um <code>TextEditingController</code> quando queres ler o texto noutro sítio, limpá-lo (botão X) ou pôr um valor inicial. E aí, <code>dispose</code>.</li>
-    <li>A lista filtrada é um <em>getter</em> calculado a partir do estado. Não guardes a lista filtrada como estado: são dois valores que podem ficar dessincronizados.</li>
-    <li>Filtrar 100 localidades a cada tecla é instantâneo. Filtrar 100 000, ou pedir à API, exige o <em>debounce</em> do slide anterior.</li>
-    <li>O <code>Expanded</code> à volta do <code>ListView</code> é obrigatório: sem ele, altura infinita dentro da <code>Column</code>.</li>
-    <li><code>InputDecoration</code> controla o aspeto: ícone, hint, label, borda, texto de ajuda e de erro.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: pesquisa com <code>TextEditingController</code>, botão para limpar (<code>suffixIcon</code>) que só aparece quando há texto, e um estado vazio "Nenhuma localidade encontrada" quando o filtro não devolve nada.</div>
+// e o GridView mostra só as filtradas:
+children: [for (final i in filtered) IslandCard(island: i)],</code></pre>
+  <div class="callout task"><strong>Faz</strong> Converte o <code>IslandsGrid</code>, cria o controller em <code>initState</code> e liberta-o em <code>dispose</code>, e escreve a condição do <code>where</code> no lugar do <code>'...'</code>: o nome da ilha contém o texto, sem distinguir maiúsculas. Depois o botão para limpar (<code>Icons.clear</code>, <code>_search.clear</code>) e, sem resultados, o texto <code>'Nenhuma ilha encontrada'</code>.</div>
+  <p><strong>Na app:</strong> escreves "ter" e só fica a Terceira; aparece um X que limpa e volta a mostrar as nove; "xyz" mostra "Nenhuma ilha encontrada".</p>
+  <div class="callout"><strong>Pergunta à turma</strong> Escreve "sao". Porque é que não aparecem São Miguel nem São Jorge?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> "sao" não está contido em "são miguel": o <code>ã</code> é outra letra para o <code>contains</code>. <code>toLowerCase</code> trata das maiúsculas, não dos acentos. Resolver isto é tirar os acentos dos dois lados antes de comparar (há packages que o fazem); numa app portuguesa é obrigatório, hoje fica como pergunta. A condição: <code>i.name.toLowerCase().contains(_search.text.toLowerCase())</code>. O botão de limpar: <code>suffixIcon: _search.text.isEmpty ? null : IconButton(icon: const Icon(Icons.clear), onPressed: () =&gt; setState(_search.clear))</code>. O <code>setState</code> é necessário porque limpar o controller não chama o <code>onChanged</code>. O estado vazio: <code>if (filtered.isEmpty) const Padding(...)</code> dentro da <code>Column</code>. Lembra que o <code>GridView</code> continua com <code>shrinkWrap</code>, agora dentro de uma <code>Column</code> dentro do <code>ListView</code>.</aside>
 </section>
 
 <section class="slide">
   <h2>4. Form, TextFormField e validação</h2>
-<pre data-title="lib/ecra_definicoes.dart"><code class="language-dart">final _chave = GlobalKey&lt;FormState&gt;();
+<pre data-title="lib/alerts_form.dart · o que já lá está"><code class="language-dart">final _formKey = GlobalKey&lt;FormState&gt;(); // a field, never inside build
+final _email = TextEditingController();
 
-Form(
-  key: _chave,
-  child: Column(
-    children: [
-      TextFormField(
-        decoration: const InputDecoration(labelText: 'Nome da localidade'),
-        validator: (v) {
-          if (v == null || v.trim().isEmpty) return 'Obrigatório';
-          if (v.trim().length &lt; 3) return 'Pelo menos 3 letras';
-          return null;                                  // null significa válido
-        },
-      ),
-      FilledButton(
-        onPressed: () {
-          final form = _chave.currentState!;
-          if (form.validate()) {                        // corre todos os validators
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Formulário válido')),
-            );
-          }
-        },
-        child: const Text('Guardar'),
-      ),
-    ],
-  ),
-)</code></pre>
-</section>
+void _submit() {
+  // validate() runs every validator and shows the errors
+  if (_formKey.currentState!.validate()) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Avisos enviados para ${_email.text}')),
+    );
+  }
+}
 
-<section class="slide">
-  <h2>4. Formulários: o que interessa</h2>
+child: Form(
+  key: _formKey,</code></pre>
   <ul>
-    <li><code>Form</code> agrupa campos; <code>GlobalKey&lt;FormState&gt;</code> dá acesso ao estado do formulário a partir do botão. É dos poucos usos legítimos de <code>GlobalKey</code>.</li>
-    <li>Cada <code>TextFormField</code> tem um <code>validator</code> que devolve uma mensagem de erro ou <code>null</code>. <code>validate()</code> corre todos, mostra os erros por baixo dos campos e devolve <code>true</code> se estiver tudo bem.</li>
-    <li><code>autovalidateMode: AutovalidateMode.onUserInteraction</code> valida enquanto o utilizador escreve, depois da primeira tentativa. Sem isto, só valida ao submeter.</li>
-    <li><code>keyboardType: TextInputType.number</code> e <code>textInputAction: TextInputAction.next</code> mudam o teclado do telemóvel. Em mobile, isto é UX.</li>
-    <li><code>onSaved</code> e <code>form.save()</code> copiam os valores para variáveis quando não queres um controller por campo.</li>
+    <li><code>Form</code> agrupa campos; a <code>GlobalKey&lt;FormState&gt;</code> dá acesso ao formulário a partir do botão. É dos poucos usos legítimos de <code>GlobalKey</code>.</li>
+    <li>Cada <code>TextFormField</code> tem um <code>validator</code> que devolve a mensagem de erro, ou <code>null</code> se o valor estiver bem. <code>validate()</code> corre todos, mostra os erros por baixo dos campos e devolve <code>true</code> se nenhum falhar.</li>
+    <li><code>autovalidateMode: AutovalidateMode.onUserInteraction</code> valida cada campo enquanto o utilizador escreve nele. Sem isto, só valida ao submeter.</li>
+    <li><code>keyboardType: TextInputType.emailAddress</code> e <code>textInputAction: TextInputAction.next</code> mudam o teclado do telemóvel. Em mobile, isto é UX.</li>
   </ul>
+  <div class="callout"><strong>Pergunta à turma</strong> Hoje, sem validadores, o que faz "Subscrever" com os campos vazios? Porque é que o <code>validate()</code> devolve <code>true</code>?</div>
   <p><strong>Para os testes:</strong> um <code>validator</code> devolve <code>null</code> quando o valor é válido e uma <code>String</code> com o erro quando não é.</p>
-  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: formulário com nome e código postal (formato <code>9500-123</code>, valida com uma <code>RegExp</code>), teclado adequado, <code>autovalidateMode</code>, e um <code>SnackBar</code> com os valores ao guardar.</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Mostra o <code>SnackBar</code> "Avisos enviados para " com o e-mail vazio. O <code>validate()</code> devolve <code>true</code> quando nenhum <code>validator</code> devolve uma mensagem, e um campo sem <code>validator</code> nunca devolve nada: um formulário sem validadores é sempre válido. Sobre a chave: se a <code>GlobalKey</code> fosse criada dentro do <code>build</code>, cada rebuild criava uma chave nova e o formulário "esquecia" os erros já mostrados.</aside>
 </section>
 
 <section class="slide">
-  <h2>5. Switch, Checkbox e Slider ligados a estado</h2>
-<pre data-title="lib/ecra_definicoes.dart"><code class="language-dart">bool _notificacoes = true;
-double _raio = 25;
-bool _fahrenheit = false;
+  <h2>Passo 4: validar o formulário de avisos</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-3
+flutter pub get</code></pre>
+<pre data-title="lib/alerts_form.dart · no sítio do TODO 4"><code class="language-dart">// no Form, por baixo da key:
+autovalidateMode: AutovalidateMode.onUserInteraction,
 
-SwitchListTile(
-  title: const Text('Avisos meteorológicos'),
-  value: _notificacoes,
-  onChanged: (v) => setState(() => _notificacoes = v),
-),
-CheckboxListTile(
-  title: const Text('Mostrar em Fahrenheit'),
-  value: _fahrenheit,
-  onChanged: (v) => setState(() => _fahrenheit = v ?? false),
-),
-ListTile(
-  title: Text('Raio de pesquisa: ${_raio.round()} km'),
-  subtitle: Slider(
-    value: _raio,
-    min: 5,
-    max: 100,
-    divisions: 19,
-    label: '${_raio.round()} km',
-    onChanged: (v) => setState(() => _raio = v),
-  ),
-),</code></pre>
-  <p>Todos seguem o mesmo contrato: <code>value</code> vem do estado, <code>onChanged</code> muda o estado com <code>setState</code>. O widget nunca guarda nada.</p>
-  <div class="callout task"><strong>Exercício 4</strong> Resolve o <code>TODO 4</code>: os três controlos no ecrã de definições, com o <code>SegmentedButton</code> °C/°F em vez da checkbox. Passa a unidade escolhida ao ecrã de previsão por parâmetro e vê o que custa (é o problema dos cinco níveis).</div>
+// no campo Nome:
+validator: (v) {
+  if (v == null || v.trim().isEmpty) return 'Obrigatório';
+  // e com menos de 3 letras: 'Pelo menos 3 letras'
+  return null; // null means valid
+},
+
+// no campo E-mail:
+keyboardType: TextInputType.emailAddress,
+// e um validator: 'Obrigatório', e 'E-mail inválido' sem @ ou sem ponto</code></pre>
+  <div class="callout task"><strong>Faz</strong> Troca os dois comentários dos campos pelos <code>validator</code>, acrescenta o <code>autovalidateMode</code> ao <code>Form</code> e o <code>keyboardType</code> ao e-mail.</div>
+  <p><strong>Na app:</strong> "Subscrever" com os campos vazios mostra "Obrigatório" por baixo dos dois e não mostra o <code>SnackBar</code>; "Ana" e "ana@uac.pt" mostram "Avisos enviados para ana@uac.pt". No telemóvel, o campo do e-mail abre o teclado com <kbd>@</kbd>.</p>
+  <aside class="notes">Os validadores completos: no nome, <code>if (v.trim().length &lt; 3) return 'Pelo menos 3 letras';</code>; no e-mail, <code>if (!v.contains('@') || !v.contains('.')) return 'E-mail inválido';</code> depois do "Obrigatório". Pergunta se "a@b." passa: passa, e por isso a validação no telemóvel é só para ajudar o utilizador; quem decide é o servidor. Quem acabar cedo: hot reload com o formulário meio preenchido e depois hot restart. O que se perde em cada um? O <code>State</code> sobrevive ao reload, não ao restart. A solução está no branch <code>passo-4</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>6. Exercício final: ecrã de definições</h2>
+  <h2>Onde ficámos</h2>
   <ol class="steps">
-    <li><code>EcraDefinicoes</code> é um <code>StatefulWidget</code> com o formulário, os controlos e a pesquisa de localidade favorita, tudo num <code>ListView</code>.</li>
-    <li>A pesquisa usa o widget <code>Pesquisa</code> do passo 3; ao tocar numa localidade, o nome fica no campo do formulário (precisas do controller).</li>
-    <li>"Guardar" valida, mostra o <code>SnackBar</code> e volta ao ecrã anterior com <code>Navigator.pop(context)</code>. Amanhã vemos o que isto faz.</li>
-    <li>Confirma que todos os controllers e timers são libertados em <code>dispose</code>. O teste <code>test/definicoes_test.dart</code> verifica.</li>
+    <li><code>DetailCard</code>: <code>StatefulWidget</code> com <code>_expanded</code>, que abre e fecha ao toque (passo 1).</li>
+    <li><code>ForecastScreen</code>: guarda a unidade em <code>_fahrenheit</code> e passa-a por parâmetro ao <code>CurrentConditions</code> (passo 2). A fila dos dias ainda está em °C: é o custo de passar por parâmetro.</li>
+    <li><code>IslandsGrid</code>: pesquisa com controller criado em <code>initState</code> e libertado em <code>dispose</code>, lista filtrada calculada num getter (passo 3).</li>
+    <li><code>AlertsForm</code>: <code>Form</code> com <code>GlobalKey</code>, um <code>validator</code> por campo e <code>autovalidateMode</code> (passo 4).</li>
   </ol>
-  <div class="callout task"><strong>Exercício 5</strong> Termina o ecrã até <code>flutter test</code> ficar verde. Depois, faz hot reload com o formulário meio preenchido e hot restart: o que se perde em cada um, e porquê?</div>
-  <aside class="notes">Reserva 25 minutos. Dúvidas típicas: o GlobalKey criado dentro do build (cria uma chave nova a cada rebuild e o formulário "esquece" os erros); setState depois de pop. Termina com a pergunta do hot reload: o State sobrevive ao reload, não ao restart.</aside>
+  <p>Tudo isto é estado efémero, e <code>setState</code> chega. O branch <code>passo-4</code> é o estado final: compara o teu código com ele.</p>
+  <aside class="notes">Os erros típicos destes passos: no passo 1, <code>_expanded</code> declarado dentro do <code>build</code>; no passo 2, o <code>const</code> da lista do <code>ListView</code>; no passo 3, o controller criado no <code>build</code> e o X que limpa sem <code>setState</code>; no passo 4, o validador que devolve <code>''</code> em vez de <code>null</code> (uma string vazia conta como erro). Amanhã a aula é das 16:00 às 18:00.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até amanhã</h2>
-  <p>Amanhã, quarta, 7 de outubro, a aula é à hora habitual: das 16:00 às 18:00.</p>
   <div class="cols">
     <div>
-      <h3>Para fazer</h3>
-      <ul class="checklist">
-        <li>Adiciona ao formulário um campo "e-mail para avisos" com validação própria (tem <code>@</code> e um ponto depois) e teclado <code>emailAddress</code>. É o <code>TODO 5</code>.</li>
-        <li>Lê <a href="https://docs.flutter.dev/data-and-backend/state-mgmt/options" target="_blank" rel="noopener">State management options</a> e anota uma vantagem e uma desvantagem de cada abordagem. Sai nos testes.</li>
-        <li>Amanhã às 16:00: navegação entre ecrãs e temas. O ecrã de definições de hoje vai ligar-se ao resto.</li>
+      <h3>Próxima aula</h3>
+      <ul>
+        <li>Amanhã, quarta, 7 de outubro, das 16:00 às 18:00: navegação entre ecrãs e temas.</li>
+        <li>A unidade °C/°F vai precisar de chegar a um segundo ecrã, o de definições. Lembra-te do problema de passar por parâmetro.</li>
+        <li>O estado final de hoje fica no branch <code>passo-4</code>: <code>git stash -u</code> e depois <code>git checkout passo-4</code>.</li>
       </ul>
     </div>
     <div>
-      <h3>Para ler</h3>
+      <h3>Para quem quiser ler mais</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/simple" target="_blank" rel="noopener">Simple app state management</a>: Provider explicado pela equipa do Flutter.</li>
-        <li><a href="https://docs.flutter.dev/app-architecture" target="_blank" rel="noopener">Flutter architecture guide</a>: onde a equipa do Flutter recomenda pôr o estado e a lógica; aprofundamos na aula 13.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/ephemeral-vs-app" target="_blank" rel="noopener">Differentiate between ephemeral state and app state</a>: a distinção do primeiro slide, pela equipa do Flutter.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/options" target="_blank" rel="noopener">State management options</a>: a lista das abordagens, com ligações para cada uma.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/simple" target="_blank" rel="noopener">Simple app state management</a>: Provider explicado pela equipa do Flutter; usamo-lo a partir da aula 13.</li>
         <li><a href="https://docs.flutter.dev/cookbook/forms/validation" target="_blank" rel="noopener">Build a form with validation</a>: a receita oficial.</li>
-        <li><a href="https://pub.dev/packages/provider" target="_blank" rel="noopener">provider</a> no pub.dev: o package que vamos usar a partir da aula 13.</li>
-        <li><a href="https://codewithandrea.com/videos/flutter-state-management-basics/" target="_blank" rel="noopener">Flutter state management basics</a> (Code With Andrea): setState, ValueNotifier, ChangeNotifier, Provider e BLoC comparados com exemplos curtos.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/forms/text-field-changes" target="_blank" rel="noopener">Handle changes to a text field</a>: <code>onChanged</code> e <code>TextEditingController</code>.</li>
       </ul>
     </div>
   </div>
