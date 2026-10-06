@@ -44,45 +44,24 @@
 
 <section class="slide" data-part="Theory">
   <h2>Ephemeral state vs app state</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 330" role="img" aria-label="Left, ephemeral state: DetailCard keeps _expanded and IslandsGrid keeps the search text, each only for itself. Right, app state: the °F unit is read by CurrentConditions, DayChip, DetailCard and the settings screen.">
-    <rect x="20" y="16" width="420" height="300" rx="12" class="box muted"/>
-    <rect x="460" y="16" width="420" height="300" rx="12" class="box muted"/>
-    <text x="230" y="46" class="t b" text-anchor="middle">Ephemeral</text>
-    <text x="230" y="66" class="t s" text-anchor="middle">lives in one widget's State</text>
-    <rect x="40" y="86" width="180" height="104" rx="8" class="box"/>
-    <text x="130" y="112" class="t b" text-anchor="middle">DetailCard</text>
-    <rect x="54" y="128" width="152" height="40" rx="4" class="box warn"/>
-    <text x="130" y="153" class="t mono" text-anchor="middle">_expanded = true</text>
-    <rect x="240" y="86" width="180" height="104" rx="8" class="box"/>
-    <text x="330" y="112" class="t b" text-anchor="middle">IslandsGrid</text>
-    <rect x="254" y="128" width="152" height="40" rx="4" class="box warn"/>
-    <text x="330" y="153" class="t mono" text-anchor="middle">_search = 'ter'</text>
-    <text x="230" y="222" class="t s" text-anchor="middle">E.g. card open, search text,</text>
-    <text x="230" y="240" class="t s" text-anchor="middle">scroll position, selected tab</text>
-    <text x="230" y="276" class="t" text-anchor="middle">Only the widget itself reads and changes it.</text>
-    <text x="230" y="298" class="t s" text-anchor="middle">Dies when the widget leaves the screen.</text>
-    <text x="670" y="46" class="t b" text-anchor="middle">App state</text>
-    <text x="670" y="66" class="t s" text-anchor="middle">shared by several widgets and screens</text>
-    <rect x="480" y="140" width="140" height="48" rx="8" class="box accent"/>
-    <text x="550" y="170" class="t b" text-anchor="middle">unit: °F</text>
-    <rect x="690" y="86" width="176" height="34" rx="6" class="box ok"/>
-    <text x="778" y="108" class="t" text-anchor="middle">CurrentConditions</text>
-    <line x1="622" y1="164" x2="686" y2="103" class="arrow accent"/>
-    <rect x="690" y="130" width="176" height="34" rx="6" class="box ok"/>
-    <text x="778" y="152" class="t" text-anchor="middle">DayChip</text>
-    <line x1="622" y1="164" x2="686" y2="147" class="arrow accent"/>
-    <rect x="690" y="174" width="176" height="34" rx="6" class="box ok"/>
-    <text x="778" y="196" class="t" text-anchor="middle">DetailCard</text>
-    <line x1="622" y1="164" x2="686" y2="191" class="arrow accent"/>
-    <rect x="690" y="218" width="176" height="34" rx="6" class="box muted"/>
-    <text x="778" y="240" class="t s" text-anchor="middle">Settings · lesson 9</text>
-    <line x1="622" y1="164" x2="686" y2="235" class="arrow accent"/>
-    <text x="550" y="210" class="t s" text-anchor="middle">all read it</text>
-    <text x="670" y="276" class="t" text-anchor="middle">Survives navigating between screens,</text>
-    <text x="670" y="298" class="t s" text-anchor="middle">often closing the app too (lesson 16).</text>
-  </svg>
-  <figcaption>The same screen has both kinds: the question is how many widgets need the value.</figcaption>
+  <figure class="anat">
+    <div class="phone">
+      <img src="../../assets/img/aula-08/ecra-celsius.jpg" alt="Screenshot of the forecast screen with five widgets outlined: the whole ForecastScreen, CurrentConditions, the days row, DetailCard and the search with the islands grid.">
+      <span class="w " style="--x:3;--y:3;--w:406;--h:909;--i:0"><b>1</b></span>
+      <span class="w ok" style="--x:10;--y:262;--w:392;--h:116;--i:1"><b>2</b></span>
+      <span class="w ok" style="--x:14;--y:384;--w:396;--h:98;--i:2"><b>3</b></span>
+      <span class="w warn" style="--x:16;--y:494;--w:380;--h:122;--i:3"><b>4</b></span>
+      <span class="w warn" style="--x:12;--y:624;--w:390;--h:288;--i:4"><b>5</b></span>
+    </div>
+    <ol class="anat-legend">
+      <li><span class="n ">1</span><div><code>ForecastScreen</code> the whole screen, parent of all the others.<br><span class="chip ">keeps the °C/°F unit</span></div></li>
+      <li><span class="n ok">2</span><div><code>CurrentConditions</code> the current temperature.<br><span class="chip ok">reads the unit</span></div></li>
+      <li><span class="n ok">3</span><div><code>DaysRow → DayChip</code> the five days.<br><span class="chip ok">reads the unit</span></div></li>
+      <li><span class="n warn">4</span><div><code>DetailCard</code> min, max, wind and rain.<br><span class="chip warn">ephemeral: <code>_expanded</code></span><span class="chip ok">reads the unit</span></div></li>
+      <li><span class="n warn">5</span><div><code>IslandsGrid</code> the search and the islands grid.<br><span class="chip warn">ephemeral: <code>_search</code></span></div></li>
+      <li><span></span><div><code>AlertsForm</code> further down, off screen.<br><span class="chip warn">ephemeral: what is typed</span></div></li>
+    </ol>
+    <figcaption><strong>Orange</strong>: ephemeral state, only that widget needs it. <strong>Green</strong>: reads the unit, which several widgets share, so it is app state.</figcaption>
   </figure>
     <div class="callout"><strong>Ask the class</strong> What about other apps? The cart in an online shop, the selected tab in a tab bar, the signed-in user, the half-typed text of a message: which is which?</div>
   <p><strong>For the tests:</strong> ephemeral state stays in the widget with <code>setState</code>; app state lives outside the tree and is shared.</p>
@@ -91,44 +70,22 @@
 
 <section class="slide">
   <h2>The problem with passing by parameter</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 340" role="img" aria-label="Screen tree: ForecastScreen keeps _fahrenheit and passes it by parameter to CurrentConditions, DetailCard and DaysRow, which only hands it to DayChip. IslandsGrid and AlertsForm do not need it but are rebuilt anyway.">
-    <rect x="10" y="122" width="880" height="206" rx="12" class="box muted"/>
-    <rect x="330" y="16" width="240" height="54" rx="8" class="box accent"/>
-    <text x="450" y="40" class="t b" text-anchor="middle">ForecastScreen</text>
-    <text x="450" y="60" class="t s" text-anchor="middle">keeps _fahrenheit (setState)</text>
-    <rect x="20" y="140" width="190" height="56" rx="8" class="box ok"/>
-    <text x="115.0" y="164" class="t b" text-anchor="middle">CurrentConditions</text>
-    <text x="115.0" y="184" class="t s" text-anchor="middle">shows °F</text>
-    <rect x="230" y="140" width="160" height="56" rx="8" class="box warn"/>
-    <text x="310.0" y="164" class="t b" text-anchor="middle">DaysRow</text>
-    <text x="310.0" y="184" class="t s" text-anchor="middle">only passes it on</text>
-    <rect x="410" y="140" width="160" height="56" rx="8" class="box ok"/>
-    <text x="490.0" y="164" class="t b" text-anchor="middle">DetailCard</text>
-    <text x="490.0" y="184" class="t s" text-anchor="middle">shows °F</text>
-    <rect x="590" y="140" width="150" height="56" rx="8" class="box"/>
-    <text x="665.0" y="164" class="t b" text-anchor="middle">IslandsGrid</text>
-    <text x="665.0" y="184" class="t s" text-anchor="middle">does not need it</text>
-    <rect x="760" y="140" width="120" height="56" rx="8" class="box"/>
-    <text x="820.0" y="164" class="t b" text-anchor="middle">AlertsForm</text>
-    <text x="820.0" y="184" class="t s" text-anchor="middle">does not need it</text>
-    <rect x="235" y="250" width="150" height="56" rx="8" class="box ok"/>
-    <text x="310" y="274" class="t b" text-anchor="middle">DayChip</text>
-    <text x="310" y="294" class="t s" text-anchor="middle">shows °F</text>
-    <line x1="400" y1="70" x2="118" y2="136" class="arrow accent"/>
-    <line x1="430" y1="70" x2="312" y2="136" class="arrow accent"/>
-    <line x1="470" y1="70" x2="488" y2="136" class="arrow accent"/>
-    <line x1="510" y1="70" x2="665" y2="140" stroke="var(--border)" stroke-width="2"/>
-    <line x1="540" y1="70" x2="820" y2="140" stroke="var(--border)" stroke-width="2"/>
-    <line x1="310" y1="196" x2="310" y2="246" class="arrow accent"/>
-    <text x="246" y="94" class="t s mono" text-anchor="end">fahrenheit</text>
-    <text x="370" y="112" class="t s mono" text-anchor="start">fahrenheit</text>
-    <text x="496" y="100" class="t s mono" text-anchor="start">fahrenheit</text>
-    <text x="320" y="228" class="t s mono" text-anchor="start">fahrenheit</text>
-    <text x="640" y="268" class="t b" text-anchor="middle">setState in ForecastScreen</text>
-    <text x="640" y="290" class="t s" text-anchor="middle">rebuilds everything inside this box</text>
-  </svg>
-  <figcaption>Each arrow is a parameter in a constructor. DaysRow receives a value it does not use.</figcaption>
+  <figure class="anat">
+    <div class="phone">
+      <img src="../../assets/img/aula-08/ecra-fahrenheit.jpg" alt="The screen in Fahrenheit. ForecastScreen keeps _fahrenheit; CurrentConditions receives it and shows 73 °F; the days row and DetailCard, dashed, are still in °C.">
+      <span class="w " style="--x:3;--y:3;--w:406;--h:909;--i:0"><b>1</b></span>
+      <span class="w ok" style="--x:10;--y:262;--w:392;--h:116;--i:1"><b>2</b></span>
+      <span class="w warn dashed" style="--x:14;--y:384;--w:396;--h:98;--i:2"><b>3</b></span>
+      <span class="w muted dashed" style="--x:16;--y:494;--w:380;--h:122;--i:3"><b>4</b></span>
+      <span class="tap" style="--x:376;--y:28"></span>
+    </div>
+    <ol class="anat-legend">
+      <li><span class="n ">1</span><div><code>ForecastScreen</code> keeps <code>_fahrenheit</code> and changes it with <code>setState</code> when you tap °F.<br></div></li>
+      <li><span class="n ok">2</span><div><code>CurrentConditions</code> receives <code>fahrenheit</code> in its constructor and shows 73 °F.<br><span class="chip ok">done in step 2</span></div></li>
+      <li><span class="n warn">3</span><div><code>DaysRow</code> for <code>DayChip</code> to show °F, <code>DaysRow</code> would have to receive <code>fahrenheit</code> only to pass it on.<br><span class="chip warn">only passes it on</span></div></li>
+      <li><span class="n muted">4</span><div><code>DetailCard</code> still in °C: one more constructor to change.<br></div></li>
+    </ol>
+    <figcaption>Every widget that shows temperatures needs a new parameter, and so does everything in between.</figcaption>
   </figure>
   <ul>
     <li>On our screen, the °C/°F unit will be chosen in the <code>AppBar</code> of <code>ForecastScreen</code> and used in <code>CurrentConditions</code>, in <code>DetailCard</code> and in <code>DayChip</code>, which sits inside <code>DaysRow</code>.</li>
@@ -142,43 +99,27 @@
 
 <section class="slide">
   <h2><code>setState</code>: when it is enough and when it stops being enough</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 280" role="img" aria-label="Two identical trees. Left, setState in DetailCard rebuilds only DetailCard. Right, setState in ForecastScreen rebuilds ForecastScreen and every descendant.">
-    <text x="230" y="28" class="t b" text-anchor="middle">setState in DetailCard</text>
-    <text x="230" y="48" class="t s" text-anchor="middle">step 1: rebuilds 1 widget</text>
-    <rect x="155" y="68" width="150" height="36" rx="6" class="box"/>
-    <text x="230" y="91" class="t s" text-anchor="middle" style="fill:var(--fg)">ForecastScreen</text>
-    <line x1="230" y1="104" x2="89.0" y2="150" stroke="var(--border)" stroke-width="2"/>
-    <rect x="25" y="150" width="128" height="36" rx="6" class="box"/>
-    <text x="89.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">CurrentConditions</text>
-    <line x1="230" y1="104" x2="225.0" y2="150" stroke="var(--border)" stroke-width="2"/>
-    <rect x="165" y="150" width="120" height="36" rx="6" class="box"/>
-    <text x="225.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DaysRow</text>
-    <line x1="230" y1="104" x2="361.0" y2="150" stroke="var(--border)" stroke-width="2"/>
-    <rect x="297" y="150" width="128" height="36" rx="6" class="box accent"/>
-    <text x="361.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DetailCard</text>
-    <line x1="225" y1="186" x2="225" y2="226" stroke="var(--border)" stroke-width="2"/>
-    <rect x="170" y="226" width="110" height="36" rx="6" class="box"/>
-    <text x="225" y="249" class="t s" text-anchor="middle" style="fill:var(--fg)">DayChip</text>
-    <line x1="450" y1="20" x2="450" y2="270" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 4"/>
-    <text x="680" y="28" class="t b" text-anchor="middle">setState in ForecastScreen</text>
-    <text x="680" y="48" class="t s" text-anchor="middle">step 2: rebuilds the whole screen</text>
-    <rect x="605" y="68" width="150" height="36" rx="6" class="box accent"/>
-    <text x="680" y="91" class="t s" text-anchor="middle" style="fill:var(--fg)">ForecastScreen</text>
-    <line x1="680" y1="104" x2="539.0" y2="150" stroke="var(--border)" stroke-width="2"/>
-    <rect x="475" y="150" width="128" height="36" rx="6" class="box accent"/>
-    <text x="539.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">CurrentConditions</text>
-    <line x1="680" y1="104" x2="675.0" y2="150" stroke="var(--border)" stroke-width="2"/>
-    <rect x="615" y="150" width="120" height="36" rx="6" class="box accent"/>
-    <text x="675.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DaysRow</text>
-    <line x1="680" y1="104" x2="811.0" y2="150" stroke="var(--border)" stroke-width="2"/>
-    <rect x="747" y="150" width="128" height="36" rx="6" class="box accent"/>
-    <text x="811.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DetailCard</text>
-    <line x1="675" y1="186" x2="675" y2="226" stroke="var(--border)" stroke-width="2"/>
-    <rect x="620" y="226" width="110" height="36" rx="6" class="box accent"/>
-    <text x="675" y="249" class="t s" text-anchor="middle" style="fill:var(--fg)">DayChip</text>
-  </svg>
-  <figcaption>Colour marks what runs build again. The lower the setState, the less work.</figcaption>
+  <figure class="anat two">
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../../assets/img/aula-08/ecra-celsius.jpg" alt="Animation: a tap on the detail card flashes only the card, which opens.">
+        <img class="after" src="../../assets/img/aula-08/ecra-cartao-aberto.jpg" alt="">
+        <span class="flash" style="--x:16;--y:494;--w:380;--h:122"></span>
+        <span class="tap" style="--x:206;--y:556"></span>
+        <span class="label">rebuild: only DetailCard</span>
+      </div>
+      <p><strong>setState in DetailCard</strong> (step 1): only the card runs <code>build</code> again.</p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../../assets/img/aula-08/ecra-celsius.jpg" alt="Animation: a tap on °F flashes the whole screen, which then shows 73 °F.">
+        <img class="after" src="../../assets/img/aula-08/ecra-fahrenheit.jpg" alt="">
+        <span class="flash" style="--x:0;--y:0;--w:412;--h:915"></span>
+        <span class="tap" style="--x:376;--y:28"></span>
+        <span class="label">rebuild: the whole screen</span>
+      </div>
+      <p><strong>setState in ForecastScreen</strong> (step 2): the whole screen runs <code>build</code> again, even the grid and the form.</p>
+    </div>
   </figure>
   <ul>
     <li><strong>Enough</strong> when the state belongs to one screen or one widget and nobody else needs it: a counter, a form, a card that opens and closes, a local search filter.</li>
@@ -191,42 +132,6 @@
 
 <section class="slide">
   <h2>ChangeNotifier, Provider and InheritedWidget</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 290" role="img" aria-label="The same tree with Provider: UnitSettings, a ChangeNotifier, sits outside the constructors. CurrentConditions, DayChip and DetailCard watch it and are notified directly; DaysRow no longer receives anything. The button calls toggle with read.">
-    <rect x="300" y="16" width="220" height="44" rx="8" class="box"/>
-    <text x="410" y="44" class="t b" text-anchor="middle">ForecastScreen</text>
-    <line x1="410" y1="60" x2="110.0" y2="124" stroke="var(--border)" stroke-width="2"/>
-    <rect x="20" y="124" width="180" height="50" rx="8" class="box ok"/>
-    <text x="110.0" y="146" class="t b" text-anchor="middle">CurrentConditions</text>
-    <text x="110.0" y="165" class="t s mono" text-anchor="middle">context.watch</text>
-    <line x1="410" y1="60" x2="300.0" y2="124" stroke="var(--border)" stroke-width="2"/>
-    <rect x="220" y="124" width="160" height="50" rx="8" class="box"/>
-    <text x="300.0" y="146" class="t b" text-anchor="middle">DaysRow</text>
-    <text x="300.0" y="165" class="t s" text-anchor="middle">does not know the unit</text>
-    <line x1="410" y1="60" x2="480.0" y2="124" stroke="var(--border)" stroke-width="2"/>
-    <rect x="400" y="124" width="160" height="50" rx="8" class="box ok"/>
-    <text x="480.0" y="146" class="t b" text-anchor="middle">DetailCard</text>
-    <text x="480.0" y="165" class="t s mono" text-anchor="middle">context.watch</text>
-    <line x1="300" y1="174" x2="300" y2="226" stroke="var(--border)" stroke-width="2"/>
-    <rect x="225" y="226" width="150" height="50" rx="8" class="box ok"/>
-    <text x="300" y="248" class="t b" text-anchor="middle">DayChip</text>
-    <text x="300" y="267" class="t s mono" text-anchor="middle">context.watch</text>
-    <rect x="640" y="112" width="240" height="70" rx="10" class="box accent"/>
-    <text x="760" y="140" class="t b" text-anchor="middle">UnitSettings</text>
-    <text x="760" y="160" class="t s mono" text-anchor="middle">ChangeNotifier</text>
-    <text x="760" y="176" class="t s" text-anchor="middle">put in the tree by Provider</text>
-    <polyline points="700,110 700,92 110,92 110,120" class="arrow accent dashed"/>
-    <line x1="638" y1="146" x2="564" y2="148" class="arrow accent dashed"/>
-    <line x1="650" y1="182" x2="378" y2="246" class="arrow accent dashed"/>
-    <text x="690" y="86" class="t s" text-anchor="end">notifies whoever watches</text>
-    <rect x="640" y="226" width="240" height="50" rx="8" class="box"/>
-    <text x="760" y="248" class="t b" text-anchor="middle">°C/°F button</text>
-    <text x="760" y="267" class="t s mono" text-anchor="middle">read&lt;UnitSettings&gt;().toggle()</text>
-    <line x1="760" y1="224" x2="760" y2="186" class="arrow"/>
-    <text x="770" y="210" class="t s mono" text-anchor="start">toggle()</text>
-  </svg>
-  <figcaption>Compare with the passing-by-parameter slide: the arrows no longer go through DaysRow. We do this in lesson 13.</figcaption>
-  </figure>
   <ul>
     <li><code>InheritedWidget</code> is Flutter's own mechanism to put a value in the tree and let any descendant read it through <code>context</code>. The <code>Theme.of(context)</code> we use in every <code>build</code> is exactly this.</li>
     <li><code>ChangeNotifier</code> is a class with <code>notifyListeners()</code>. Your state extends it: <code>class UnitSettings extends ChangeNotifier { bool fahrenheit = false; void toggle() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
@@ -239,54 +144,6 @@
 
 <section class="slide">
   <h2>BLoC, Cubit and Riverpod</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 280" role="img" aria-label="Four lanes with the path of one action. setState: tap, State, subtree rebuild. Provider: tap, notifier, rebuild of watchers. BLoC: event, Bloc, stream of states, UI. Riverpod: tap, global provider, ref.watch with no context.">
-    <rect x="20" y="16" width="140" height="48" rx="8" class="box"/>
-    <text x="90" y="45" class="t b" text-anchor="middle">setState</text>
-    <rect x="190" y="20" width="206" height="40" rx="6" class="box muted"/>
-    <text x="293" y="45" class="t s" text-anchor="middle" style="fill:var(--fg)">tap</text>
-    <line x1="398" y1="40" x2="428" y2="40" class="arrow"/>
-    <rect x="432" y="20" width="206" height="40" rx="6" class="box"/>
-    <text x="535" y="45" class="t s" text-anchor="middle" style="fill:var(--fg)">State · setState</text>
-    <line x1="640" y1="40" x2="670" y2="40" class="arrow"/>
-    <rect x="674" y="20" width="206" height="40" rx="6" class="box"/>
-    <text x="777" y="45" class="t s" text-anchor="middle" style="fill:var(--fg)">subtree rebuild</text>
-    <rect x="20" y="82" width="140" height="48" rx="8" class="box accent"/>
-    <text x="90" y="111" class="t b" text-anchor="middle">Provider</text>
-    <rect x="190" y="86" width="206" height="40" rx="6" class="box muted"/>
-    <text x="293" y="111" class="t s" text-anchor="middle" style="fill:var(--fg)">tap</text>
-    <line x1="398" y1="106" x2="428" y2="106" class="arrow"/>
-    <rect x="432" y="86" width="206" height="40" rx="6" class="box"/>
-    <text x="535" y="111" class="t s" text-anchor="middle" style="fill:var(--fg)">Notifier · notifyListeners</text>
-    <line x1="640" y1="106" x2="670" y2="106" class="arrow"/>
-    <rect x="674" y="86" width="206" height="40" rx="6" class="box"/>
-    <text x="777" y="111" class="t s" text-anchor="middle" style="fill:var(--fg)">rebuild of watchers</text>
-    <rect x="20" y="148" width="140" height="48" rx="8" class="box"/>
-    <text x="90" y="177" class="t b" text-anchor="middle">BLoC / Cubit</text>
-    <rect x="190" y="152" width="146" height="40" rx="6" class="box muted"/>
-    <text x="263" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">event</text>
-    <line x1="338" y1="172" x2="368" y2="172" class="arrow"/>
-    <rect x="372" y="152" width="146" height="40" rx="6" class="box"/>
-    <text x="444" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">Bloc</text>
-    <line x1="519" y1="172" x2="549" y2="172" class="arrow"/>
-    <rect x="553" y="152" width="146" height="40" rx="6" class="box"/>
-    <text x="626" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">Stream of states</text>
-    <line x1="700" y1="172" x2="730" y2="172" class="arrow"/>
-    <rect x="734" y="152" width="146" height="40" rx="6" class="box"/>
-    <text x="807" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">UI</text>
-    <rect x="20" y="214" width="140" height="48" rx="8" class="box"/>
-    <text x="90" y="243" class="t b" text-anchor="middle">Riverpod</text>
-    <rect x="190" y="218" width="206" height="40" rx="6" class="box muted"/>
-    <text x="293" y="243" class="t s" text-anchor="middle" style="fill:var(--fg)">tap</text>
-    <line x1="398" y1="238" x2="428" y2="238" class="arrow"/>
-    <rect x="432" y="218" width="206" height="40" rx="6" class="box"/>
-    <text x="535" y="243" class="t s" text-anchor="middle" style="fill:var(--fg)">global, typed provider</text>
-    <line x1="640" y1="238" x2="670" y2="238" class="arrow"/>
-    <rect x="674" y="218" width="206" height="40" rx="6" class="box"/>
-    <text x="777" y="243" class="t s" text-anchor="middle" style="fill:var(--fg)">ref.watch, no context</text>
-  </svg>
-  <figcaption>The path is always action, state, UI. What changes is where the state lives and how many steps sit in between.</figcaption>
-  </figure>
   <div class="table-wrap"><table>
   <thead><tr><th>Approach</th><th>What it adds</th><th>When it makes sense</th></tr></thead>
   <tbody>
