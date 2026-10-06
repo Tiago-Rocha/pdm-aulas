@@ -172,48 +172,43 @@ onSelectionChanged: (_) =&gt; context.read&lt;UnitSettings&gt;().toggle(),</code
 
 <section class="slide">
   <h2>Fluxo unidirecional e imutabilidade</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 280" role="img" aria-label="Ciclo de fluxo unidirecional: a UI dispara uma ação do utilizador, a ação produz um estado novo e imutável no notifier, notifyListeners avisa quem observa e a UI é reconstruída. Ao lado, onde vive o estado: efémero no State de um widget, de aplicação num notifier partilhado acima dos ecrãs">
-    <rect x="40" y="40" width="200" height="56" rx="10" class="box accent"/>
-    <text x="140" y="64" class="t b" text-anchor="middle">UI (widget)</text>
-    <text x="140" y="84" class="t s" text-anchor="middle">função do estado atual</text>
-    <rect x="340" y="40" width="200" height="56" rx="10" class="box"/>
-    <text x="440" y="64" class="t b" text-anchor="middle">Ação do utilizador</text>
-    <text x="440" y="84" class="t s" text-anchor="middle">toque, texto, gesto</text>
-    <rect x="340" y="200" width="200" height="56" rx="10" class="box"/>
-    <text x="440" y="224" class="t b" text-anchor="middle">Estado novo (notifier)</text>
-    <text x="440" y="244" class="t s" text-anchor="middle">imutável: copyWith</text>
-    <rect x="40" y="200" width="200" height="56" rx="10" class="box"/>
-    <text x="140" y="224" class="t b" text-anchor="middle">notifyListeners()</text>
-    <text x="140" y="244" class="t s" text-anchor="middle">avisa quem observa</text>
-    <line x1="242" y1="68" x2="338" y2="68" class="arrow accent"/>
-    <text x="290" y="60" class="t s" text-anchor="middle">dispara</text>
-    <line x1="440" y1="98" x2="440" y2="198" class="arrow accent"/>
-    <text x="452" y="152" class="t s">muda o estado</text>
-    <line x1="338" y1="228" x2="242" y2="228" class="arrow accent"/>
-    <text x="290" y="220" class="t s" text-anchor="middle">notifica</text>
-    <line x1="140" y1="198" x2="140" y2="98" class="arrow accent"/>
-    <text x="152" y="152" class="t s">rebuild da UI</text>
-    <text x="290" y="152" class="t s" text-anchor="middle">um só sentido</text>
-    <text x="600" y="52" class="t b">Onde vive o estado</text>
-    <rect x="600" y="66" width="270" height="76" rx="10" class="box"/>
-    <text x="620" y="90" class="t b">Efémero</text>
-    <text x="620" y="110" class="t s">State de um widget, com setState</text>
-    <text x="620" y="128" class="t s">scroll, texto meio escrito, separador</text>
-    <line x1="760" y1="144" x2="760" y2="174" class="arrow"/>
-    <text x="750" y="163" class="t s" text-anchor="end">sobe se vários ecrãs precisam</text>
-    <rect x="600" y="176" width="270" height="76" rx="10" class="box accent"/>
-    <text x="620" y="200" class="t b">De aplicação</text>
-    <text x="620" y="220" class="t s">notifier partilhado acima dos ecrãs</text>
-    <text x="620" y="238" class="t s">favoritos, unidade, utilizador</text>
-  </svg>
-  <figcaption>A UI nunca toca no estado nem o estado na UI: tudo passa pela ação e pela notificação.</figcaption>
+  <figure class="anat flow">
+    <div class="step">
+      <strong><span class="n">1</span>Ação</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-08/ecra-celsius.jpg" alt="Ecrã em °C, com um toque no botão °F.">
+        <span class="tap" style="--x:376;--y:28"></span>
+      </div>
+      <span>O utilizador toca em °F.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">2</span>Estado</strong>
+      <div class="state"><span>_fahrenheit</span><span><s>false</s> → <b>true</b></span></div>
+      <span>Muda num só sítio: o State do <code>ForecastScreen</code>, com <code>setState</code>.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">3</span>UI</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-08/ecra-fahrenheit.jpg" alt="Ecrã em °F depois do rebuild: 73 °F.">
+      </div>
+      <span>O <code>build</code> corre outra vez e desenha 73 °F.</span>
+    </div>
   </figure>
+<pre data-title="lib/forecast_screen.dart · as três linhas do fluxo, no branch passo-2"><code class="language-dart">// 1. ação: o toque chama o callback, que pede a mudança
+onSelectionChanged: (s) =&gt; setState(() =&gt; _fahrenheit = s.first),
+
+// 2. estado: o valor existe num só sítio, no State do ForecastScreen
+bool _fahrenheit = false; // the state lives in the State, not in the widget
+
+// 3. UI: o build volta a correr e o valor novo desce por parâmetro
+child: CurrentConditions(fahrenheit: _fahrenheit),</code></pre>
   <ul>
-    <li><strong>Um só sentido:</strong> a UI dispara uma ação (toque, texto) → a ação muda o estado → a UI reconstrói a partir do estado novo. A UI nunca muda o estado diretamente nem o estado toca na UI.</li>
-    <li>Com um só sentido, qualquer ecrã é uma função do estado: dado o mesmo estado, vês o mesmo ecrã. É o que torna testes e depuração possíveis.</li>
-    <li><strong>Imutável:</strong> em vez de mudar um campo de um <code>DayForecast</code>, crias um novo com <code>copyWith</code>. Um objeto que ninguém altera pode ser partilhado, comparado e guardado num histórico sem sustos. Os campos <code>final</code> do <code>DayForecast</code> em <code>lib/data.dart</code> já são isto.</li>
-    <li>O <code>UnitSettings</code> do slide anterior é mutável por dentro (é um <code>ChangeNotifier</code>), mas o que expõe são valores. BLoC e Riverpod levam a imutabilidade até ao fim.</li>
+    <li><strong>Os dados descem, os eventos sobem.</strong> O <code>CurrentConditions</code> recebe <code>fahrenheit</code> e só o mostra: não tem forma de o mudar. Quem muda é quem guarda.</li>
+    <li><strong>Uma só fonte de verdade.</strong> Se a unidade estivesse guardada em dois widgets, mais cedo ou mais tarde um mostrava °C e o outro °F.</li>
+    <li><strong>O ecrã é uma função do estado.</strong> Com o mesmo <code>_fahrenheit</code> vês sempre o mesmo ecrã. É o que torna os erros fáceis de reproduzir.</li>
+    <li><strong>Imutável:</strong> em vez de alterar um objeto, crias um novo (<code>copyWith</code>). Os campos <code>final</code> do <code>DayForecast</code> em <code>lib/data.dart</code> já são assim. BLoC e Riverpod levam isto até ao fim.</li>
   </ul>
   <p><strong>Para os testes:</strong> fluxo unidirecional é ação → estado → UI; imutabilidade significa criar cópias com <code>copyWith</code> em vez de alterar objetos.</p>
 </section>

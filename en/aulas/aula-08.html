@@ -172,48 +172,43 @@ onSelectionChanged: (_) =&gt; context.read&lt;UnitSettings&gt;().toggle(),</code
 
 <section class="slide">
   <h2>Unidirectional flow and immutability</h2>
-<figure class="diagram">
-  <svg viewBox="0 0 900 280" role="img" aria-label="Unidirectional flow cycle: the UI triggers a user action, the action produces a new, immutable state in the notifier, notifyListeners tells the observers and the UI is rebuilt. Beside it, where state lives: ephemeral in a widget's State, app state in a shared notifier above the screens">
-    <rect x="40" y="40" width="200" height="56" rx="10" class="box accent"/>
-    <text x="140" y="64" class="t b" text-anchor="middle">UI (widget)</text>
-    <text x="140" y="84" class="t s" text-anchor="middle">function of current state</text>
-    <rect x="340" y="40" width="200" height="56" rx="10" class="box"/>
-    <text x="440" y="64" class="t b" text-anchor="middle">User action</text>
-    <text x="440" y="84" class="t s" text-anchor="middle">tap, text, gesture</text>
-    <rect x="340" y="200" width="200" height="56" rx="10" class="box"/>
-    <text x="440" y="224" class="t b" text-anchor="middle">New state (notifier)</text>
-    <text x="440" y="244" class="t s" text-anchor="middle">immutable: copyWith</text>
-    <rect x="40" y="200" width="200" height="56" rx="10" class="box"/>
-    <text x="140" y="224" class="t b" text-anchor="middle">notifyListeners()</text>
-    <text x="140" y="244" class="t s" text-anchor="middle">tells the observers</text>
-    <line x1="242" y1="68" x2="338" y2="68" class="arrow accent"/>
-    <text x="290" y="60" class="t s" text-anchor="middle">triggers</text>
-    <line x1="440" y1="98" x2="440" y2="198" class="arrow accent"/>
-    <text x="452" y="152" class="t s">changes state</text>
-    <line x1="338" y1="228" x2="242" y2="228" class="arrow accent"/>
-    <text x="290" y="220" class="t s" text-anchor="middle">notifies</text>
-    <line x1="140" y1="198" x2="140" y2="98" class="arrow accent"/>
-    <text x="152" y="152" class="t s">UI rebuild</text>
-    <text x="290" y="152" class="t s" text-anchor="middle">one direction</text>
-    <text x="600" y="52" class="t b">Where state lives</text>
-    <rect x="600" y="66" width="270" height="76" rx="10" class="box"/>
-    <text x="620" y="90" class="t b">Ephemeral</text>
-    <text x="620" y="110" class="t s">a widget's State, with setState</text>
-    <text x="620" y="128" class="t s">scroll, half-typed text, tab</text>
-    <line x1="760" y1="144" x2="760" y2="174" class="arrow"/>
-    <text x="750" y="163" class="t s" text-anchor="end">moves up if screens share it</text>
-    <rect x="600" y="176" width="270" height="76" rx="10" class="box accent"/>
-    <text x="620" y="200" class="t b">App state</text>
-    <text x="620" y="220" class="t s">shared notifier above the screens</text>
-    <text x="620" y="238" class="t s">favourites, unit, user</text>
-  </svg>
-  <figcaption>The UI never touches the state and the state never touches the UI: everything goes through the action and the notification.</figcaption>
+  <figure class="anat flow">
+    <div class="step">
+      <strong><span class="n">1</span>Action</strong>
+      <div class="phone">
+        <img src="../../assets/img/aula-08/ecra-celsius.jpg" alt="Screen in °C, with a tap on the °F button.">
+        <span class="tap" style="--x:376;--y:28"></span>
+      </div>
+      <span>The user taps °F.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">2</span>State</strong>
+      <div class="state"><span>_fahrenheit</span><span><s>false</s> → <b>true</b></span></div>
+      <span>Changes in one place only: the <code>ForecastScreen</code> State, with <code>setState</code>.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">3</span>UI</strong>
+      <div class="phone">
+        <img src="../../assets/img/aula-08/ecra-fahrenheit.jpg" alt="Screen in °F after the rebuild: 73 °F.">
+      </div>
+      <span><code>build</code> runs again and draws 73 °F.</span>
+    </div>
   </figure>
+<pre data-title="lib/forecast_screen.dart · the three lines of the flow, on the passo-2 branch"><code class="language-dart">// 1. action: the tap calls the callback, which asks for the change
+onSelectionChanged: (s) =&gt; setState(() =&gt; _fahrenheit = s.first),
+
+// 2. state: the value lives in one place only, the ForecastScreen State
+bool _fahrenheit = false; // the state lives in the State, not in the widget
+
+// 3. UI: build runs again and the new value goes down by parameter
+child: CurrentConditions(fahrenheit: _fahrenheit),</code></pre>
   <ul>
-    <li><strong>One direction:</strong> the UI triggers an action (tap, text) → the action changes the state → the UI rebuilds from the new state. The UI never changes the state directly and the state never touches the UI.</li>
-    <li>With one direction, any screen is a function of the state: same state, same screen. That is what makes testing and debugging possible.</li>
-    <li><strong>Immutable:</strong> instead of changing a field of a <code>DayForecast</code>, you create a new one with <code>copyWith</code>. An object nobody changes can be shared, compared and kept in a history without surprises. The <code>final</code> fields of <code>DayForecast</code> in <code>lib/data.dart</code> are already this.</li>
-    <li>The <code>UnitSettings</code> from the previous slide is mutable inside (it is a <code>ChangeNotifier</code>), but what it exposes are values. BLoC and Riverpod take immutability all the way.</li>
+    <li><strong>Data goes down, events go up.</strong> <code>CurrentConditions</code> receives <code>fahrenheit</code> and only shows it: it has no way to change it. Whoever keeps it changes it.</li>
+    <li><strong>A single source of truth.</strong> If the unit were kept in two widgets, sooner or later one would show °C and the other °F.</li>
+    <li><strong>The screen is a function of the state.</strong> With the same <code>_fahrenheit</code> you always see the same screen. That is what makes bugs easy to reproduce.</li>
+    <li><strong>Immutable:</strong> instead of changing an object, you create a new one (<code>copyWith</code>). The <code>final</code> fields of <code>DayForecast</code> in <code>lib/data.dart</code> already work this way. BLoC and Riverpod take this all the way.</li>
   </ul>
   <p><strong>For the tests:</strong> unidirectional flow is action → state → UI; immutability means creating copies with <code>copyWith</code> instead of changing objects.</p>
 </section>
