@@ -132,11 +132,25 @@
 
 <section class="slide">
   <h2>ChangeNotifier, Provider and InheritedWidget</h2>
+<pre data-title="Preview of lesson 13: not in today's repository yet"><code class="language-dart">class UnitSettings extends ChangeNotifier {
+  bool fahrenheit = false;
+
+  void toggle() {
+    fahrenheit = !fahrenheit;
+    notifyListeners(); // tells every widget that watches
+  }
+}
+
+// in a widget that shows temperatures: rebuilds when the unit changes
+final fahrenheit = context.watch&lt;UnitSettings&gt;().fahrenheit;
+
+// in the °C/°F button: only calls it, no need to rebuild
+onSelectionChanged: (_) =&gt; context.read&lt;UnitSettings&gt;().toggle(),</code></pre>
   <ul>
     <li><code>InheritedWidget</code> is Flutter's own mechanism to put a value in the tree and let any descendant read it through <code>context</code>. The <code>Theme.of(context)</code> we use in every <code>build</code> is exactly this.</li>
-    <li><code>ChangeNotifier</code> is a class with <code>notifyListeners()</code>. Your state extends it: <code>class UnitSettings extends ChangeNotifier { bool fahrenheit = false; void toggle() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
+    <li><code>ChangeNotifier</code> is a class with <code>notifyListeners()</code>. Your state extends it and calls <code>notifyListeners()</code> whenever it changes, like <code>UnitSettings</code> in the block above.</li>
     <li><code>Provider</code> combines the two: it puts the notifier in the tree, and <code>context.watch&lt;UnitSettings&gt;()</code> rebuilds only the widget that called it when <code>notifyListeners</code> fires.</li>
-    <li>It solves the problem on the previous slide: <code>DayChip</code> reads the unit directly; <code>DaysRow</code> does not even know it exists.</li>
+    <li>It solves the problem with passing by parameter: <code>DayChip</code> reads the unit directly; <code>DaysRow</code> does not even know it exists.</li>
     <li>The Flutter team recommends it to start with, and it is what we will use in the project.</li>
   </ul>
   <p><strong>For the tests:</strong> Provider is an <code>InheritedWidget</code> with sugar; <code>ChangeNotifier</code> tells its listeners; <code>watch</code> rebuilds, <code>read</code> does not.</p>

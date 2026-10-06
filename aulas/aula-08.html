@@ -132,11 +132,25 @@
 
 <section class="slide">
   <h2>ChangeNotifier, Provider e InheritedWidget</h2>
+<pre data-title="Pré-visualização da aula 13: ainda não está no repositório de hoje"><code class="language-dart">class UnitSettings extends ChangeNotifier {
+  bool fahrenheit = false;
+
+  void toggle() {
+    fahrenheit = !fahrenheit;
+    notifyListeners(); // avisa todos os widgets que fazem watch
+  }
+}
+
+// num widget que mostra temperaturas: reconstrói quando a unidade muda
+final fahrenheit = context.watch&lt;UnitSettings&gt;().fahrenheit;
+
+// no botão °C/°F: só chama, não precisa de reconstruir
+onSelectionChanged: (_) =&gt; context.read&lt;UnitSettings&gt;().toggle(),</code></pre>
   <ul>
     <li><code>InheritedWidget</code> é o mecanismo do próprio Flutter para pôr um valor na árvore e deixar qualquer descendente lê-lo com <code>context</code>. O <code>Theme.of(context)</code> que usamos em todos os <code>build</code> é isto.</li>
-    <li><code>ChangeNotifier</code> é uma classe com <code>notifyListeners()</code>. O teu estado estende-a: <code>class UnitSettings extends ChangeNotifier { bool fahrenheit = false; void toggle() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
+    <li><code>ChangeNotifier</code> é uma classe com <code>notifyListeners()</code>. O teu estado estende-a e chama <code>notifyListeners()</code> sempre que muda, como o <code>UnitSettings</code> do bloco de cima.</li>
     <li><code>Provider</code> junta os dois: põe o notifier na árvore e <code>context.watch&lt;UnitSettings&gt;()</code> reconstrói só o widget que o chamou quando há <code>notifyListeners</code>.</li>
-    <li>Resolve o problema do slide anterior: o <code>DayChip</code> lê a unidade diretamente; a <code>DaysRow</code> nem sabe que existe.</li>
+    <li>Resolve o problema de passar por parâmetro: o <code>DayChip</code> lê a unidade diretamente; a <code>DaysRow</code> nem sabe que existe.</li>
     <li>É recomendado pela equipa do Flutter para começar e é o que vamos usar no projeto.</li>
   </ul>
   <p><strong>Para os testes:</strong> Provider é um <code>InheritedWidget</code> com açúcar; <code>ChangeNotifier</code> avisa os ouvintes; <code>watch</code> reconstrói, <code>read</code> não.</p>
