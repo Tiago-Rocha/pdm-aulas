@@ -44,21 +44,92 @@
 
 <section class="slide" data-part="Teoria">
   <h2>Estado efémero vs estado de aplicação</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th></th><th>Efémero (de um widget)</th><th>De aplicação (partilhado)</th></tr></thead>
-  <tbody>
-  <tr><td>Exemplos</td><td>Separador selecionado, texto meio escrito, posição de scroll, se um cartão está aberto</td><td>Utilizador autenticado, favoritos, unidade de temperatura, previsões carregadas, carrinho de compras</td></tr>
-  <tr><td>Quem precisa dele</td><td>Um widget e os filhos</td><td>Vários ecrãs, sem relação de parentesco</td></tr>
-  <tr><td>Sobrevive a</td><td>Rebuilds; morre com o widget</td><td>Navegação entre ecrãs; muitas vezes ao fecho da app (persistência, aula 16)</td></tr>
-  <tr><td>Onde vive</td><td>No <code>State</code> do widget, com <code>setState</code></td><td>Num objeto fora da árvore de widgets, observado por quem precisa</td></tr>
-  </tbody></table></div>
-  <div class="callout"><strong>Pergunta à turma</strong> No nosso ecrã de previsão: se o cartão de detalhe está aberto ou fechado é efémero ou de aplicação? E a unidade °C/°F? E o texto escrito na pesquisa de ilhas?</div>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="À esquerda, estado efémero: o DetailCard guarda _expanded e o IslandsGrid guarda o texto da pesquisa, cada um só para si. À direita, estado de aplicação: a unidade °F é lida por CurrentConditions, DayChip, DetailCard e pelo ecrã de definições.">
+    <rect x="20" y="16" width="420" height="300" rx="12" class="box muted"/>
+    <rect x="460" y="16" width="420" height="300" rx="12" class="box muted"/>
+    <text x="230" y="46" class="t b" text-anchor="middle">Efémero</text>
+    <text x="230" y="66" class="t s" text-anchor="middle">vive no State de um widget</text>
+    <rect x="40" y="86" width="180" height="104" rx="8" class="box"/>
+    <text x="130" y="112" class="t b" text-anchor="middle">DetailCard</text>
+    <rect x="54" y="128" width="152" height="40" rx="4" class="box warn"/>
+    <text x="130" y="153" class="t mono" text-anchor="middle">_expanded = true</text>
+    <rect x="240" y="86" width="180" height="104" rx="8" class="box"/>
+    <text x="330" y="112" class="t b" text-anchor="middle">IslandsGrid</text>
+    <rect x="254" y="128" width="152" height="40" rx="4" class="box warn"/>
+    <text x="330" y="153" class="t mono" text-anchor="middle">_search = 'ter'</text>
+    <text x="230" y="222" class="t s" text-anchor="middle">Ex.: cartão aberto, texto da pesquisa,</text>
+    <text x="230" y="240" class="t s" text-anchor="middle">posição do scroll, separador escolhido</text>
+    <text x="230" y="276" class="t" text-anchor="middle">Só o próprio widget lê e muda.</text>
+    <text x="230" y="298" class="t s" text-anchor="middle">Morre quando o widget sai do ecrã.</text>
+    <text x="670" y="46" class="t b" text-anchor="middle">De aplicação</text>
+    <text x="670" y="66" class="t s" text-anchor="middle">partilhado por vários widgets e ecrãs</text>
+    <rect x="480" y="140" width="140" height="48" rx="8" class="box accent"/>
+    <text x="550" y="170" class="t b" text-anchor="middle">unidade: °F</text>
+    <rect x="690" y="86" width="176" height="34" rx="6" class="box ok"/>
+    <text x="778" y="108" class="t" text-anchor="middle">CurrentConditions</text>
+    <line x1="622" y1="164" x2="686" y2="103" class="arrow accent"/>
+    <rect x="690" y="130" width="176" height="34" rx="6" class="box ok"/>
+    <text x="778" y="152" class="t" text-anchor="middle">DayChip</text>
+    <line x1="622" y1="164" x2="686" y2="147" class="arrow accent"/>
+    <rect x="690" y="174" width="176" height="34" rx="6" class="box ok"/>
+    <text x="778" y="196" class="t" text-anchor="middle">DetailCard</text>
+    <line x1="622" y1="164" x2="686" y2="191" class="arrow accent"/>
+    <rect x="690" y="218" width="176" height="34" rx="6" class="box muted"/>
+    <text x="778" y="240" class="t s" text-anchor="middle">Definições · aula 9</text>
+    <line x1="622" y1="164" x2="686" y2="235" class="arrow accent"/>
+    <text x="550" y="210" class="t s" text-anchor="middle">todos leem</text>
+    <text x="670" y="276" class="t" text-anchor="middle">Sobrevive à navegação entre ecrãs,</text>
+    <text x="670" y="298" class="t s" text-anchor="middle">e muitas vezes ao fecho da app (aula 16).</text>
+  </svg>
+  <figcaption>O mesmo ecrã tem os dois tipos: a pergunta é quantos widgets precisam do valor.</figcaption>
+  </figure>
+    <div class="callout"><strong>Pergunta à turma</strong> E noutras apps? O carrinho de uma loja online, o separador escolhido numa barra de tabs, o utilizador com sessão iniciada, o texto meio escrito numa mensagem: qual é qual?</div>
   <p><strong>Para os testes:</strong> estado efémero fica no widget com <code>setState</code>; estado de aplicação fica fora da árvore e é partilhado.</p>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> Cartão aberto ou fechado: efémero, só o próprio cartão quer saber, e não faz mal perdê-lo ao sair do ecrã. Unidade °C/°F: de aplicação, porque o cabeçalho, a fila dos dias, o cartão de detalhe e mais tarde o ecrã de definições (aula 9) precisam todos dela, e o utilizador espera que fique escolhida da próxima vez que abre a app. Texto da pesquisa: efémero, é da caixa de pesquisa. Hoje fazemos os três com <code>setState</code>, e a unidade vai mostrar onde é que isso começa a custar. Exemplo para quem hesitar: onde vive o carrinho numa app de compras? Não pode ser no botão "adicionar".</aside>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Carrinho: de aplicação, aparece no ícone do topo, na lista de produtos e no checkout, e tem de sobreviver à navegação. Separador escolhido: efémero, só a barra de tabs quer saber (mas se a app o guardar ao fechar, passa a ser de aplicação: a fronteira é uma decisão de design). Utilizador com sessão: de aplicação, quase todos os ecrãs precisam dele. Mensagem meio escrita: efémera, da caixa de texto; numa app de chat que guarda rascunhos, passa a ser de aplicação. No nosso ecrã, o diagrama já mostra: cartão aberto e texto da pesquisa são efémeros, a unidade °C/°F é de aplicação. Hoje fazemos os três com <code>setState</code>, e a unidade vai mostrar onde é que isso começa a custar.</aside>
 </section>
 
 <section class="slide">
   <h2>O problema de passar por parâmetro</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 340" role="img" aria-label="Árvore do ecrã: o ForecastScreen guarda _fahrenheit e passa-o por parâmetro ao CurrentConditions, ao DetailCard e à DaysRow, que só o entrega ao DayChip. IslandsGrid e AlertsForm não precisam dele, mas são reconstruídos na mesma.">
+    <rect x="10" y="122" width="880" height="206" rx="12" class="box muted"/>
+    <rect x="330" y="16" width="240" height="54" rx="8" class="box accent"/>
+    <text x="450" y="40" class="t b" text-anchor="middle">ForecastScreen</text>
+    <text x="450" y="60" class="t s" text-anchor="middle">guarda _fahrenheit (setState)</text>
+    <rect x="20" y="140" width="190" height="56" rx="8" class="box ok"/>
+    <text x="115.0" y="164" class="t b" text-anchor="middle">CurrentConditions</text>
+    <text x="115.0" y="184" class="t s" text-anchor="middle">mostra °F</text>
+    <rect x="230" y="140" width="160" height="56" rx="8" class="box warn"/>
+    <text x="310.0" y="164" class="t b" text-anchor="middle">DaysRow</text>
+    <text x="310.0" y="184" class="t s" text-anchor="middle">só passa adiante</text>
+    <rect x="410" y="140" width="160" height="56" rx="8" class="box ok"/>
+    <text x="490.0" y="164" class="t b" text-anchor="middle">DetailCard</text>
+    <text x="490.0" y="184" class="t s" text-anchor="middle">mostra °F</text>
+    <rect x="590" y="140" width="150" height="56" rx="8" class="box"/>
+    <text x="665.0" y="164" class="t b" text-anchor="middle">IslandsGrid</text>
+    <text x="665.0" y="184" class="t s" text-anchor="middle">não precisa</text>
+    <rect x="760" y="140" width="120" height="56" rx="8" class="box"/>
+    <text x="820.0" y="164" class="t b" text-anchor="middle">AlertsForm</text>
+    <text x="820.0" y="184" class="t s" text-anchor="middle">não precisa</text>
+    <rect x="235" y="250" width="150" height="56" rx="8" class="box ok"/>
+    <text x="310" y="274" class="t b" text-anchor="middle">DayChip</text>
+    <text x="310" y="294" class="t s" text-anchor="middle">mostra °F</text>
+    <line x1="400" y1="70" x2="118" y2="136" class="arrow accent"/>
+    <line x1="430" y1="70" x2="312" y2="136" class="arrow accent"/>
+    <line x1="470" y1="70" x2="488" y2="136" class="arrow accent"/>
+    <line x1="510" y1="70" x2="665" y2="140" stroke="var(--border)" stroke-width="2"/>
+    <line x1="540" y1="70" x2="820" y2="140" stroke="var(--border)" stroke-width="2"/>
+    <line x1="310" y1="196" x2="310" y2="246" class="arrow accent"/>
+    <text x="246" y="94" class="t s mono" text-anchor="end">fahrenheit</text>
+    <text x="370" y="112" class="t s mono" text-anchor="start">fahrenheit</text>
+    <text x="496" y="100" class="t s mono" text-anchor="start">fahrenheit</text>
+    <text x="320" y="228" class="t s mono" text-anchor="start">fahrenheit</text>
+    <text x="640" y="268" class="t b" text-anchor="middle">setState no ForecastScreen</text>
+    <text x="640" y="290" class="t s" text-anchor="middle">reconstrói tudo o que está nesta caixa</text>
+  </svg>
+  <figcaption>Cada seta é um parâmetro num construtor. A DaysRow recebe um valor que não usa.</figcaption>
+  </figure>
   <ul>
     <li>No nosso ecrã, a unidade °C/°F vai ser escolhida na <code>AppBar</code> do <code>ForecastScreen</code> e usada em <code>CurrentConditions</code>, no <code>DetailCard</code> e no <code>DayChip</code>, que está dentro da <code>DaysRow</code>.</li>
     <li>Com <code>setState</code> só, a variável tem de viver no antepassado comum (<code>ForecastScreen</code>) e descer por parâmetro, construtor a construtor. A <code>DaysRow</code> passa a receber a unidade só para a entregar ao <code>DayChip</code>. Numa app maior são cinco ou seis níveis: chama-se <em>prop drilling</em>.</li>
@@ -71,6 +142,44 @@
 
 <section class="slide">
   <h2><code>setState</code>: quando chega e quando deixa de chegar</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 280" role="img" aria-label="Duas árvores iguais. À esquerda, setState no DetailCard reconstrói só o DetailCard. À direita, setState no ForecastScreen reconstrói o ForecastScreen e todos os descendentes.">
+    <text x="230" y="28" class="t b" text-anchor="middle">setState no DetailCard</text>
+    <text x="230" y="48" class="t s" text-anchor="middle">passo 1: reconstrói 1 widget</text>
+    <rect x="155" y="68" width="150" height="36" rx="6" class="box"/>
+    <text x="230" y="91" class="t s" text-anchor="middle" style="fill:var(--fg)">ForecastScreen</text>
+    <line x1="230" y1="104" x2="89.0" y2="150" stroke="var(--border)" stroke-width="2"/>
+    <rect x="25" y="150" width="128" height="36" rx="6" class="box"/>
+    <text x="89.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">CurrentConditions</text>
+    <line x1="230" y1="104" x2="225.0" y2="150" stroke="var(--border)" stroke-width="2"/>
+    <rect x="165" y="150" width="120" height="36" rx="6" class="box"/>
+    <text x="225.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DaysRow</text>
+    <line x1="230" y1="104" x2="361.0" y2="150" stroke="var(--border)" stroke-width="2"/>
+    <rect x="297" y="150" width="128" height="36" rx="6" class="box accent"/>
+    <text x="361.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DetailCard</text>
+    <line x1="225" y1="186" x2="225" y2="226" stroke="var(--border)" stroke-width="2"/>
+    <rect x="170" y="226" width="110" height="36" rx="6" class="box"/>
+    <text x="225" y="249" class="t s" text-anchor="middle" style="fill:var(--fg)">DayChip</text>
+    <line x1="450" y1="20" x2="450" y2="270" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <text x="680" y="28" class="t b" text-anchor="middle">setState no ForecastScreen</text>
+    <text x="680" y="48" class="t s" text-anchor="middle">passo 2: reconstrói o ecrã todo</text>
+    <rect x="605" y="68" width="150" height="36" rx="6" class="box accent"/>
+    <text x="680" y="91" class="t s" text-anchor="middle" style="fill:var(--fg)">ForecastScreen</text>
+    <line x1="680" y1="104" x2="539.0" y2="150" stroke="var(--border)" stroke-width="2"/>
+    <rect x="475" y="150" width="128" height="36" rx="6" class="box accent"/>
+    <text x="539.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">CurrentConditions</text>
+    <line x1="680" y1="104" x2="675.0" y2="150" stroke="var(--border)" stroke-width="2"/>
+    <rect x="615" y="150" width="120" height="36" rx="6" class="box accent"/>
+    <text x="675.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DaysRow</text>
+    <line x1="680" y1="104" x2="811.0" y2="150" stroke="var(--border)" stroke-width="2"/>
+    <rect x="747" y="150" width="128" height="36" rx="6" class="box accent"/>
+    <text x="811.0" y="173" class="t s" text-anchor="middle" style="fill:var(--fg)">DetailCard</text>
+    <line x1="675" y1="186" x2="675" y2="226" stroke="var(--border)" stroke-width="2"/>
+    <rect x="620" y="226" width="110" height="36" rx="6" class="box accent"/>
+    <text x="675" y="249" class="t s" text-anchor="middle" style="fill:var(--fg)">DayChip</text>
+  </svg>
+  <figcaption>A cor marca o que volta a correr o build. Quanto mais abaixo o setState, menos trabalho.</figcaption>
+  </figure>
   <ul>
     <li><strong>Chega</strong> quando o estado é de um ecrã ou de um widget e ninguém mais precisa dele: um contador, um formulário, um cartão que abre e fecha, um filtro de pesquisa local.</li>
     <li><strong>Chega</strong> para protótipos e para ecrãs isolados. Não é "má prática"; é a ferramenta mais simples e o Flutter foi desenhado para ela.</li>
@@ -82,6 +191,42 @@
 
 <section class="slide">
   <h2>ChangeNotifier, Provider e InheritedWidget</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 290" role="img" aria-label="A mesma árvore com Provider: UnitSettings, um ChangeNotifier, fica fora dos construtores. CurrentConditions, DayChip e DetailCard fazem watch e são avisados diretamente; a DaysRow já não recebe nada. O botão chama toggle com read.">
+    <rect x="300" y="16" width="220" height="44" rx="8" class="box"/>
+    <text x="410" y="44" class="t b" text-anchor="middle">ForecastScreen</text>
+    <line x1="410" y1="60" x2="110.0" y2="124" stroke="var(--border)" stroke-width="2"/>
+    <rect x="20" y="124" width="180" height="50" rx="8" class="box ok"/>
+    <text x="110.0" y="146" class="t b" text-anchor="middle">CurrentConditions</text>
+    <text x="110.0" y="165" class="t s mono" text-anchor="middle">context.watch</text>
+    <line x1="410" y1="60" x2="300.0" y2="124" stroke="var(--border)" stroke-width="2"/>
+    <rect x="220" y="124" width="160" height="50" rx="8" class="box"/>
+    <text x="300.0" y="146" class="t b" text-anchor="middle">DaysRow</text>
+    <text x="300.0" y="165" class="t s" text-anchor="middle">nem sabe da unidade</text>
+    <line x1="410" y1="60" x2="480.0" y2="124" stroke="var(--border)" stroke-width="2"/>
+    <rect x="400" y="124" width="160" height="50" rx="8" class="box ok"/>
+    <text x="480.0" y="146" class="t b" text-anchor="middle">DetailCard</text>
+    <text x="480.0" y="165" class="t s mono" text-anchor="middle">context.watch</text>
+    <line x1="300" y1="174" x2="300" y2="226" stroke="var(--border)" stroke-width="2"/>
+    <rect x="225" y="226" width="150" height="50" rx="8" class="box ok"/>
+    <text x="300" y="248" class="t b" text-anchor="middle">DayChip</text>
+    <text x="300" y="267" class="t s mono" text-anchor="middle">context.watch</text>
+    <rect x="640" y="112" width="240" height="70" rx="10" class="box accent"/>
+    <text x="760" y="140" class="t b" text-anchor="middle">UnitSettings</text>
+    <text x="760" y="160" class="t s mono" text-anchor="middle">ChangeNotifier</text>
+    <text x="760" y="176" class="t s" text-anchor="middle">posto na árvore pelo Provider</text>
+    <polyline points="700,110 700,92 110,92 110,120" class="arrow accent dashed"/>
+    <line x1="638" y1="146" x2="564" y2="148" class="arrow accent dashed"/>
+    <line x1="650" y1="182" x2="378" y2="246" class="arrow accent dashed"/>
+    <text x="690" y="86" class="t s" text-anchor="end">avisa quem faz watch</text>
+    <rect x="640" y="226" width="240" height="50" rx="8" class="box"/>
+    <text x="760" y="248" class="t b" text-anchor="middle">botão °C/°F</text>
+    <text x="760" y="267" class="t s mono" text-anchor="middle">read&lt;UnitSettings&gt;().toggle()</text>
+    <line x1="760" y1="224" x2="760" y2="186" class="arrow"/>
+    <text x="770" y="210" class="t s mono" text-anchor="start">toggle()</text>
+  </svg>
+  <figcaption>Compara com o slide de passar por parâmetro: as setas deixaram de atravessar a DaysRow. Fazemos isto na aula 13.</figcaption>
+  </figure>
   <ul>
     <li><code>InheritedWidget</code> é o mecanismo do próprio Flutter para pôr um valor na árvore e deixar qualquer descendente lê-lo com <code>context</code>. O <code>Theme.of(context)</code> que usamos em todos os <code>build</code> é isto.</li>
     <li><code>ChangeNotifier</code> é uma classe com <code>notifyListeners()</code>. O teu estado estende-a: <code>class UnitSettings extends ChangeNotifier { bool fahrenheit = false; void toggle() { fahrenheit = !fahrenheit; notifyListeners(); } }</code>.</li>
@@ -94,13 +239,61 @@
 
 <section class="slide">
   <h2>BLoC, Cubit e Riverpod</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 280" role="img" aria-label="Quatro faixas com o caminho de uma ação. setState: toque, State, rebuild do subtree. Provider: toque, notifier, rebuild de quem faz watch. BLoC: evento, Bloc, stream de estados, UI. Riverpod: toque, provider global, ref.watch sem context.">
+    <rect x="20" y="16" width="140" height="48" rx="8" class="box"/>
+    <text x="90" y="45" class="t b" text-anchor="middle">setState</text>
+    <rect x="190" y="20" width="206" height="40" rx="6" class="box muted"/>
+    <text x="293" y="45" class="t s" text-anchor="middle" style="fill:var(--fg)">toque</text>
+    <line x1="398" y1="40" x2="428" y2="40" class="arrow"/>
+    <rect x="432" y="20" width="206" height="40" rx="6" class="box"/>
+    <text x="535" y="45" class="t s" text-anchor="middle" style="fill:var(--fg)">State · setState</text>
+    <line x1="640" y1="40" x2="670" y2="40" class="arrow"/>
+    <rect x="674" y="20" width="206" height="40" rx="6" class="box"/>
+    <text x="777" y="45" class="t s" text-anchor="middle" style="fill:var(--fg)">rebuild do subtree</text>
+    <rect x="20" y="82" width="140" height="48" rx="8" class="box accent"/>
+    <text x="90" y="111" class="t b" text-anchor="middle">Provider</text>
+    <rect x="190" y="86" width="206" height="40" rx="6" class="box muted"/>
+    <text x="293" y="111" class="t s" text-anchor="middle" style="fill:var(--fg)">toque</text>
+    <line x1="398" y1="106" x2="428" y2="106" class="arrow"/>
+    <rect x="432" y="86" width="206" height="40" rx="6" class="box"/>
+    <text x="535" y="111" class="t s" text-anchor="middle" style="fill:var(--fg)">Notifier · notifyListeners</text>
+    <line x1="640" y1="106" x2="670" y2="106" class="arrow"/>
+    <rect x="674" y="86" width="206" height="40" rx="6" class="box"/>
+    <text x="777" y="111" class="t s" text-anchor="middle" style="fill:var(--fg)">rebuild de quem faz watch</text>
+    <rect x="20" y="148" width="140" height="48" rx="8" class="box"/>
+    <text x="90" y="177" class="t b" text-anchor="middle">BLoC / Cubit</text>
+    <rect x="190" y="152" width="146" height="40" rx="6" class="box muted"/>
+    <text x="263" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">evento</text>
+    <line x1="338" y1="172" x2="368" y2="172" class="arrow"/>
+    <rect x="372" y="152" width="146" height="40" rx="6" class="box"/>
+    <text x="444" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">Bloc</text>
+    <line x1="519" y1="172" x2="549" y2="172" class="arrow"/>
+    <rect x="553" y="152" width="146" height="40" rx="6" class="box"/>
+    <text x="626" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">Stream de estados</text>
+    <line x1="700" y1="172" x2="730" y2="172" class="arrow"/>
+    <rect x="734" y="152" width="146" height="40" rx="6" class="box"/>
+    <text x="807" y="177" class="t s" text-anchor="middle" style="fill:var(--fg)">UI</text>
+    <rect x="20" y="214" width="140" height="48" rx="8" class="box"/>
+    <text x="90" y="243" class="t b" text-anchor="middle">Riverpod</text>
+    <rect x="190" y="218" width="206" height="40" rx="6" class="box muted"/>
+    <text x="293" y="243" class="t s" text-anchor="middle" style="fill:var(--fg)">toque</text>
+    <line x1="398" y1="238" x2="428" y2="238" class="arrow"/>
+    <rect x="432" y="218" width="206" height="40" rx="6" class="box"/>
+    <text x="535" y="243" class="t s" text-anchor="middle" style="fill:var(--fg)">provider global e tipado</text>
+    <line x1="640" y1="238" x2="670" y2="238" class="arrow"/>
+    <rect x="674" y="218" width="206" height="40" rx="6" class="box"/>
+    <text x="777" y="243" class="t s" text-anchor="middle" style="fill:var(--fg)">ref.watch, sem context</text>
+  </svg>
+  <figcaption>O caminho é sempre ação, estado, UI. Muda onde o estado vive e quantos passos há no meio.</figcaption>
+  </figure>
   <div class="table-wrap"><table>
-  <thead><tr><th>Abordagem</th><th>Como funciona</th><th>Quando faz sentido</th></tr></thead>
+  <thead><tr><th>Abordagem</th><th>O que acrescenta</th><th>Quando faz sentido</th></tr></thead>
   <tbody>
-  <tr><td><strong>setState</strong></td><td>O <code>State</code> guarda e reconstrói o subtree</td><td>Ecrã isolado, poucos widgets, protótipos</td></tr>
-  <tr><td><strong>Provider</strong> + ChangeNotifier</td><td>Objeto observável na árvore; <code>watch</code> reconstrói só quem lê</td><td>Vários ecrãs partilham estado; equipas pequenas; o nosso projeto</td></tr>
-  <tr><td><strong>BLoC</strong> / Cubit</td><td>Eventos entram, estados imutáveis saem por um <code>Stream</code>; cada transição é previsível e testável; mais ficheiros</td><td>Equipas grandes, requisitos fortes de teste, apps bancárias</td></tr>
-  <tr><td><strong>Riverpod</strong></td><td>Providers globais e tipados, sem depender do <code>BuildContext</code>; erros apanhados em compilação</td><td>Quem já domina Provider e quer mais segurança e composição</td></tr>
+  <tr><td><strong>setState</strong></td><td>Nada: é do próprio Flutter</td><td>Ecrã isolado, poucos widgets, protótipos</td></tr>
+  <tr><td><strong>Provider</strong> + ChangeNotifier</td><td>Um objeto observável na árvore; <code>watch</code> reconstrói só quem lê</td><td>Vários ecrãs partilham estado; equipas pequenas; o nosso projeto</td></tr>
+  <tr><td><strong>BLoC</strong> / Cubit</td><td>Estados imutáveis num <code>Stream</code>; cada transição é previsível e testável; mais ficheiros</td><td>Equipas grandes, requisitos fortes de teste, apps bancárias</td></tr>
+  <tr><td><strong>Riverpod</strong></td><td>Providers globais e tipados, sem <code>BuildContext</code>; erros apanhados em compilação</td><td>Quem já domina Provider e quer mais segurança</td></tr>
   </tbody></table></div>
   <p>Todas fazem a mesma coisa por baixo: um objeto que guarda estado e avisa quem o observa. A diferença está na cerimónia e nas garantias.</p>
   <div class="callout"><strong>Analogia</strong> Onde fica a lista de compras. Um post-it no frigorífico de um quarto: só quem entra nesse quarto o vê (<code>setState</code>). Um quadro na cozinha que toda a casa consulta e que avisa quando muda (<code>ChangeNotifier</code> com Provider). Um livro de registos com todas as alterações, datadas e assinadas (BLoC: eventos e estados). O quadro chega para a maioria das casas.</div>
@@ -156,6 +349,34 @@
 
 <section class="slide">
   <h2>Critério para escolher, e o que vamos usar</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 270" role="img" aria-label="Fluxograma: se só um widget precisa do estado, setState. Se vários precisam e a equipa é pequena, Provider, que é o do projeto. Se a equipa é grande ou há regras de teste fortes, BLoC ou Riverpod.">
+    <rect x="20" y="90" width="250" height="80" rx="10" class="box warn"/>
+    <text x="145" y="124" class="t b" text-anchor="middle">Quantos widgets precisam</text>
+    <text x="145" y="146" class="t b" text-anchor="middle">deste estado?</text>
+    <rect x="360" y="16" width="220" height="60" rx="10" class="box ok"/>
+    <text x="470" y="42" class="t b" text-anchor="middle">setState</text>
+    <text x="470" y="62" class="t s" text-anchor="middle">cartão, pesquisa, formulário</text>
+    <rect x="360" y="160" width="260" height="80" rx="10" class="box warn"/>
+    <text x="490" y="192" class="t b" text-anchor="middle">Equipa grande ou regras</text>
+    <text x="490" y="214" class="t b" text-anchor="middle">de teste fortes?</text>
+    <rect x="690" y="110" width="190" height="60" rx="10" class="box accent"/>
+    <text x="785" y="136" class="t b" text-anchor="middle">Provider</text>
+    <text x="785" y="156" class="t s" text-anchor="middle">o nosso projeto</text>
+    <rect x="690" y="200" width="190" height="60" rx="10" class="box"/>
+    <text x="785" y="226" class="t b" text-anchor="middle">BLoC / Riverpod</text>
+    <text x="785" y="246" class="t s" text-anchor="middle">apps grandes</text>
+    <polyline points="272,110 320,110 320,46 356,46" class="arrow accent"/>
+    <polyline points="272,150 320,150 320,200 356,200" class="arrow"/>
+    <text x="328" y="86" class="t s" text-anchor="start">um</text>
+    <text x="328" y="182" class="t s" text-anchor="start">vários</text>
+    <polyline points="622,186 655,186 655,140 686,140" class="arrow accent"/>
+    <polyline points="622,214 655,214 655,230 686,230" class="arrow"/>
+    <text x="662" y="130" class="t s" text-anchor="start">não</text>
+    <text x="662" y="250" class="t s" text-anchor="start">sim</text>
+  </svg>
+  <figcaption>Duas perguntas chegam para a maior parte das decisões. As setas coloridas são as escolhas do projeto.</figcaption>
+  </figure>
   <ul>
     <li><strong>Quantos ecrãs partilham o estado?</strong> Um: <code>setState</code>. Vários: Provider ou acima.</li>
     <li><strong>Precisas de testar a lógica sem widgets?</strong> Então a lógica tem de viver fora dos widgets: Provider, BLoC ou Riverpod.</li>
