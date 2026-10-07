@@ -14,7 +14,7 @@
     { n: 6, d: "2026-09-29", h: "08:30-10:30", t: "UX mobile e layouts", te: "Mobile UX and layouts", repo: "pdm-aula-06", kind: "" },
     { n: 7, d: "2026-09-30", h: "16:00-18:00", t: "Layouts (continuação): Stack, listas e widgets próprios", te: "Layouts (continued): Stack, lists and custom widgets", repo: "pdm-aula-06", kind: "" },
     { n: 8, d: "2026-10-06", h: "08:30-11:30", t: "Estado: do setState às arquiteturas", te: "State: from setState to architectures", repo: "pdm-aula-08", kind: "" },
-    { n: 9, d: "2026-10-07", h: "16:00-18:00", t: "Navegação e temas", te: "Navigation and themes", repo: "pdm-aula-09", kind: "" },
+    { n: 9, d: "2026-10-07", h: "16:00-18:00", t: "Navegação", te: "Navigation", repo: "pdm-aula-09", kind: "" },
     { n: 10, d: "2026-10-12", h: "16:00-18:00", t: "Acessibilidade, i18n e mini-projeto", te: "Accessibility, i18n and mini-project", repo: "pdm-aula-10", kind: "" },
     { n: 11, d: "2026-10-13", h: "08:30-10:30", t: "Qualidade: lints, organização e git flow", te: "Quality: lints, organisation and git flow", repo: "pdm-aula-11", kind: "" },
     { n: 12, d: "2026-10-14", h: "16:00-18:00", t: "Network layer e a API do curso", te: "Network layer and the course API", repo: "pdm-aula-12", kind: "" },

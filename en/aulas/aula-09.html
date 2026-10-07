@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lesson 09 · Navigation and themes · PDM</title>
+<title>Lesson 09 · Navigation · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,10 +25,10 @@
 
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 09 · Week 5 · Wednesday, 7 October 2026 · 16:00 to 18:00</p>
-  <h1>Navigation and themes</h1>
-  <p class="lead">Theory: the screens of an app organised as a stack, what "back" does to state, and routes declared as URLs. Practice, on the islands app: opening an island and returning a result, routes with <code>go_router</code>, a bar with three tabs, and the light and dark theme.</p>
+  <h1>Navigation</h1>
+  <p class="lead">Theory: the screens of an app organised as a stack, what "back" does to state, and routes declared as URLs. Practice, on the islands app: opening an island and returning a result, routes with <code>go_router</code> and a bar with three tabs.</p>
   <div class="meta"><span>Repository: pdm-aula-09</span></div>
-  <aside class="notes">Two-hour lesson, and it starts with step 4 of lesson 8, which was left undone. Reference times: form recap until 16:15; theory until 16:40; clone and step 1 until 17:00; step 2 until 17:15; step 3 until 17:35; step 4 and wrap-up until 18:00. If time is short, step 4 becomes your demo: the <code>passo-4</code> branch has everything. Before the theory, ask everyone to open their banking app or Instagram and count how many screens they can stack before pressing back. You use the count on the stack slide.</aside>
+  <aside class="notes">Two-hour lesson, and it starts with step 4 of lesson 8, which was left undone. Reference times: form recap until 16:15; theory until 16:40; clone and step 1 until 17:05; step 2 until 17:25; step 3 and wrap-up until 18:00. Before the theory, ask everyone to open their banking app or Instagram and count how many screens they can stack before pressing back. You use the count on the stack slide.</aside>
 </section>
 
 <section class="slide">
@@ -53,7 +53,6 @@ flutter pub get</code></pre>
     <li>Recognise the list → detail, tabs with independent stacks, modal and bottom sheet patterns.</li>
     <li>Justify declarative routes with URLs and explain what a deep link is.</li>
     <li>Navigate with <code>Navigator</code> and with <code>go_router</code>, passing an <code>id</code> and returning a result.</li>
-    <li>Define a Material 3 theme from a seed colour, with light, dark and system mode.</li>
   </ul>
 </section>
 
@@ -87,11 +86,11 @@ flutter pub get</code></pre>
     </div>
   </figure>
   <p>This is what you do in <strong>steps 1 and 2</strong>: first with <code>Navigator.push</code>, then with <code>go_router</code> and the path <code>/island/pico</code>. In the app, both steps look the same.</p>
-  <aside class="notes">Show this slide before the theory, so they know where they are going. These are screenshots of the app at the end of the lesson (branch <code>passo-4</code>, in Chrome). Ask: when Pico opens, what happens to the grid underneath? You answer it on the next slide, the stack: it stays alive, with its scroll and its search.</aside>
+  <aside class="notes">Show this slide before the theory, so they know where they are going. These are screenshots of the app at the end of the lesson (branch <code>passo-3</code>, in Chrome). Ask: when Pico opens, what happens to the grid underneath? You answer it on the next slide, the stack: it stays alive, with its scroll and its search.</aside>
 </section>
 
 <section class="slide">
-  <h2>Today, in the app (2 of 2): three tabs and the theme</h2>
+  <h2>Today, in the app (2 of 2): three tabs</h2>
   <figure class="anat three">
     <div class="anat-cell">
       <div class="phone">
@@ -109,13 +108,13 @@ flutter pub get</code></pre>
     </div>
     <div class="anat-cell">
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-definicoes-escuro.jpg" alt="The Definições tab in dark theme, with Sistema, Claro and Escuro, and Escuro selected.">
-        <span class="w warn" style="--x:14;--y:102;--w:384;--h:36;--i:2"><b>4</b></span>
+        <img src="../assets/img/aula-09/ecra-definicoes.jpg" alt="The Definições tab, for now with only the app version.">
+        <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:2"><b>3</b></span>
       </div>
-      <p><strong>Definições</strong> (settings): system, light or dark, and the whole app changes without restarting.</p>
+      <p><strong>Definições</strong> (settings): only the version for now; it gets options in the next lessons.</p>
     </div>
   </figure>
-  <p>The bottom bar is <strong>step 3</strong> (<code>NavigationBar</code> with <code>StatefulShellRoute</code>): each tab keeps its own stack. The theme is <strong>step 4</strong>.</p>
+  <p>The bottom bar is <strong>step 3</strong> (<code>NavigationBar</code> with <code>StatefulShellRoute</code>): each tab keeps its own stack.</p>
   <aside class="notes">Point at the bar in the first two screens: it is the same bar, only the tab changes. Ask who knows this behaviour: Instagram and YouTube do the same, you open a video in Home, go to Subscriptions, come back and the video is still there. It is the "tabs with independent stacks" pattern from the patterns table.</aside>
 </section>
 
@@ -224,47 +223,13 @@ flutter pub get</code></pre>
   <div class="callout"><strong>Analogy</strong> A full address, with street, number, floor and door, instead of "go to the city and look around". The URL takes you to the app and to the right screen, and the path segments (<code>/island/pico</code>) are the number and the door.</div>
 </section>
 
-<section class="slide">
-  <h2>Themes (1 of 2): ThemeData and ColorScheme</h2>
-  <ul>
-    <li><code>ThemeData</code> is the set of colours, typography, shapes and component styles for the whole app. It lives in the <code>MaterialApp</code> and any widget reads it with <code>Theme.of(context)</code>.</li>
-    <li><code>ColorScheme.fromSeed(seedColor: ...)</code> generates, from one colour, the 30-odd colours of Material 3: primary, secondary, tertiary, error, surface, the <code>on*</code> ones for text on top, the <code>*Container</code> ones for soft backgrounds. It guarantees contrast between pairs.</li>
-    <li>Material widgets use the scheme by themselves: a <code>FilledButton</code> is <code>primary</code> with <code>onPrimary</code> text; a <code>Card</code> is <code>surfaceContainer</code>. If you do not set colours by hand, the app is coherent for free.</li>
-    <li>Typography comes from the <code>textTheme</code>: <code>displayLarge</code> down to <code>labelSmall</code>. Use them instead of fixed <code>fontSize</code> values.</li>
-  </ul>
-  <p><strong>For the tests:</strong> <code>ColorScheme.fromSeed</code> generates the whole Material 3 palette from one colour; widgets read the theme with <code>Theme.of(context)</code>.</p>
-</section>
-
-<section class="slide">
-  <h2>Themes (2 of 2): light, dark and consistency</h2>
-  <figure class="anat two">
-    <div class="anat-cell">
-      <div class="phone"><img src="../assets/img/aula-09/ecra-previsao.jpg" alt="The forecast screen in light theme."></div>
-      <p><strong>Light</strong>: <code>buildTheme(Brightness.light)</code></p>
-    </div>
-    <div class="anat-cell">
-      <div class="phone"><img src="../assets/img/aula-09/ecra-previsao-escuro.jpg" alt="The same screen in dark theme: dark grey background, light text, the same photo."></div>
-      <p><strong>Dark</strong>: the same seed, <code>Brightness.dark</code>. This is step 4.</p>
-    </div>
-  </figure>
-  <ul>
-    <li><code>theme</code> and <code>darkTheme</code> in the <code>MaterialApp</code>; <code>themeMode</code> decides which one: <code>ThemeMode.system</code> follows the phone, <code>light</code> and <code>dark</code> force one.</li>
-    <li>A dark theme is not the light one inverted: dark grey surfaces (not pure black), lighter and less saturated primary colours, shadows replaced by tones. <code>fromSeed</code> with <code>brightness: Brightness.dark</code> takes care of this.</li>
-    <li>Fixed colours (<code>Colors.white</code>, <code>Color(0xFF...)</code>) in a widget break in dark mode. Rule: colours only from the <code>colorScheme</code>; exceptions (the yellow of a weather warning) declared in one place only.</li>
-    <li>Dark mode is the most used accessibility preference and saves battery on OLED screens. The stores expect it.</li>
-    <li>Consistency: one theme, one place to change it, all screens alike. The moment a screen "looks like it is from another app" is a theme bug.</li>
-  </ul>
-  <p><strong>For the tests:</strong> <code>ThemeMode.system</code> follows the system preference; fixed colours in widgets are the classic dark mode mistake.</p>
-  <aside class="notes">At the end of the lesson, show the Tempo Açores from the <code>passo-4</code> branch changing theme when you change the system setting on the phone, without restarting. Then show a widget with Colors.white in dark mode: white text on white. It is an image that sticks.</aside>
-</section>
-
 <section class="slide" data-part="Practice">
   <h2>Getting started: today's repository</h2>
 <pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-09.git
 cd pdm-aula-09
 flutter pub get</code></pre>
   <ol class="steps">
-    <li>Open the <code>pdm-aula-09</code> folder in VS Code. It is the app from the end of lesson 8, with the form already validated, plus three screens not yet connected: <code>lib/island_screen.dart</code> (one island), <code>lib/alerts_screen.dart</code> (the alerts form, which has left the main screen) and <code>lib/settings_screen.dart</code> (settings). You work on the comments <code>TODO 1</code> to <code>TODO 4</code>.</li>
+    <li>Open the <code>pdm-aula-09</code> folder in VS Code. It is the app from the end of lesson 8, with the form already validated, plus three screens not yet connected: <code>lib/island_screen.dart</code> (one island), <code>lib/alerts_screen.dart</code> (the alerts form, which has left the main screen) and <code>lib/settings_screen.dart</code> (settings). You work on the comments <code>TODO 1</code> to <code>TODO 3</code>.</li>
     <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → your Android or <strong>Chrome</strong>. Then <kbd>F5</kbd>.</li>
     <li>Check what you see: the forecast screen with the search and the islands grid. Tapping an island does nothing yet.</li>
   </ol>
@@ -429,75 +394,14 @@ flutter pub get</code></pre>
 </section>
 
 <section class="slide">
-  <h2>4. Light and dark theme</h2>
-<pre data-title="lib/main.dart · on the passo-4 branch"><code class="language-dart">/// The same theme for light and dark: only the brightness changes.
-ThemeData buildTheme(Brightness brightness) {
-  return ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.teal,
-      brightness: brightness,
-    ),
-    useMaterial3: true,
-    // Inter, on top of the text colours of this brightness
-    textTheme: GoogleFonts.interTextTheme(
-      ThemeData(brightness: brightness).textTheme,
-    ),
-  );
-}</code></pre>
-<pre data-title="lib/settings_screen.dart · already there"><code class="language-dart">/// The theme chosen by the user. A ValueNotifier holds one value and tells
-/// whoever listens when it changes: WeatherApp listens, in main.dart.
-final themeMode = ValueNotifier(ThemeMode.system);</code></pre>
-  <ul>
-    <li><code>theme</code> and <code>darkTheme</code> in the <code>MaterialApp</code>, and <code>themeMode</code> chooses: <code>ThemeMode.system</code> follows the phone, <code>light</code> and <code>dark</code> force one.</li>
-    <li>The mode is chosen in settings, but the one who uses it is <code>MaterialApp</code>, at the top. Passing it by parameter does not work: the router is in between. A <code>ValueNotifier</code> keeps the value in one place and tells whoever is listening. It is the small version of the <code>ChangeNotifier</code> from the lesson 8 theory.</li>
-    <li><code>ValueListenableBuilder</code> listens to the <code>ValueNotifier</code> and rebuilds what is in its <code>builder</code> every time the value changes.</li>
-  </ul>
-  <div class="callout"><strong>Ask the class</strong> Why does <code>buildTheme</code> pass <code>ThemeData(brightness: brightness).textTheme</code> to <code>interTextTheme</code>, instead of <code>GoogleFonts.interTextTheme()</code> as until now?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> <code>GoogleFonts.interTextTheme()</code> with no argument starts from the light text theme, which has dark colours. In dark mode that gives dark text on a dark background, unreadable. Passing the text theme of the same <code>brightness</code> keeps the Inter font with the right colours. It is the classic mistake from the theory slide, a fixed colour breaking dark mode, only hidden inside a function. Whoever wants to see it swaps to <code>GoogleFonts.interTextTheme()</code> and switches to Escuro. In lesson 13 the <code>ValueNotifier</code> becomes a <code>ChangeNotifier</code> with Provider, and in a later lesson the mode is saved.</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 4: the theme changes in settings</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-3
-flutter pub get</code></pre>
-<pre data-title="lib/main.dart · WeatherApp, where TODO 4 is"><code class="language-dart">// builds the MaterialApp again every time themeMode changes
-return ValueListenableBuilder(
-  valueListenable: themeMode,
-  builder: (context, mode, _) =&gt; MaterialApp.router(
-    title: 'Tempo Açores',
-    theme: buildTheme(Brightness.light),
-    darkTheme: buildTheme(Brightness.dark),
-    themeMode: mode, // ThemeMode.system, .light or .dark
-    routerConfig: router,
-  ),
-);</code></pre>
-<pre data-title="lib/settings_screen.dart · where TODO 4 is"><code class="language-dart">ValueListenableBuilder(
-  valueListenable: themeMode,
-  builder: (context, mode, _) =&gt; SegmentedButton&lt;ThemeMode&gt;(
-    segments: const [
-      ButtonSegment(value: ThemeMode.system, label: Text('Sistema')),
-      // and Claro (ThemeMode.light), Escuro (ThemeMode.dark)
-    ],
-    selected: {mode},
-    onSelectionChanged: (s) =&gt; themeMode.value = s.first,
-  ),
-),</code></pre>
-  <div class="callout task"><strong>Do</strong> In <code>main.dart</code>, write the <code>buildTheme</code> from the previous slide and wrap <code>MaterialApp.router</code> in the <code>ValueListenableBuilder</code>; import <code>settings_screen.dart</code>. In <code>settings_screen.dart</code>, the <code>SegmentedButton</code> with the three modes in place of the comment.</div>
-  <p><strong>In the app:</strong> in Definições, "Escuro" puts the whole app in the dark theme, without restarting, and the text stays readable; "Claro" goes back; "Sistema" follows the mode of the phone or computer.</p>
-  <aside class="notes">The <code>SegmentedButton</code> is the same as the °C/°F unit one from lesson 8; the difference is that the value lives in the <code>ValueNotifier</code> and not in a <code>State</code>. Assigning <code>themeMode.value</code> already notifies the listeners: there is no <code>setState</code>. Typical mistake: <code>themeMode = s.first</code> instead of <code>themeMode.value = s.first</code>, which does not compile because <code>themeMode</code> is <code>final</code>. To show "Sistema": change the operating system's dark mode with the app open. For those who finish early: look for fixed colours in the screens. The <code>Colors.white</code> and <code>Colors.black54</code> in <code>IslandHeader</code> sit on top of a photo and look fine in both modes. The solution is on the <code>passo-4</code> branch.</aside>
-</section>
-
-<section class="slide">
   <h2>Where we got to</h2>
   <ol class="steps">
     <li><code>IslandCard</code> opens <code>IslandScreen</code> with <code>Navigator.push</code> and waits for the result; the star returns <code>true</code> with <code>Navigator.pop</code> (step 1).</li>
     <li><code>router.dart</code> with <code>GoRouter</code>: <code>/</code> and <code>/island/:id</code>, <code>MaterialApp.router</code> and <code>context.push</code> by path (step 2).</li>
     <li><code>StatefulShellRoute.indexedStack</code> with the <code>NavigationBar</code>: three tabs, each with its own stack (step 3).</li>
-    <li><code>buildTheme</code> light and dark from the same seed, and <code>themeMode</code> in a <code>ValueNotifier</code> that settings change (step 4).</li>
   </ol>
-  <p>The <code>passo-4</code> branch is the final state: compare your code with it.</p>
-  <aside class="notes">The typical mistakes in these steps: in step 1, <code>onTap</code> without <code>async</code>; in step 2, the child route starting with <code>/</code> and the missing <code>go_router</code> import; in step 3, the <code>island/:id</code> route outside the first branch (the bar disappears); in step 4, <code>GoogleFonts.interTextTheme()</code> with no argument (dark text in dark mode). On Monday the lesson is from 16:00 to 18:00.</aside>
+  <p>The <code>passo-3</code> branch is the final state: compare your code with it.</p>
+  <aside class="notes">The typical mistakes in these steps: in step 1, <code>onTap</code> without <code>async</code>; in step 2, the child route starting with <code>/</code> and the missing <code>go_router</code> import; in step 3, the <code>island/:id</code> route outside the first branch (the bar disappears). On Monday the lesson is from 16:00 to 18:00.</aside>
 </section>
 
 <section class="slide" data-part="End">
@@ -507,8 +411,8 @@ return ValueListenableBuilder(
       <h3>Next lesson</h3>
       <ul>
         <li>Monday, 12 October, from 16:00 to 18:00: accessibility, internationalisation and the individual mini-project.</li>
-        <li>The mini-project builds on what we have done so far: grid, detail screen, navigation and theme.</li>
-        <li>Today's final state is on the <code>passo-4</code> branch: <code>git stash -u</code> and then <code>git checkout passo-4</code>.</li>
+        <li>The mini-project builds on what we have done so far: grid, detail screen and navigation.</li>
+        <li>Today's final state is on the <code>passo-3</code> branch: <code>git stash -u</code> and then <code>git checkout passo-3</code>.</li>
       </ul>
     </div>
     <div>
@@ -518,7 +422,6 @@ return ValueListenableBuilder(
         <li><a href="https://docs.flutter.dev/cookbook/navigation/returning-data" target="_blank" rel="noopener">Return data from a screen</a>: step 1, as the official recipe.</li>
         <li><a href="https://pub.dev/packages/go_router" target="_blank" rel="noopener">go_router</a>: routes, parameters and <code>StatefulShellRoute</code>, with examples.</li>
         <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a>: what we will configure in lesson 22.</li>
-        <li><a href="https://docs.flutter.dev/cookbook/design/themes" target="_blank" rel="noopener">Use themes to share colors and font styles</a>: the official recipe for themes.</li>
       </ul>
     </div>
   </div>
