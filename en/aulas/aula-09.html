@@ -26,7 +26,7 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 09 · Week 5 · Wednesday, 7 October 2026 · 16:00 to 18:00</p>
   <h1>Navigation</h1>
-  <p class="lead">Theory: the screens of an app organised as a stack, what "back" does to state, and routes declared as URLs. Practice, on the islands app: opening an island and returning a result, routes with <code>go_router</code> and a bar with three tabs.</p>
+  <p class="lead">Theory: the screens of an app organised as a stack, what "back" does to state, and routes declared as URLs. Practice, on the islands app: opening an island and coming back, routes with <code>go_router</code> and a bar with three tabs.</p>
   <div class="meta"><span>Repository: pdm-aula-09</span></div>
   <aside class="notes">Two-hour lesson. Reference times: theory until 16:35; clone and step 1 until 17:05; step 2 until 17:25; step 3 and wrap-up until 18:00. Before the theory, ask everyone to open their banking app or Instagram and count how many screens they can stack before pressing back. You use the count on the stack slide.</aside>
 </section>
@@ -37,7 +37,7 @@
     <li>Explain the navigation stack, what <code>push</code> and <code>pop</code> do to state, and how Android and iOS handle "back".</li>
     <li>Recognise the list → detail, tabs with independent stacks, modal and bottom sheet patterns.</li>
     <li>Justify declarative routes with URLs and explain what a deep link is.</li>
-    <li>Navigate with <code>Navigator</code> and with <code>go_router</code>, passing an <code>id</code> and returning a result.</li>
+    <li>Navigate with <code>Navigator</code> and with <code>go_router</code>, passing the island's <code>id</code>.</li>
   </ul>
 </section>
 
@@ -54,20 +54,20 @@
     </div>
     <span class="to" aria-hidden="true">→</span>
     <div class="step">
-      <strong><span class="n">2</span>pop with a result</strong>
+      <strong><span class="n">2</span>pop</strong>
       <div class="phone">
-        <img src="../../assets/img/aula-09/ecra-ilha.jpg" alt="The Pico screen, with a photo, the five days and a tap on the star in the top bar.">
-        <span class="tap" style="--x:392;--y:28"></span>
+        <img src="../../assets/img/aula-09/ecra-ilha.jpg" alt="The Pico screen, with a photo, the five days and a tap on the back arrow.">
+        <span class="tap" style="--x:28;--y:28"></span>
       </div>
-      <span>The star closes the screen and returns <code>true</code>. The arrow closes it and returns nothing.</span>
+      <span>The ← arrow closes the Pico screen.</span>
     </div>
     <span class="to" aria-hidden="true">→</span>
     <div class="step">
-      <strong><span class="n">3</span>the grid receives</strong>
+      <strong><span class="n">3</span>the grid as it was</strong>
       <div class="phone">
-        <img src="../../assets/img/aula-09/ecra-favoritos.jpg" alt="Back on the grid, at the same scroll position, with the SnackBar Pico nos favoritos.">
+        <img src="../../assets/img/aula-09/ecra-grelha.jpg" alt="Back on the grid, at the same scroll position.">
       </div>
-      <span>The grid is where it was and shows "Pico nos favoritos".</span>
+      <span>The grid is where it was: same scroll, same search.</span>
     </div>
   </figure>
   <p>This is what you do in <strong>steps 1 and 2</strong>: first with <code>Navigator.push</code>, then with <code>go_router</code> and the path <code>/island/pico</code>. In the app, both steps look the same.</p>
@@ -150,9 +150,9 @@
   <ul>
     <li><code>push</code> puts a screen on top; <code>pop</code> removes it and goes back to the one underneath.</li>
     <li>The screen underneath stays <strong>alive</strong>: scroll, search and <code>State</code> as you left them.</li>
-    <li>The screen that leaves is destroyed (<code>dispose</code>), but it can <strong>return a result</strong> to whoever opened it.</li>
+    <li>The screen that leaves is destroyed (<code>dispose</code>).</li>
   </ul>
-  <p><strong>For the tests:</strong> <code>push</code> keeps the previous screen alive; <code>pop</code> destroys the current screen and can return a value.</p>
+  <p><strong>For the tests:</strong> <code>push</code> keeps the previous screen alive; <code>pop</code> destroys the current screen.</p>
   <aside class="notes">Draw the stack on the board as three stacked rectangles. Ask for the result of the screen count you asked for at the start: usually between 3 and 6. Very deep stacks are a sign the user got lost; well-designed apps rarely go beyond 3 or 4. Analogy, if it helps: a pile of sheets on a desk; <code>push</code> puts a sheet on top, <code>pop</code> takes the top one and throws it away, and the one underneath still has everything written on it.</aside>
 </section>
 
@@ -273,47 +273,34 @@ flutter pub get</code></pre>
 </section>
 
 <section class="slide">
-  <h2>1. Navigator: push and pop with a result</h2>
-<pre data-title="lib/island_screen.dart · the star, on the passo-1 branch"><code class="language-dart">IconButton(
-  icon: const Icon(Icons.star_border),
-  tooltip: 'Adicionar aos favoritos',
-  onPressed: () =&gt; Navigator.pop(context, true), // close, return true
-),</code></pre>
+  <h2>1. Navigator: push and pop</h2>
+<pre data-title="lib/island_screen.dart · already there"><code class="language-dart">appBar: AppBar(title: Text(island.name)),</code></pre>
   <ul>
-    <li><code>Navigator.push</code> puts a new screen on top of the stack and returns a <code>Future</code>: it completes when that screen leaves. The value given to <code>pop</code> is the result.</li>
-    <li>If the user leaves with the <code>AppBar</code> arrow, the back button or the iOS gesture, the result is <code>null</code>. That is why the code checks <code>favorite == true</code>.</li>
-    <li><code>MaterialPageRoute</code> gives each platform's transition and the back gesture on iOS. The <code>AppBar</code> arrow appears on its own when there is a screen underneath.</li>
-    <li>After an <code>await</code>, the widget may no longer exist. <code>context.mounted</code> checks that it still does before using the <code>context</code>; the <code>use_build_context_synchronously</code> lint warns you if you forget.</li>
+    <li><code>Navigator.push</code> puts a new screen on top of the stack. <code>MaterialPageRoute</code> says which screen it is and gives each platform its animation.</li>
+    <li><code>IslandScreen</code> has no back button in its code: the ← arrow in the <code>AppBar</code> appears on its own when there is a screen underneath, and it pops.</li>
+    <li>The Android back button and the iOS gesture do the same <code>pop</code>.</li>
   </ul>
-  <div class="callout"><strong>Ask the class</strong> You open Pico and go back with the arrow, without tapping the star. What is <code>favorite</code>? And the search you had typed in the grid, is it still there?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> <code>favorite</code> is <code>null</code>: the arrow pops with no value, so the <code>SnackBar</code> does not appear. The search is still there: the grid stayed underneath on the stack, alive, with its <code>State</code> and its <code>TextEditingController</code>. It is the stack from the theory slide. The type of the result comes from <code>push&lt;bool&gt;</code>; without it, the result is <code>dynamic</code>.</aside>
+  <div class="callout"><strong>Ask the class</strong> You type "pi" in the search, open Pico and go back with the arrow. Is the search still there?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> It is: the grid stayed underneath on the stack, alive, with its <code>State</code> and its <code>TextEditingController</code>. It is the stack from the theory slide. Show it live after step 1.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 1: open an island and come back with the star</h2>
+  <h2>Step 1: open an island</h2>
 <pre data-title="lib/island_card.dart · IslandCard, where TODO 1 is"><code class="language-dart">return Card(
   clipBehavior: Clip.antiAlias,
   child: InkWell(
-    onTap: () async {
-      final favorite = await Navigator.push&lt;bool&gt;(
-        context,
-        MaterialPageRoute(builder: (_) =&gt; IslandScreen(id: island.id)),
-      );
-      if (favorite == true &amp;&amp; context.mounted) {
-        // the card may be gone
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('...')),
-        );
-      }
-    },
+    onTap: () =&gt; Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) =&gt; IslandScreen(id: island.id)),
+    ),
     child: Column(
       // the Column from before, as it is
     ),
   ),
 );</code></pre>
-  <div class="callout task"><strong>Do</strong> In <code>island_card.dart</code>, wrap the <code>Column</code> in an <code>InkWell</code> with this <code>onTap</code> (import <code>island_screen.dart</code>) and write the <code>SnackBar</code> message in place of the <code>'...'</code>: the island name followed by "nos favoritos". In <code>island_screen.dart</code>, replace the star's <code>onPressed: () {}</code> with the <code>Navigator.pop</code> from the previous slide.</div>
-  <p><strong>In the app:</strong> tapping Pico opens the Pico screen, with the photo and the five days; the arrow goes back to the grid with no message; the star goes back to the grid and shows "Pico nos favoritos".</p>
-  <aside class="notes">The message: <code>Text('${island.name} nos favoritos')</code>. <code>IslandScreen</code> receives the <code>id</code> and not the <code>Island</code> on purpose: in step 2 the <code>id</code> comes from the route path, which is only text. That is why the screen looks the island up in <code>islands</code> and shows "Ilha não encontrada" if it does not find it. Typical mistakes: <code>onTap</code> without <code>async</code> (the <code>await</code> does not compile) and forgetting <code>clipBehavior</code> (the tap effect spills out of the corners). For those who finish early: with a search typed in, open an island and come back. The search is still there. The solution is on the <code>passo-1</code> branch.</aside>
+  <div class="callout task"><strong>Do</strong> In <code>island_card.dart</code>, wrap the <code>Column</code> in an <code>InkWell</code> with this <code>onTap</code> and import <code>island_screen.dart</code>.</div>
+  <p><strong>In the app:</strong> tapping Pico opens the Pico screen, with the photo and the five days; the ← arrow goes back to the grid, at the same place.</p>
+  <aside class="notes"><code>IslandScreen</code> receives the <code>id</code> and not the <code>Island</code> on purpose: in step 2 the <code>id</code> comes from the route path, which is only text. That is why the screen looks the island up in <code>islands</code> and shows "Ilha não encontrada" if it cannot find it. Typical mistakes: forgetting the import, and getting the brackets wrong (<code>child: Column</code> moves inside the <code>InkWell</code>, and one extra <code>),</code> is needed at the end). Without <code>clipBehavior</code>, the tap effect spills over the corners. The solution is on the <code>passo-1</code> branch.</aside>
 </section>
 
 <section class="slide">
@@ -343,7 +330,7 @@ final router = GoRouter(
   <ul>
     <li>Each <code>GoRoute</code> links a path to a screen. <code>:id</code> is a parameter: in <code>/island/pico</code>, <code>state.pathParameters['id']</code> is <code>'pico'</code>.</li>
     <li>The <code>island/:id</code> route is inside the <code>/</code> route: opening <code>/island/pico</code> puts the grid underneath and Pico on top, even when you come in directly from a link. The back arrow works.</li>
-    <li><code>context.push('/island/pico')</code> stacks on top and returns a result, like <code>Navigator.push</code>. <code>context.go('/island/pico')</code> replaces the stack with the one for the path. For "open and come back", <code>push</code>.</li>
+    <li><code>context.push('/island/pico')</code> stacks on top, like <code>Navigator.push</code>. <code>context.go('/island/pico')</code> replaces the stack with the one for the path. For "open and come back", <code>push</code>.</li>
   </ul>
   <div class="callout"><strong>Ask the class</strong> Why does the path carry the island's <code>id</code> and not the whole <code>Island</code>?</div>
   <aside class="notes"><strong>Answers to the questions.</strong> A path is text: it has to fit in a URL, in a link in an SMS or in a notification. An object does not fit in a URL. With the <code>id</code>, the destination screen fetches the rest from the data, and the same path works wherever it comes from. That is also why <code>IslandScreen</code> handles an <code>id</code> that does not exist: a mistyped link has to give "Ilha não encontrada", not a red error. In Chrome, type <code>/island/xyz</code> in the address bar to show it.</aside>
@@ -361,10 +348,10 @@ flutter pub get</code></pre>
   ),
   routerConfig: router,
 );</code></pre>
-<pre data-title="lib/island_card.dart · the push now goes by path"><code class="language-dart">final favorite = await context.push&lt;bool&gt;('/island/${island.id}');</code></pre>
-  <div class="callout task"><strong>Do</strong> Write the <code>router.dart</code> from the previous slide. In <code>main.dart</code>, <code>MaterialApp</code> becomes <code>MaterialApp.router</code>, <code>home:</code> goes and <code>routerConfig</code> comes in. In <code>IslandCard</code>, the <code>Navigator.push</code> with the <code>MaterialPageRoute</code> gives way to one line with <code>context.push</code>. Fix the <code>import</code>s.</div>
+<pre data-title="lib/island_card.dart · the push now goes by path"><code class="language-dart">onTap: () =&gt; context.push('/island/${island.id}'),</code></pre>
+  <div class="callout task"><strong>Do</strong> Write the <code>router.dart</code> from the previous slide. In <code>main.dart</code>, <code>MaterialApp</code> becomes <code>MaterialApp.router</code>, <code>home:</code> goes and <code>routerConfig</code> comes in. In <code>IslandCard</code>, the <code>onTap</code> with <code>Navigator.push</code> gives way to one line with <code>context.push</code>. Fix the <code>import</code>s.</div>
   <p><strong>In the app:</strong> everything the same as in step 1, and that is the point. In Chrome, opening Pico shows <code>/island/pico</code> in the address bar; typing <code>/island/flores</code> opens Flores with the grid underneath.</p>
-  <aside class="notes">Imports: in <code>main.dart</code>, <code>forecast_screen.dart</code> goes and <code>router.dart</code> comes in; in <code>island_card.dart</code>, <code>island_screen.dart</code> goes and <code>package:go_router/go_router.dart</code> comes in (<code>context.push</code> is a <code>go_router</code> extension; without the import, VS Code says the method does not exist). The star keeps <code>Navigator.pop(context, true)</code> and it works: <code>go_router</code> uses the <code>Navigator</code> underneath; <code>context.pop(true)</code> does the same. Typical mistake: <code>path: '/island/:id'</code> with a slash inside the <code>/</code> route fails at startup; child routes do not start with <code>/</code>. If someone uses <code>context.go</code> instead of <code>push</code>, the result is always <code>null</code>. The solution is on the <code>passo-2</code> branch.</aside>
+  <aside class="notes">Imports: in <code>main.dart</code>, <code>forecast_screen.dart</code> goes and <code>router.dart</code> comes in; in <code>island_card.dart</code>, <code>island_screen.dart</code> goes and <code>package:go_router/go_router.dart</code> comes in (<code>context.push</code> is an extension from <code>go_router</code>; without the import, VS Code says the method does not exist). Typical mistake: <code>path: '/island/:id'</code> with a slash inside the <code>/</code> route fails at start-up; child routes do not start with <code>/</code>. After changing <code>main.dart</code>, hot restart, not hot reload. The solution is on the <code>passo-2</code> branch.</aside>
 </section>
 
 <section class="slide">
@@ -431,12 +418,12 @@ flutter pub get</code></pre>
 <section class="slide">
   <h2>Where we got to</h2>
   <ol class="steps">
-    <li><code>IslandCard</code> opens <code>IslandScreen</code> with <code>Navigator.push</code> and waits for the result; the star returns <code>true</code> with <code>Navigator.pop</code> (step 1).</li>
+    <li><code>IslandCard</code> opens <code>IslandScreen</code> with <code>Navigator.push</code>; the <code>AppBar</code> arrow pops (step 1).</li>
     <li><code>router.dart</code> with <code>GoRouter</code>: <code>/</code> and <code>/island/:id</code>, <code>MaterialApp.router</code> and <code>context.push</code> by path (step 2).</li>
     <li><code>StatefulShellRoute.indexedStack</code> with the <code>NavigationBar</code>: three tabs, each with its own stack (step 3).</li>
   </ol>
   <p>The <code>passo-3</code> branch is the final state: compare your code with it.</p>
-  <aside class="notes">The typical mistakes in these steps: in step 1, <code>onTap</code> without <code>async</code>; in step 2, the child route starting with <code>/</code> and the missing <code>go_router</code> import; in step 3, the <code>island/:id</code> route outside the first branch (the bar disappears). On Monday the lesson is from 16:00 to 18:00.</aside>
+  <aside class="notes">The typical mistakes in these steps: in step 1, the <code>island_screen.dart</code> import and the <code>InkWell</code> brackets; in step 2, the child route starting with <code>/</code> and the missing <code>go_router</code> import; in step 3, the <code>island/:id</code> route outside the first branch (the bar disappears). On Monday the lesson is from 16:00 to 18:00.</aside>
 </section>
 
 <section class="slide" data-part="End">
