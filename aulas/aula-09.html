@@ -148,64 +148,114 @@
   <figcaption>Uma pilha por fluxo: o ecrã de baixo fica vivo até fazeres pop; cada separador da barra tem a sua própria pilha.</figcaption>
   </figure>
   <ul>
-    <li>Os ecrãs de uma app são uma <strong>pilha</strong>: <code>push</code> põe um ecrã novo em cima, <code>pop</code> tira o de cima e volta ao anterior. A grelha das ilhas → o Pico → o mapa: três ecrãs na pilha.</li>
-    <li>O ecrã de baixo continua vivo, com o seu <code>State</code>, o scroll e o texto escrito. Ao fazer <code>pop</code>, está exatamente como o deixaste.</li>
-    <li>O ecrã que sai com <code>pop</code> é destruído: <code>dispose</code> corre e o estado perde-se. Se o utilizador precisa do que lá estava, tens de o devolver ao ecrã anterior ou guardá-lo fora.</li>
-    <li>Um ecrã pode devolver um resultado ao sair: o ecrã de uma ilha faz <code>pop(context, true)</code> quando tocas na estrela, e quem o abriu recebe o <code>true</code> no <code>await</code>.</li>
-    <li>Pilhas muito fundas (10 ecrãs) são um sintoma: o utilizador perdeu-se. Apps bem desenhadas raramente passam de 3 ou 4.</li>
+    <li><code>push</code> põe um ecrã em cima; <code>pop</code> tira-o e volta ao de baixo.</li>
+    <li>O ecrã de baixo fica <strong>vivo</strong>: scroll, pesquisa e <code>State</code> como os deixaste.</li>
+    <li>O ecrã que sai é destruído (<code>dispose</code>), mas pode <strong>devolver um resultado</strong> a quem o abriu.</li>
   </ul>
   <p><strong>Para os testes:</strong> <code>push</code> mantém o ecrã anterior vivo; <code>pop</code> destrói o ecrã atual e pode devolver um valor.</p>
-  <div class="callout"><strong>Analogia</strong> Uma pilha de folhas em cima da mesa. <code>push</code> põe uma folha por cima; <code>pop</code> tira a de cima e deita-a fora. A folha de baixo continua na mesa com tudo o que tinha escrito. O botão de retroceder do Android é um <code>pop</code>.</div>
-  <aside class="notes">Desenha a pilha no quadro com três retângulos empilhados. Pergunta o resultado da contagem de ecrãs que pediste no início: normalmente entre 3 e 6. Discute 2 minutos porque as apps de banco vão a fundo (fluxos de transferência) e o Instagram não.</aside>
+  <aside class="notes">Desenha a pilha no quadro com três retângulos empilhados. Pergunta o resultado da contagem de ecrãs que pediste no início: normalmente entre 3 e 6. Pilhas muito fundas são um sintoma de que o utilizador se perdeu; apps bem desenhadas raramente passam de 3 ou 4. Analogia, se ajudar: uma pilha de folhas na mesa; <code>push</code> põe uma folha por cima, <code>pop</code> tira a de cima e deita-a fora, e a de baixo continua com tudo o que tinha escrito.</aside>
 </section>
 
 <section class="slide">
   <h2>Voltar: botão Android, gesto iOS, e o estado</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Três telemóveis. No Android, o botão ou gesto de retroceder do sistema. No iOS, deslizar a partir da margem esquerda. Em ambos, a seta da AppBar. Os três fazem pop.">
+    <rect x="95" y="30" width="120" height="210" rx="16" class="box"/>
+    <rect x="95" y="206" width="120" height="34" rx="0" class="box muted"/>
+    <circle cx="155" cy="223" r="13" class="box accent"/>
+    <text x="155" y="228" class="t b" text-anchor="middle">◁</text>
+    <text x="155" y="268" class="t b" text-anchor="middle">Android</text>
+    <text x="155" y="286" class="t s" text-anchor="middle">botão ou gesto do sistema</text>
+    <rect x="395" y="30" width="120" height="210" rx="16" class="box"/>
+    <line x1="399" y1="135" x2="465" y2="135" class="arrow accent"/>
+    <text x="455" y="120" class="t s" text-anchor="middle">deslizar</text>
+    <text x="455" y="268" class="t b" text-anchor="middle">iOS</text>
+    <text x="455" y="286" class="t s" text-anchor="middle">da margem esquerda</text>
+    <rect x="695" y="30" width="120" height="210" rx="16" class="box"/>
+    <rect x="695" y="30" width="120" height="34" rx="16" class="box muted"/>
+    <circle cx="715" cy="47" r="13" class="box accent"/>
+    <text x="715" y="52" class="t b" text-anchor="middle">←</text>
+    <text x="765" y="52" class="t s" text-anchor="middle">Pico</text>
+    <text x="755" y="268" class="t b" text-anchor="middle">Os dois</text>
+    <text x="755" y="286" class="t s" text-anchor="middle">a seta da AppBar</text>
+    <text x="450" y="318" class="t b" text-anchor="middle">os três fazem pop</text>
+  </svg>
+  </figure>
   <ul>
-    <li><strong>Android:</strong> botão ou gesto de retroceder do sistema, a partir de qualquer margem. Desde o Android 14, o <em>predictive back</em> mostra uma pré-visualização do ecrã anterior antes de largares. O Flutter suporta-o com <code>PopScope</code>.</li>
-    <li><strong>iOS:</strong> não há botão de sistema. O utilizador desliza a partir da margem esquerda ou toca na seta da barra. O Flutter faz o gesto sozinho em <code>MaterialPageRoute</code> no iOS.</li>
-    <li>Voltar na raiz da app: no Android sai da app (ou minimiza); no iOS não existe. Nunca ponhas um botão "sair" numa app.</li>
-    <li>Um formulário meio preenchido e o utilizador carrega em voltar: perde tudo. <code>PopScope</code> com <code>canPop: false</code> e um diálogo "Descartar alterações?" é o padrão. Gmail faz isto com rascunhos.</li>
-    <li>Quando a app é morta em background e reaberta, a pilha volta ao início a não ser que a restaures (aula 4, <em>state restoration</em>). Os utilizadores odeiam voltar ao ecrã inicial.</li>
+    <li>A seta da <code>AppBar</code> aparece sozinha quando há um ecrã por baixo; o gesto do iOS vem com o <code>MaterialPageRoute</code>.</li>
+    <li>Formulário a meio? <code>PopScope</code> pergunta "Descartar alterações?" antes de sair.</li>
   </ul>
   <p><strong>Para os testes:</strong> o "voltar" é do sistema, não da app; a app pode intercetá-lo com <code>PopScope</code>, mas não pode ignorá-lo.</p>
+  <aside class="notes">No Android, o botão ou gesto de retroceder funciona a partir de qualquer margem e, desde o Android 14, o <em>predictive back</em> mostra uma pré-visualização do ecrã anterior. No iOS não há botão de sistema. Voltar na raiz da app: no Android sai (ou minimiza); no iOS não existe; nunca ponhas um botão "sair". Quando a app é morta em background e reaberta, a pilha volta ao início a não ser que a restaures (<em>state restoration</em>). Exemplo de <code>PopScope</code>: o Gmail com um rascunho a meio.</aside>
 </section>
 
 <section class="slide">
   <h2>Padrões de navegação</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Padrão</th><th>Como se comporta</th><th>Exemplo</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Lista → detalhe</strong></td><td><code>push</code> do detalhe; <code>pop</code> volta à lista no mesmo sítio do scroll</td><td>Qualquer app de e-mail, a nossa grelha das ilhas</td></tr>
-  <tr><td><strong>Tabs com pilhas independentes</strong></td><td>Cada separador tem a sua pilha; mudar de separador não destrói a pilha do outro; voltar a tocar no separador ativo volta à raiz</td><td>Instagram, YouTube: abres um vídeo em Início, vais a Subscrições, voltas e o vídeo ainda lá está</td></tr>
-  <tr><td><strong>Modal</strong></td><td>Ecrã inteiro que sobe de baixo, com "Cancelar" e "Guardar"; ao fechar, volta ao ponto de partida</td><td>Criar evento no Calendário, compor e-mail</td></tr>
-  <tr><td><strong>Bottom sheet</strong></td><td>Painel que ocupa parte do ecrã, o resto fica visível e escurecido; arrasta para fechar</td><td>Partilhar, filtros do Airbnb, opções de um item</td></tr>
-  <tr><td><strong>Diálogo</strong></td><td>Interrompe com uma pergunta curta e duas ações no máximo</td><td>"Apagar conversa?", pedidos de permissão</td></tr>
-  </tbody></table></div>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="Cinco telemóveis desenhados: lista e detalhe, separadores com uma barra em baixo, modal em ecrã inteiro com fechar e guardar, bottom sheet a meio do ecrã, e um diálogo com duas ações.">
+    <rect x="30" y="16" width="120" height="210" rx="16" class="box"/><rect x="42" y="36" width="96" height="22" rx="5" class="box"/><rect x="42" y="66" width="96" height="22" rx="5" class="box accent"/><rect x="42" y="96" width="96" height="22" rx="5" class="box"/><rect x="42" y="126" width="96" height="22" rx="5" class="box"/><rect x="42" y="156" width="96" height="22" rx="5" class="box"/><rect x="42" y="186" width="96" height="22" rx="5" class="box"/><rect x="205" y="16" width="120" height="210" rx="16" class="box"/><rect x="217" y="36" width="96" height="22" rx="5" class="box"/><rect x="217" y="66" width="96" height="22" rx="5" class="box"/><rect x="217" y="96" width="96" height="22" rx="5" class="box"/><rect x="217" y="126" width="96" height="22" rx="5" class="box"/><rect x="217" y="156" width="96" height="22" rx="5" class="box"/><rect x="205" y="192" width="120" height="34" class="box muted"/><rect x="211" y="198" width="32" height="22" rx="8" class="box accent"/><rect x="249" y="198" width="32" height="22" rx="8" class="box"/><rect x="287" y="198" width="32" height="22" rx="8" class="box"/><rect x="380" y="16" width="120" height="210" rx="16" class="box"/><rect x="380" y="34" width="120" height="192" rx="16" class="box accent"/><text x="396" y="56" class="t s">✕</text><text x="484" y="56" class="t s" text-anchor="end">Guardar</text><rect x="555" y="16" width="120" height="210" rx="16" class="box"/><rect x="555" y="16" width="120" height="110" rx="16" class="box muted"/><rect x="555" y="126" width="120" height="100" rx="16" class="box accent"/><line x1="600" y1="138" x2="630" y2="138" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="730" y="16" width="120" height="210" rx="16" class="box"/><rect x="730" y="16" width="120" height="210" rx="16" class="box muted"/><rect x="744" y="86" width="92" height="70" rx="10" class="box accent"/><text x="790" y="112" class="t s" text-anchor="middle">Apagar?</text><text x="790" y="142" class="t s" text-anchor="middle">Não · Sim</text><text x="90" y="250" class="t b" text-anchor="middle">Lista → detalhe</text><text x="90" y="270" class="t s" text-anchor="middle">push do detalhe;</text><text x="90" y="287" class="t s" text-anchor="middle">pop volta à lista</text><text x="265" y="250" class="t b" text-anchor="middle">Separadores</text><text x="265" y="270" class="t s" text-anchor="middle">uma pilha</text><text x="265" y="287" class="t s" text-anchor="middle">por separador</text><text x="440" y="250" class="t b" text-anchor="middle">Modal</text><text x="440" y="270" class="t s" text-anchor="middle">ecrã inteiro</text><text x="440" y="287" class="t s" text-anchor="middle">que sobe de baixo</text><text x="615" y="250" class="t b" text-anchor="middle">Bottom sheet</text><text x="615" y="270" class="t s" text-anchor="middle">painel por cima,</text><text x="615" y="287" class="t s" text-anchor="middle">arrasta para fechar</text><text x="790" y="250" class="t b" text-anchor="middle">Diálogo</text><text x="790" y="270" class="t s" text-anchor="middle">pergunta curta,</text><text x="790" y="287" class="t s" text-anchor="middle">duas ações</text>
+  </svg>
+  <figcaption>Hoje fazemos os dois primeiros: a grelha → o Pico, e a barra com três separadores.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Exemplos:</strong> e-mail (lista → detalhe), Instagram e YouTube (separadores), compor e-mail (modal), partilhar (bottom sheet), "Apagar conversa?" (diálogo).</li>
+  </ul>
+  <aside class="notes">Separadores com pilhas independentes: abres um vídeo em Início no YouTube, vais a Subscrições, voltas e o vídeo ainda lá está; voltar a tocar no separador ativo volta à raiz. Modal: ecrã inteiro com "Cancelar" e "Guardar", como criar um evento no Calendário. Bottom sheet: o resto do ecrã fica visível e escurecido, como os filtros do Airbnb. Diálogo: interrompe com uma pergunta e duas ações no máximo, como os pedidos de permissão.</aside>
 </section>
 
 <section class="slide">
   <h2>Rotas imperativas vs declarativas</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 260" role="img" aria-label="À esquerda, o modo imperativo: Navigator.push com MaterialPageRoute, ecrã a ecrã, sem nome. À direita, o modo declarativo: um mapa de caminhos para ecrãs, / para a grelha, /island/pico para o Pico, /alerts para Avisos e /settings para Definições.">
+    <text x="30" y="36" class="t b">Imperativo: Navigator.push</text>
+    <rect x="30" y="60" width="380" height="80" rx="10" class="box"/>
+    <text x="48" y="92" class="t mono">Navigator.push(context,</text>
+    <text x="48" y="116" class="t mono">  MaterialPageRoute(...))</text>
+    <text x="30" y="168" class="t s">dizes o que fazer, ecrã a ecrã;</text>
+    <text x="30" y="186" class="t s">a pilha só existe em memória, sem nome</text>
+    <text x="500" y="36" class="t b">Declarativo: go_router, um mapa de caminhos</text>
+    <rect x="500" y="60" width="170" height="34" rx="8" class="box accent"/><text x="585" y="82" class="t mono" text-anchor="middle">/</text><line x1="672" y1="77" x2="718" y2="77" class="arrow accent"/><rect x="724" y="60" width="150" height="34" rx="8" class="box"/><text x="799" y="82" class="t" text-anchor="middle">Grelha das ilhas</text><rect x="500" y="106" width="170" height="34" rx="8" class="box accent"/><text x="585" y="128" class="t mono" text-anchor="middle">/island/pico</text><line x1="672" y1="123" x2="718" y2="123" class="arrow accent"/><rect x="724" y="106" width="150" height="34" rx="8" class="box"/><text x="799" y="128" class="t" text-anchor="middle">Pico</text><rect x="500" y="152" width="170" height="34" rx="8" class="box accent"/><text x="585" y="174" class="t mono" text-anchor="middle">/alerts</text><line x1="672" y1="169" x2="718" y2="169" class="arrow accent"/><rect x="724" y="152" width="150" height="34" rx="8" class="box"/><text x="799" y="174" class="t" text-anchor="middle">Avisos</text><rect x="500" y="198" width="170" height="34" rx="8" class="box accent"/><text x="585" y="220" class="t mono" text-anchor="middle">/settings</text><line x1="672" y1="215" x2="718" y2="215" class="arrow accent"/><rect x="724" y="198" width="150" height="34" rx="8" class="box"/><text x="799" y="220" class="t" text-anchor="middle">Definições</text>
+    <text x="500" y="250" class="t s">navegar é mudar o caminho, como num site</text>
+  </svg>
+  </figure>
+<pre data-title="pubspec.yaml · o go_router é um pacote"><code class="language-yaml">dependencies:                   # vai para dentro da app
+  flutter:
+    sdk: flutter
+  go_router: ^18.0.2
+  google_fonts: ^8.2.1</code></pre>
   <ul>
-    <li><strong>Imperativo</strong> (<code>Navigator.push</code>): dizes o que fazer, ecrã a ecrã. Simples, mas a pilha só existe em memória: não tem nome, não se pode partilhar nem restaurar.</li>
-    <li><strong>Declarativo</strong> (<code>go_router</code>): declaras um mapa de rotas com caminhos, como num site: <code>/</code>, <code>/island/:id</code>, <code>/settings</code>. Navegar é mudar o URL; a pilha é derivada dele.</li>
-    <li><strong>URL como estado:</strong> a mesma app em Flutter Web mostra o URL na barra; no telemóvel, um deep link abre diretamente <code>/island/pico</code>; um teste automatizado começa num ecrã sem tocar em cinco botões.</li>
-    <li><code>go_router</code> é mantido pela equipa do Flutter, trata do botão de retroceder, dos separadores com pilhas independentes e dos redirecionamentos (ecrã de login).</li>
-    <li>Os dois convivem: podes usar <code>showDialog</code> e <code>showModalBottomSheet</code> (imperativos) dentro de uma app com <code>go_router</code>.</li>
+    <li>O <code>go_router</code> não vem com o Flutter: é um <strong>pacote</strong> do pub.dev, como o <code>google_fonts</code>. <code>flutter pub add go_router</code> acrescenta a linha ao <code>pubspec.yaml</code> e <code>flutter pub get</code> descarrega-o. No repositório de hoje já lá está.</li>
   </ul>
   <p><strong>Para os testes:</strong> rotas declarativas descrevem os ecrãs como URLs e derivam a pilha do URL; são a base de deep links e da web.</p>
+  <aside class="notes">Com caminhos, a mesma app em Flutter Web mostra o URL na barra, um deep link abre diretamente <code>/island/pico</code> e um teste começa num ecrã sem tocar em cinco botões. O <code>go_router</code> é mantido pela equipa do Flutter e trata do botão de retroceder, dos separadores com pilhas independentes e dos redirecionamentos (ecrã de login). Os dois modos convivem: <code>showDialog</code> e <code>showModalBottomSheet</code> são imperativos e usam-se dentro de uma app com <code>go_router</code>. Mostra o <code>pubspec.yaml</code> do repositório no VS Code: o <code>^18.0.2</code> quer dizer "18.0.2 ou mais recente, sem passar para a 19".</aside>
 </section>
 
 <section class="slide">
   <h2>Deep links em uma frase</h2>
   <p class="lead">Um deep link é um URL que abre a app diretamente num ecrã específico, em vez de no ecrã inicial.</p>
-  <ul>
-    <li><code>https://tempoacores.pt/island/pico</code> num SMS, numa notificação ou no browser: se a app estiver instalada, abre no ecrã do Pico; se não, abre o site.</li>
-    <li>Com <code>go_router</code>, o URL recebido é tratado exatamente como <code>context.go('/island/pico')</code>. É por isso que o caminho das rotas deve ser desenhado como se fosse público.</li>
-    <li>Precisa de configuração nativa (Android App Links, iOS Universal Links) e de um ficheiro no servidor a provar que o domínio é teu.</li>
-  </ul>
-  <div class="callout">Detalhe, configuração e testes na aula 22. Nesta aula define-se apenas a estrutura dos caminhos.</div>
-  <div class="callout"><strong>Analogia</strong> Uma morada completa, com rua, número, andar e porta, em vez de "vai à cidade e procura". O URL leva à app e ao ecrã certo, e os segmentos do caminho (<code>/island/pico</code>) são o número e a porta.</div>
+  <figure class="anat flow">
+    <div class="step">
+      <strong><span class="n">1</span>Um link</strong>
+      <div class="state" style="font-size:.78rem"><span>num SMS ou notificação</span><b>tempoacores.pt/island/pico</b></div>
+      <span>O utilizador toca no link.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">2</span>O go_router</strong>
+      <div class="state" style="font-size:.78rem"><span>trata-o como</span><b>context.go('/island/pico')</b></div>
+      <span>O mesmo caminho das nossas rotas.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">3</span>O ecrã certo</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="A app abre diretamente no ecrã do Pico.">
+      </div>
+      <span>A app abre no Pico, com a grelha por baixo.</span>
+    </div>
+  </figure>
+  <div class="callout">Configuração e testes na aula 22. Hoje só desenhamos os caminhos.</div>
+  <aside class="notes">Se a app não estiver instalada, o mesmo link abre o site. É por isso que os caminhos das rotas se desenham como se fossem públicos. Precisa de configuração nativa (Android App Links, iOS Universal Links) e de um ficheiro no servidor a provar que o domínio é teu. Analogia: uma morada completa, com rua, número e porta, em vez de "vai à cidade e procura".</aside>
 </section>
 
 <section class="slide" data-part="Prática">
