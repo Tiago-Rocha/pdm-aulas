@@ -26,35 +26,50 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 09 · Week 5 · Wednesday, 7 October 2026 · 16:00 to 18:00</p>
   <h1>Navigation and themes</h1>
-  <p class="lead">Theory: how screens are organised in a stack, what the back button does to state, and routes declared as URLs. Practice: Navigator, go_router with parameters, a navigation bar with three tabs and a light and dark Material 3 theme.</p>
+  <p class="lead">Theory: the screens of an app organised as a stack, what "back" does to state, and routes declared as URLs. Practice, on the islands app: opening an island and returning a result, routes with <code>go_router</code>, a bar with three tabs, and the light and dark theme.</p>
   <div class="meta"><span>Repository: pdm-aula-09</span></div>
-  <aside class="notes">Ask who did the e-mail field with validation. Show a reasonable RegExp in 1 minute and warn that validating e-mails properly is a bottomless pit. Then ask everyone to open their banking app or Instagram and count how many screens they can stack before pressing back. You will use this on the first theory slide.</aside>
+  <aside class="notes">Two-hour lesson, and it starts with step 4 of lesson 8, which was left undone. Reference times: form recap until 16:15; theory until 16:40; clone and step 1 until 17:00; step 2 until 17:15; step 3 until 17:35; step 4 and wrap-up until 18:00. If time is short, step 4 becomes your demo: the <code>passo-4</code> branch has everything. Before the theory, ask everyone to open their banking app or Instagram and count how many screens they can stack before pressing back. You use the count on the stack slide.</aside>
+</section>
+
+<section class="slide">
+  <h2>Before we start: step 4 of lesson 8</h2>
+  <p class="lead">Last lesson we did not get to the validation of the alerts form. It is short and it closes the topic of state.</p>
+<pre class="term"><code class="language-bash">cd pdm-aula-08
+git stash -u
+git checkout passo-3
+flutter pub get</code></pre>
+  <ol class="steps">
+    <li>Open <code>lib/alerts_form.dart</code> and follow the <a href="aula-08.html#s19">step 4 slide of lesson 8</a>: a <code>validator</code> on the name and another on the e-mail, <code>autovalidateMode</code> on the <code>Form</code> and the e-mail keyboard.</li>
+    <li><strong>In the app:</strong> "Subscrever" with empty fields shows "Obrigatório" and no <code>SnackBar</code>; with "Ana" and "ana@uac.pt" it shows "Avisos enviados para ana@uac.pt".</li>
+  </ol>
+  <div class="callout"><strong>Ask the class</strong> A <code>validator</code> returns <code>''</code> (an empty string) when the field is fine. Does the form pass?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> It does not: the <code>Form</code> only treats a field as valid when its <code>validator</code> returns <code>null</code>. Any <code>String</code>, even an empty one, counts as an error, and the field turns red with no message. It is the typical mistake in this step. Give it 10 minutes at most: whoever does not finish runs <code>git checkout passo-4</code> and compares. The full validators are in the notes of the lesson 8 slide. Then close <code>pdm-aula-08</code>: today's repository already starts from the validated form.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
     <li>Explain the navigation stack, what <code>push</code> and <code>pop</code> do to state, and how Android and iOS handle "back".</li>
-    <li>Recognise the patterns list → detail, tabs with independent stacks, modals and bottom sheets.</li>
-    <li>Justify declarative routes with URLs and say what a deep link is.</li>
-    <li>Navigate with <code>Navigator</code> and with <code>go_router</code>, passing and returning data.</li>
-    <li>Define a Material 3 theme from a seed colour, with light, dark and system modes.</li>
+    <li>Recognise the list → detail, tabs with independent stacks, modal and bottom sheet patterns.</li>
+    <li>Justify declarative routes with URLs and explain what a deep link is.</li>
+    <li>Navigate with <code>Navigator</code> and with <code>go_router</code>, passing an <code>id</code> and returning a result.</li>
+    <li>Define a Material 3 theme from a seed colour, with light, dark and system mode.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Theory">
   <h2>The navigation stack</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 280" role="img" aria-label="On the left, a stack of three screens: Locations list at the bottom, Detail in the middle, Settings on top, with push stacking and pop removing. On the right, three tabs, Forecast, Warnings and Settings, each with its own independent stack">
+  <svg viewBox="0 0 900 280" role="img" aria-label="On the left, a stack of three screens: Islands grid at the bottom, Island in the middle, Map on top, with push stacking and pop removing. On the right, three tabs, Forecast, Warnings and Settings, each with its own independent stack">
     <text x="60" y="36" class="t b">One stack: push adds on top, pop removes</text>
     <rect x="60" y="200" width="260" height="44" rx="8" class="box"/>
-    <text x="190" y="218" class="t b" text-anchor="middle">Locations list</text>
+    <text x="190" y="218" class="t b" text-anchor="middle">Islands grid</text>
     <text x="190" y="236" class="t s" text-anchor="middle">alive, scroll kept</text>
     <rect x="80" y="140" width="260" height="44" rx="8" class="box"/>
-    <text x="210" y="158" class="t b" text-anchor="middle">Detail</text>
+    <text x="210" y="158" class="t b" text-anchor="middle">Island</text>
     <text x="210" y="176" class="t s" text-anchor="middle">alive underneath, State kept</text>
     <rect x="100" y="80" width="260" height="44" rx="8" class="box accent"/>
-    <text x="230" y="98" class="t b" text-anchor="middle">Settings</text>
+    <text x="230" y="98" class="t b" text-anchor="middle">Map</text>
     <text x="230" y="116" class="t s" text-anchor="middle">top: what the user sees</text>
     <line x1="40" y1="244" x2="40" y2="84" class="arrow accent"/>
     <text x="40" y="68" class="t b" text-anchor="middle">push</text>
@@ -65,9 +80,9 @@
     <text x="520" y="64" class="t s">each tab keeps its own stack;</text>
     <text x="520" y="82" class="t s">switching tabs does not pop</text>
     <rect x="538" y="180" width="88" height="24" rx="6" class="box"/>
-    <text x="582" y="196" class="t s" text-anchor="middle">List</text>
+    <text x="582" y="196" class="t s" text-anchor="middle">Grid</text>
     <rect x="542" y="150" width="88" height="24" rx="6" class="box"/>
-    <text x="586" y="166" class="t s" text-anchor="middle">Detail</text>
+    <text x="586" y="166" class="t s" text-anchor="middle">Island</text>
     <rect x="546" y="120" width="88" height="24" rx="6" class="box accent"/>
     <text x="590" y="136" class="t s" text-anchor="middle">Map</text>
     <rect x="651" y="180" width="88" height="24" rx="6" class="box"/>
@@ -87,10 +102,10 @@
   <figcaption>One stack per flow: the screen underneath stays alive until you pop; each tab in the bar has its own stack.</figcaption>
   </figure>
   <ul>
-    <li>The screens of an app are a <strong>stack</strong>: <code>push</code> puts a new screen on top, <code>pop</code> removes the top one and goes back to the previous one. The locations list → the detail → the map: three screens on the stack.</li>
+    <li>The screens of an app are a <strong>stack</strong>: <code>push</code> puts a new screen on top, <code>pop</code> removes the top one and goes back to the previous one. The islands grid → Pico → the map: three screens on the stack.</li>
     <li>The screen underneath stays alive, with its <code>State</code>, its scroll and the text typed in it. When you <code>pop</code>, it is exactly as you left it.</li>
     <li>The screen that leaves with <code>pop</code> is destroyed: <code>dispose</code> runs and the state is lost. If the user needs what was there, you have to return it to the previous screen or keep it outside.</li>
-    <li>A screen can return a result when it leaves: the location picker screen calls <code>pop(context, location)</code> and the caller receives it in the <code>await</code>.</li>
+    <li>A screen can return a result when it leaves: the island screen calls <code>pop(context, true)</code> when you tap the star, and whoever opened it receives the <code>true</code> in the <code>await</code>.</li>
     <li>Very deep stacks (10 screens) are a symptom: the user is lost. Well-designed apps rarely go beyond 3 or 4.</li>
   </ul>
   <p><strong>For the tests:</strong> <code>push</code> keeps the previous screen alive; <code>pop</code> destroys the current screen and can return a value.</p>
@@ -115,7 +130,7 @@
   <div class="table-wrap"><table>
   <thead><tr><th>Pattern</th><th>How it behaves</th><th>Example</th></tr></thead>
   <tbody>
-  <tr><td><strong>List → detail</strong></td><td><code>push</code> the detail; <code>pop</code> goes back to the list at the same scroll position</td><td>Any e-mail app, our locations list</td></tr>
+  <tr><td><strong>List → detail</strong></td><td><code>push</code> the detail; <code>pop</code> goes back to the list at the same scroll position</td><td>Any e-mail app, our islands grid</td></tr>
   <tr><td><strong>Tabs with independent stacks</strong></td><td>Each tab has its own stack; switching tabs does not destroy the other tab's stack; tapping the active tab again goes back to its root</td><td>Instagram, YouTube: you open a video in Home, go to Subscriptions, come back and the video is still there</td></tr>
   <tr><td><strong>Modal</strong></td><td>A full screen that slides up from the bottom, with "Cancel" and "Save"; when it closes, you are back where you started</td><td>Creating an event in Calendar, composing an e-mail</td></tr>
   <tr><td><strong>Bottom sheet</strong></td><td>A panel that takes part of the screen, the rest stays visible and dimmed; drag to close</td><td>Share, Airbnb filters, options for an item</td></tr>
@@ -127,8 +142,8 @@
   <h2>Imperative vs declarative routes</h2>
   <ul>
     <li><strong>Imperative</strong> (<code>Navigator.push</code>): you say what to do, screen by screen. Simple, but the stack only exists in memory: it has no name, and it cannot be shared or restored.</li>
-    <li><strong>Declarative</strong> (<code>go_router</code>): you declare a map of routes with paths, as on a website: <code>/</code>, <code>/location/:id</code>, <code>/settings</code>. Navigating is changing the URL; the stack is derived from it.</li>
-    <li><strong>URL as state:</strong> the same app on Flutter Web shows the URL in the address bar; on the phone, a deep link opens <code>/location/horta</code> directly; an automated test starts on a screen without tapping five buttons.</li>
+    <li><strong>Declarative</strong> (<code>go_router</code>): you declare a map of routes with paths, as on a website: <code>/</code>, <code>/island/:id</code>, <code>/settings</code>. Navigating is changing the URL; the stack is derived from it.</li>
+    <li><strong>URL as state:</strong> the same app on Flutter Web shows the URL in the address bar; on the phone, a deep link opens <code>/island/pico</code> directly; an automated test starts on a screen without tapping five buttons.</li>
     <li><code>go_router</code> is maintained by the Flutter team and handles the back button, tabs with independent stacks and redirects (login screen).</li>
     <li>The two live together: you can use <code>showDialog</code> and <code>showModalBottomSheet</code> (imperative) inside an app with <code>go_router</code>.</li>
   </ul>
@@ -139,12 +154,12 @@
   <h2>Deep links in one sentence</h2>
   <p class="lead">A deep link is a URL that opens the app directly on a specific screen, instead of on the home screen.</p>
   <ul>
-    <li><code>https://tempoacores.pt/location/horta</code> in an SMS, in a notification or in the browser: if the app is installed, it opens on the detail for Horta; if not, it opens the website.</li>
-    <li>With <code>go_router</code>, the URL received is handled exactly like <code>context.go('/location/horta')</code>. That is why route paths should be designed as if they were public.</li>
+    <li><code>https://tempoacores.pt/island/pico</code> in an SMS, in a notification or in the browser: if the app is installed, it opens on the Pico screen; if not, it opens the website.</li>
+    <li>With <code>go_router</code>, the URL received is handled exactly like <code>context.go('/island/pico')</code>. That is why route paths should be designed as if they were public.</li>
     <li>It needs native configuration (Android App Links, iOS Universal Links) and a file on the server proving that the domain is yours.</li>
   </ul>
   <div class="callout">Details, configuration and testing in lesson 22. In this lesson we only define the structure of the paths.</div>
-  <div class="callout"><strong>Analogy</strong> A full address, with street, number, floor and door, instead of "go to the city and look around". The URL takes you to the app and to the right screen, and the path segments (<code>/location/horta</code>) are the number and the door.</div>
+  <div class="callout"><strong>Analogy</strong> A full address, with street, number, floor and door, instead of "go to the city and look around". The URL takes you to the app and to the right screen, and the path segments (<code>/island/pico</code>) are the number and the door.</div>
 </section>
 
 <section class="slide">
@@ -168,207 +183,270 @@
     <li>Consistency: one theme, one place to change it, all screens alike. The moment a screen "looks like it is from another app" is a theme bug.</li>
   </ul>
   <p><strong>For the tests:</strong> <code>ThemeMode.system</code> follows the system preference; fixed colours in widgets are the classic dark mode mistake.</p>
-  <aside class="notes">Show the Tempo Açores solution changing theme when you change the system setting on the phone, without restarting. Then show a widget with Colors.white in dark mode: white text on white. It is an image that sticks.</aside>
+  <aside class="notes">At the end of the lesson, show the Tempo Açores from the <code>passo-4</code> branch changing theme when you change the system setting on the phone, without restarting. Then show a widget with Colors.white in dark mode: white text on white. It is an image that sticks.</aside>
 </section>
 
 <section class="slide" data-part="Practice">
-  <h2>Connecting the screens</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-09.git
-cd pdm-aula-09/starter
-flutter pub get
-flutter run</code></pre>
-  <p><code>starter/</code> brings the three screens from the previous lessons (forecast, warnings, settings) with nothing connecting them, <code>go_router</code> already in <code>pubspec.yaml</code>, numbered <code>TODO</code>s and failing tests; <code>solucao/</code> is the final state.</p>
+  <h2>Getting started: today's repository</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-09.git
+cd pdm-aula-09
+flutter pub get</code></pre>
   <ol class="steps">
-    <li>Run it and confirm that you only see the locations list. Tapping a location does nothing yet.</li>
-    <li>Open <code>lib/main.dart</code>, <code>lib/router.dart</code> (empty) and <code>lib/locations_screen.dart</code>.</li>
+    <li>Open the <code>pdm-aula-09</code> folder in VS Code. It is the app from the end of lesson 8, with the form already validated, plus three screens not yet connected: <code>lib/island_screen.dart</code> (one island), <code>lib/alerts_screen.dart</code> (the alerts form, which has left the main screen) and <code>lib/settings_screen.dart</code> (settings). You work on the comments <code>TODO 1</code> to <code>TODO 4</code>.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → your Android or <strong>Chrome</strong>. Then <kbd>F5</kbd>.</li>
+    <li>Check what you see: the forecast screen with the search and the islands grid. Tapping an island does nothing yet.</li>
   </ol>
-  <aside class="notes">While they compile, warn that step 1 (Navigator) will be replaced by step 2 (go_router) on purpose: it is so they feel the difference. Some will ask why not go straight to go_router; the answer is that the Navigator is still underneath and shows up in any code they come across.</aside>
+  <p><code>go_router</code> is already in <code>pubspec.yaml</code>: <code>flutter pub get</code> takes care of it. Today Chrome has an advantage: from step 2 on you see the path of each screen in the address bar.</p>
+  <aside class="notes">Give the clone and the first run 5 minutes. It is a new repository, so nobody needs to have finished lesson 8. <code>data.dart</code> changed in one thing: each <code>Island</code> now has an <code>id</code> (<code>'pico'</code>, <code>'sao-miguel'</code>), which goes into the route path in step 2. While they compile, open <code>island_screen.dart</code> on the projector: the screen already exists, nobody gets there yet.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Navigator.push and pop with a result</h2>
-<pre data-title="lib/locations_screen.dart"><code class="language-dart">// On the list screen: push the detail and wait for a result
-onTap: () async {
-  final favorite = await Navigator.push&lt;bool&gt;(
-    context,
-    MaterialPageRoute(builder: (_) => DetailScreen(location: l)),
-  );
-  if (favorite == true &amp;&amp; context.mounted) {         // the screen may no longer exist
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${l.name} added to favourites')),
-    );
-  }
-},
-
-// On the detail screen: go back and return the result
-AppBar(
-  title: Text(location.name),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.star_border),
-      tooltip: 'Add to favourites',
-      onPressed: () => Navigator.pop(context, true),
-    ),
-  ],
-)</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. Navigator: what matters</h2>
+  <h2>1. Navigator: push and pop with a result</h2>
+<pre data-title="lib/island_screen.dart · the star, on the passo-1 branch"><code class="language-dart">IconButton(
+  icon: const Icon(Icons.star_border),
+  tooltip: 'Adicionar aos favoritos',
+  onPressed: () =&gt; Navigator.pop(context, true), // close, return true
+),</code></pre>
   <ul>
-    <li><code>Navigator.push</code> returns a <code>Future</code> that completes when the new screen calls <code>pop</code>. The value passed to <code>pop</code> is the result; if the user goes back with the gesture, it is <code>null</code>.</li>
-    <li><code>MaterialPageRoute</code> gives the platform transition: sliding up from the bottom on Android, from the right on iOS, with the back gesture included.</li>
-    <li>After an <code>await</code>, the widget may have been destroyed. <code>context.mounted</code> avoids using a dead <code>context</code>; the lint <code>use_build_context_synchronously</code> forces you to check.</li>
-    <li>The back arrow in the <code>AppBar</code> appears by itself when there is a screen underneath. Do not draw it by hand.</li>
-    <li><code>Navigator.pop(context)</code> with no value is for "Cancel".</li>
+    <li><code>Navigator.push</code> puts a new screen on top of the stack and returns a <code>Future</code>: it completes when that screen leaves. The value given to <code>pop</code> is the result.</li>
+    <li>If the user leaves with the <code>AppBar</code> arrow, the back button or the iOS gesture, the result is <code>null</code>. That is why the code checks <code>favorite == true</code>.</li>
+    <li><code>MaterialPageRoute</code> gives each platform's transition and the back gesture on iOS. The <code>AppBar</code> arrow appears on its own when there is a screen underneath.</li>
+    <li>After an <code>await</code>, the widget may no longer exist. <code>context.mounted</code> checks that it still does before using the <code>context</code>; the <code>use_build_context_synchronously</code> lint warns you if you forget.</li>
   </ul>
-  <div class="callout task"><strong>Exercise 1</strong> Solve <code>TODO 1</code>: tapping a location opens the detail; the star returns <code>true</code>; the list shows a <code>SnackBar</code>. Then <code>push</code> the settings screen from the <code>AppBar</code> and return the chosen unit.</div>
+  <div class="callout"><strong>Ask the class</strong> You open Pico and go back with the arrow, without tapping the star. What is <code>favorite</code>? And the search you had typed in the grid, is it still there?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> <code>favorite</code> is <code>null</code>: the arrow pops with no value, so the <code>SnackBar</code> does not appear. The search is still there: the grid stayed underneath on the stack, alive, with its <code>State</code> and its <code>TextEditingController</code>. It is the stack from the theory slide. The type of the result comes from <code>push&lt;bool&gt;</code>; without it, the result is <code>dynamic</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>2. go_router: routes with parameters</h2>
-<pre data-title="lib/router.dart"><code class="language-dart">import 'package:go_router/go_router.dart';
+  <h2>Step 1: open an island and come back with the star</h2>
+<pre data-title="lib/island_card.dart · IslandCard, where TODO 1 is"><code class="language-dart">return Card(
+  clipBehavior: Clip.antiAlias,
+  child: InkWell(
+    onTap: () async {
+      final favorite = await Navigator.push&lt;bool&gt;(
+        context,
+        MaterialPageRoute(builder: (_) =&gt; IslandScreen(id: island.id)),
+      );
+      if (favorite == true &amp;&amp; context.mounted) {
+        // the card may be gone
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('...')),
+        );
+      }
+    },
+    child: Column(
+      // the Column from before, as it is
+    ),
+  ),
+);</code></pre>
+  <div class="callout task"><strong>Do</strong> In <code>island_card.dart</code>, wrap the <code>Column</code> in an <code>InkWell</code> with this <code>onTap</code> (import <code>island_screen.dart</code>) and write the <code>SnackBar</code> message in place of the <code>'...'</code>: the island name followed by "nos favoritos". In <code>island_screen.dart</code>, replace the star's <code>onPressed: () {}</code> with the <code>Navigator.pop</code> from the previous slide.</div>
+  <p><strong>In the app:</strong> tapping Pico opens the Pico screen, with the photo and the five days; the arrow goes back to the grid with no message; the star goes back to the grid and shows "Pico nos favoritos".</p>
+  <aside class="notes">The message: <code>Text('${island.name} nos favoritos')</code>. <code>IslandScreen</code> receives the <code>id</code> and not the <code>Island</code> on purpose: in step 2 the <code>id</code> comes from the route path, which is only text. That is why the screen looks the island up in <code>islands</code> and shows "Ilha não encontrada" if it does not find it. Typical mistakes: <code>onTap</code> without <code>async</code> (the <code>await</code> does not compile) and forgetting <code>clipBehavior</code> (the tap effect spills out of the corners). For those who finish early: with a search typed in, open an island and come back. The search is still there. The solution is on the <code>passo-1</code> branch.</aside>
+</section>
 
+<section class="slide">
+  <h2>2. go_router: a path for each screen</h2>
+<pre data-title="lib/router.dart · on the passo-2 branch"><code class="language-dart">import 'package:go_router/go_router.dart';
+
+import 'forecast_screen.dart';
+import 'island_screen.dart';
+
+/// Every screen of the app, with its path, like the pages of a site.
 final router = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const LocationsScreen(),
+      builder: (context, state) =&gt; const ForecastScreen(),
       routes: [
         GoRoute(
-          path: 'location/:id',                         // /location/ponta-delgada
-          builder: (context, state) {
-            final id = state.pathParameters['id']!;
-            return DetailScreen(id: id);
-          },
+          path: 'island/:id', // /island/pico
+          builder: (context, state) =&gt;
+              IslandScreen(id: state.pathParameters['id']!),
         ),
       ],
     ),
-    GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
   ],
-);
-
-// in main.dart, in place of MaterialApp(home: ...)
-MaterialApp.router(routerConfig: router, theme: theme);</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. go_router: what matters</h2>
+);</code></pre>
   <ul>
-    <li>Nested routes (<code>routes:</code> inside a <code>GoRoute</code>) build the stack: opening <code>/location/horta</code> from a deep link puts the list underneath and the detail on top. Back works.</li>
-    <li><code>:id</code> is a path parameter, read from <code>state.pathParameters</code>. Query strings (<code>?day=2</code>) are in <code>state.uri.queryParameters</code>. Pass identifiers, not objects: the detail screen looks up the location by its <code>id</code>.</li>
-    <li><code>context.go('/settings')</code> replaces the stack with the one for the new URL. <code>context.push('/settings')</code> stacks on top of the current stack and can return a result, like the <code>Navigator</code>.</li>
-    <li>Rule of thumb: <code>go</code> to change section (tabs, deep links, after login); <code>push</code> to "open on top and come back".</li>
-    <li>The starter's tests navigate by URL. That is the advantage of screens having names.</li>
+    <li>Each <code>GoRoute</code> links a path to a screen. <code>:id</code> is a parameter: in <code>/island/pico</code>, <code>state.pathParameters['id']</code> is <code>'pico'</code>.</li>
+    <li>The <code>island/:id</code> route is inside the <code>/</code> route: opening <code>/island/pico</code> puts the grid underneath and Pico on top, even when you come in directly from a link. The back arrow works.</li>
+    <li><code>context.push('/island/pico')</code> stacks on top and returns a result, like <code>Navigator.push</code>. <code>context.go('/island/pico')</code> replaces the stack with the one for the path. For "open and come back", <code>push</code>.</li>
   </ul>
-  <p><strong>For the tests:</strong> <code>go</code> replaces the stack; <code>push</code> stacks. Path parameters come in <code>pathParameters</code>.</p>
-  <div class="callout task"><strong>Exercise 2</strong> Solve <code>TODO 2</code>: delete the code from exercise 1, create <code>router.dart</code> and navigate with <code>context.push('/location/${l.id}')</code>. The detail receives the <code>id</code> and looks up the location in <code>data.dart</code>. Handle the case of an <code>id</code> that does not exist.</div>
+  <div class="callout"><strong>Ask the class</strong> Why does the path carry the island's <code>id</code> and not the whole <code>Island</code>?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> A path is text: it has to fit in a URL, in a link in an SMS or in a notification. An object does not fit in a URL. With the <code>id</code>, the destination screen fetches the rest from the data, and the same path works wherever it comes from. That is also why <code>IslandScreen</code> handles an <code>id</code> that does not exist: a mistyped link has to give "Ilha não encontrada", not a red error. In Chrome, type <code>/island/xyz</code> in the address bar to show it.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. NavigationBar with independent stacks</h2>
-<pre data-title="lib/router.dart"><code class="language-dart">StatefulShellRoute.indexedStack(
-  builder: (context, state, shell) => Scaffold(
-    body: shell,                                    // the current tab, with its own stack
+  <h2>Step 2: replace the Navigator with go_router</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-1
+flutter pub get</code></pre>
+<pre data-title="lib/main.dart · where TODO 2 is"><code class="language-dart">return MaterialApp.router(
+  title: 'Tempo Açores',
+  theme: ThemeData(
+    // the theme, as it is
+  ),
+  routerConfig: router,
+);</code></pre>
+<pre data-title="lib/island_card.dart · the push now goes by path"><code class="language-dart">final favorite = await context.push&lt;bool&gt;('/island/${island.id}');</code></pre>
+  <div class="callout task"><strong>Do</strong> Write the <code>router.dart</code> from the previous slide. In <code>main.dart</code>, <code>MaterialApp</code> becomes <code>MaterialApp.router</code>, <code>home:</code> goes and <code>routerConfig</code> comes in. In <code>IslandCard</code>, the <code>Navigator.push</code> with the <code>MaterialPageRoute</code> gives way to one line with <code>context.push</code>. Fix the <code>import</code>s.</div>
+  <p><strong>In the app:</strong> everything the same as in step 1, and that is the point. In Chrome, opening Pico shows <code>/island/pico</code> in the address bar; typing <code>/island/flores</code> opens Flores with the grid underneath.</p>
+  <aside class="notes">Imports: in <code>main.dart</code>, <code>forecast_screen.dart</code> goes and <code>router.dart</code> comes in; in <code>island_card.dart</code>, <code>island_screen.dart</code> goes and <code>package:go_router/go_router.dart</code> comes in (<code>context.push</code> is a <code>go_router</code> extension; without the import, VS Code says the method does not exist). The star keeps <code>Navigator.pop(context, true)</code> and it works: <code>go_router</code> uses the <code>Navigator</code> underneath; <code>context.pop(true)</code> does the same. Typical mistake: <code>path: '/island/:id'</code> with a slash inside the <code>/</code> route fails at startup; child routes do not start with <code>/</code>. If someone uses <code>context.go</code> instead of <code>push</code>, the result is always <code>null</code>. The solution is on the <code>passo-2</code> branch.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. Navigation bar with independent stacks</h2>
+<pre data-title="lib/router.dart · the bar, on the passo-3 branch"><code class="language-dart">StatefulShellRoute.indexedStack(
+  builder: (context, state, shell) =&gt; Scaffold(
+    body: shell, // the current tab, with its own stack
     bottomNavigationBar: NavigationBar(
       selectedIndex: shell.currentIndex,
-      onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
+      onDestinationSelected: (i) =&gt;
+          shell.goBranch(i, initialLocation: i == shell.currentIndex),
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.wb_sunny_outlined), label: 'Forecast'),
-        NavigationDestination(icon: Icon(Icons.warning_amber), label: 'Warnings'),
-        NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
+        NavigationDestination(
+          icon: Icon(Icons.wb_sunny_outlined),
+          label: 'Previsão',
+        ),
+        // and Avisos (Icons.warning_amber), Definições (Icons.settings_outlined)
       ],
     ),
   ),
   branches: [
-    StatefulShellBranch(routes: [GoRoute(path: '/', builder: (_, __) => const LocationsScreen())]),
-    StatefulShellBranch(routes: [GoRoute(path: '/warnings', builder: (_, __) => const WarningsScreen())]),
-    StatefulShellBranch(routes: [GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen())]),
+    // one StatefulShellBranch per tab
   ],
-)</code></pre>
-</section>
-
-<section class="slide">
-  <h2>3. Navigation bar: what matters</h2>
+),</code></pre>
   <ul>
-    <li><code>ShellRoute</code> wraps a set of routes in a common widget (the bar). <code>StatefulShellRoute.indexedStack</code> goes further: each tab has its own stack and its own state, preserved when you switch tabs. It is the Instagram pattern.</li>
-    <li>The detail route goes in as a child of the <code>/</code> route inside the first <em>branch</em>: the detail opens on top of the list and the bar stays visible.</li>
-    <li><code>initialLocation: true</code> when tapping the already active tab goes back to the root of that tab. It is the behaviour users expect.</li>
-    <li><code>NavigationBar</code> is Material 3; <code>BottomNavigationBar</code> is the old Material 2. Three to five destinations, with icon and label.</li>
-    <li>On tablets, swap it for a <code>NavigationRail</code> on the left with a <code>LayoutBuilder</code>.</li>
+    <li><code>StatefulShellRoute</code> draws a <code>Scaffold</code> shared by all tabs, with the <code>NavigationBar</code> at the bottom. <code>shell</code> is the current tab.</li>
+    <li>Each <code>StatefulShellBranch</code> is a tab with its own stack. <code>indexedStack</code> keeps all three alive: switching tabs does not pop. It is the Instagram pattern.</li>
+    <li>Tapping the tab that is already active (<code>i == shell.currentIndex</code>) goes back to that tab's root. It is what users expect.</li>
+    <li><code>NavigationBar</code> is the Material 3 one; <code>BottomNavigationBar</code> is the old one. Three to five destinations, with icon and label.</li>
   </ul>
-  <div class="callout task"><strong>Exercise 3</strong> Solve <code>TODO 3</code>: the three tabs with <code>StatefulShellRoute</code>. Open a detail in Forecast, switch to Warnings, come back: the detail must still be open. The test checks exactly that.</div>
+  <div class="callout"><strong>Ask the class</strong> Each tab has a <code>Scaffold</code> with its own <code>AppBar</code>, and <code>shell</code> has another <code>Scaffold</code> with the bar. Two <code>Scaffold</code>s one inside the other: is that a mistake?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> It is not a mistake, it is normal with tabs: the outer <code>Scaffold</code> only has the bottom bar, and the inner one has the <code>AppBar</code> and the body of each screen. The <code>SnackBar</code> still appears because there is only one <code>ScaffoldMessenger</code>, created by <code>MaterialApp</code>. On tablets the bottom bar is swapped for a <code>NavigationRail</code> on the left; that is for the adaptive layouts lesson.</aside>
 </section>
 
 <section class="slide">
-  <h2>4. Light and dark Material 3 theme</h2>
-<pre data-title="lib/main.dart"><code class="language-dart">const seed = Color(0xFF0B63C9);
-
-MaterialApp.router(
-  routerConfig: router,
-  theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: seed), useMaterial3: true),
-  darkTheme: ThemeData(
-    colorScheme: ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark),
-    useMaterial3: true,
+  <h2>Step 3: three tabs</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-2
+flutter pub get</code></pre>
+<pre data-title="lib/router.dart · the branches, where TODO 3 is"><code class="language-dart">branches: [
+  StatefulShellBranch(
+    routes: [
+      GoRoute(
+        path: '/',
+        // the / route from step 2, with its child island/:id
+      ),
+    ],
   ),
-  themeMode: _mode,                            // ThemeMode.system, .light or .dark
-)
-
-// Manual toggle: _mode lives in a StatefulWidget above the MaterialApp
-SegmentedButton&lt;ThemeMode&gt;(
-  segments: const [
-    ButtonSegment(value: ThemeMode.system, label: Text('System')),
-    ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-    ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
-  ],
-  selected: {_mode},
-  onSelectionChanged: (s) => setState(() => _mode = s.first),
-)</code></pre>
+  StatefulShellBranch(
+    routes: [
+      GoRoute(
+        path: '/alerts',
+        builder: (context, state) =&gt; const AlertsScreen(),
+      ),
+    ],
+  ),
+  // and the third: '/settings' with SettingsScreen
+],</code></pre>
+  <div class="callout task"><strong>Do</strong> In <code>router.dart</code>, the <code>GoRouter</code>'s <code>routes</code> list now has a single element: the <code>StatefulShellRoute.indexedStack</code> from the previous slide. The <code>/</code> route from step 2 goes whole into the first <code>StatefulShellBranch</code>; write the other two. Import <code>material.dart</code>, <code>alerts_screen.dart</code> and <code>settings_screen.dart</code>.</div>
+  <p><strong>In the app:</strong> a bar at the bottom with Previsão, Avisos and Definições. You open Pico, go to Avisos, come back to Previsão: Pico is still open. Tap Previsão again and you are back at the grid.</p>
+  <aside class="notes">The <code>island/:id</code> route has to stay inside the <code>/</code> route, in the first branch: that is what makes Pico open on top of the grid with the bar visible. If it is outside the <code>StatefulShellRoute</code>, Pico opens full screen and the bar disappears. Typical mistake: forgetting <code>import 'package:flutter/material.dart';</code>, because the step 2 <code>router.dart</code> had no widgets. Try the alerts form: type a name, switch to Previsão and come back. The name is still there, because the tab was not destroyed. The solution is on the <code>passo-3</code> branch.</aside>
 </section>
 
 <section class="slide">
-  <h2>4. Theme: what matters</h2>
+  <h2>4. Light and dark theme</h2>
+<pre data-title="lib/main.dart · on the passo-4 branch"><code class="language-dart">/// The same theme for light and dark: only the brightness changes.
+ThemeData buildTheme(Brightness brightness) {
+  return ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.teal,
+      brightness: brightness,
+    ),
+    useMaterial3: true,
+    // Inter, on top of the text colours of this brightness
+    textTheme: GoogleFonts.interTextTheme(
+      ThemeData(brightness: brightness).textTheme,
+    ),
+  );
+}</code></pre>
+<pre data-title="lib/settings_screen.dart · already there"><code class="language-dart">/// The theme chosen by the user. A ValueNotifier holds one value and tells
+/// whoever listens when it changes: WeatherApp listens, in main.dart.
+final themeMode = ValueNotifier(ThemeMode.system);</code></pre>
   <ul>
-    <li>Two lines of <code>fromSeed</code> and the app has coherent light and dark modes. From there on, avoid fixed colours: no <code>Colors.white</code> in the widgets.</li>
-    <li>In the widgets, <code>final colors = Theme.of(context).colorScheme;</code> and then <code>colors.primaryContainer</code> for the background and <code>colors.onPrimaryContainer</code> for the text on top. The <code>x</code> / <code>onX</code> pairs guarantee contrast.</li>
-    <li>The <code>SegmentedButton</code> is on the settings screen, but <code>_mode</code> has to be above the <code>MaterialApp</code>. Today it goes up through a callback (the five levels problem); in lesson 13 it moves to a <code>ChangeNotifier</code> and in lesson 16 it is saved.</li>
-    <li>Component styles (<code>cardTheme</code>, <code>appBarTheme</code>, <code>inputDecorationTheme</code>) are defined once in the <code>ThemeData</code>, not widget by widget.</li>
-    <li>Always test both modes: turn on the phone's dark mode and go through every screen.</li>
+    <li><code>theme</code> and <code>darkTheme</code> in the <code>MaterialApp</code>, and <code>themeMode</code> chooses: <code>ThemeMode.system</code> follows the phone, <code>light</code> and <code>dark</code> force one.</li>
+    <li>The mode is chosen in settings, but the one who uses it is <code>MaterialApp</code>, at the top. Passing it by parameter does not work: the router is in between. A <code>ValueNotifier</code> keeps the value in one place and tells whoever is listening. It is the small version of the <code>ChangeNotifier</code> from the lesson 8 theory.</li>
+    <li><code>ValueListenableBuilder</code> listens to the <code>ValueNotifier</code> and rebuilds what is in its <code>builder</code> every time the value changes.</li>
   </ul>
-  <div class="callout task"><strong>Exercise 4</strong> Solve <code>TODO 4</code>: light and dark theme with the app's seed colour, <code>themeMode</code> driven by the <code>SegmentedButton</code> in the settings, and a <code>cardTheme</code> with corners of 16. Look for fixed colours in the screens and replace them with the <code>colorScheme</code>.</div>
+  <div class="callout"><strong>Ask the class</strong> Why does <code>buildTheme</code> pass <code>ThemeData(brightness: brightness).textTheme</code> to <code>interTextTheme</code>, instead of <code>GoogleFonts.interTextTheme()</code> as until now?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> <code>GoogleFonts.interTextTheme()</code> with no argument starts from the light text theme, which has dark colours. In dark mode that gives dark text on a dark background, unreadable. Passing the text theme of the same <code>brightness</code> keeps the Inter font with the right colours. It is the classic mistake from the theory slide, a fixed colour breaking dark mode, only hidden inside a function. Whoever wants to see it swaps to <code>GoogleFonts.interTextTheme()</code> and switches to Escuro. In lesson 13 the <code>ValueNotifier</code> becomes a <code>ChangeNotifier</code> with Provider, and in a later lesson the mode is saved.</aside>
 </section>
 
 <section class="slide">
-  <h2>5. Final exercise: the whole app connected</h2>
+  <h2>Step 4: the theme changes in settings</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-3
+flutter pub get</code></pre>
+<pre data-title="lib/main.dart · WeatherApp, where TODO 4 is"><code class="language-dart">// builds the MaterialApp again every time themeMode changes
+return ValueListenableBuilder(
+  valueListenable: themeMode,
+  builder: (context, mode, _) =&gt; MaterialApp.router(
+    title: 'Tempo Açores',
+    theme: buildTheme(Brightness.light),
+    darkTheme: buildTheme(Brightness.dark),
+    themeMode: mode, // ThemeMode.system, .light or .dark
+    routerConfig: router,
+  ),
+);</code></pre>
+<pre data-title="lib/settings_screen.dart · where TODO 4 is"><code class="language-dart">ValueListenableBuilder(
+  valueListenable: themeMode,
+  builder: (context, mode, _) =&gt; SegmentedButton&lt;ThemeMode&gt;(
+    segments: const [
+      ButtonSegment(value: ThemeMode.system, label: Text('Sistema')),
+      // and Claro (ThemeMode.light), Escuro (ThemeMode.dark)
+    ],
+    selected: {mode},
+    onSelectionChanged: (s) =&gt; themeMode.value = s.first,
+  ),
+),</code></pre>
+  <div class="callout task"><strong>Do</strong> In <code>main.dart</code>, write the <code>buildTheme</code> from the previous slide and wrap <code>MaterialApp.router</code> in the <code>ValueListenableBuilder</code>; import <code>settings_screen.dart</code>. In <code>settings_screen.dart</code>, the <code>SegmentedButton</code> with the three modes in place of the comment.</div>
+  <p><strong>In the app:</strong> in Definições, "Escuro" puts the whole app in the dark theme, without restarting, and the text stays readable; "Claro" goes back; "Sistema" follows the mode of the phone or computer.</p>
+  <aside class="notes">The <code>SegmentedButton</code> is the same as the °C/°F unit one from lesson 8; the difference is that the value lives in the <code>ValueNotifier</code> and not in a <code>State</code>. Assigning <code>themeMode.value</code> already notifies the listeners: there is no <code>setState</code>. Typical mistake: <code>themeMode = s.first</code> instead of <code>themeMode.value = s.first</code>, which does not compile because <code>themeMode</code> is <code>final</code>. To show "Sistema": change the operating system's dark mode with the app open. For those who finish early: look for fixed colours in the screens. The <code>Colors.white</code> and <code>Colors.black54</code> in <code>IslandHeader</code> sit on top of a photo and look fine in both modes. The solution is on the <code>passo-4</code> branch.</aside>
+</section>
+
+<section class="slide">
+  <h2>Where we got to</h2>
   <ol class="steps">
-    <li>Three tabs with <code>StatefulShellRoute</code>: Forecast (list → detail), Warnings (static list), Settings (form and theme).</li>
-    <li>The detail shows the 5-day forecast from lessons 6 and 7 for the location given by the <code>id</code>, and has the star that returns a result on going back.</li>
-    <li>The theme follows the <code>SegmentedButton</code> in the settings and changes without restarting the app.</li>
-    <li>Test: a manual deep link with <code>flutter run --route=/location/horta</code> (or the "Open" button in the starter) opens the detail with the list underneath.</li>
+    <li><code>IslandCard</code> opens <code>IslandScreen</code> with <code>Navigator.push</code> and waits for the result; the star returns <code>true</code> with <code>Navigator.pop</code> (step 1).</li>
+    <li><code>router.dart</code> with <code>GoRouter</code>: <code>/</code> and <code>/island/:id</code>, <code>MaterialApp.router</code> and <code>context.push</code> by path (step 2).</li>
+    <li><code>StatefulShellRoute.indexedStack</code> with the <code>NavigationBar</code>: three tabs, each with its own stack (step 3).</li>
+    <li><code>buildTheme</code> light and dark from the same seed, and <code>themeMode</code> in a <code>ValueNotifier</code> that settings change (step 4).</li>
   </ol>
-  <div class="callout task"><strong>Exercise 5</strong> Finish until <code>flutter test</code> goes green. Then, with the detail open, rotate the phone: what happens to the stack? And with a hot restart?</div>
-  <aside class="notes">Set aside 25 minutes. Typical mistakes: using go instead of push for the detail (the bar disappears because the route is not in the branch), and _mode declared inside build. Close with the rotation question: the stack survives, and so does the State; hot restart wipes everything.</aside>
+  <p>The <code>passo-4</code> branch is the final state: compare your code with it.</p>
+  <aside class="notes">The typical mistakes in these steps: in step 1, <code>onTap</code> without <code>async</code>; in step 2, the child route starting with <code>/</code> and the missing <code>go_router</code> import; in step 3, the <code>island/:id</code> route outside the first branch (the bar disappears); in step 4, <code>GoogleFonts.interTextTheme()</code> with no argument (dark text in dark mode). On Monday the lesson is from 16:00 to 18:00.</aside>
 </section>
 
 <section class="slide" data-part="End">
   <h2>See you on Monday</h2>
   <div class="cols">
     <div>
-      <h3>To do</h3>
-      <ul class="checklist">
-        <li>Add the route <code>/warnings/:id</code> with a warning detail screen (title, level, description, affected locations), nested in the Warnings tab. This is <code>TODO 5</code>.</li>
-        <li>Read <a href="https://pub.dev/packages/go_router" target="_blank" rel="noopener">go_router: getting started</a> on pub.dev, including the section on redirects. You will need it for the login in lesson 17.</li>
-        <li>The individual mini-project starts on Monday: come with the lesson 9 repository working, because it is the starting point.</li>
+      <h3>Next lesson</h3>
+      <ul>
+        <li>Monday, 12 October, from 16:00 to 18:00: accessibility, internationalisation and the individual mini-project.</li>
+        <li>The mini-project builds on what we have done so far: grid, detail screen, navigation and theme.</li>
+        <li>Today's final state is on the <code>passo-4</code> branch: <code>git stash -u</code> and then <code>git checkout passo-4</code>.</li>
       </ul>
     </div>
     <div>
-      <h3>To read</h3>
+      <h3>For those who want to read more</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/ui/navigation" target="_blank" rel="noopener">Navigation and routing</a>: Navigator vs Router, when to use each one.</li>
+        <li><a href="https://docs.flutter.dev/ui/navigation" target="_blank" rel="noopener">Navigation and routing</a>: Navigator and Router, and when to use each.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/navigation/returning-data" target="_blank" rel="noopener">Return data from a screen</a>: step 1, as the official recipe.</li>
+        <li><a href="https://pub.dev/packages/go_router" target="_blank" rel="noopener">go_router</a>: routes, parameters and <code>StatefulShellRoute</code>, with examples.</li>
         <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a>: what we will configure in lesson 22.</li>
-        <li><a href="https://docs.flutter.dev/cookbook/design/themes" target="_blank" rel="noopener">Use themes to share colors and font styles</a>: the official themes recipe.</li>
-        <li><a href="https://pub.dev/documentation/go_router/latest/" target="_blank" rel="noopener">go_router: documentation</a>: nested routes, <code>StatefulShellRoute</code>, redirects and parameters, with examples.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/design/themes" target="_blank" rel="noopener">Use themes to share colors and font styles</a>: the official recipe for themes.</li>
       </ul>
     </div>
   </div>
