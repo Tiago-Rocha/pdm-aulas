@@ -57,6 +57,68 @@ flutter pub get</code></pre>
   </ul>
 </section>
 
+<section class="slide">
+  <h2>Today, in the app (1 of 2): open an island and come back</h2>
+  <figure class="anat flow">
+    <div class="step">
+      <strong><span class="n">1</span>push</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-grelha.jpg" alt="The islands grid, with a tap on Pico.">
+        <span class="tap" style="--x:335;--y:627"></span>
+      </div>
+      <span>You tap Pico: the Pico screen goes on top of the grid.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">2</span>pop with a result</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="The Pico screen, with a photo, the five days and a tap on the star in the top bar.">
+        <span class="tap" style="--x:392;--y:28"></span>
+      </div>
+      <span>The star closes the screen and returns <code>true</code>. The arrow closes it and returns nothing.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">3</span>the grid receives</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-favoritos.jpg" alt="Back on the grid, at the same scroll position, with the SnackBar Pico nos favoritos.">
+      </div>
+      <span>The grid is where it was and shows "Pico nos favoritos".</span>
+    </div>
+  </figure>
+  <p>This is what you do in <strong>steps 1 and 2</strong>: first with <code>Navigator.push</code>, then with <code>go_router</code> and the path <code>/island/pico</code>. In the app, both steps look the same.</p>
+  <aside class="notes">Show this slide before the theory, so they know where they are going. These are screenshots of the app at the end of the lesson (branch <code>passo-4</code>, in Chrome). Ask: when Pico opens, what happens to the grid underneath? You answer it on the next slide, the stack: it stays alive, with its scroll and its search.</aside>
+</section>
+
+<section class="slide">
+  <h2>Today, in the app (2 of 2): three tabs and the theme</h2>
+  <figure class="anat three">
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="Pico open in the Previsão tab, with the navigation bar at the bottom.">
+        <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:0"><b>3</b></span>
+      </div>
+      <p><strong>Previsão</strong> (forecast): Pico opens on top of the grid and the bar stays there.</p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-avisos.jpg" alt="The Avisos tab, with the alerts form from lesson 8.">
+        <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:1"><b>3</b></span>
+      </div>
+      <p><strong>Avisos</strong> (alerts): the form from lesson 8, now in a tab. Go back to Previsão and Pico is still open.</p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-definicoes-escuro.jpg" alt="The Definições tab in dark theme, with Sistema, Claro and Escuro, and Escuro selected.">
+        <span class="w warn" style="--x:14;--y:102;--w:384;--h:36;--i:2"><b>4</b></span>
+      </div>
+      <p><strong>Definições</strong> (settings): system, light or dark, and the whole app changes without restarting.</p>
+    </div>
+  </figure>
+  <p>The bottom bar is <strong>step 3</strong> (<code>NavigationBar</code> with <code>StatefulShellRoute</code>): each tab keeps its own stack. The theme is <strong>step 4</strong>.</p>
+  <aside class="notes">Point at the bar in the first two screens: it is the same bar, only the tab changes. Ask who knows this behaviour: Instagram and YouTube do the same, you open a video in Home, go to Subscriptions, come back and the video is still there. It is the "tabs with independent stacks" pattern from the patterns table.</aside>
+</section>
+
 <section class="slide" data-part="Theory">
   <h2>The navigation stack</h2>
   <figure class="diagram">
@@ -175,6 +237,16 @@ flutter pub get</code></pre>
 
 <section class="slide">
   <h2>Themes (2 of 2): light, dark and consistency</h2>
+  <figure class="anat two">
+    <div class="anat-cell">
+      <div class="phone"><img src="../assets/img/aula-09/ecra-previsao.jpg" alt="The forecast screen in light theme."></div>
+      <p><strong>Light</strong>: <code>buildTheme(Brightness.light)</code></p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone"><img src="../assets/img/aula-09/ecra-previsao-escuro.jpg" alt="The same screen in dark theme: dark grey background, light text, the same photo."></div>
+      <p><strong>Dark</strong>: the same seed, <code>Brightness.dark</code>. This is step 4.</p>
+    </div>
+  </figure>
   <ul>
     <li><code>theme</code> and <code>darkTheme</code> in the <code>MaterialApp</code>; <code>themeMode</code> decides which one: <code>ThemeMode.system</code> follows the phone, <code>light</code> and <code>dark</code> force one.</li>
     <li>A dark theme is not the light one inverted: dark grey surfaces (not pure black), lighter and less saturated primary colours, shadows replaced by tones. <code>fromSeed</code> with <code>brightness: Brightness.dark</code> takes care of this.</li>

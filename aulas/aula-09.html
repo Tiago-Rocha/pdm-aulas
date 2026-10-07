@@ -57,6 +57,68 @@ flutter pub get</code></pre>
   </ul>
 </section>
 
+<section class="slide">
+  <h2>Hoje, na app (1 de 2): abrir uma ilha e voltar</h2>
+  <figure class="anat flow">
+    <div class="step">
+      <strong><span class="n">1</span>push</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-grelha.jpg" alt="A grelha das ilhas, com um toque no Pico.">
+        <span class="tap" style="--x:335;--y:627"></span>
+      </div>
+      <span>Tocas no Pico: o ecrã do Pico entra por cima da grelha.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">2</span>pop com resultado</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="O ecrã do Pico, com foto, os cinco dias e um toque na estrela da barra de cima.">
+        <span class="tap" style="--x:392;--y:28"></span>
+      </div>
+      <span>A estrela fecha o ecrã e devolve <code>true</code>. A seta fecha sem devolver nada.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">3</span>a grelha recebe</strong>
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-favoritos.jpg" alt="De volta à grelha, no mesmo sítio do scroll, com o SnackBar Pico nos favoritos.">
+      </div>
+      <span>A grelha continua onde estava e mostra "Pico nos favoritos".</span>
+    </div>
+  </figure>
+  <p>É o que fazes nos <strong>passos 1 e 2</strong>: primeiro com <code>Navigator.push</code>, depois com o <code>go_router</code> e o caminho <code>/island/pico</code>. Na app, os dois passos ficam iguais.</p>
+  <aside class="notes">Mostra este slide antes da teoria, para saberem ao que vão. São capturas da app no fim da aula (branch <code>passo-4</code>, no Chrome). Pergunta: quando o Pico abre, o que acontece à grelha que está por baixo? Respondes no slide seguinte, o da pilha: fica viva, com o scroll e a pesquisa.</aside>
+</section>
+
+<section class="slide">
+  <h2>Hoje, na app (2 de 2): três separadores e o tema</h2>
+  <figure class="anat three">
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="O Pico aberto no separador Previsão, com a barra de navegação em baixo.">
+        <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:0"><b>3</b></span>
+      </div>
+      <p><strong>Previsão</strong>: o Pico abre por cima da grelha e a barra continua lá.</p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-avisos.jpg" alt="O separador Avisos, com o formulário de avisos da aula 8.">
+        <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:1"><b>3</b></span>
+      </div>
+      <p><strong>Avisos</strong>: o formulário da aula 8, agora num separador. Voltas a Previsão e o Pico ainda está aberto.</p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone">
+        <img src="../assets/img/aula-09/ecra-definicoes-escuro.jpg" alt="O separador Definições em tema escuro, com Sistema, Claro e Escuro, e Escuro escolhido.">
+        <span class="w warn" style="--x:14;--y:102;--w:384;--h:36;--i:2"><b>4</b></span>
+      </div>
+      <p><strong>Definições</strong>: Sistema, Claro ou Escuro, e a app inteira muda sem reiniciar.</p>
+    </div>
+  </figure>
+  <p>A barra de baixo é o <strong>passo 3</strong> (<code>NavigationBar</code> com <code>StatefulShellRoute</code>): cada separador guarda a sua pilha. O tema é o <strong>passo 4</strong>.</p>
+  <aside class="notes">Aponta para a barra nos dois primeiros ecrãs: é a mesma, e o que muda é o separador. Pergunta quem conhece este comportamento: Instagram e YouTube fazem igual, abres um vídeo em Início, vais a Subscrições, voltas e o vídeo continua lá. É o padrão "tabs com pilhas independentes" que aparece na tabela dos padrões.</aside>
+</section>
+
 <section class="slide" data-part="Teoria">
   <h2>A pilha de navegação</h2>
   <figure class="diagram">
@@ -175,6 +237,16 @@ flutter pub get</code></pre>
 
 <section class="slide">
   <h2>Temas (2 de 2): claro, escuro e consistência</h2>
+  <figure class="anat two">
+    <div class="anat-cell">
+      <div class="phone"><img src="../assets/img/aula-09/ecra-previsao.jpg" alt="O ecrã de previsão em tema claro."></div>
+      <p><strong>Claro</strong>: <code>buildTheme(Brightness.light)</code></p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone"><img src="../assets/img/aula-09/ecra-previsao-escuro.jpg" alt="O mesmo ecrã em tema escuro: fundo cinzento-escuro, texto claro, a foto igual."></div>
+      <p><strong>Escuro</strong>: a mesma semente, <code>Brightness.dark</code>. É o passo 4.</p>
+    </div>
+  </figure>
   <ul>
     <li><code>theme</code> e <code>darkTheme</code> no <code>MaterialApp</code>; <code>themeMode</code> decide qual: <code>ThemeMode.system</code> segue o telemóvel, <code>light</code> e <code>dark</code> forçam.</li>
     <li>Um tema escuro não é o claro invertido: superfícies cinzento-escuro (não preto puro), cores primárias mais claras e menos saturadas, sombras substituídas por tons. <code>fromSeed</code> com <code>brightness: Brightness.dark</code> trata disto.</li>
