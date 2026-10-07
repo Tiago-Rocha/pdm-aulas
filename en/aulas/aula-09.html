@@ -47,7 +47,7 @@
     <div class="step">
       <strong><span class="n">1</span>push</strong>
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-grelha.jpg" alt="The islands grid, with a tap on Pico.">
+        <img src="../../assets/img/aula-09/ecra-grelha.jpg" alt="The islands grid, with a tap on Pico.">
         <span class="tap" style="--x:335;--y:627"></span>
       </div>
       <span>You tap Pico: the Pico screen goes on top of the grid.</span>
@@ -56,7 +56,7 @@
     <div class="step">
       <strong><span class="n">2</span>pop with a result</strong>
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="The Pico screen, with a photo, the five days and a tap on the star in the top bar.">
+        <img src="../../assets/img/aula-09/ecra-ilha.jpg" alt="The Pico screen, with a photo, the five days and a tap on the star in the top bar.">
         <span class="tap" style="--x:392;--y:28"></span>
       </div>
       <span>The star closes the screen and returns <code>true</code>. The arrow closes it and returns nothing.</span>
@@ -65,7 +65,7 @@
     <div class="step">
       <strong><span class="n">3</span>the grid receives</strong>
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-favoritos.jpg" alt="Back on the grid, at the same scroll position, with the SnackBar Pico nos favoritos.">
+        <img src="../../assets/img/aula-09/ecra-favoritos.jpg" alt="Back on the grid, at the same scroll position, with the SnackBar Pico nos favoritos.">
       </div>
       <span>The grid is where it was and shows "Pico nos favoritos".</span>
     </div>
@@ -79,21 +79,21 @@
   <figure class="anat three">
     <div class="anat-cell">
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="Pico open in the Previsão tab, with the navigation bar at the bottom.">
+        <img src="../../assets/img/aula-09/ecra-ilha.jpg" alt="Pico open in the Previsão tab, with the navigation bar at the bottom.">
         <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:0"><b>3</b></span>
       </div>
       <p><strong>Previsão</strong> (forecast): Pico opens on top of the grid and the bar stays there.</p>
     </div>
     <div class="anat-cell">
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-avisos.jpg" alt="The Avisos tab, with the alerts form.">
+        <img src="../../assets/img/aula-09/ecra-avisos.jpg" alt="The Avisos tab, with the alerts form.">
         <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:1"><b>3</b></span>
       </div>
       <p><strong>Avisos</strong> (alerts): the alerts form, now in a tab. Go back to Previsão and Pico is still open.</p>
     </div>
     <div class="anat-cell">
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-definicoes.jpg" alt="The Definições tab, for now with only the app version.">
+        <img src="../../assets/img/aula-09/ecra-definicoes.jpg" alt="The Definições tab, for now with only the app version.">
         <span class="w" style="--x:2;--y:835;--w:408;--h:78;--i:2"><b>3</b></span>
       </div>
       <p><strong>Definições</strong> (settings): only the version for now; it gets options in the next lessons.</p>
@@ -148,64 +148,114 @@
   <figcaption>One stack per flow: the screen underneath stays alive until you pop; each tab in the bar has its own stack.</figcaption>
   </figure>
   <ul>
-    <li>The screens of an app are a <strong>stack</strong>: <code>push</code> puts a new screen on top, <code>pop</code> removes the top one and goes back to the previous one. The islands grid → Pico → the map: three screens on the stack.</li>
-    <li>The screen underneath stays alive, with its <code>State</code>, its scroll and the text typed in it. When you <code>pop</code>, it is exactly as you left it.</li>
-    <li>The screen that leaves with <code>pop</code> is destroyed: <code>dispose</code> runs and the state is lost. If the user needs what was there, you have to return it to the previous screen or keep it outside.</li>
-    <li>A screen can return a result when it leaves: the island screen calls <code>pop(context, true)</code> when you tap the star, and whoever opened it receives the <code>true</code> in the <code>await</code>.</li>
-    <li>Very deep stacks (10 screens) are a symptom: the user is lost. Well-designed apps rarely go beyond 3 or 4.</li>
+    <li><code>push</code> puts a screen on top; <code>pop</code> removes it and goes back to the one underneath.</li>
+    <li>The screen underneath stays <strong>alive</strong>: scroll, search and <code>State</code> as you left them.</li>
+    <li>The screen that leaves is destroyed (<code>dispose</code>), but it can <strong>return a result</strong> to whoever opened it.</li>
   </ul>
   <p><strong>For the tests:</strong> <code>push</code> keeps the previous screen alive; <code>pop</code> destroys the current screen and can return a value.</p>
-  <div class="callout"><strong>Analogy</strong> A pile of sheets of paper on the desk. <code>push</code> puts a sheet on top; <code>pop</code> takes the top one off and throws it away. The sheet underneath stays on the desk with everything that was written on it. The Android back button is a <code>pop</code>.</div>
-  <aside class="notes">Draw the stack on the board with three stacked rectangles. Ask for the result of the screen count you asked for at the start: usually between 3 and 6. Discuss for 2 minutes why banking apps go deep (transfer flows) and Instagram does not.</aside>
+  <aside class="notes">Draw the stack on the board as three stacked rectangles. Ask for the result of the screen count you asked for at the start: usually between 3 and 6. Very deep stacks are a sign the user got lost; well-designed apps rarely go beyond 3 or 4. Analogy, if it helps: a pile of sheets on a desk; <code>push</code> puts a sheet on top, <code>pop</code> takes the top one and throws it away, and the one underneath still has everything written on it.</aside>
 </section>
 
 <section class="slide">
   <h2>Back: the Android button, the iOS gesture, and state</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Three phones. On Android, the system back button or gesture. On iOS, swiping from the left edge. On both, the AppBar arrow. All three do a pop.">
+    <rect x="95" y="30" width="120" height="210" rx="16" class="box"/>
+    <rect x="95" y="206" width="120" height="34" rx="0" class="box muted"/>
+    <circle cx="155" cy="223" r="13" class="box accent"/>
+    <text x="155" y="228" class="t b" text-anchor="middle">◁</text>
+    <text x="155" y="268" class="t b" text-anchor="middle">Android</text>
+    <text x="155" y="286" class="t s" text-anchor="middle">system button or gesture</text>
+    <rect x="395" y="30" width="120" height="210" rx="16" class="box"/>
+    <line x1="399" y1="135" x2="465" y2="135" class="arrow accent"/>
+    <text x="455" y="120" class="t s" text-anchor="middle">swipe</text>
+    <text x="455" y="268" class="t b" text-anchor="middle">iOS</text>
+    <text x="455" y="286" class="t s" text-anchor="middle">from the left edge</text>
+    <rect x="695" y="30" width="120" height="210" rx="16" class="box"/>
+    <rect x="695" y="30" width="120" height="34" rx="16" class="box muted"/>
+    <circle cx="715" cy="47" r="13" class="box accent"/>
+    <text x="715" y="52" class="t b" text-anchor="middle">←</text>
+    <text x="765" y="52" class="t s" text-anchor="middle">Pico</text>
+    <text x="755" y="268" class="t b" text-anchor="middle">Both</text>
+    <text x="755" y="286" class="t s" text-anchor="middle">the AppBar arrow</text>
+    <text x="450" y="318" class="t b" text-anchor="middle">all three do a pop</text>
+  </svg>
+  </figure>
   <ul>
-    <li><strong>Android:</strong> the system back button or gesture, from either edge. Since Android 14, <em>predictive back</em> shows a preview of the previous screen before you let go. Flutter supports it with <code>PopScope</code>.</li>
-    <li><strong>iOS:</strong> there is no system button. The user swipes from the left edge or taps the arrow in the bar. Flutter handles the gesture by itself in <code>MaterialPageRoute</code> on iOS.</li>
-    <li>Back at the root of the app: on Android it leaves the app (or minimises it); on iOS it does not exist. Never put an "exit" button in an app.</li>
-    <li>A half-filled form and the user presses back: everything is lost. <code>PopScope</code> with <code>canPop: false</code> and a "Discard changes?" dialog is the pattern. Gmail does this with drafts.</li>
-    <li>When the app is killed in the background and reopened, the stack goes back to the start unless you restore it (lesson 4, <em>state restoration</em>). Users hate going back to the home screen.</li>
+    <li>The <code>AppBar</code> arrow appears on its own when there is a screen underneath; the iOS gesture comes with <code>MaterialPageRoute</code>.</li>
+    <li>Form half filled in? <code>PopScope</code> asks "Discard changes?" before leaving.</li>
   </ul>
-  <p><strong>For the tests:</strong> "back" belongs to the system, not to the app; the app can intercept it with <code>PopScope</code>, but it cannot ignore it.</p>
+  <p><strong>For the tests:</strong> "back" belongs to the system, not the app; the app can intercept it with <code>PopScope</code>, but cannot ignore it.</p>
+  <aside class="notes">On Android, the back button or gesture works from either edge and, since Android 14, <em>predictive back</em> shows a preview of the previous screen. On iOS there is no system button. Back at the root of the app: on Android it leaves (or minimises); on iOS it does not exist; never add an "exit" button. When the app is killed in the background and reopened, the stack goes back to the start unless you restore it (<em>state restoration</em>). A <code>PopScope</code> example: Gmail with a half-written draft.</aside>
 </section>
 
 <section class="slide">
   <h2>Navigation patterns</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Pattern</th><th>How it behaves</th><th>Example</th></tr></thead>
-  <tbody>
-  <tr><td><strong>List → detail</strong></td><td><code>push</code> the detail; <code>pop</code> goes back to the list at the same scroll position</td><td>Any e-mail app, our islands grid</td></tr>
-  <tr><td><strong>Tabs with independent stacks</strong></td><td>Each tab has its own stack; switching tabs does not destroy the other tab's stack; tapping the active tab again goes back to its root</td><td>Instagram, YouTube: you open a video in Home, go to Subscriptions, come back and the video is still there</td></tr>
-  <tr><td><strong>Modal</strong></td><td>A full screen that slides up from the bottom, with "Cancel" and "Save"; when it closes, you are back where you started</td><td>Creating an event in Calendar, composing an e-mail</td></tr>
-  <tr><td><strong>Bottom sheet</strong></td><td>A panel that takes part of the screen, the rest stays visible and dimmed; drag to close</td><td>Share, Airbnb filters, options for an item</td></tr>
-  <tr><td><strong>Dialog</strong></td><td>Interrupts with a short question and two actions at most</td><td>"Delete conversation?", permission requests</td></tr>
-  </tbody></table></div>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="Five drawn phones: list and detail, tabs with a bar at the bottom, a full-screen modal with close and save, a bottom sheet halfway up the screen, and a dialog with two actions.">
+    <rect x="30" y="16" width="120" height="210" rx="16" class="box"/><rect x="42" y="36" width="96" height="22" rx="5" class="box"/><rect x="42" y="66" width="96" height="22" rx="5" class="box accent"/><rect x="42" y="96" width="96" height="22" rx="5" class="box"/><rect x="42" y="126" width="96" height="22" rx="5" class="box"/><rect x="42" y="156" width="96" height="22" rx="5" class="box"/><rect x="42" y="186" width="96" height="22" rx="5" class="box"/><rect x="205" y="16" width="120" height="210" rx="16" class="box"/><rect x="217" y="36" width="96" height="22" rx="5" class="box"/><rect x="217" y="66" width="96" height="22" rx="5" class="box"/><rect x="217" y="96" width="96" height="22" rx="5" class="box"/><rect x="217" y="126" width="96" height="22" rx="5" class="box"/><rect x="217" y="156" width="96" height="22" rx="5" class="box"/><rect x="205" y="192" width="120" height="34" class="box muted"/><rect x="211" y="198" width="32" height="22" rx="8" class="box accent"/><rect x="249" y="198" width="32" height="22" rx="8" class="box"/><rect x="287" y="198" width="32" height="22" rx="8" class="box"/><rect x="380" y="16" width="120" height="210" rx="16" class="box"/><rect x="380" y="34" width="120" height="192" rx="16" class="box accent"/><text x="396" y="56" class="t s">✕</text><text x="484" y="56" class="t s" text-anchor="end">Save</text><rect x="555" y="16" width="120" height="210" rx="16" class="box"/><rect x="555" y="16" width="120" height="110" rx="16" class="box muted"/><rect x="555" y="126" width="120" height="100" rx="16" class="box accent"/><line x1="600" y1="138" x2="630" y2="138" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="730" y="16" width="120" height="210" rx="16" class="box"/><rect x="730" y="16" width="120" height="210" rx="16" class="box muted"/><rect x="744" y="86" width="92" height="70" rx="10" class="box accent"/><text x="790" y="112" class="t s" text-anchor="middle">Delete?</text><text x="790" y="142" class="t s" text-anchor="middle">No · Yes</text><text x="90" y="250" class="t b" text-anchor="middle">List → detail</text><text x="90" y="270" class="t s" text-anchor="middle">push the detail;</text><text x="90" y="287" class="t s" text-anchor="middle">pop back to the list</text><text x="265" y="250" class="t b" text-anchor="middle">Tabs</text><text x="265" y="270" class="t s" text-anchor="middle">one stack</text><text x="265" y="287" class="t s" text-anchor="middle">per tab</text><text x="440" y="250" class="t b" text-anchor="middle">Modal</text><text x="440" y="270" class="t s" text-anchor="middle">full screen,</text><text x="440" y="287" class="t s" text-anchor="middle">slides up from below</text><text x="615" y="250" class="t b" text-anchor="middle">Bottom sheet</text><text x="615" y="270" class="t s" text-anchor="middle">panel on top,</text><text x="615" y="287" class="t s" text-anchor="middle">drag to close</text><text x="790" y="250" class="t b" text-anchor="middle">Dialog</text><text x="790" y="270" class="t s" text-anchor="middle">short question,</text><text x="790" y="287" class="t s" text-anchor="middle">two actions</text>
+  </svg>
+  <figcaption>Today we build the first two: the grid → Pico, and the bar with three tabs.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Examples:</strong> e-mail (list → detail), Instagram and YouTube (tabs), composing an e-mail (modal), sharing (bottom sheet), "Delete conversation?" (dialog).</li>
+  </ul>
+  <aside class="notes">Tabs with independent stacks: you open a video in Home on YouTube, go to Subscriptions, come back and the video is still there; tapping the active tab again goes back to its root. Modal: a full screen with "Cancel" and "Save", like creating an event in Calendar. Bottom sheet: the rest of the screen stays visible and dimmed, like the Airbnb filters. Dialog: interrupts with a question and two actions at most, like permission requests.</aside>
 </section>
 
 <section class="slide">
   <h2>Imperative vs declarative routes</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 260" role="img" aria-label="On the left, the imperative way: Navigator.push with MaterialPageRoute, screen by screen, with no name. On the right, the declarative way: a map of paths to screens, / to the grid, /island/pico to Pico, /alerts to Alerts and /settings to Settings.">
+    <text x="30" y="36" class="t b">Imperative: Navigator.push</text>
+    <rect x="30" y="60" width="380" height="80" rx="10" class="box"/>
+    <text x="48" y="92" class="t mono">Navigator.push(context,</text>
+    <text x="48" y="116" class="t mono">  MaterialPageRoute(...))</text>
+    <text x="30" y="168" class="t s">you say what to do, screen by screen;</text>
+    <text x="30" y="186" class="t s">the stack only exists in memory, unnamed</text>
+    <text x="500" y="36" class="t b">Declarative: go_router, a map of paths</text>
+    <rect x="500" y="60" width="170" height="34" rx="8" class="box accent"/><text x="585" y="82" class="t mono" text-anchor="middle">/</text><line x1="672" y1="77" x2="718" y2="77" class="arrow accent"/><rect x="724" y="60" width="150" height="34" rx="8" class="box"/><text x="799" y="82" class="t" text-anchor="middle">Islands grid</text><rect x="500" y="106" width="170" height="34" rx="8" class="box accent"/><text x="585" y="128" class="t mono" text-anchor="middle">/island/pico</text><line x1="672" y1="123" x2="718" y2="123" class="arrow accent"/><rect x="724" y="106" width="150" height="34" rx="8" class="box"/><text x="799" y="128" class="t" text-anchor="middle">Pico</text><rect x="500" y="152" width="170" height="34" rx="8" class="box accent"/><text x="585" y="174" class="t mono" text-anchor="middle">/alerts</text><line x1="672" y1="169" x2="718" y2="169" class="arrow accent"/><rect x="724" y="152" width="150" height="34" rx="8" class="box"/><text x="799" y="174" class="t" text-anchor="middle">Alerts</text><rect x="500" y="198" width="170" height="34" rx="8" class="box accent"/><text x="585" y="220" class="t mono" text-anchor="middle">/settings</text><line x1="672" y1="215" x2="718" y2="215" class="arrow accent"/><rect x="724" y="198" width="150" height="34" rx="8" class="box"/><text x="799" y="220" class="t" text-anchor="middle">Settings</text>
+    <text x="500" y="250" class="t s">navigating is changing the path, as on a website</text>
+  </svg>
+  </figure>
+<pre data-title="pubspec.yaml · go_router is a package"><code class="language-yaml">dependencies:                   # vai para dentro da app
+  flutter:
+    sdk: flutter
+  go_router: ^18.0.2
+  google_fonts: ^8.2.1</code></pre>
   <ul>
-    <li><strong>Imperative</strong> (<code>Navigator.push</code>): you say what to do, screen by screen. Simple, but the stack only exists in memory: it has no name, and it cannot be shared or restored.</li>
-    <li><strong>Declarative</strong> (<code>go_router</code>): you declare a map of routes with paths, as on a website: <code>/</code>, <code>/island/:id</code>, <code>/settings</code>. Navigating is changing the URL; the stack is derived from it.</li>
-    <li><strong>URL as state:</strong> the same app on Flutter Web shows the URL in the address bar; on the phone, a deep link opens <code>/island/pico</code> directly; an automated test starts on a screen without tapping five buttons.</li>
-    <li><code>go_router</code> is maintained by the Flutter team and handles the back button, tabs with independent stacks and redirects (login screen).</li>
-    <li>The two live together: you can use <code>showDialog</code> and <code>showModalBottomSheet</code> (imperative) inside an app with <code>go_router</code>.</li>
+    <li><code>go_router</code> does not come with Flutter: it is a <strong>package</strong> from pub.dev, like <code>google_fonts</code>. <code>flutter pub add go_router</code> adds the line to <code>pubspec.yaml</code> and <code>flutter pub get</code> downloads it. In today's repository it is already there.</li>
   </ul>
-  <p><strong>For the tests:</strong> declarative routes describe the screens as URLs and derive the stack from the URL; they are the basis of deep links and of the web.</p>
+  <p><strong>For the tests:</strong> declarative routes describe screens as URLs and derive the stack from the URL; they are the basis of deep links and the web.</p>
+  <aside class="notes">With paths, the same app on Flutter Web shows the URL in the address bar, a deep link opens <code>/island/pico</code> directly, and a test starts on a screen without tapping five buttons. <code>go_router</code> is maintained by the Flutter team and handles the back button, tabs with independent stacks and redirects (login screen). The two ways live together: <code>showDialog</code> and <code>showModalBottomSheet</code> are imperative and are used inside an app with <code>go_router</code>. Show the repository's <code>pubspec.yaml</code> in VS Code: <code>^18.0.2</code> means "18.0.2 or newer, without moving to 19".</aside>
 </section>
 
 <section class="slide">
   <h2>Deep links in one sentence</h2>
-  <p class="lead">A deep link is a URL that opens the app directly on a specific screen, instead of on the home screen.</p>
-  <ul>
-    <li><code>https://tempoacores.pt/island/pico</code> in an SMS, in a notification or in the browser: if the app is installed, it opens on the Pico screen; if not, it opens the website.</li>
-    <li>With <code>go_router</code>, the URL received is handled exactly like <code>context.go('/island/pico')</code>. That is why route paths should be designed as if they were public.</li>
-    <li>It needs native configuration (Android App Links, iOS Universal Links) and a file on the server proving that the domain is yours.</li>
-  </ul>
-  <div class="callout">Details, configuration and testing in lesson 22. In this lesson we only define the structure of the paths.</div>
-  <div class="callout"><strong>Analogy</strong> A full address, with street, number, floor and door, instead of "go to the city and look around". The URL takes you to the app and to the right screen, and the path segments (<code>/island/pico</code>) are the number and the door.</div>
+  <p class="lead">A deep link is a URL that opens the app directly on a specific screen, instead of on the first screen.</p>
+  <figure class="anat flow">
+    <div class="step">
+      <strong><span class="n">1</span>A link</strong>
+      <div class="state" style="font-size:.78rem"><span>in an SMS or a notification</span><b>tempoacores.pt/island/pico</b></div>
+      <span>The user taps the link.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">2</span>go_router</strong>
+      <div class="state" style="font-size:.78rem"><span>handles it as</span><b>context.go('/island/pico')</b></div>
+      <span>The same path as our routes.</span>
+    </div>
+    <span class="to" aria-hidden="true">→</span>
+    <div class="step">
+      <strong><span class="n">3</span>The right screen</strong>
+      <div class="phone">
+        <img src="../../assets/img/aula-09/ecra-ilha.jpg" alt="The app opens directly on the Pico screen.">
+      </div>
+      <span>The app opens on Pico, with the grid underneath.</span>
+    </div>
+  </figure>
+  <div class="callout">Setup and testing in lesson 22. Today we only design the paths.</div>
+  <aside class="notes">If the app is not installed, the same link opens the website. That is why route paths are designed as if they were public. It needs native setup (Android App Links, iOS Universal Links) and a file on the server proving the domain is yours. Analogy: a full address, with street, number and door, instead of "go to the town and look around".</aside>
 </section>
 
 <section class="slide" data-part="Practice">
