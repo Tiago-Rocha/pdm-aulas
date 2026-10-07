@@ -26,7 +26,7 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 09 · Semana 5 · Quarta, 7 de outubro de 2026 · 16:00 às 18:00</p>
   <h1>Navegação</h1>
-  <p class="lead">Teoria: os ecrãs de uma app organizados numa pilha, o efeito do "voltar" no estado, e as rotas declaradas como URLs. Prática, na app das ilhas: abrir uma ilha e devolver um resultado, rotas com <code>go_router</code> e uma barra com três separadores.</p>
+  <p class="lead">Teoria: os ecrãs de uma app organizados numa pilha, o efeito do "voltar" no estado, e as rotas declaradas como URLs. Prática, na app das ilhas: abrir uma ilha e voltar, rotas com <code>go_router</code> e uma barra com três separadores.</p>
   <div class="meta"><span>Repositório: pdm-aula-09</span></div>
   <aside class="notes">Aula de duas horas. Tempos de referência: teoria até às 16:35; clone e passo 1 até às 17:05; passo 2 até às 17:25; passo 3 e fecho até às 18:00. Antes da teoria pede a todos que abram a app do banco ou o Instagram e contem quantos ecrãs conseguem empilhar antes de carregar em voltar. Usas a contagem no slide da pilha.</aside>
 </section>
@@ -37,7 +37,7 @@
     <li>Explicar a pilha de navegação, o que <code>push</code> e <code>pop</code> fazem ao estado, e como Android e iOS tratam o "voltar".</li>
     <li>Reconhecer os padrões lista → detalhe, separadores com pilhas independentes, modais e bottom sheets.</li>
     <li>Justificar rotas declarativas com URL e explicar o que é um deep link.</li>
-    <li>Navegar com <code>Navigator</code> e com <code>go_router</code>, passando um <code>id</code> e devolvendo um resultado.</li>
+    <li>Navegar com <code>Navigator</code> e com <code>go_router</code>, passando o <code>id</code> da ilha.</li>
   </ul>
 </section>
 
@@ -54,20 +54,20 @@
     </div>
     <span class="to" aria-hidden="true">→</span>
     <div class="step">
-      <strong><span class="n">2</span>pop com resultado</strong>
+      <strong><span class="n">2</span>pop</strong>
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="O ecrã do Pico, com foto, os cinco dias e um toque na estrela da barra de cima.">
-        <span class="tap" style="--x:392;--y:28"></span>
+        <img src="../assets/img/aula-09/ecra-ilha.jpg" alt="O ecrã do Pico, com foto, os cinco dias e um toque na seta de voltar.">
+        <span class="tap" style="--x:28;--y:28"></span>
       </div>
-      <span>A estrela fecha o ecrã e devolve <code>true</code>. A seta fecha sem devolver nada.</span>
+      <span>A seta ← fecha o ecrã do Pico.</span>
     </div>
     <span class="to" aria-hidden="true">→</span>
     <div class="step">
-      <strong><span class="n">3</span>a grelha recebe</strong>
+      <strong><span class="n">3</span>a grelha como estava</strong>
       <div class="phone">
-        <img src="../assets/img/aula-09/ecra-favoritos.jpg" alt="De volta à grelha, no mesmo sítio do scroll, com o SnackBar Pico nos favoritos.">
+        <img src="../assets/img/aula-09/ecra-grelha.jpg" alt="De volta à grelha, no mesmo sítio do scroll.">
       </div>
-      <span>A grelha continua onde estava e mostra "Pico nos favoritos".</span>
+      <span>A grelha continua onde estava: o mesmo scroll, a mesma pesquisa.</span>
     </div>
   </figure>
   <p>É o que fazes nos <strong>passos 1 e 2</strong>: primeiro com <code>Navigator.push</code>, depois com o <code>go_router</code> e o caminho <code>/island/pico</code>. Na app, os dois passos ficam iguais.</p>
@@ -150,9 +150,9 @@
   <ul>
     <li><code>push</code> põe um ecrã em cima; <code>pop</code> tira-o e volta ao de baixo.</li>
     <li>O ecrã de baixo fica <strong>vivo</strong>: scroll, pesquisa e <code>State</code> como os deixaste.</li>
-    <li>O ecrã que sai é destruído (<code>dispose</code>), mas pode <strong>devolver um resultado</strong> a quem o abriu.</li>
+    <li>O ecrã que sai é destruído (<code>dispose</code>).</li>
   </ul>
-  <p><strong>Para os testes:</strong> <code>push</code> mantém o ecrã anterior vivo; <code>pop</code> destrói o ecrã atual e pode devolver um valor.</p>
+  <p><strong>Para os testes:</strong> <code>push</code> mantém o ecrã anterior vivo; <code>pop</code> destrói o ecrã atual.</p>
   <aside class="notes">Desenha a pilha no quadro com três retângulos empilhados. Pergunta o resultado da contagem de ecrãs que pediste no início: normalmente entre 3 e 6. Pilhas muito fundas são um sintoma de que o utilizador se perdeu; apps bem desenhadas raramente passam de 3 ou 4. Analogia, se ajudar: uma pilha de folhas na mesa; <code>push</code> põe uma folha por cima, <code>pop</code> tira a de cima e deita-a fora, e a de baixo continua com tudo o que tinha escrito.</aside>
 </section>
 
@@ -273,47 +273,34 @@ flutter pub get</code></pre>
 </section>
 
 <section class="slide">
-  <h2>1. Navigator: push e pop com resultado</h2>
-<pre data-title="lib/island_screen.dart · a estrela, no branch passo-1"><code class="language-dart">IconButton(
-  icon: const Icon(Icons.star_border),
-  tooltip: 'Adicionar aos favoritos',
-  onPressed: () =&gt; Navigator.pop(context, true), // close, return true
-),</code></pre>
+  <h2>1. Navigator: push e pop</h2>
+<pre data-title="lib/island_screen.dart · já lá está"><code class="language-dart">appBar: AppBar(title: Text(island.name)),</code></pre>
   <ul>
-    <li><code>Navigator.push</code> põe um ecrã novo em cima da pilha e devolve um <code>Future</code>: completa quando esse ecrã sair. O valor do <code>pop</code> é o resultado.</li>
-    <li>Se o utilizador sair com a seta da <code>AppBar</code>, o botão de retroceder ou o gesto do iOS, o resultado é <code>null</code>. Por isso se testa <code>favorite == true</code>.</li>
-    <li><code>MaterialPageRoute</code> dá a transição de cada plataforma e o gesto de voltar no iOS. A seta da <code>AppBar</code> aparece sozinha quando há um ecrã por baixo.</li>
-    <li>Depois de um <code>await</code>, o widget pode já não existir. <code>context.mounted</code> confirma que ainda existe antes de usar o <code>context</code>; o lint <code>use_build_context_synchronously</code> avisa se te esqueceres.</li>
+    <li><code>Navigator.push</code> põe um ecrã novo em cima da pilha. <code>MaterialPageRoute</code> diz qual é o ecrã e dá a animação de cada plataforma.</li>
+    <li>O <code>IslandScreen</code> não tem botão de voltar no código: a seta ← da <code>AppBar</code> aparece sozinha quando há um ecrã por baixo, e faz <code>pop</code>.</li>
+    <li>O botão de retroceder do Android e o gesto do iOS fazem o mesmo <code>pop</code>.</li>
   </ul>
-  <div class="callout"><strong>Pergunta à turma</strong> Abres o Pico e voltas com a seta, sem tocar na estrela. O que vale <code>favorite</code>? E a pesquisa que tinhas escrito na grelha, ainda lá está?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> <code>favorite</code> é <code>null</code>: a seta faz <code>pop</code> sem valor, por isso não aparece o <code>SnackBar</code>. A pesquisa continua lá: a grelha ficou por baixo na pilha, viva, com o seu <code>State</code> e o <code>TextEditingController</code>. É a pilha do slide da teoria. O tipo do resultado vem de <code>push&lt;bool&gt;</code>; sem ele, o resultado é <code>dynamic</code>.</aside>
+  <div class="callout"><strong>Pergunta à turma</strong> Escreves "pi" na pesquisa, abres o Pico e voltas com a seta. A pesquisa ainda lá está?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Está: a grelha ficou por baixo na pilha, viva, com o seu <code>State</code> e o <code>TextEditingController</code>. É a pilha do slide da teoria. Mostra ao vivo depois do passo 1.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 1: abrir uma ilha e voltar com a estrela</h2>
+  <h2>Passo 1: abrir uma ilha</h2>
 <pre data-title="lib/island_card.dart · IslandCard, no sítio do TODO 1"><code class="language-dart">return Card(
   clipBehavior: Clip.antiAlias,
   child: InkWell(
-    onTap: () async {
-      final favorite = await Navigator.push&lt;bool&gt;(
-        context,
-        MaterialPageRoute(builder: (_) =&gt; IslandScreen(id: island.id)),
-      );
-      if (favorite == true &amp;&amp; context.mounted) {
-        // the card may be gone
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('...')),
-        );
-      }
-    },
+    onTap: () =&gt; Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) =&gt; IslandScreen(id: island.id)),
+    ),
     child: Column(
       // a Column de antes, como está
     ),
   ),
 );</code></pre>
-  <div class="callout task"><strong>Faz</strong> Em <code>island_card.dart</code>, embrulha a <code>Column</code> num <code>InkWell</code> com este <code>onTap</code> (importa o <code>island_screen.dart</code>) e escreve a mensagem do <code>SnackBar</code> no lugar do <code>'...'</code>: o nome da ilha seguido de "nos favoritos". Em <code>island_screen.dart</code>, troca o <code>onPressed: () {}</code> da estrela pelo <code>Navigator.pop</code> do slide anterior.</div>
-  <p><strong>Na app:</strong> tocar no Pico abre o ecrã do Pico, com a foto e os cinco dias; a seta volta à grelha sem mensagem; a estrela volta à grelha e mostra "Pico nos favoritos".</p>
-  <aside class="notes">A mensagem: <code>Text('${island.name} nos favoritos')</code>. O <code>IslandScreen</code> recebe o <code>id</code> e não a <code>Island</code> de propósito: no passo 2 o <code>id</code> vem do caminho da rota, que é só texto. Por isso o ecrã procura a ilha em <code>islands</code> e mostra "Ilha não encontrada" se não a encontrar. Erros típicos: <code>onTap</code> sem <code>async</code> (o <code>await</code> não compila) e esquecer o <code>clipBehavior</code> (o efeito do toque sai dos cantos). Quem acabar cedo: com a pesquisa escrita, abre uma ilha e volta. A pesquisa continua lá. A solução está no branch <code>passo-1</code>.</aside>
+  <div class="callout task"><strong>Faz</strong> Em <code>island_card.dart</code>, embrulha a <code>Column</code> num <code>InkWell</code> com este <code>onTap</code> e importa o <code>island_screen.dart</code>.</div>
+  <p><strong>Na app:</strong> tocar no Pico abre o ecrã do Pico, com a foto e os cinco dias; a seta ← volta à grelha, no mesmo sítio.</p>
+  <aside class="notes">O <code>IslandScreen</code> recebe o <code>id</code> e não a <code>Island</code> de propósito: no passo 2 o <code>id</code> vem do caminho da rota, que é só texto. Por isso o ecrã procura a ilha em <code>islands</code> e mostra "Ilha não encontrada" se não a encontrar. Erros típicos: esquecer o import, e fechar mal os parênteses (o <code>child: Column</code> passa para dentro do <code>InkWell</code>, e é preciso um <code>),</code> a mais no fim). Sem <code>clipBehavior</code>, o efeito do toque sai dos cantos. A solução está no branch <code>passo-1</code>.</aside>
 </section>
 
 <section class="slide">
@@ -343,7 +330,7 @@ final router = GoRouter(
   <ul>
     <li>Cada <code>GoRoute</code> liga um caminho a um ecrã. <code>:id</code> é um parâmetro: em <code>/island/pico</code>, <code>state.pathParameters['id']</code> vale <code>'pico'</code>.</li>
     <li>A rota <code>island/:id</code> está dentro da rota <code>/</code>: abrir <code>/island/pico</code> põe a grelha por baixo e o Pico por cima, mesmo quando se entra diretamente por um link. A seta de voltar funciona.</li>
-    <li><code>context.push('/island/pico')</code> empilha por cima e devolve um resultado, como o <code>Navigator.push</code>. <code>context.go('/island/pico')</code> substitui a pilha pela do caminho. Para "abrir e voltar", <code>push</code>.</li>
+    <li><code>context.push('/island/pico')</code> empilha por cima, como o <code>Navigator.push</code>. <code>context.go('/island/pico')</code> substitui a pilha pela do caminho. Para "abrir e voltar", <code>push</code>.</li>
   </ul>
   <div class="callout"><strong>Pergunta à turma</strong> Porque é que o caminho leva o <code>id</code> da ilha e não a <code>Island</code> inteira?</div>
   <aside class="notes"><strong>Respostas às perguntas.</strong> Um caminho é texto: tem de caber num URL, num link de um SMS ou numa notificação. Um objeto não cabe num URL. Com o <code>id</code>, o ecrã de destino vai buscar o resto aos dados, e o mesmo caminho funciona venha de onde vier. É também por isso que o <code>IslandScreen</code> trata o caso de um <code>id</code> que não existe: um link mal escrito tem de dar "Ilha não encontrada", não um erro vermelho. No Chrome, escreve <code>/island/xyz</code> na barra de endereço para o mostrar.</aside>
@@ -361,10 +348,10 @@ flutter pub get</code></pre>
   ),
   routerConfig: router,
 );</code></pre>
-<pre data-title="lib/island_card.dart · o push passa a ser pelo caminho"><code class="language-dart">final favorite = await context.push&lt;bool&gt;('/island/${island.id}');</code></pre>
-  <div class="callout task"><strong>Faz</strong> Escreve o <code>router.dart</code> do slide anterior. No <code>main.dart</code>, <code>MaterialApp</code> passa a <code>MaterialApp.router</code>, o <code>home:</code> sai e entra o <code>routerConfig</code>. No <code>IslandCard</code>, o <code>Navigator.push</code> com o <code>MaterialPageRoute</code> dá lugar a uma linha com <code>context.push</code>. Acerta os <code>import</code>.</div>
+<pre data-title="lib/island_card.dart · o push passa a ser pelo caminho"><code class="language-dart">onTap: () =&gt; context.push('/island/${island.id}'),</code></pre>
+  <div class="callout task"><strong>Faz</strong> Escreve o <code>router.dart</code> do slide anterior. No <code>main.dart</code>, <code>MaterialApp</code> passa a <code>MaterialApp.router</code>, o <code>home:</code> sai e entra o <code>routerConfig</code>. No <code>IslandCard</code>, o <code>onTap</code> com o <code>Navigator.push</code> dá lugar a uma linha com <code>context.push</code>. Acerta os <code>import</code>.</div>
   <p><strong>Na app:</strong> tudo igual ao passo 1, e é esse o objetivo. No Chrome, ao abrir o Pico a barra de endereço mostra <code>/island/pico</code>; escrever <code>/island/flores</code> abre as Flores com a grelha por baixo.</p>
-  <aside class="notes">Imports: no <code>main.dart</code> sai <code>forecast_screen.dart</code> e entra <code>router.dart</code>; no <code>island_card.dart</code> sai <code>island_screen.dart</code> e entra <code>package:go_router/go_router.dart</code> (o <code>context.push</code> é uma extensão do <code>go_router</code>; sem o import, o VS Code diz que o método não existe). A estrela continua com <code>Navigator.pop(context, true)</code> e funciona: o <code>go_router</code> usa o <code>Navigator</code> por baixo; <code>context.pop(true)</code> faz o mesmo. Erro típico: <code>path: '/island/:id'</code> com barra dentro da rota <code>/</code> dá erro ao arrancar; as rotas filhas não começam por <code>/</code>. Se alguém usar <code>context.go</code> em vez de <code>push</code>, o resultado vem sempre <code>null</code>. A solução está no branch <code>passo-2</code>.</aside>
+  <aside class="notes">Imports: no <code>main.dart</code> sai <code>forecast_screen.dart</code> e entra <code>router.dart</code>; no <code>island_card.dart</code> sai <code>island_screen.dart</code> e entra <code>package:go_router/go_router.dart</code> (o <code>context.push</code> é uma extensão do <code>go_router</code>; sem o import, o VS Code diz que o método não existe). Erro típico: <code>path: '/island/:id'</code> com barra dentro da rota <code>/</code> dá erro ao arrancar; as rotas filhas não começam por <code>/</code>. Depois de mudar o <code>main.dart</code>, hot restart e não hot reload. A solução está no branch <code>passo-2</code>.</aside>
 </section>
 
 <section class="slide">
@@ -431,12 +418,12 @@ flutter pub get</code></pre>
 <section class="slide">
   <h2>Onde ficámos</h2>
   <ol class="steps">
-    <li><code>IslandCard</code> abre o <code>IslandScreen</code> com <code>Navigator.push</code> e espera o resultado; a estrela devolve <code>true</code> com <code>Navigator.pop</code> (passo 1).</li>
+    <li><code>IslandCard</code> abre o <code>IslandScreen</code> com <code>Navigator.push</code>; a seta da <code>AppBar</code> faz <code>pop</code> (passo 1).</li>
     <li><code>router.dart</code> com <code>GoRouter</code>: <code>/</code> e <code>/island/:id</code>, <code>MaterialApp.router</code> e <code>context.push</code> pelo caminho (passo 2).</li>
     <li><code>StatefulShellRoute.indexedStack</code> com a <code>NavigationBar</code>: três separadores, cada um com a sua pilha (passo 3).</li>
   </ol>
   <p>O branch <code>passo-3</code> é o estado final: compara o teu código com ele.</p>
-  <aside class="notes">Os erros típicos destes passos: no passo 1, o <code>onTap</code> sem <code>async</code>; no passo 2, a rota filha com <code>/</code> no início e o import do <code>go_router</code> em falta; no passo 3, a rota <code>island/:id</code> fora do primeiro branch (a barra desaparece). Segunda a aula é das 16:00 às 18:00.</aside>
+  <aside class="notes">Os erros típicos destes passos: no passo 1, o import do <code>island_screen.dart</code> e os parênteses do <code>InkWell</code>; no passo 2, a rota filha com <code>/</code> no início e o import do <code>go_router</code> em falta; no passo 3, a rota <code>island/:id</code> fora do primeiro branch (a barra desaparece). Segunda a aula é das 16:00 às 18:00.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
