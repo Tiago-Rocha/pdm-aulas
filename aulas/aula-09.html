@@ -26,18 +26,33 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 09 · Semana 5 · Quarta, 7 de outubro de 2026 · 16:00 às 18:00</p>
   <h1>Navegação e temas</h1>
-  <p class="lead">Teoria: organização dos ecrãs numa pilha, efeito do botão de retroceder no estado, e rotas declaradas como URLs. Prática: Navigator, go_router com parâmetros, barra de navegação com três separadores e tema Material 3 claro e escuro.</p>
+  <p class="lead">Teoria: os ecrãs de uma app organizados numa pilha, o efeito do "voltar" no estado, e as rotas declaradas como URLs. Prática, na app das ilhas: abrir uma ilha e devolver um resultado, rotas com <code>go_router</code>, uma barra com três separadores e o tema claro e escuro.</p>
   <div class="meta"><span>Repositório: pdm-aula-09</span></div>
-  <aside class="notes">Pergunta quem fez o campo de e-mail com validação. Mostra uma RegExp razoável em 1 minuto e avisa que validar e-mails a sério é um poço sem fundo. Depois pede a todos que abram a app do banco ou o Instagram e contem quantos ecrãs conseguem empilhar antes de carregar em voltar. Vais usar isso no primeiro slide de teoria.</aside>
+  <aside class="notes">Aula de duas horas, e começa com o passo 4 da aula 8, que ficou por fazer. Tempos de referência: retoma do formulário até às 16:15; teoria até às 16:40; clone e passo 1 até às 17:00; passo 2 até às 17:15; passo 3 até às 17:35; passo 4 e fecho até às 18:00. Se o tempo apertar, o passo 4 fica para demonstrares tu: o branch <code>passo-4</code> tem tudo. Antes da teoria pede a todos que abram a app do banco ou o Instagram e contem quantos ecrãs conseguem empilhar antes de carregar em voltar. Usas a contagem no slide da pilha.</aside>
+</section>
+
+<section class="slide">
+  <h2>Antes de começar: o passo 4 da aula 8</h2>
+  <p class="lead">Na última aula ficou por fazer a validação do formulário de avisos. É curto e fecha o tema do estado.</p>
+<pre class="term"><code class="language-bash">cd pdm-aula-08
+git stash -u
+git checkout passo-3
+flutter pub get</code></pre>
+  <ol class="steps">
+    <li>Abre <code>lib/alerts_form.dart</code> e segue o <a href="aula-08.html#s19">slide do passo 4 da aula 8</a>: um <code>validator</code> no nome e outro no e-mail, <code>autovalidateMode</code> no <code>Form</code> e o teclado de e-mail.</li>
+    <li><strong>Na app:</strong> "Subscrever" com os campos vazios mostra "Obrigatório" e não mostra o <code>SnackBar</code>; com "Ana" e "ana@uac.pt" mostra "Avisos enviados para ana@uac.pt".</li>
+  </ol>
+  <div class="callout"><strong>Pergunta à turma</strong> Um <code>validator</code> devolve <code>''</code> (uma string vazia) quando o campo está bem. O formulário passa?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Não passa: o <code>Form</code> só considera um campo válido quando o <code>validator</code> devolve <code>null</code>. Qualquer <code>String</code>, mesmo vazia, conta como erro, e o campo fica vermelho sem mensagem. É o erro típico deste passo. Dá 10 minutos no máximo: quem não acabar faz <code>git checkout passo-4</code> e compara. Os validadores completos estão nas notas do slide da aula 8. Depois fecha o <code>pdm-aula-08</code>: o repositório de hoje já parte do formulário validado.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
     <li>Explicar a pilha de navegação, o que <code>push</code> e <code>pop</code> fazem ao estado, e como Android e iOS tratam o "voltar".</li>
-    <li>Reconhecer os padrões lista → detalhe, tabs com pilhas independentes, modais e bottom sheets.</li>
-    <li>Justificar rotas declarativas com URL e o que é um deep link.</li>
-    <li>Navegar com <code>Navigator</code> e com <code>go_router</code>, passando e devolvendo dados.</li>
+    <li>Reconhecer os padrões lista → detalhe, separadores com pilhas independentes, modais e bottom sheets.</li>
+    <li>Justificar rotas declarativas com URL e explicar o que é um deep link.</li>
+    <li>Navegar com <code>Navigator</code> e com <code>go_router</code>, passando um <code>id</code> e devolvendo um resultado.</li>
     <li>Definir um tema Material 3 a partir de uma cor semente, com modo claro, escuro e do sistema.</li>
   </ul>
 </section>
@@ -45,16 +60,16 @@
 <section class="slide" data-part="Teoria">
   <h2>A pilha de navegação</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 280" role="img" aria-label="À esquerda, uma pilha de três ecrãs: Lista de localidades em baixo, Detalhe no meio, Definições no topo, com push a empilhar e pop a tirar. À direita, três separadores, Previsão, Avisos e Definições, cada um com a sua pilha independente">
+  <svg viewBox="0 0 900 280" role="img" aria-label="À esquerda, uma pilha de três ecrãs: Grelha das ilhas em baixo, Ilha no meio, Mapa no topo, com push a empilhar e pop a tirar. À direita, três separadores, Previsão, Avisos e Definições, cada um com a sua pilha independente">
     <text x="60" y="36" class="t b">Uma pilha: push põe em cima, pop tira</text>
     <rect x="60" y="200" width="260" height="44" rx="8" class="box"/>
-    <text x="190" y="218" class="t b" text-anchor="middle">Lista de localidades</text>
+    <text x="190" y="218" class="t b" text-anchor="middle">Grelha das ilhas</text>
     <text x="190" y="236" class="t s" text-anchor="middle">vivo, scroll mantido</text>
     <rect x="80" y="140" width="260" height="44" rx="8" class="box"/>
-    <text x="210" y="158" class="t b" text-anchor="middle">Detalhe</text>
+    <text x="210" y="158" class="t b" text-anchor="middle">Ilha</text>
     <text x="210" y="176" class="t s" text-anchor="middle">vivo por baixo, State mantido</text>
     <rect x="100" y="80" width="260" height="44" rx="8" class="box accent"/>
-    <text x="230" y="98" class="t b" text-anchor="middle">Definições</text>
+    <text x="230" y="98" class="t b" text-anchor="middle">Mapa</text>
     <text x="230" y="116" class="t s" text-anchor="middle">topo: o que o utilizador vê</text>
     <line x1="40" y1="244" x2="40" y2="84" class="arrow accent"/>
     <text x="40" y="68" class="t b" text-anchor="middle">push</text>
@@ -65,9 +80,9 @@
     <text x="520" y="64" class="t s">cada separador guarda a sua pilha;</text>
     <text x="520" y="82" class="t s">mudar de separador não faz pop</text>
     <rect x="538" y="180" width="88" height="24" rx="6" class="box"/>
-    <text x="582" y="196" class="t s" text-anchor="middle">Lista</text>
+    <text x="582" y="196" class="t s" text-anchor="middle">Grelha</text>
     <rect x="542" y="150" width="88" height="24" rx="6" class="box"/>
-    <text x="586" y="166" class="t s" text-anchor="middle">Detalhe</text>
+    <text x="586" y="166" class="t s" text-anchor="middle">Ilha</text>
     <rect x="546" y="120" width="88" height="24" rx="6" class="box accent"/>
     <text x="590" y="136" class="t s" text-anchor="middle">Mapa</text>
     <rect x="651" y="180" width="88" height="24" rx="6" class="box"/>
@@ -87,10 +102,10 @@
   <figcaption>Uma pilha por fluxo: o ecrã de baixo fica vivo até fazeres pop; cada separador da barra tem a sua própria pilha.</figcaption>
   </figure>
   <ul>
-    <li>Os ecrãs de uma app são uma <strong>pilha</strong>: <code>push</code> põe um ecrã novo em cima, <code>pop</code> tira o de cima e volta ao anterior. A lista de localidades → o detalhe → o mapa: três ecrãs na pilha.</li>
+    <li>Os ecrãs de uma app são uma <strong>pilha</strong>: <code>push</code> põe um ecrã novo em cima, <code>pop</code> tira o de cima e volta ao anterior. A grelha das ilhas → o Pico → o mapa: três ecrãs na pilha.</li>
     <li>O ecrã de baixo continua vivo, com o seu <code>State</code>, o scroll e o texto escrito. Ao fazer <code>pop</code>, está exatamente como o deixaste.</li>
     <li>O ecrã que sai com <code>pop</code> é destruído: <code>dispose</code> corre e o estado perde-se. Se o utilizador precisa do que lá estava, tens de o devolver ao ecrã anterior ou guardá-lo fora.</li>
-    <li>Um ecrã pode devolver um resultado ao sair: o ecrã de escolha de localidade faz <code>pop(context, localidade)</code> e quem chamou recebe-a no <code>await</code>.</li>
+    <li>Um ecrã pode devolver um resultado ao sair: o ecrã de uma ilha faz <code>pop(context, true)</code> quando tocas na estrela, e quem o abriu recebe o <code>true</code> no <code>await</code>.</li>
     <li>Pilhas muito fundas (10 ecrãs) são um sintoma: o utilizador perdeu-se. Apps bem desenhadas raramente passam de 3 ou 4.</li>
   </ul>
   <p><strong>Para os testes:</strong> <code>push</code> mantém o ecrã anterior vivo; <code>pop</code> destrói o ecrã atual e pode devolver um valor.</p>
@@ -115,7 +130,7 @@
   <div class="table-wrap"><table>
   <thead><tr><th>Padrão</th><th>Como se comporta</th><th>Exemplo</th></tr></thead>
   <tbody>
-  <tr><td><strong>Lista → detalhe</strong></td><td><code>push</code> do detalhe; <code>pop</code> volta à lista no mesmo sítio do scroll</td><td>Qualquer app de e-mail, a nossa lista de localidades</td></tr>
+  <tr><td><strong>Lista → detalhe</strong></td><td><code>push</code> do detalhe; <code>pop</code> volta à lista no mesmo sítio do scroll</td><td>Qualquer app de e-mail, a nossa grelha das ilhas</td></tr>
   <tr><td><strong>Tabs com pilhas independentes</strong></td><td>Cada separador tem a sua pilha; mudar de separador não destrói a pilha do outro; voltar a tocar no separador ativo volta à raiz</td><td>Instagram, YouTube: abres um vídeo em Início, vais a Subscrições, voltas e o vídeo ainda lá está</td></tr>
   <tr><td><strong>Modal</strong></td><td>Ecrã inteiro que sobe de baixo, com "Cancelar" e "Guardar"; ao fechar, volta ao ponto de partida</td><td>Criar evento no Calendário, compor e-mail</td></tr>
   <tr><td><strong>Bottom sheet</strong></td><td>Painel que ocupa parte do ecrã, o resto fica visível e escurecido; arrasta para fechar</td><td>Partilhar, filtros do Airbnb, opções de um item</td></tr>
@@ -127,9 +142,9 @@
   <h2>Rotas imperativas vs declarativas</h2>
   <ul>
     <li><strong>Imperativo</strong> (<code>Navigator.push</code>): dizes o que fazer, ecrã a ecrã. Simples, mas a pilha só existe em memória: não tem nome, não se pode partilhar nem restaurar.</li>
-    <li><strong>Declarativo</strong> (<code>go_router</code>): declaras um mapa de rotas com caminhos, como num site: <code>/</code>, <code>/localidade/:id</code>, <code>/definicoes</code>. Navegar é mudar o URL; a pilha é derivada dele.</li>
-    <li><strong>URL como estado:</strong> a mesma app em Flutter Web mostra o URL na barra; no telemóvel, um deep link abre diretamente <code>/localidade/horta</code>; um teste automatizado começa num ecrã sem tocar em cinco botões.</li>
-    <li><code>go_router</code> é mantido pela equipa do Flutter, trata do botão de retroceder, das tabs com pilhas independentes e dos redirecionamentos (ecrã de login).</li>
+    <li><strong>Declarativo</strong> (<code>go_router</code>): declaras um mapa de rotas com caminhos, como num site: <code>/</code>, <code>/island/:id</code>, <code>/settings</code>. Navegar é mudar o URL; a pilha é derivada dele.</li>
+    <li><strong>URL como estado:</strong> a mesma app em Flutter Web mostra o URL na barra; no telemóvel, um deep link abre diretamente <code>/island/pico</code>; um teste automatizado começa num ecrã sem tocar em cinco botões.</li>
+    <li><code>go_router</code> é mantido pela equipa do Flutter, trata do botão de retroceder, dos separadores com pilhas independentes e dos redirecionamentos (ecrã de login).</li>
     <li>Os dois convivem: podes usar <code>showDialog</code> e <code>showModalBottomSheet</code> (imperativos) dentro de uma app com <code>go_router</code>.</li>
   </ul>
   <p><strong>Para os testes:</strong> rotas declarativas descrevem os ecrãs como URLs e derivam a pilha do URL; são a base de deep links e da web.</p>
@@ -139,12 +154,12 @@
   <h2>Deep links em uma frase</h2>
   <p class="lead">Um deep link é um URL que abre a app diretamente num ecrã específico, em vez de no ecrã inicial.</p>
   <ul>
-    <li><code>https://tempoacores.pt/localidade/horta</code> num SMS, numa notificação ou no browser: se a app estiver instalada, abre no detalhe da Horta; se não, abre o site.</li>
-    <li>Com <code>go_router</code>, o URL recebido é tratado exatamente como <code>context.go('/localidade/horta')</code>. É por isso que o caminho das rotas deve ser desenhado como se fosse público.</li>
+    <li><code>https://tempoacores.pt/island/pico</code> num SMS, numa notificação ou no browser: se a app estiver instalada, abre no ecrã do Pico; se não, abre o site.</li>
+    <li>Com <code>go_router</code>, o URL recebido é tratado exatamente como <code>context.go('/island/pico')</code>. É por isso que o caminho das rotas deve ser desenhado como se fosse público.</li>
     <li>Precisa de configuração nativa (Android App Links, iOS Universal Links) e de um ficheiro no servidor a provar que o domínio é teu.</li>
   </ul>
   <div class="callout">Detalhe, configuração e testes na aula 22. Nesta aula define-se apenas a estrutura dos caminhos.</div>
-  <div class="callout"><strong>Analogia</strong> Uma morada completa, com rua, número, andar e porta, em vez de "vai à cidade e procura". O URL leva à app e ao ecrã certo, e os segmentos do caminho (<code>/localidade/horta</code>) são o número e a porta.</div>
+  <div class="callout"><strong>Analogia</strong> Uma morada completa, com rua, número, andar e porta, em vez de "vai à cidade e procura". O URL leva à app e ao ecrã certo, e os segmentos do caminho (<code>/island/pico</code>) são o número e a porta.</div>
 </section>
 
 <section class="slide">
@@ -168,207 +183,270 @@
     <li>Consistência: um tema, um sítio para o alterar, todos os ecrãs iguais. O momento em que um ecrã "parece de outra app" é um bug de tema.</li>
   </ul>
   <p><strong>Para os testes:</strong> <code>ThemeMode.system</code> segue a preferência do sistema; cores fixas nos widgets são o erro clássico do modo escuro.</p>
-  <aside class="notes">Mostra a Tempo Açores da solução a mudar de tema ao alterar a definição do sistema no telemóvel, sem reiniciar. Depois mostra um widget com Colors.white em modo escuro: texto branco sobre branco. É uma imagem que fica.</aside>
+  <aside class="notes">No fim da aula, mostra a Tempo Açores do branch <code>passo-4</code> a mudar de tema ao alterar a definição do sistema no telemóvel, sem reiniciar. Depois mostra um widget com Colors.white em modo escuro: texto branco sobre branco. É uma imagem que fica.</aside>
 </section>
 
 <section class="slide" data-part="Prática">
-  <h2>Ligar os ecrãs</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-09.git
-cd pdm-aula-09/starter
-flutter pub get
-flutter run</code></pre>
-  <p><code>starter/</code> traz os três ecrãs das aulas anteriores (previsão, avisos, definições) sem ligação entre eles, <code>go_router</code> já no <code>pubspec.yaml</code>, <code>TODO</code>s numerados e testes a falhar; <code>solucao/</code> é o estado final.</p>
+  <h2>Começar: o repositório de hoje</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-09.git
+cd pdm-aula-09
+flutter pub get</code></pre>
   <ol class="steps">
-    <li>Corre e confirma que só vês a lista de localidades. Tocar numa localidade ainda não faz nada.</li>
-    <li>Abre <code>lib/main.dart</code>, <code>lib/router.dart</code> (vazio) e <code>lib/ecra_localidades.dart</code>.</li>
+    <li>Abre a pasta <code>pdm-aula-09</code> no VS Code. É a app do fim da aula 8, com o formulário já validado, mais três ecrãs ainda por ligar: <code>lib/island_screen.dart</code> (uma ilha), <code>lib/alerts_screen.dart</code> (o formulário de avisos, que saiu do ecrã principal) e <code>lib/settings_screen.dart</code> (definições). Trabalhas nos comentários <code>TODO 1</code> a <code>TODO 4</code>.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <em>Flutter: Select Device</em> → o teu Android ou o <strong>Chrome</strong>. Depois <kbd>F5</kbd>.</li>
+    <li>Confirma o que vês: o ecrã de previsão com a pesquisa e a grelha das ilhas. Tocar numa ilha ainda não faz nada.</li>
   </ol>
-  <aside class="notes">Enquanto compilam, avisa que o passo 1 (Navigator) vai ser substituído pelo passo 2 (go_router) de propósito: é para sentirem a diferença. Alguns vão perguntar porque não ir direto ao go_router; a resposta é que o Navigator continua por baixo e aparece em qualquer código que encontrem.</aside>
+  <p>O <code>go_router</code> já está no <code>pubspec.yaml</code>: o <code>flutter pub get</code> trata dele. Hoje o Chrome tem uma vantagem: a partir do passo 2 vês o caminho de cada ecrã na barra de endereço.</p>
+  <aside class="notes">Dá 5 minutos ao clone e ao arranque. É um repositório novo, por isso ninguém precisa de ter acabado a aula 8. O <code>data.dart</code> mudou numa coisa: cada <code>Island</code> tem agora um <code>id</code> (<code>'pico'</code>, <code>'sao-miguel'</code>), que vai para o caminho da rota no passo 2. Enquanto compilam, abre o <code>island_screen.dart</code> no projetor: o ecrã já existe, só ninguém lá chega.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Navigator.push e pop com resultado</h2>
-<pre data-title="lib/ecra_localidades.dart"><code class="language-dart">// No ecrã de lista: empurra o detalhe e espera um resultado
-onTap: () async {
-  final favorito = await Navigator.push&lt;bool&gt;(
-    context,
-    MaterialPageRoute(builder: (_) => EcraDetalhe(localidade: l)),
-  );
-  if (favorito == true &amp;&amp; context.mounted) {         // o ecrã pode já não existir
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${l.nome} adicionada aos favoritos')),
-    );
-  }
-},
-
-// No ecrã de detalhe: volta e devolve o resultado
-AppBar(
-  title: Text(localidade.nome),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.star_border),
-      tooltip: 'Adicionar aos favoritos',
-      onPressed: () => Navigator.pop(context, true),
-    ),
-  ],
-)</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. Navigator: o que interessa</h2>
+  <h2>1. Navigator: push e pop com resultado</h2>
+<pre data-title="lib/island_screen.dart · a estrela, no branch passo-1"><code class="language-dart">IconButton(
+  icon: const Icon(Icons.star_border),
+  tooltip: 'Adicionar aos favoritos',
+  onPressed: () =&gt; Navigator.pop(context, true), // close, return true
+),</code></pre>
   <ul>
-    <li><code>Navigator.push</code> devolve um <code>Future</code> que completa quando o ecrã novo faz <code>pop</code>. O valor do <code>pop</code> é o resultado; se o utilizador voltar com o gesto, é <code>null</code>.</li>
-    <li><code>MaterialPageRoute</code> dá a transição da plataforma: deslizar de baixo no Android, da direita no iOS, com o gesto de voltar incluído.</li>
-    <li>Depois de um <code>await</code>, o widget pode ter sido destruído. <code>context.mounted</code> evita usar um <code>context</code> morto; o lint <code>use_build_context_synchronously</code> obriga-te a verificar.</li>
-    <li>A seta de voltar na <code>AppBar</code> aparece sozinha quando há um ecrã por baixo. Não a desenhes à mão.</li>
-    <li><code>Navigator.pop(context)</code> sem valor serve para "Cancelar".</li>
+    <li><code>Navigator.push</code> põe um ecrã novo em cima da pilha e devolve um <code>Future</code>: completa quando esse ecrã sair. O valor do <code>pop</code> é o resultado.</li>
+    <li>Se o utilizador sair com a seta da <code>AppBar</code>, o botão de retroceder ou o gesto do iOS, o resultado é <code>null</code>. Por isso se testa <code>favorite == true</code>.</li>
+    <li><code>MaterialPageRoute</code> dá a transição de cada plataforma e o gesto de voltar no iOS. A seta da <code>AppBar</code> aparece sozinha quando há um ecrã por baixo.</li>
+    <li>Depois de um <code>await</code>, o widget pode já não existir. <code>context.mounted</code> confirma que ainda existe antes de usar o <code>context</code>; o lint <code>use_build_context_synchronously</code> avisa se te esqueceres.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Resolve o <code>TODO 1</code>: toque numa localidade abre o detalhe; a estrela devolve <code>true</code>; a lista mostra um <code>SnackBar</code>. Depois faz <code>push</code> do ecrã de definições a partir da <code>AppBar</code> e devolve a unidade escolhida.</div>
+  <div class="callout"><strong>Pergunta à turma</strong> Abres o Pico e voltas com a seta, sem tocar na estrela. O que vale <code>favorite</code>? E a pesquisa que tinhas escrito na grelha, ainda lá está?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> <code>favorite</code> é <code>null</code>: a seta faz <code>pop</code> sem valor, por isso não aparece o <code>SnackBar</code>. A pesquisa continua lá: a grelha ficou por baixo na pilha, viva, com o seu <code>State</code> e o <code>TextEditingController</code>. É a pilha do slide da teoria. O tipo do resultado vem de <code>push&lt;bool&gt;</code>; sem ele, o resultado é <code>dynamic</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>2. go_router: rotas com parâmetros</h2>
-<pre data-title="lib/router.dart"><code class="language-dart">import 'package:go_router/go_router.dart';
+  <h2>Passo 1: abrir uma ilha e voltar com a estrela</h2>
+<pre data-title="lib/island_card.dart · IslandCard, no sítio do TODO 1"><code class="language-dart">return Card(
+  clipBehavior: Clip.antiAlias,
+  child: InkWell(
+    onTap: () async {
+      final favorite = await Navigator.push&lt;bool&gt;(
+        context,
+        MaterialPageRoute(builder: (_) =&gt; IslandScreen(id: island.id)),
+      );
+      if (favorite == true &amp;&amp; context.mounted) {
+        // the card may be gone
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('...')),
+        );
+      }
+    },
+    child: Column(
+      // a Column de antes, como está
+    ),
+  ),
+);</code></pre>
+  <div class="callout task"><strong>Faz</strong> Em <code>island_card.dart</code>, embrulha a <code>Column</code> num <code>InkWell</code> com este <code>onTap</code> (importa o <code>island_screen.dart</code>) e escreve a mensagem do <code>SnackBar</code> no lugar do <code>'...'</code>: o nome da ilha seguido de "nos favoritos". Em <code>island_screen.dart</code>, troca o <code>onPressed: () {}</code> da estrela pelo <code>Navigator.pop</code> do slide anterior.</div>
+  <p><strong>Na app:</strong> tocar no Pico abre o ecrã do Pico, com a foto e os cinco dias; a seta volta à grelha sem mensagem; a estrela volta à grelha e mostra "Pico nos favoritos".</p>
+  <aside class="notes">A mensagem: <code>Text('${island.name} nos favoritos')</code>. O <code>IslandScreen</code> recebe o <code>id</code> e não a <code>Island</code> de propósito: no passo 2 o <code>id</code> vem do caminho da rota, que é só texto. Por isso o ecrã procura a ilha em <code>islands</code> e mostra "Ilha não encontrada" se não a encontrar. Erros típicos: <code>onTap</code> sem <code>async</code> (o <code>await</code> não compila) e esquecer o <code>clipBehavior</code> (o efeito do toque sai dos cantos). Quem acabar cedo: com a pesquisa escrita, abre uma ilha e volta. A pesquisa continua lá. A solução está no branch <code>passo-1</code>.</aside>
+</section>
 
+<section class="slide">
+  <h2>2. go_router: cada ecrã com um caminho</h2>
+<pre data-title="lib/router.dart · no branch passo-2"><code class="language-dart">import 'package:go_router/go_router.dart';
+
+import 'forecast_screen.dart';
+import 'island_screen.dart';
+
+/// Every screen of the app, with its path, like the pages of a site.
 final router = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const EcraLocalidades(),
+      builder: (context, state) =&gt; const ForecastScreen(),
       routes: [
         GoRoute(
-          path: 'localidade/:id',                       // /localidade/ponta-delgada
-          builder: (context, state) {
-            final id = state.pathParameters['id']!;
-            return EcraDetalhe(id: id);
-          },
+          path: 'island/:id', // /island/pico
+          builder: (context, state) =&gt;
+              IslandScreen(id: state.pathParameters['id']!),
         ),
       ],
     ),
-    GoRoute(path: '/definicoes', builder: (_, __) => const EcraDefinicoes()),
   ],
-);
-
-// em main.dart, no lugar de MaterialApp(home: ...)
-MaterialApp.router(routerConfig: router, theme: tema);</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. go_router: o que interessa</h2>
+);</code></pre>
   <ul>
-    <li>Rotas aninhadas (<code>routes:</code> dentro de uma <code>GoRoute</code>) constroem a pilha: abrir <code>/localidade/horta</code> por deep link põe a lista por baixo e o detalhe por cima. Voltar funciona.</li>
-    <li><code>:id</code> é um parâmetro de caminho, lido em <code>state.pathParameters</code>. Query strings (<code>?dia=2</code>) ficam em <code>state.uri.queryParameters</code>. Passa identificadores, não objetos: o ecrã de detalhe vai buscar a localidade pelo <code>id</code>.</li>
-    <li><code>context.go('/definicoes')</code> substitui a pilha pela do URL novo. <code>context.push('/definicoes')</code> empilha por cima da pilha atual e pode devolver um resultado, como o <code>Navigator</code>.</li>
-    <li>Regra prática: <code>go</code> para mudar de secção (tabs, deep links, depois do login); <code>push</code> para "abrir por cima e voltar".</li>
-    <li>Os testes do starter navegam por URL. É a vantagem de os ecrãs terem nome.</li>
+    <li>Cada <code>GoRoute</code> liga um caminho a um ecrã. <code>:id</code> é um parâmetro: em <code>/island/pico</code>, <code>state.pathParameters['id']</code> vale <code>'pico'</code>.</li>
+    <li>A rota <code>island/:id</code> está dentro da rota <code>/</code>: abrir <code>/island/pico</code> põe a grelha por baixo e o Pico por cima, mesmo quando se entra diretamente por um link. A seta de voltar funciona.</li>
+    <li><code>context.push('/island/pico')</code> empilha por cima e devolve um resultado, como o <code>Navigator.push</code>. <code>context.go('/island/pico')</code> substitui a pilha pela do caminho. Para "abrir e voltar", <code>push</code>.</li>
   </ul>
-  <p><strong>Para os testes:</strong> <code>go</code> substitui a pilha; <code>push</code> empilha. Parâmetros de caminho vêm em <code>pathParameters</code>.</p>
-  <div class="callout task"><strong>Exercício 2</strong> Resolve o <code>TODO 2</code>: apaga o código do exercício 1, cria o <code>router.dart</code> e navega com <code>context.push('/localidade/${l.id}')</code>. O detalhe recebe o <code>id</code> e procura a localidade em <code>dados.dart</code>. Trata o caso de um <code>id</code> que não existe.</div>
+  <div class="callout"><strong>Pergunta à turma</strong> Porque é que o caminho leva o <code>id</code> da ilha e não a <code>Island</code> inteira?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Um caminho é texto: tem de caber num URL, num link de um SMS ou numa notificação. Um objeto não cabe num URL. Com o <code>id</code>, o ecrã de destino vai buscar o resto aos dados, e o mesmo caminho funciona venha de onde vier. É também por isso que o <code>IslandScreen</code> trata o caso de um <code>id</code> que não existe: um link mal escrito tem de dar "Ilha não encontrada", não um erro vermelho. No Chrome, escreve <code>/island/xyz</code> na barra de endereço para o mostrar.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. NavigationBar com pilhas independentes</h2>
-<pre data-title="lib/router.dart"><code class="language-dart">StatefulShellRoute.indexedStack(
-  builder: (context, state, shell) => Scaffold(
-    body: shell,                                    // o separador atual, com a sua pilha
+  <h2>Passo 2: trocar o Navigator pelo go_router</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-1
+flutter pub get</code></pre>
+<pre data-title="lib/main.dart · no sítio do TODO 2"><code class="language-dart">return MaterialApp.router(
+  title: 'Tempo Açores',
+  theme: ThemeData(
+    // o tema, como está
+  ),
+  routerConfig: router,
+);</code></pre>
+<pre data-title="lib/island_card.dart · o push passa a ser pelo caminho"><code class="language-dart">final favorite = await context.push&lt;bool&gt;('/island/${island.id}');</code></pre>
+  <div class="callout task"><strong>Faz</strong> Escreve o <code>router.dart</code> do slide anterior. No <code>main.dart</code>, <code>MaterialApp</code> passa a <code>MaterialApp.router</code>, o <code>home:</code> sai e entra o <code>routerConfig</code>. No <code>IslandCard</code>, o <code>Navigator.push</code> com o <code>MaterialPageRoute</code> dá lugar a uma linha com <code>context.push</code>. Acerta os <code>import</code>.</div>
+  <p><strong>Na app:</strong> tudo igual ao passo 1, e é esse o objetivo. No Chrome, ao abrir o Pico a barra de endereço mostra <code>/island/pico</code>; escrever <code>/island/flores</code> abre as Flores com a grelha por baixo.</p>
+  <aside class="notes">Imports: no <code>main.dart</code> sai <code>forecast_screen.dart</code> e entra <code>router.dart</code>; no <code>island_card.dart</code> sai <code>island_screen.dart</code> e entra <code>package:go_router/go_router.dart</code> (o <code>context.push</code> é uma extensão do <code>go_router</code>; sem o import, o VS Code diz que o método não existe). A estrela continua com <code>Navigator.pop(context, true)</code> e funciona: o <code>go_router</code> usa o <code>Navigator</code> por baixo; <code>context.pop(true)</code> faz o mesmo. Erro típico: <code>path: '/island/:id'</code> com barra dentro da rota <code>/</code> dá erro ao arrancar; as rotas filhas não começam por <code>/</code>. Se alguém usar <code>context.go</code> em vez de <code>push</code>, o resultado vem sempre <code>null</code>. A solução está no branch <code>passo-2</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. Barra de navegação com pilhas independentes</h2>
+<pre data-title="lib/router.dart · a barra, no branch passo-3"><code class="language-dart">StatefulShellRoute.indexedStack(
+  builder: (context, state, shell) =&gt; Scaffold(
+    body: shell, // the current tab, with its own stack
     bottomNavigationBar: NavigationBar(
       selectedIndex: shell.currentIndex,
-      onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
+      onDestinationSelected: (i) =&gt;
+          shell.goBranch(i, initialLocation: i == shell.currentIndex),
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.wb_sunny_outlined), label: 'Previsão'),
-        NavigationDestination(icon: Icon(Icons.warning_amber), label: 'Avisos'),
-        NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Definições'),
+        NavigationDestination(
+          icon: Icon(Icons.wb_sunny_outlined),
+          label: 'Previsão',
+        ),
+        // e Avisos (Icons.warning_amber), Definições (Icons.settings_outlined)
       ],
     ),
   ),
   branches: [
-    StatefulShellBranch(routes: [GoRoute(path: '/', builder: (_, __) => const EcraLocalidades())]),
-    StatefulShellBranch(routes: [GoRoute(path: '/avisos', builder: (_, __) => const EcraAvisos())]),
-    StatefulShellBranch(routes: [GoRoute(path: '/definicoes', builder: (_, __) => const EcraDefinicoes())]),
+    // um StatefulShellBranch por separador
   ],
-)</code></pre>
-</section>
-
-<section class="slide">
-  <h2>3. Barra de navegação: o que interessa</h2>
+),</code></pre>
   <ul>
-    <li><code>ShellRoute</code> embrulha um conjunto de rotas num widget comum (a barra). <code>StatefulShellRoute.indexedStack</code> vai mais longe: cada separador tem a sua própria pilha e o seu estado, preservados ao mudar de separador. É o padrão do Instagram.</li>
-    <li>A rota de detalhe entra como filha da rota <code>/</code> dentro do primeiro <em>branch</em>: o detalhe abre por cima da lista e a barra continua visível.</li>
-    <li><code>initialLocation: true</code> ao tocar no separador já ativo volta à raiz desse separador. É o comportamento que os utilizadores esperam.</li>
-    <li><code>NavigationBar</code> é o Material 3; <code>BottomNavigationBar</code> é o Material 2 antigo. Três a cinco destinos, com ícone e etiqueta.</li>
-    <li>Em tablets, troca-a por <code>NavigationRail</code> à esquerda com um <code>LayoutBuilder</code>.</li>
+    <li>O <code>StatefulShellRoute</code> desenha um <code>Scaffold</code> comum à volta de todos os separadores, com a <code>NavigationBar</code> em baixo. O <code>shell</code> é o separador atual.</li>
+    <li>Cada <code>StatefulShellBranch</code> é um separador com a sua pilha. <code>indexedStack</code> mantém os três vivos: mudar de separador não faz <code>pop</code>. É o padrão do Instagram.</li>
+    <li>Tocar no separador que já está ativo (<code>i == shell.currentIndex</code>) volta à raiz desse separador. É o que os utilizadores esperam.</li>
+    <li><code>NavigationBar</code> é a do Material 3; <code>BottomNavigationBar</code> é a antiga. Três a cinco destinos, com ícone e etiqueta.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 3</strong> Resolve o <code>TODO 3</code>: os três separadores com <code>StatefulShellRoute</code>. Abre um detalhe em Previsão, muda para Avisos, volta: o detalhe tem de continuar aberto. O teste verifica exatamente isso.</div>
+  <div class="callout"><strong>Pergunta à turma</strong> Cada separador tem um <code>Scaffold</code> com a sua <code>AppBar</code>, e o <code>shell</code> tem outro <code>Scaffold</code> com a barra. Dois <code>Scaffold</code> um dentro do outro: é um erro?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Não é erro, é o normal com separadores: o <code>Scaffold</code> de fora só tem a barra de baixo, e o de dentro tem a <code>AppBar</code> e o corpo de cada ecrã. O <code>SnackBar</code> continua a aparecer porque o <code>ScaffoldMessenger</code> é um só, criado pelo <code>MaterialApp</code>. Em tablets a barra de baixo troca-se por uma <code>NavigationRail</code> à esquerda; fica para a aula de layouts adaptativos.</aside>
 </section>
 
 <section class="slide">
-  <h2>4. Tema Material 3 claro e escuro</h2>
-<pre data-title="lib/main.dart"><code class="language-dart">const semente = Color(0xFF0B63C9);
-
-MaterialApp.router(
-  routerConfig: router,
-  theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: semente), useMaterial3: true),
-  darkTheme: ThemeData(
-    colorScheme: ColorScheme.fromSeed(seedColor: semente, brightness: Brightness.dark),
-    useMaterial3: true,
+  <h2>Passo 3: três separadores</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-2
+flutter pub get</code></pre>
+<pre data-title="lib/router.dart · os branches, no sítio do TODO 3"><code class="language-dart">branches: [
+  StatefulShellBranch(
+    routes: [
+      GoRoute(
+        path: '/',
+        // a rota / do passo 2, com a filha island/:id
+      ),
+    ],
   ),
-  themeMode: _modo,                            // ThemeMode.system, .light ou .dark
-)
-
-// Toggle manual: _modo vive num StatefulWidget acima do MaterialApp
-SegmentedButton&lt;ThemeMode&gt;(
-  segments: const [
-    ButtonSegment(value: ThemeMode.system, label: Text('Sistema')),
-    ButtonSegment(value: ThemeMode.light, label: Text('Claro')),
-    ButtonSegment(value: ThemeMode.dark, label: Text('Escuro')),
-  ],
-  selected: {_modo},
-  onSelectionChanged: (s) => setState(() => _modo = s.first),
-)</code></pre>
+  StatefulShellBranch(
+    routes: [
+      GoRoute(
+        path: '/alerts',
+        builder: (context, state) =&gt; const AlertsScreen(),
+      ),
+    ],
+  ),
+  // e o terceiro: '/settings' com o SettingsScreen
+],</code></pre>
+  <div class="callout task"><strong>Faz</strong> No <code>router.dart</code>, a lista <code>routes</code> do <code>GoRouter</code> passa a ter um só elemento: o <code>StatefulShellRoute.indexedStack</code> do slide anterior. A rota <code>/</code> do passo 2 entra inteira no primeiro <code>StatefulShellBranch</code>; faz os outros dois. Importa o <code>material.dart</code>, o <code>alerts_screen.dart</code> e o <code>settings_screen.dart</code>.</div>
+  <p><strong>Na app:</strong> uma barra em baixo com Previsão, Avisos e Definições. Abres o Pico, vais a Avisos, voltas a Previsão: o Pico continua aberto. Tocas outra vez em Previsão e voltas à grelha.</p>
+  <aside class="notes">A rota <code>island/:id</code> tem de ficar dentro da rota <code>/</code>, no primeiro branch: é isso que faz o Pico abrir por cima da grelha com a barra visível. Se ficar fora do <code>StatefulShellRoute</code>, o Pico abre em ecrã inteiro e a barra desaparece. Erro típico: esquecer o <code>import 'package:flutter/material.dart';</code>, porque o <code>router.dart</code> do passo 2 não tinha widgets. Experimenta o formulário de avisos: escreve um nome, muda para Previsão e volta. O nome continua lá, porque o separador não foi destruído. A solução está no branch <code>passo-3</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>4. Tema: o que interessa</h2>
+  <h2>4. Tema claro e escuro</h2>
+<pre data-title="lib/main.dart · no branch passo-4"><code class="language-dart">/// The same theme for light and dark: only the brightness changes.
+ThemeData buildTheme(Brightness brightness) {
+  return ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.teal,
+      brightness: brightness,
+    ),
+    useMaterial3: true,
+    // Inter, on top of the text colours of this brightness
+    textTheme: GoogleFonts.interTextTheme(
+      ThemeData(brightness: brightness).textTheme,
+    ),
+  );
+}</code></pre>
+<pre data-title="lib/settings_screen.dart · já lá está"><code class="language-dart">/// The theme chosen by the user. A ValueNotifier holds one value and tells
+/// whoever listens when it changes: WeatherApp listens, in main.dart.
+final themeMode = ValueNotifier(ThemeMode.system);</code></pre>
   <ul>
-    <li>Duas linhas de <code>fromSeed</code> e a app tem modo claro e escuro coerentes. A partir daí, evitar cores fixas: nada de <code>Colors.white</code> nos widgets.</li>
-    <li>Nos widgets, <code>final cores = Theme.of(context).colorScheme;</code> e depois <code>cores.primaryContainer</code> para o fundo e <code>cores.onPrimaryContainer</code> para o texto por cima. Os pares <code>x</code> / <code>onX</code> garantem contraste.</li>
-    <li>O <code>SegmentedButton</code> está no ecrã de definições, mas o <code>_modo</code> tem de estar acima do <code>MaterialApp</code>. Hoje sobe por callback (o problema dos cinco níveis); na aula 13 passa para um <code>ChangeNotifier</code> e na 16 fica gravado.</li>
-    <li>Estilos de componentes (<code>cardTheme</code>, <code>appBarTheme</code>, <code>inputDecorationTheme</code>) definem-se uma vez no <code>ThemeData</code>, não widget a widget.</li>
-    <li>Testa os dois modos sempre: liga o modo escuro do telemóvel e percorre todos os ecrãs.</li>
+    <li><code>theme</code> e <code>darkTheme</code> no <code>MaterialApp</code>, e <code>themeMode</code> escolhe: <code>ThemeMode.system</code> segue o telemóvel, <code>light</code> e <code>dark</code> forçam.</li>
+    <li>O modo é escolhido nas definições, mas quem o usa é o <code>MaterialApp</code>, lá em cima. Passar por parâmetro não dá: entre os dois está o router. Um <code>ValueNotifier</code> guarda o valor num sítio só e avisa quem está a ouvir. É a versão pequena do <code>ChangeNotifier</code> da teoria da aula 8.</li>
+    <li><code>ValueListenableBuilder</code> ouve o <code>ValueNotifier</code> e reconstrói o que está no <code>builder</code> sempre que o valor muda.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 4</strong> Resolve o <code>TODO 4</code>: tema claro e escuro com a cor semente da app, <code>themeMode</code> a partir do <code>SegmentedButton</code> das definições, e um <code>cardTheme</code> com cantos de 16. Procura cores fixas nos ecrãs e substitui-as pelo <code>colorScheme</code>.</div>
+  <div class="callout"><strong>Pergunta à turma</strong> Porque é que o <code>buildTheme</code> passa <code>ThemeData(brightness: brightness).textTheme</code> ao <code>interTextTheme</code>, em vez de <code>GoogleFonts.interTextTheme()</code> como até agora?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> <code>GoogleFonts.interTextTheme()</code> sem argumento parte do tema de texto claro, que traz cores escuras. No modo escuro dava texto escuro sobre fundo escuro, ilegível. Passar o tema de texto da mesma <code>brightness</code> mantém a letra Inter com as cores certas. É o erro clássico do slide da teoria, uma cor fixa que parte o modo escuro, só que escondida dentro de uma função. Quem quiser ver troca para <code>GoogleFonts.interTextTheme()</code> e muda para Escuro. Na aula 13 o <code>ValueNotifier</code> passa a um <code>ChangeNotifier</code> com Provider, e numa aula seguinte o modo fica gravado.</aside>
 </section>
 
 <section class="slide">
-  <h2>5. Exercício final: a app inteira ligada</h2>
+  <h2>Passo 4: o tema muda nas definições</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-3
+flutter pub get</code></pre>
+<pre data-title="lib/main.dart · WeatherApp, no sítio do TODO 4"><code class="language-dart">// builds the MaterialApp again every time themeMode changes
+return ValueListenableBuilder(
+  valueListenable: themeMode,
+  builder: (context, mode, _) =&gt; MaterialApp.router(
+    title: 'Tempo Açores',
+    theme: buildTheme(Brightness.light),
+    darkTheme: buildTheme(Brightness.dark),
+    themeMode: mode, // ThemeMode.system, .light or .dark
+    routerConfig: router,
+  ),
+);</code></pre>
+<pre data-title="lib/settings_screen.dart · no sítio do TODO 4"><code class="language-dart">ValueListenableBuilder(
+  valueListenable: themeMode,
+  builder: (context, mode, _) =&gt; SegmentedButton&lt;ThemeMode&gt;(
+    segments: const [
+      ButtonSegment(value: ThemeMode.system, label: Text('Sistema')),
+      // e Claro (ThemeMode.light), Escuro (ThemeMode.dark)
+    ],
+    selected: {mode},
+    onSelectionChanged: (s) =&gt; themeMode.value = s.first,
+  ),
+),</code></pre>
+  <div class="callout task"><strong>Faz</strong> No <code>main.dart</code>, escreve o <code>buildTheme</code> do slide anterior e embrulha o <code>MaterialApp.router</code> no <code>ValueListenableBuilder</code>; importa o <code>settings_screen.dart</code>. No <code>settings_screen.dart</code>, o <code>SegmentedButton</code> com os três modos no lugar do comentário.</div>
+  <p><strong>Na app:</strong> em Definições, "Escuro" põe a app inteira em tema escuro, sem reiniciar, e o texto continua legível; "Claro" volta; "Sistema" segue o modo do telemóvel ou do computador.</p>
+  <aside class="notes">O <code>SegmentedButton</code> é o mesmo da unidade °C/°F da aula 8; a diferença é que o valor vive no <code>ValueNotifier</code> e não num <code>State</code>. Atribuir <code>themeMode.value</code> já avisa quem ouve: não há <code>setState</code>. Erro típico: <code>themeMode = s.first</code> em vez de <code>themeMode.value = s.first</code>, que não compila porque <code>themeMode</code> é <code>final</code>. Para mostrar "Sistema": muda o modo escuro do sistema operativo com a app aberta. Quem acabar cedo: procura cores fixas nos ecrãs. O <code>Colors.white</code> e o <code>Colors.black54</code> do <code>IslandHeader</code> estão por cima de uma foto e ficam bem nos dois modos. A solução está no branch <code>passo-4</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde ficámos</h2>
   <ol class="steps">
-    <li>Três separadores com <code>StatefulShellRoute</code>: Previsão (lista → detalhe), Avisos (lista estática), Definições (formulário e tema).</li>
-    <li>O detalhe mostra a previsão a 5 dias das aulas 6 e 7 para a localidade do <code>id</code>, e tem a estrela que devolve um resultado ao voltar.</li>
-    <li>O tema segue o <code>SegmentedButton</code> das definições e muda sem reiniciar a app.</li>
-    <li>Testa: deep link manual com <code>flutter run --route=/localidade/horta</code> (ou o botão "Abrir" do starter) abre o detalhe com a lista por baixo.</li>
+    <li><code>IslandCard</code> abre o <code>IslandScreen</code> com <code>Navigator.push</code> e espera o resultado; a estrela devolve <code>true</code> com <code>Navigator.pop</code> (passo 1).</li>
+    <li><code>router.dart</code> com <code>GoRouter</code>: <code>/</code> e <code>/island/:id</code>, <code>MaterialApp.router</code> e <code>context.push</code> pelo caminho (passo 2).</li>
+    <li><code>StatefulShellRoute.indexedStack</code> com a <code>NavigationBar</code>: três separadores, cada um com a sua pilha (passo 3).</li>
+    <li><code>buildTheme</code> claro e escuro a partir da mesma semente, e o <code>themeMode</code> num <code>ValueNotifier</code> que as definições mudam (passo 4).</li>
   </ol>
-  <div class="callout task"><strong>Exercício 5</strong> Termina até <code>flutter test</code> ficar verde. Depois, com o detalhe aberto, roda o telemóvel: o que acontece à pilha? E com hot restart?</div>
-  <aside class="notes">Reserva 25 minutos. Erros típicos: usar go em vez de push para o detalhe (a barra desaparece porque a rota não está no branch), e o _modo declarado dentro do build. Fecha com a pergunta da rotação: a pilha sobrevive, o State também; hot restart apaga tudo.</aside>
+  <p>O branch <code>passo-4</code> é o estado final: compara o teu código com ele.</p>
+  <aside class="notes">Os erros típicos destes passos: no passo 1, o <code>onTap</code> sem <code>async</code>; no passo 2, a rota filha com <code>/</code> no início e o import do <code>go_router</code> em falta; no passo 3, a rota <code>island/:id</code> fora do primeiro branch (a barra desaparece); no passo 4, <code>GoogleFonts.interTextTheme()</code> sem argumento (texto escuro no modo escuro). Segunda a aula é das 16:00 às 18:00.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até segunda</h2>
   <div class="cols">
     <div>
-      <h3>Para fazer</h3>
-      <ul class="checklist">
-        <li>Adiciona a rota <code>/avisos/:id</code> com um ecrã de detalhe de aviso (título, nível, descrição, localidades afetadas), aninhada no separador Avisos. É o <code>TODO 5</code>.</li>
-        <li>Lê <a href="https://pub.dev/packages/go_router" target="_blank" rel="noopener">go_router: getting started</a> no pub.dev, incluindo a secção sobre redirecionamentos. Vais precisar dela para o login na aula 17.</li>
-        <li>Segunda começa o mini-projeto individual: vem com o repositório da aula 9 a funcionar, porque é o ponto de partida.</li>
+      <h3>Próxima aula</h3>
+      <ul>
+        <li>Segunda, 12 de outubro, das 16:00 às 18:00: acessibilidade, internacionalização e o mini-projeto individual.</li>
+        <li>O mini-projeto parte do que fizemos até hoje: grelha, ecrã de detalhe, navegação e tema.</li>
+        <li>O estado final de hoje fica no branch <code>passo-4</code>: <code>git stash -u</code> e depois <code>git checkout passo-4</code>.</li>
       </ul>
     </div>
     <div>
-      <h3>Para ler</h3>
+      <h3>Para quem quiser ler mais</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/ui/navigation" target="_blank" rel="noopener">Navigation and routing</a>: Navigator vs Router, quando usar cada um.</li>
+        <li><a href="https://docs.flutter.dev/ui/navigation" target="_blank" rel="noopener">Navigation and routing</a>: Navigator e Router, e quando usar cada um.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/navigation/returning-data" target="_blank" rel="noopener">Return data from a screen</a>: o passo 1, na receita oficial.</li>
+        <li><a href="https://pub.dev/packages/go_router" target="_blank" rel="noopener">go_router</a>: rotas, parâmetros e <code>StatefulShellRoute</code>, com exemplos.</li>
         <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a>: o que vamos configurar na aula 22.</li>
         <li><a href="https://docs.flutter.dev/cookbook/design/themes" target="_blank" rel="noopener">Use themes to share colors and font styles</a>: a receita oficial de temas.</li>
-        <li><a href="https://pub.dev/documentation/go_router/latest/" target="_blank" rel="noopener">go_router: documentação</a>: rotas aninhadas, <code>StatefulShellRoute</code>, redirecionamentos e parâmetros, com exemplos.</li>
       </ul>
     </div>
   </div>
