@@ -28,7 +28,7 @@
   <h1>Navegação a fundo e mini-projeto</h1>
   <p class="lead">Primeira parte: revemos a navegação da aula 9 com calma. As rotas como uma árvore, <code>push</code> e <code>go</code>, e o <code>StatefulShellRoute</code> peça a peça. Segunda parte: o primeiro mini-projeto avaliado, individual. Acrescentas à Tempo Açores um separador novo, Trilhos, com lista e detalhe.</p>
   <div class="meta"><span>Repositório: pdm-aula-10</span></div>
-  <aside class="notes">Aula de duas horas. Tempos de referência: revisão até às 16:40; clone e repositório privado até às 16:55; trabalho individual até às 17:55; nos últimos cinco minutos, todos fazem Commit e Sync do que tiverem. A revisão é sobre o código do <code>passo-3</code> da aula 9, que é o ponto de partida do mini-projeto. A solução está no branch local <code>solucao</code> do <code>pdm-aula-10</code>, que não está no GitHub: não a publiques antes de quarta às 16:00.</aside>
+  <aside class="notes">Aula de duas horas. Tempos de referência: revisão até às 16:40; clone e repositório privado até às 16:55; trabalho individual até às 17:55; nos últimos cinco minutos, todos fazem Commit e Sync do que tiverem. A revisão é sobre o código do <code>passo-3</code> da aula 9, que é o mesmo código que vem no <code>pdm-aula-10</code>, o ponto de partida do mini-projeto. Ninguém precisa do repositório da aula 9. A solução está no branch local <code>solucao</code> do <code>pdm-aula-10</code>, que não está no GitHub: não a publiques antes de quarta às 16:00.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -173,30 +173,21 @@
 
 <section class="slide">
   <h2>push ou go?</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 230" role="img" aria-label="À esquerda, context.push: o ecrã novo vai para cima da pilha do separador atual e a seta volta ao anterior. À direita, context.go: a app vai para o caminho como se o escrevesses na barra de endereço, mesmo que isso mude de separador; a pilha passa a ser a desse caminho">
-    <text x="40" y="30" class="t b mono">context.push('/trails/montanha-do-pico')</text>
-    <text x="40" y="50" class="t s">põe em cima da pilha atual</text>
-    <rect x="60" y="150" width="240" height="40" rx="8" class="box"/>
-    <text x="180" y="175" class="t" text-anchor="middle">Lista de trilhos</text>
-    <rect x="80" y="100" width="240" height="40" rx="8" class="box accent"/>
-    <text x="200" y="125" class="t" text-anchor="middle">Montanha do Pico</text>
-    <text x="40" y="215" class="t s">a seta de voltar volta à lista</text>
-    <line x1="450" y1="20" x2="450" y2="215" class="arrow dashed" style="marker-end:none"/>
-    <text x="490" y="30" class="t b mono">context.go('/trails/montanha-do-pico')</text>
-    <text x="490" y="50" class="t s">vai para o caminho, como no URL</text>
-    <rect x="490" y="100" width="150" height="40" rx="8" class="box"/>
-    <text x="565" y="125" class="t" text-anchor="middle">Ilha do Pico</text>
-    <text x="565" y="160" class="t s" text-anchor="middle">Previsão</text>
-    <line x1="645" y1="120" x2="690" y2="120" class="arrow accent"/>
-    <rect x="700" y="150" width="170" height="40" rx="8" class="box"/>
-    <text x="785" y="175" class="t" text-anchor="middle">Lista de trilhos</text>
-    <rect x="710" y="100" width="170" height="40" rx="8" class="box accent"/>
-    <text x="795" y="125" class="t" text-anchor="middle">Montanha do Pico</text>
-    <text x="785" y="215" class="t s" text-anchor="middle">Trilhos: a pilha de /trails/montanha-do-pico</text>
-  </svg>
-  <figcaption><code>push</code> pensa em pilhas; <code>go</code> pensa em moradas. Com <code>go</code>, o <code>go_router</code> monta a pilha do caminho: <code>/trails</code> por baixo, <code>/trails/montanha-do-pico</code> por cima.</figcaption>
+  <figure class="anat two">
+    <div class="anat-cell">
+      <div class="phone" style="max-width:190px">
+        <img src="../assets/img/aula-10/push.gif" alt="Animação: na lista de Trilhos, toque na Montanha do Pico; o detalhe abre por cima da lista, no mesmo separador; toque na seta de voltar e a lista volta.">
+      </div>
+      <p><code>context.push(...)</code><br><strong>Põe por cima da pilha onde estás.</strong> O separador não muda; a seta de voltar regressa à lista.</p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone" style="max-width:190px">
+        <img src="../assets/img/aula-10/go.gif" alt="Animação: na ilha do Pico, no separador Previsão, toque no trilho Montanha do Pico; a barra passa para Trilhos com o trilho aberto; toque em Previsão e a ilha do Pico continua lá.">
+      </div>
+      <p><code>context.go(...)</code><br><strong>Vai para a morada, como no URL.</strong> A barra salta para Trilhos; Previsão fica como estava, com o Pico aberto.</p>
+    </div>
   </figure>
+  <p><code>push</code> pensa em pilhas; <code>go</code> pensa em moradas. Com <code>go</code>, o <code>go_router</code> monta a pilha do caminho: <code>/trails</code> por baixo, <code>/trails/montanha-do-pico</code> por cima.</p>
   <div class="table-wrap"><table>
     <thead><tr><th></th><th>Usa quando</th><th>Exemplo</th></tr></thead>
     <tbody>
@@ -232,7 +223,7 @@
   <h2>Mini-projeto: Trilhos</h2>
   <ul>
     <li><strong>Individual</strong> e <strong>avaliado</strong>: é a primeira entrega da UC.</li>
-    <li>Partes da Tempo Açores do fim da aula 9 e acrescentas um quarto separador, <strong>Trilhos</strong>, com os trilhos pedestres dos Açores.</li>
+    <li>Começas no repositório <strong><code>pdm-aula-10</code></strong>, que usas como template para criares o teu. Lá dentro está a Tempo Açores com os três separadores e os trilhos já nos dados. Acrescentas um quarto separador, <strong>Trilhos</strong>.</li>
     <li>Tocar num trilho abre o detalhe. Cada ilha passa a mostrar os seus trilhos.</li>
     <li>Hoje, em aula: crias o repositório, convidas o docente e começas. Entregas até quarta, 14 de outubro, às 16:00.</li>
   </ul>
@@ -240,7 +231,7 @@
     <div>
       <h3>Já vem feito</h3>
       <ul>
-        <li>A app da aula 9, com os três separadores.</li>
+        <li>A Tempo Açores com os três separadores: Previsão, Avisos e Definições.</li>
         <li><code>lib/data.dart</code> com 13 trilhos, a classe <code>Trail</code> e o enum <code>Difficulty</code>.</li>
         <li><code>lib/trails_screen.dart</code> e <code>lib/trail_screen.dart</code>, vazios.</li>
       </ul>
@@ -293,7 +284,7 @@
     <li>No terminal do VS Code, <code>flutter pub get</code>; escolhe o Android ou o <strong>Chrome</strong>, e <kbd>F5</kbd>.</li>
     <li><strong>Primeiro commit, todos juntos:</strong> abre o <code>README.md</code> e escreve na primeira linha <code>**Student:** Maria Silva Medeiros · 2024123</code>, com o teu nome e número. <strong>Commit</strong> com a mensagem <code>Nome do aluno no README</code> e <strong>Sync Changes</strong>. Abre o teu repositório no GitHub: o nome aparece no topo.</li>
   </ol>
-  <p><strong>Na app:</strong> a Tempo Açores com três separadores, como no fim da aula 9.</p>
+  <p><strong>Na app:</strong> a Tempo Açores com três separadores: Previsão, Avisos e Definições. O separador Trilhos ainda não existe; é o TODO 1.</p>
   <aside class="notes">Faz os passos 1 a 3 ao vivo no projetor, com uma conta de teste ou a tua, antes de eles começarem: é o que mais os pode atrapalhar. Dá 10 minutos e passa pelas mesas. Erros típicos: carregar em <strong>Fork</strong> em vez de <strong>Use this template</strong> (um fork de um repositório público não pode ser privado: apagar e repetir); esquecer o <strong>Private</strong> (muda-se em Settings, na Danger Zone, com Change visibility); clonar o <code>pdm-aula-10</code> em vez do seu (o Sync dá erro de permissão); clonar para dentro do OneDrive. O Git: Clone de um repositório privado pede para autorizar o GitHub no browser; quem o fez na aula 3 já não vê o pedido. Faz o passo 6 com a turma toda ao mesmo tempo, no projetor: só avanças quando todos tiverem o nome no GitHub. Serve para dois fins: sabes de quem é cada repositório (o utilizador do GitHub não diz o nome) e confirmas logo, em aula, que o Sync de cada um funciona. Os convites de colaborador chegam-te por email e expiram ao fim de 7 dias; o Claude consegue listá-los e aceitá-los todos de uma vez com o <code>gh</code>.</aside>
 </section>
 

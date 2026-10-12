@@ -28,7 +28,7 @@
   <h1>Navigation in depth and mini-project</h1>
   <p class="lead">Part one: we go over the navigation from lesson 9 again, slowly. Routes as a tree, <code>push</code> and <code>go</code>, and <code>StatefulShellRoute</code> piece by piece. Part two: the first graded mini-project, individual. You add a new tab, Trilhos (trails), to Tempo Açores, with a list and a detail screen.</p>
   <div class="meta"><span>Repository: pdm-aula-10</span></div>
-  <aside class="notes">Two-hour lesson. Reference times: review until 16:40; clone and private repository until 16:55; individual work until 17:55; in the last five minutes, everyone does Commit and Sync with whatever they have. The review is about the <code>passo-3</code> code from lesson 9, which is the starting point of the mini-project. The solution is in the local branch <code>solucao</code> of <code>pdm-aula-10</code>, which is not on GitHub: do not publish it before Wednesday at 16:00.</aside>
+  <aside class="notes">Two-hour lesson. Reference times: review until 16:40; clone and private repository until 16:55; individual work until 17:55; in the last five minutes, everyone does Commit and Sync with whatever they have. The review is about the <code>passo-3</code> code from lesson 9, which is the same code that comes in <code>pdm-aula-10</code>, the starting point of the mini-project. Nobody needs the lesson 9 repository. The solution is in the local branch <code>solucao</code> of <code>pdm-aula-10</code>, which is not on GitHub: do not publish it before Wednesday at 16:00.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
@@ -173,30 +173,21 @@
 
 <section class="slide">
   <h2>push or go?</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 230" role="img" aria-label="On the left, context.push: the new screen goes on top of the current tab's stack and the arrow returns to the previous one. On the right, context.go: the app goes to the path as if you typed it in the address bar, even if that switches tabs; the stack becomes the one of that path">
-    <text x="40" y="30" class="t b mono">context.push('/trails/montanha-do-pico')</text>
-    <text x="40" y="50" class="t s">puts it on top of the current stack</text>
-    <rect x="60" y="150" width="240" height="40" rx="8" class="box"/>
-    <text x="180" y="175" class="t" text-anchor="middle">Trail list</text>
-    <rect x="80" y="100" width="240" height="40" rx="8" class="box accent"/>
-    <text x="200" y="125" class="t" text-anchor="middle">Montanha do Pico</text>
-    <text x="40" y="215" class="t s">the back arrow returns to the list</text>
-    <line x1="450" y1="20" x2="450" y2="215" class="arrow dashed" style="marker-end:none"/>
-    <text x="490" y="30" class="t b mono">context.go('/trails/montanha-do-pico')</text>
-    <text x="490" y="50" class="t s">goes to the path, like a URL</text>
-    <rect x="490" y="100" width="150" height="40" rx="8" class="box"/>
-    <text x="565" y="125" class="t" text-anchor="middle">Pico island</text>
-    <text x="565" y="160" class="t s" text-anchor="middle">Previsão</text>
-    <line x1="645" y1="120" x2="690" y2="120" class="arrow accent"/>
-    <rect x="700" y="150" width="170" height="40" rx="8" class="box"/>
-    <text x="785" y="175" class="t" text-anchor="middle">Trail list</text>
-    <rect x="710" y="100" width="170" height="40" rx="8" class="box accent"/>
-    <text x="795" y="125" class="t" text-anchor="middle">Montanha do Pico</text>
-    <text x="785" y="215" class="t s" text-anchor="middle">Trilhos: the stack of /trails/montanha-do-pico</text>
-  </svg>
-  <figcaption><code>push</code> thinks in stacks; <code>go</code> thinks in addresses. With <code>go</code>, <code>go_router</code> builds the stack for the path: <code>/trails</code> underneath, <code>/trails/montanha-do-pico</code> on top.</figcaption>
+  <figure class="anat two">
+    <div class="anat-cell">
+      <div class="phone" style="max-width:190px">
+        <img src="../../assets/img/aula-10/push.gif" alt="Animation: in the Trilhos list, tap Montanha do Pico; the detail opens on top of the list, in the same tab; tap the back arrow and the list comes back.">
+      </div>
+      <p><code>context.push(...)</code><br><strong>Puts it on top of the stack you are on.</strong> The tab does not change; the back arrow returns to the list.</p>
+    </div>
+    <div class="anat-cell">
+      <div class="phone" style="max-width:190px">
+        <img src="../../assets/img/aula-10/go.gif" alt="Animation: on Pico island, in the Previsão tab, tap the Montanha do Pico trail; the bar switches to Trilhos with the trail open; tap Previsão and Pico island is still there.">
+      </div>
+      <p><code>context.go(...)</code><br><strong>Goes to the address, like a URL.</strong> The bar jumps to Trilhos; Previsão stays as it was, with Pico open.</p>
+    </div>
   </figure>
+  <p><code>push</code> thinks in stacks; <code>go</code> thinks in addresses. With <code>go</code>, <code>go_router</code> builds the stack for the path: <code>/trails</code> underneath, <code>/trails/montanha-do-pico</code> on top.</p>
   <div class="table-wrap"><table>
     <thead><tr><th></th><th>Use it when</th><th>Example</th></tr></thead>
     <tbody>
@@ -232,7 +223,7 @@
   <h2>Mini-project: Trilhos</h2>
   <ul>
     <li><strong>Individual</strong> and <strong>graded</strong>: the first assignment of the course.</li>
-    <li>You start from Tempo Açores as it was at the end of lesson 9 and add a fourth tab, <strong>Trilhos</strong>, with the walking trails of the Azores.</li>
+    <li>You start from the <strong><code>pdm-aula-10</code></strong> repository, which you use as a template to create your own. Inside is Tempo Açores with its three tabs and the trails already in the data. You add a fourth tab, <strong>Trilhos</strong>.</li>
     <li>Tapping a trail opens its detail. Each island now shows its trails.</li>
     <li>Today, in class: you create the repository, invite the teacher and get started. You submit by Wednesday, 14 October, at 16:00.</li>
   </ul>
@@ -240,7 +231,7 @@
     <div>
       <h3>Already done</h3>
       <ul>
-        <li>The lesson 9 app, with its three tabs.</li>
+        <li>Tempo Açores with its three tabs: Previsão, Avisos and Definições.</li>
         <li><code>lib/data.dart</code> with 13 trails, the <code>Trail</code> class and the <code>Difficulty</code> enum.</li>
         <li><code>lib/trails_screen.dart</code> and <code>lib/trail_screen.dart</code>, empty.</li>
       </ul>
@@ -293,7 +284,7 @@
     <li>In the VS Code terminal, <code>flutter pub get</code>; pick your Android or <strong>Chrome</strong>, and <kbd>F5</kbd>.</li>
     <li><strong>First commit, all together:</strong> open <code>README.md</code> and write on the first line <code>**Student:** Maria Silva Medeiros · 2024123</code>, with your name and number. <strong>Commit</strong> with the message <code>Student name in the README</code> and <strong>Sync Changes</strong>. Open your repository on GitHub: the name shows at the top.</li>
   </ol>
-  <p><strong>In the app:</strong> Tempo Açores with three tabs, as at the end of lesson 9.</p>
+  <p><strong>In the app:</strong> Tempo Açores with three tabs: Previsão, Avisos and Definições. The Trilhos tab does not exist yet; it is TODO 1.</p>
   <aside class="notes">Do steps 1 to 3 live on the projector, with a test account or yours, before they start: it is what is most likely to trip them up. Give it 10 minutes and walk around. Typical mistakes: pressing <strong>Fork</strong> instead of <strong>Use this template</strong> (a fork of a public repository cannot be private: delete it and repeat); forgetting <strong>Private</strong> (change it in Settings, in the Danger Zone, with Change visibility); cloning <code>pdm-aula-10</code> instead of their own (Sync fails with a permission error); cloning into OneDrive. Git: Clone of a private repository asks to authorise GitHub in the browser; anyone who did it in lesson 3 will not see the prompt. Do step 6 with the whole class at the same time, on the projector: only move on when everyone has their name on GitHub. It does two jobs: you know whose repository each one is (the GitHub username does not say), and you confirm in class that everyone's Sync works. Collaborator invitations reach you by email and expire after 7 days; Claude can list them and accept them all at once with <code>gh</code>.</aside>
 </section>
 
