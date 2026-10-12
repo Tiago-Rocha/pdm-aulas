@@ -68,7 +68,7 @@
     <line x1="565" y1="196" x2="565" y2="216" class="arrow dashed"/>
     <line x1="785" y1="196" x2="785" y2="216" class="arrow"/>
     <rect x="20" y="220" width="190" height="40" rx="8" class="box ok"/>
-    <text x="115" y="245" class="t mono" text-anchor="middle">/ → ForecastScreen</text>
+    <text x="115" y="245" class="t mono" text-anchor="middle">/ opens ForecastScreen</text>
     <rect x="240" y="220" width="190" height="40" rx="8" class="box ok"/>
     <text x="335" y="245" class="t mono" text-anchor="middle">/alerts</text>
     <rect x="470" y="220" width="190" height="40" rx="8" class="box muted"/>
@@ -80,9 +80,9 @@
     <rect x="20" y="284" width="190" height="40" rx="8" class="box ok"/>
     <text x="115" y="309" class="t mono" text-anchor="middle">island/:id</text>
     <rect x="470" y="284" width="190" height="40" rx="8" class="box muted"/>
-    <text x="565" y="309" class="t mono" text-anchor="middle">:id → TrailScreen</text>
+    <text x="565" y="309" class="t mono" text-anchor="middle">:id opens TrailScreen</text>
     <text x="250" y="309" class="t s">child route: opens on top of its parent,</text>
-    <text x="250" y="325" class="t s">in the same tab, with a ← arrow</text>
+    <text x="250" y="325" class="t s">in the same tab, with a back arrow</text>
   </svg>
   <figcaption>Dashed: what you add today in the mini-project. A child route does not start with <code>/</code>: its path is joined to its parent's.</figcaption>
   </figure>
@@ -98,7 +98,7 @@
   <div class="table-wrap"><table>
     <thead><tr><th>Piece</th><th>Answers</th><th>In Tempo Açores</th></tr></thead>
     <tbody>
-      <tr><td><code>GoRoute</code></td><td>Which screen appears at this path?</td><td><code>/alerts</code> → <code>AlertsScreen</code></td></tr>
+      <tr><td><code>GoRoute</code></td><td>Which screen appears at this path?</td><td><code>/alerts</code> opens <code>AlertsScreen</code></td></tr>
       <tr><td><code>StatefulShellRoute</code></td><td>What surrounds all the tabs?</td><td>A <code>Scaffold</code> with only the <code>NavigationBar</code></td></tr>
       <tr><td><code>StatefulShellBranch</code></td><td>Which routes belong to this tab?</td><td>Previsão: <code>/</code> and <code>island/:id</code></td></tr>
     </tbody>
@@ -123,7 +123,7 @@
   <figcaption>The <code>shell</code> is only the middle; the bar is drawn around it.</figcaption>
   </figure>
   <div class="callout"><strong>Ask the class</strong> You open Pico, go to Avisos and come back to Previsão. Why is Pico still there, and not the grid?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> Because each <code>StatefulShellBranch</code> has its own stack, and <code>indexedStack</code> keeps all stacks alive, one under the other, like an <code>IndexedStack</code>: only the current tab's is visible. Switching tabs does not <code>pop</code>. The Previsão stack is still grid → Pico. To get back to the grid: the ← arrow, or tap Previsão again (the <code>initialLocation: i == shell.currentIndex</code>).</aside>
+  <aside class="notes"><strong>Answers to the questions.</strong> Because each <code>StatefulShellBranch</code> has its own stack, and <code>indexedStack</code> keeps all stacks alive, one under the other, like an <code>IndexedStack</code>: only the current tab's is visible. Switching tabs does not <code>pop</code>. The Previsão stack is still the grid with Pico on top. To get back to the grid: the back arrow, or tap Previsão again (the <code>initialLocation: i == shell.currentIndex</code>).</aside>
 </section>
 
 <section class="slide">
@@ -174,7 +174,7 @@
     <text x="180" y="175" class="t" text-anchor="middle">Trail list</text>
     <rect x="80" y="100" width="240" height="40" rx="8" class="box accent"/>
     <text x="200" y="125" class="t" text-anchor="middle">Montanha do Pico</text>
-    <text x="40" y="215" class="t s">the ← arrow goes back to the list</text>
+    <text x="40" y="215" class="t s">the back arrow returns to the list</text>
     <line x1="450" y1="20" x2="450" y2="215" class="arrow dashed" style="marker-end:none"/>
     <text x="490" y="30" class="t b mono">context.go('/trails/montanha-do-pico')</text>
     <text x="490" y="50" class="t s">goes to the path, like a URL</text>
@@ -193,11 +193,11 @@
   <div class="table-wrap"><table>
     <thead><tr><th></th><th>Use it when</th><th>Example</th></tr></thead>
     <tbody>
-      <tr><td><code>context.push</code></td><td>You open a detail on top of the screen you are on</td><td>Grid → island; list → trail</td></tr>
+      <tr><td><code>context.push</code></td><td>You open a detail on top of the screen you are on</td><td>From the grid to an island; from the list to a trail</td></tr>
       <tr><td><code>context.go</code></td><td>You go somewhere else in the app, which has its own stack</td><td>From the island to a trail in the Trilhos tab; a link in a notification</td></tr>
     </tbody>
   </table></div>
-  <aside class="notes">In Chrome the difference shows in the URL and in the arrow. Show it live on lesson 9's <code>passo-3</code>: swap <code>context.push</code> in <code>IslandCard</code> for <code>context.go</code>. It still works, because <code>/island/pico</code> is a child of <code>/</code> and <code>go</code> builds the stack grid → Pico. The difference appears when the destination is in another tab: then <code>go</code> switches tabs and the tab you came from stays as it was. That is exactly TODO 4 of the mini-project.</aside>
+  <aside class="notes">In Chrome the difference shows in the URL and in the arrow. Show it live on lesson 9's <code>passo-3</code>: swap <code>context.push</code> in <code>IslandCard</code> for <code>context.go</code>. It still works, because <code>/island/pico</code> is a child of <code>/</code> and <code>go</code> builds the stack with the grid and Pico on top. The difference appears when the destination is in another tab: then <code>go</code> switches tabs and the tab you came from stays as it was. That is exactly TODO 4 of the mini-project.</aside>
 </section>
 
 <section class="slide">
@@ -279,15 +279,15 @@
   <figcaption>You do not clone the teacher's repository: you create your own from it. What counts is what is in your repository on GitHub.</figcaption>
   </figure>
   <ol class="steps">
-    <li>At <a href="https://github.com/Tiago-Rocha/pdm-aula-10" target="_blank" rel="noopener">github.com/Tiago-Rocha/pdm-aula-10</a>, signed in: green button <strong>Use this template</strong> → <strong>Create a new repository</strong>.</li>
+    <li>At <a href="https://github.com/Tiago-Rocha/pdm-aula-10" target="_blank" rel="noopener">github.com/Tiago-Rocha/pdm-aula-10</a>, signed in: green button <strong>Use this template</strong>, then <strong>Create a new repository</strong>.</li>
     <li>Name <code>pdm-miniprojeto</code>, tick <strong>Private</strong>, <strong>Create repository</strong>.</li>
-    <li>In your repository: <strong>Settings → Collaborators → Add people</strong> → <code>Tiago-Rocha</code>.</li>
-    <li>Green <strong>Code</strong> button → copy the URL. In VS Code: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <strong>Git: Clone</strong> → paste → folder <code>C:\dev</code> → <strong>Open</strong>. It is what you did in lesson 3.</li>
+    <li>In your repository, open <strong>Settings</strong>, then <strong>Collaborators</strong>. Click <strong>Add people</strong> and type <code>Tiago-Rocha</code>.</li>
+    <li>From the green <strong>Code</strong> button, copy the URL. In VS Code, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, choose <strong>Git: Clone</strong> and paste the URL. Pick the folder <code>C:\dev</code> and click <strong>Open</strong>. It is what you did in lesson 3.</li>
     <li>In the VS Code terminal, <code>flutter pub get</code>; pick your Android or <strong>Chrome</strong>, and <kbd>F5</kbd>.</li>
     <li><strong>First commit, all together:</strong> open <code>README.md</code> and write on the first line <code>**Student:** Maria Silva Medeiros · 2024123</code>, with your name and number. <strong>Commit</strong> with the message <code>Student name in the README</code> and <strong>Sync Changes</strong>. Open your repository on GitHub: the name shows at the top.</li>
   </ol>
   <p><strong>In the app:</strong> Tempo Açores with three tabs, as at the end of lesson 9.</p>
-  <aside class="notes">Do steps 1 to 3 live on the projector, with a test account or yours, before they start: it is what is most likely to trip them up. Give it 10 minutes and walk around. Typical mistakes: pressing <strong>Fork</strong> instead of <strong>Use this template</strong> (a fork of a public repository cannot be private: delete it and repeat); forgetting <strong>Private</strong> (change it in Settings → Danger Zone → Change visibility); cloning <code>pdm-aula-10</code> instead of their own (Sync fails with a permission error); cloning into OneDrive. Git: Clone of a private repository asks to authorise GitHub in the browser; anyone who did it in lesson 3 will not see the prompt. Do step 6 with the whole class at the same time, on the projector: only move on when everyone has their name on GitHub. It does two jobs: you know whose repository each one is (the GitHub username does not say), and you confirm in class that everyone's Sync works. Collaborator invitations reach you by email and expire after 7 days; Claude can list them and accept them all at once with <code>gh</code>.</aside>
+  <aside class="notes">Do steps 1 to 3 live on the projector, with a test account or yours, before they start: it is what is most likely to trip them up. Give it 10 minutes and walk around. Typical mistakes: pressing <strong>Fork</strong> instead of <strong>Use this template</strong> (a fork of a public repository cannot be private: delete it and repeat); forgetting <strong>Private</strong> (change it in Settings, in the Danger Zone, with Change visibility); cloning <code>pdm-aula-10</code> instead of their own (Sync fails with a permission error); cloning into OneDrive. Git: Clone of a private repository asks to authorise GitHub in the browser; anyone who did it in lesson 3 will not see the prompt. Do step 6 with the whole class at the same time, on the projector: only move on when everyone has their name on GitHub. It does two jobs: you know whose repository each one is (the GitHub username does not say), and you confirm in class that everyone's Sync works. Collaborator invitations reach you by email and expire after 7 days; Claude can list them and accept them all at once with <code>gh</code>.</aside>
 </section>
 
 <section class="slide">
@@ -365,7 +365,7 @@ const trails = [
         <img src="../../assets/img/aula-10/ecra-detalhe.jpg" alt="The detail of Montanha do Pico: back arrow, photo, island, distance, duration, difficulty and description.">
         <span class="w" style="--x:6;--y:308;--w:400;--h:140;--i:2"><b>3</b></span>
       </div>
-      <p><strong>Detail</strong> (TODO 3): the name in the <code>AppBar</code>, with the ← arrow. The island photo at the top; below it, the island, a row with the distance, the duration and the difficulty, and the description.</p>
+      <p><strong>Detail</strong> (TODO 3): the name in the <code>AppBar</code>, with the back arrow. The island photo at the top; below it, the island, a row with the distance, the duration and the difficulty, and the description.</p>
     </div>
     <div class="anat-cell">
       <div class="phone">
@@ -384,7 +384,7 @@ const trails = [
   <div class="callout task"><strong>TODO 1</strong> In <code>lib/router.dart</code>: a <code>NavigationDestination</code> Trilhos (<code>Icons.hiking</code>) and its <code>StatefulShellBranch</code>, in the same position. The <code>GoRoute</code> <code>'/trails'</code> opens <code>TrailsScreen</code>; inside it, the child route <code>':id'</code> opens <code>TrailScreen</code>.</div>
   <p><strong>In the app:</strong> four tabs in the bar. Trilhos opens a screen that says "Ainda sem trilhos". In Chrome, the URL is <code>/trails</code>.</p>
   <div class="callout task"><strong>TODO 2</strong> In <code>lib/trails_screen.dart</code>: a <code>ListView.builder</code> with one <code>ListTile</code> per trail. The island photo (<code>CircleAvatar</code> with <code>AssetImage</code>), name, island and distance, and the difficulty. <code>onTap</code>: <code>context.push('/trails/${...}')</code>.</div>
-  <p><strong>In the app:</strong> the 13 trails, from São Miguel to Corvo. Tapping one opens a screen with the <code>id</code> in the title; the ← arrow goes back to the list.</p>
+  <p><strong>In the app:</strong> the 13 trails, from São Miguel to Corvo. Tapping one opens a screen with the <code>id</code> in the title; the back arrow returns to the list.</p>
   <p>Finished a TODO? <strong>Commit</strong> and <strong>Sync Changes</strong> before moving on to the next one.</p>
   <aside class="notes"><code>ListTile</code> was already used in <code>SettingsScreen</code>, and <code>ListView.builder</code> in lesson 6. For anyone lost in TODO 2: start with just <code>title: Text(trails[i].name)</code> and add the rest afterwards. <code>context.push</code> needs <code>import 'package:go_router/go_router.dart';</code>. Around 17:15, anyone who still does not have TODO 1 working gets your help on their screen: without TODO 1, they cannot reach anything.</aside>
 </section>

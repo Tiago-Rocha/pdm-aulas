@@ -68,7 +68,7 @@
     <line x1="565" y1="196" x2="565" y2="216" class="arrow dashed"/>
     <line x1="785" y1="196" x2="785" y2="216" class="arrow"/>
     <rect x="20" y="220" width="190" height="40" rx="8" class="box ok"/>
-    <text x="115" y="245" class="t mono" text-anchor="middle">/ → ForecastScreen</text>
+    <text x="115" y="245" class="t mono" text-anchor="middle">/ abre ForecastScreen</text>
     <rect x="240" y="220" width="190" height="40" rx="8" class="box ok"/>
     <text x="335" y="245" class="t mono" text-anchor="middle">/alerts</text>
     <rect x="470" y="220" width="190" height="40" rx="8" class="box muted"/>
@@ -80,9 +80,9 @@
     <rect x="20" y="284" width="190" height="40" rx="8" class="box ok"/>
     <text x="115" y="309" class="t mono" text-anchor="middle">island/:id</text>
     <rect x="470" y="284" width="190" height="40" rx="8" class="box muted"/>
-    <text x="565" y="309" class="t mono" text-anchor="middle">:id → TrailScreen</text>
+    <text x="565" y="309" class="t mono" text-anchor="middle">:id abre TrailScreen</text>
     <text x="250" y="309" class="t s">rota filha: abre por cima da mãe,</text>
-    <text x="250" y="325" class="t s">no mesmo separador, com seta ←</text>
+    <text x="250" y="325" class="t s">no mesmo separador, com seta de voltar</text>
   </svg>
   <figcaption>A tracejado, o que vais acrescentar hoje no mini-projeto. Uma rota filha não começa por <code>/</code>: o caminho dela junta-se ao da mãe.</figcaption>
   </figure>
@@ -98,7 +98,7 @@
   <div class="table-wrap"><table>
     <thead><tr><th>Peça</th><th>Responde a</th><th>Na Tempo Açores</th></tr></thead>
     <tbody>
-      <tr><td><code>GoRoute</code></td><td>Que ecrã aparece neste caminho?</td><td><code>/alerts</code> → <code>AlertsScreen</code></td></tr>
+      <tr><td><code>GoRoute</code></td><td>Que ecrã aparece neste caminho?</td><td><code>/alerts</code> abre o <code>AlertsScreen</code></td></tr>
       <tr><td><code>StatefulShellRoute</code></td><td>O que fica à volta de todos os separadores?</td><td>Um <code>Scaffold</code> só com a <code>NavigationBar</code></td></tr>
       <tr><td><code>StatefulShellBranch</code></td><td>Que rotas pertencem a este separador?</td><td>Previsão: <code>/</code> e <code>island/:id</code></td></tr>
     </tbody>
@@ -123,7 +123,7 @@
   <figcaption>O <code>shell</code> é só o miolo; a barra é desenhada à volta dele.</figcaption>
   </figure>
   <div class="callout"><strong>Pergunta à turma</strong> Abres o Pico, vais a Avisos e voltas a Previsão. Porque é que o Pico ainda lá está, e não a grelha?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> Porque cada <code>StatefulShellBranch</code> tem a sua pilha, e o <code>indexedStack</code> mantém as pilhas todas vivas, umas por baixo das outras, como um <code>IndexedStack</code>: só se vê a do separador atual. Mudar de separador não faz <code>pop</code>. A pilha de Previsão continua a ser grelha → Pico. Para voltar à grelha: a seta ←, ou tocar outra vez em Previsão (o <code>initialLocation: i == shell.currentIndex</code>).</aside>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Porque cada <code>StatefulShellBranch</code> tem a sua pilha, e o <code>indexedStack</code> mantém as pilhas todas vivas, umas por baixo das outras, como um <code>IndexedStack</code>: só se vê a do separador atual. Mudar de separador não faz <code>pop</code>. A pilha de Previsão continua a ser grelha e, por cima, o Pico. Para voltar à grelha: a seta de voltar, ou tocar outra vez em Previsão (o <code>initialLocation: i == shell.currentIndex</code>).</aside>
 </section>
 
 <section class="slide">
@@ -174,7 +174,7 @@
     <text x="180" y="175" class="t" text-anchor="middle">Lista de trilhos</text>
     <rect x="80" y="100" width="240" height="40" rx="8" class="box accent"/>
     <text x="200" y="125" class="t" text-anchor="middle">Montanha do Pico</text>
-    <text x="40" y="215" class="t s">a seta ← volta à lista</text>
+    <text x="40" y="215" class="t s">a seta de voltar volta à lista</text>
     <line x1="450" y1="20" x2="450" y2="215" class="arrow dashed" style="marker-end:none"/>
     <text x="490" y="30" class="t b mono">context.go('/trails/montanha-do-pico')</text>
     <text x="490" y="50" class="t s">vai para o caminho, como no URL</text>
@@ -193,11 +193,11 @@
   <div class="table-wrap"><table>
     <thead><tr><th></th><th>Usa quando</th><th>Exemplo</th></tr></thead>
     <tbody>
-      <tr><td><code>context.push</code></td><td>Abres um detalhe por cima do ecrã onde estás</td><td>Grelha → ilha; lista → trilho</td></tr>
+      <tr><td><code>context.push</code></td><td>Abres um detalhe por cima do ecrã onde estás</td><td>Da grelha para uma ilha; da lista para um trilho</td></tr>
       <tr><td><code>context.go</code></td><td>Vais para outro sítio da app, que tem a sua pilha</td><td>Da ilha para um trilho no separador Trilhos; um link de uma notificação</td></tr>
     </tbody>
   </table></div>
-  <aside class="notes">No Chrome a diferença vê-se no URL e na seta. Mostra ao vivo no <code>passo-3</code> da aula 9: troca o <code>context.push</code> do <code>IslandCard</code> por <code>context.go</code>. Continua a funcionar, porque <code>/island/pico</code> é filha de <code>/</code> e o <code>go</code> monta a pilha grelha → Pico. A diferença aparece quando o destino está noutro separador: aí o <code>go</code> muda de separador e o separador de onde vieste fica como estava. É exatamente o TODO 4 do mini-projeto.</aside>
+  <aside class="notes">No Chrome a diferença vê-se no URL e na seta. Mostra ao vivo no <code>passo-3</code> da aula 9: troca o <code>context.push</code> do <code>IslandCard</code> por <code>context.go</code>. Continua a funcionar, porque <code>/island/pico</code> é filha de <code>/</code> e o <code>go</code> monta a pilha com a grelha e o Pico por cima. A diferença aparece quando o destino está noutro separador: aí o <code>go</code> muda de separador e o separador de onde vieste fica como estava. É exatamente o TODO 4 do mini-projeto.</aside>
 </section>
 
 <section class="slide">
@@ -279,15 +279,15 @@
   <figcaption>Não clonas o repositório do docente: crias o teu a partir dele. O que conta é o que está no teu repositório no GitHub.</figcaption>
   </figure>
   <ol class="steps">
-    <li>Em <a href="https://github.com/Tiago-Rocha/pdm-aula-10" target="_blank" rel="noopener">github.com/Tiago-Rocha/pdm-aula-10</a>, com a sessão iniciada: botão verde <strong>Use this template</strong> → <strong>Create a new repository</strong>.</li>
+    <li>Em <a href="https://github.com/Tiago-Rocha/pdm-aula-10" target="_blank" rel="noopener">github.com/Tiago-Rocha/pdm-aula-10</a>, com a sessão iniciada: botão verde <strong>Use this template</strong> e depois <strong>Create a new repository</strong>.</li>
     <li>Nome <code>pdm-miniprojeto</code>, marca <strong>Private</strong>, <strong>Create repository</strong>.</li>
-    <li>No teu repositório: <strong>Settings → Collaborators → Add people</strong> → <code>Tiago-Rocha</code>.</li>
-    <li>Botão verde <strong>Code</strong> → copia o URL. No VS Code: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <strong>Git: Clone</strong> → cola → pasta <code>C:\dev</code> → <strong>Open</strong>. É o que fizeste na aula 3.</li>
+    <li>No teu repositório, abre <strong>Settings</strong> e depois <strong>Collaborators</strong>. Carrega em <strong>Add people</strong> e escreve <code>Tiago-Rocha</code>.</li>
+    <li>No botão verde <strong>Code</strong>, copia o URL. No VS Code, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, escolhe <strong>Git: Clone</strong> e cola o URL. Escolhe a pasta <code>C:\dev</code> e carrega em <strong>Open</strong>. É o que fizeste na aula 3.</li>
     <li>No terminal do VS Code, <code>flutter pub get</code>; escolhe o Android ou o <strong>Chrome</strong>, e <kbd>F5</kbd>.</li>
     <li><strong>Primeiro commit, todos juntos:</strong> abre o <code>README.md</code> e escreve na primeira linha <code>**Student:** Maria Silva Medeiros · 2024123</code>, com o teu nome e número. <strong>Commit</strong> com a mensagem <code>Nome do aluno no README</code> e <strong>Sync Changes</strong>. Abre o teu repositório no GitHub: o nome aparece no topo.</li>
   </ol>
   <p><strong>Na app:</strong> a Tempo Açores com três separadores, como no fim da aula 9.</p>
-  <aside class="notes">Faz os passos 1 a 3 ao vivo no projetor, com uma conta de teste ou a tua, antes de eles começarem: é o que mais os pode atrapalhar. Dá 10 minutos e passa pelas mesas. Erros típicos: carregar em <strong>Fork</strong> em vez de <strong>Use this template</strong> (um fork de um repositório público não pode ser privado: apagar e repetir); esquecer o <strong>Private</strong> (muda-se em Settings → Danger Zone → Change visibility); clonar o <code>pdm-aula-10</code> em vez do seu (o Sync dá erro de permissão); clonar para dentro do OneDrive. O Git: Clone de um repositório privado pede para autorizar o GitHub no browser; quem o fez na aula 3 já não vê o pedido. Faz o passo 6 com a turma toda ao mesmo tempo, no projetor: só avanças quando todos tiverem o nome no GitHub. Serve para dois fins: sabes de quem é cada repositório (o utilizador do GitHub não diz o nome) e confirmas logo, em aula, que o Sync de cada um funciona. Os convites de colaborador chegam-te por email e expiram ao fim de 7 dias; o Claude consegue listá-los e aceitá-los todos de uma vez com o <code>gh</code>.</aside>
+  <aside class="notes">Faz os passos 1 a 3 ao vivo no projetor, com uma conta de teste ou a tua, antes de eles começarem: é o que mais os pode atrapalhar. Dá 10 minutos e passa pelas mesas. Erros típicos: carregar em <strong>Fork</strong> em vez de <strong>Use this template</strong> (um fork de um repositório público não pode ser privado: apagar e repetir); esquecer o <strong>Private</strong> (muda-se em Settings, na Danger Zone, com Change visibility); clonar o <code>pdm-aula-10</code> em vez do seu (o Sync dá erro de permissão); clonar para dentro do OneDrive. O Git: Clone de um repositório privado pede para autorizar o GitHub no browser; quem o fez na aula 3 já não vê o pedido. Faz o passo 6 com a turma toda ao mesmo tempo, no projetor: só avanças quando todos tiverem o nome no GitHub. Serve para dois fins: sabes de quem é cada repositório (o utilizador do GitHub não diz o nome) e confirmas logo, em aula, que o Sync de cada um funciona. Os convites de colaborador chegam-te por email e expiram ao fim de 7 dias; o Claude consegue listá-los e aceitá-los todos de uma vez com o <code>gh</code>.</aside>
 </section>
 
 <section class="slide">
@@ -365,7 +365,7 @@ const trails = [
         <img src="../assets/img/aula-10/ecra-detalhe.jpg" alt="O detalhe da Montanha do Pico: seta para voltar, foto, ilha, distância, duração, dificuldade e descrição.">
         <span class="w" style="--x:6;--y:308;--w:400;--h:140;--i:2"><b>3</b></span>
       </div>
-      <p><strong>Detalhe</strong> (TODO 3): o nome na <code>AppBar</code>, com a seta ←. A foto da ilha em cima; por baixo, a ilha, uma linha com a distância, a duração e a dificuldade, e a descrição.</p>
+      <p><strong>Detalhe</strong> (TODO 3): o nome na <code>AppBar</code>, com a seta de voltar. A foto da ilha em cima; por baixo, a ilha, uma linha com a distância, a duração e a dificuldade, e a descrição.</p>
     </div>
     <div class="anat-cell">
       <div class="phone">
@@ -384,7 +384,7 @@ const trails = [
   <div class="callout task"><strong>TODO 1</strong> Em <code>lib/router.dart</code>: uma <code>NavigationDestination</code> Trilhos (<code>Icons.hiking</code>) e o seu <code>StatefulShellBranch</code>, na mesma posição. A <code>GoRoute</code> <code>'/trails'</code> abre o <code>TrailsScreen</code>; dentro dela, a rota filha <code>':id'</code> abre o <code>TrailScreen</code>.</div>
   <p><strong>Na app:</strong> quatro separadores na barra. Trilhos abre um ecrã que diz "Ainda sem trilhos". No Chrome, o URL é <code>/trails</code>.</p>
   <div class="callout task"><strong>TODO 2</strong> Em <code>lib/trails_screen.dart</code>: um <code>ListView.builder</code> com um <code>ListTile</code> por trilho. Foto da ilha (<code>CircleAvatar</code> com <code>AssetImage</code>), nome, ilha e distância, e a dificuldade. <code>onTap</code>: <code>context.push('/trails/${...}')</code>.</div>
-  <p><strong>Na app:</strong> os 13 trilhos, de São Miguel ao Corvo. Tocar num abre um ecrã com o <code>id</code> no título; a seta ← volta à lista.</p>
+  <p><strong>Na app:</strong> os 13 trilhos, de São Miguel ao Corvo. Tocar num abre um ecrã com o <code>id</code> no título; a seta de voltar volta à lista.</p>
   <p>Acabaste um TODO? <strong>Commit</strong> e <strong>Sync Changes</strong>, antes de passares ao seguinte.</p>
   <aside class="notes">O <code>ListTile</code> já foi usado no <code>SettingsScreen</code>, e o <code>ListView.builder</code> na aula 6. Para quem estiver perdido no TODO 2: começa só com <code>title: Text(trails[i].name)</code> e acrescenta o resto depois. O <code>context.push</code> precisa do <code>import 'package:go_router/go_router.dart';</code>. Por volta das 17:15, quem ainda não tiver o TODO 1 a funcionar recebe ajuda tua no ecrã dele: sem o TODO 1, não chega a nada.</aside>
 </section>
