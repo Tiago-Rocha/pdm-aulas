@@ -6,6 +6,7 @@
 <title>API do curso · PDM · DAW 2 · 2026/27</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body>
 <header class="site"><div class="wrap">
@@ -24,31 +25,225 @@
 <aside class="toc" id="toc"></aside>
 <main class="content">
 
-<p class="kicker">API do curso · disponível a partir da aula 12 (14/10)</p>
+<p class="kicker">API do curso · versão 1</p>
 <h1>API Tempo Açores</h1>
-<p class="lead">Uma API REST mantida pelo docente que envolve os dados abertos do IPMA, acrescenta autenticação por grupo, favoritos e telemetria, e serve de base ao projeto.</p>
+<p class="lead">Uma API REST mantida pelo docente: as ilhas e os trilhos dos Açores, a previsão real do IPMA, e um feed de relatos da turma com texto e fotografia. É a base do mini-projeto 2.</p>
 
-<div class="callout warn"><strong>Em preparação</strong> A API entra em produção antes da aula 12. Esta página passará a mostrar a documentação OpenAPI interativa (Swagger UI), o endereço base, e como obter o token do teu grupo.</div>
-
-<h2>O que vai ter</h2>
 <div class="table-wrap"><table>
-<thead><tr><th>Endpoint</th><th>Descrição</th><th>Auth</th></tr></thead>
 <tbody>
-<tr><td><code>POST /v1/auth/token</code></td><td>Troca o client-id e o segredo do grupo por um token JWT.</td><td>não</td></tr>
-<tr><td><code>GET /v1/locations</code></td><td>Ilhas e localidades dos Açores com coordenadas.</td><td>sim</td></tr>
-<tr><td><code>GET /v1/forecast/{locationId}</code></td><td>Previsão a 5 dias, normalizada (números como números, datas ISO, tipo de tempo resolvido).</td><td>sim</td></tr>
-<tr><td><code>GET /v1/warnings</code></td><td>Avisos meteorológicos ativos.</td><td>sim</td></tr>
-<tr><td><code>GET /v1/seismic</code></td><td>Sismos recentes na região dos Açores.</td><td>sim</td></tr>
-<tr><td><code>GET/POST/DELETE /v1/me/favorites</code></td><td>Favoritos do grupo.</td><td>sim</td></tr>
-<tr><td><code>GET /icons/{weatherType}.svg</code></td><td>Ícones de estado do tempo.</td><td>não</td></tr>
+<tr><th>Endereço base</th><td><code>https://api-pdm.sublimecipher.com</code></td></tr>
+<tr><th>Documentação interativa</th><td><a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">https://api-pdm.sublimecipher.com/docs</a> (Swagger: experimentas cada pedido no browser)</td></tr>
+<tr><th>Especificação OpenAPI</th><td><a href="https://api-pdm.sublimecipher.com/openapi.json" target="_blank" rel="noopener">https://api-pdm.sublimecipher.com/openapi.json</a></td></tr>
+<tr><th>Formato</th><td>JSON em UTF-8; datas em ISO 8601; números como números</td></tr>
+<tr><th>Autenticação</th><td>JWT: <code>Authorization: Bearer &lt;token&gt;</code> em todos os pedidos menos o do token</td></tr>
+</tbody>
+</table></div>
+
+<h2>Primeiros passos</h2>
+<ol>
+  <li>O teu <code>clientId</code> e o teu <code>clientSecret</code> estão numa issue no teu repositório <code>pdm-miniprojeto</code>. São só teus.</li>
+  <li>Abre a <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">documentação interativa</a>. Em <strong>POST /v1/auth/token</strong>, carrega em <strong>Try it out</strong>, preenche o pedido e carrega em <strong>Execute</strong>.</li>
+  <li>Copia o <code>accessToken</code>, carrega em <strong>Authorize</strong> no topo da página e cola-o. A partir daí todos os pedidos levam o token.</li>
+  <li>Experimenta <strong>GET /v1/islands/sao-miguel/forecast</strong>: é a previsão de hoje, vinda do IPMA.</li>
+</ol>
+
+<h2>Autenticação</h2>
+<p>Trocas o <code>clientId</code> e o <code>clientSecret</code> por um token, e mandas o token em cada pedido. O token dura <strong>1 hora</strong>; quando a API responder <code>401</code>, pede outro.</p>
+<pre data-title="Pedido"><code class="language-http">POST /v1/auth/token
+Content-Type: application/json
+
+{
+  &quot;clientId&quot;: &quot;pdm-ab12cd&quot;,
+  &quot;clientSecret&quot;: &quot;o-teu-segredo&quot;
+}</code></pre>
+<pre data-title="Resposta 200"><code class="language-json">{
+  &quot;accessToken&quot;: &quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...&quot;,
+  &quot;tokenType&quot;: &quot;Bearer&quot;,
+  &quot;expiresIn&quot;: 3600
+}</code></pre>
+<pre data-title="Todos os outros pedidos"><code class="language-http">GET /v1/islands
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
+<div class="callout"><strong>Segurança</strong> O token é um JWT: três partes em base64 separadas por pontos, assinado pela API. Qualquer pessoa pode ler o que está lá dentro (cola-o em <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a>), mas ninguém o consegue alterar sem a chave do servidor. Por isso não tem segredos dentro, só quem és e quando expira. O <code>clientSecret</code>, esse sim, não pode ir para o código que fazes commit: guarda-o fora do git, por exemplo com <code>--dart-define</code>.</div>
+
+<h2>Endpoints</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Método e caminho</th><th>O que faz</th></tr></thead>
+<tbody>
+<tr><td><code>POST /v1/auth/token</code></td><td>Troca o <code>clientId</code> e o <code>clientSecret</code> por um token (sem token).</td></tr>
+<tr><td><code>GET /v1/me</code></td><td>Quem és, segundo o token. Bom para testar.</td></tr>
+<tr><td><code>GET /v1/islands</code></td><td>As nove ilhas.</td></tr>
+<tr><td><code>GET /v1/islands/{id}</code></td><td>Uma ilha.</td></tr>
+<tr><td><code>GET /v1/islands/{id}/forecast</code></td><td>Previsão a 5 dias da ilha (IPMA).</td></tr>
+<tr><td><code>GET /v1/trails</code></td><td>Os trilhos; <code>?islandId=faial</code> filtra por ilha.</td></tr>
+<tr><td><code>GET /v1/trails/{id}</code></td><td>Um trilho.</td></tr>
+<tr><td><code>GET /v1/reports</code></td><td>Feed de relatos da turma, mais recentes primeiro; <code>?islandId=</code> e <code>?limit=</code> (até 100).</td></tr>
+<tr><td><code>POST /v1/reports</code></td><td>Cria um relato: só texto (JSON) ou texto e fotografia (multipart).</td></tr>
+<tr><td><code>GET /v1/reports/{id}</code></td><td>Um relato.</td></tr>
+<tr><td><code>PUT /v1/reports/{id}</code></td><td>Altera o texto ou a ilha de um relato teu.</td></tr>
+<tr><td><code>PUT /v1/reports/{id}/photo</code></td><td>Põe ou substitui a fotografia de um relato teu (multipart).</td></tr>
+<tr><td><code>DELETE /v1/reports/{id}</code></td><td>Apaga um relato teu.</td></tr>
 </tbody></table></div>
+
+<h2>Ilhas e trilhos</h2>
+<pre data-title="GET /v1/islands · um elemento da lista"><code class="language-json">{
+  &quot;id&quot;: &quot;sao-miguel&quot;,
+  &quot;name&quot;: &quot;São Miguel&quot;,
+  &quot;imageUrl&quot;: &quot;https://api-pdm.sublimecipher.com/static/islands/sao_miguel.jpg&quot;,
+  &quot;trailCount&quot;: 3
+}</code></pre>
+<pre data-title="GET /v1/trails?islandId=faial · um elemento da lista"><code class="language-json">{
+  &quot;id&quot;: &quot;caldeira-faial&quot;,
+  &quot;name&quot;: &quot;Volta à Caldeira do Faial&quot;,
+  &quot;islandId&quot;: &quot;faial&quot;,
+  &quot;islandName&quot;: &quot;Faial&quot;,
+  &quot;imageUrl&quot;: &quot;https://api-pdm.sublimecipher.com/static/islands/faial.jpg&quot;,
+  &quot;distanceKm&quot;: 7.0,
+  &quot;duration&quot;: &quot;2 h 30&quot;,
+  &quot;difficulty&quot;: &quot;easy&quot;,
+  &quot;difficultyLabel&quot;: &quot;Fácil&quot;,
+  &quot;description&quot;: &quot;À volta da cratera com 2 km de diâmetro no centro da ilha.&quot;
+}</code></pre>
+<p>Os ids são os mesmos da app das aulas: <code>sao-miguel</code>, <code>santa-maria</code>, <code>terceira</code>, <code>graciosa</code>, <code>sao-jorge</code>, <code>pico</code>, <code>faial</code>, <code>flores</code>, <code>corvo</code>. As fotografias das ilhas estão em <code>imageUrl</code>: usa <code>Image.network</code> em vez de <code>Image.asset</code>.</p>
+
+<h2>Previsão</h2>
+<pre data-title="GET /v1/islands/sao-miguel/forecast"><code class="language-json">{
+  &quot;islandId&quot;: &quot;sao-miguel&quot;,
+  &quot;islandName&quot;: &quot;São Miguel&quot;,
+  &quot;location&quot;: &quot;Ponta Delgada&quot;,
+  &quot;source&quot;: &quot;IPMA&quot;,
+  &quot;updatedAt&quot;: &quot;2026-10-13T09:31:02&quot;,
+  &quot;days&quot;: [
+    {
+      &quot;date&quot;: &quot;2026-10-13&quot;,
+      &quot;weatherType&quot;: {
+        &quot;id&quot;: 2,
+        &quot;description&quot;: &quot;Céu pouco nublado&quot;,
+        &quot;category&quot;: &quot;partlyCloudy&quot;
+      },
+      &quot;tMin&quot;: 17.6,
+      &quot;tMax&quot;: 23.6,
+      &quot;rainChance&quot;: 0,
+      &quot;wind&quot;: {
+        &quot;direction&quot;: &quot;SE&quot;,
+        &quot;class&quot;: 2,
+        &quot;description&quot;: &quot;Moderado&quot;
+      }
+    },
+    &quot;...&quot;
+  ]
+}</code></pre>
+<ul>
+  <li><strong><code>weatherType.category</code></strong> é um dos valores do enum <code>WeatherType</code> das aulas: <code>sunny</code>, <code>partlyCloudy</code>, <code>cloudy</code>, <code>rain</code> ou <code>storm</code>. A <code>description</code> é o texto do IPMA.</li>
+  <li><code>rainChance</code> vai de 0 a 100. O IPMA não dá a velocidade do vento em km/h, só a classe: 1 fraco, 2 moderado, 3 forte, 4 muito forte.</li>
+  <li>A API pergunta ao IPMA no máximo de 30 em 30 minutos. Se o IPMA falhar, devolve a última previsão que tiver; se não tiver nenhuma, responde <code>502</code>.</li>
+</ul>
+
+<h2>Relatos</h2>
+<p>Um relato é um texto, e opcionalmente uma fotografia, sobre o tempo numa ilha. <strong>O feed é da turma toda:</strong> todos veem os relatos de todos, com o nome do autor, e cada um só altera e apaga os seus. O campo <code>mine</code> diz se o relato é teu.</p>
+<pre data-title="Um relato"><code class="language-json">{
+  &quot;id&quot;: &quot;e7e97972-2db3-47d0-a817-6912481e64ad&quot;,
+  &quot;islandId&quot;: &quot;faial&quot;,
+  &quot;islandName&quot;: &quot;Faial&quot;,
+  &quot;text&quot;: &quot;Céu limpo na Horta, mar calmo.&quot;,
+  &quot;photoUrl&quot;: &quot;https://api-pdm.sublimecipher.com/media/be622df7-cfa6-45fb-bd71-c6cd92a763cf.jpg&quot;,
+  &quot;author&quot;: {
+    &quot;clientId&quot;: &quot;pdm-ab12cd&quot;,
+    &quot;name&quot;: &quot;Maria Silva&quot;
+  },
+  &quot;mine&quot;: true,
+  &quot;createdAt&quot;: &quot;2026-10-13T09:59:43.115515Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-10-13T09:59:43.115515Z&quot;
+}</code></pre>
+<pre data-title="POST /v1/reports · só texto"><code class="language-http">POST /v1/reports
+Authorization: Bearer ...
+Content-Type: application/json
+
+{
+  &quot;islandId&quot;: &quot;faial&quot;,
+  &quot;text&quot;: &quot;Céu limpo na Horta, mar calmo.&quot;
+}</code></pre>
+<pre data-title="POST /v1/reports · texto e fotografia"><code class="language-http">POST /v1/reports
+Authorization: Bearer ...
+Content-Type: multipart/form-data
+
+islandId = faial
+text     = Céu limpo na Horta, mar calmo.
+photo    = (ficheiro JPEG, PNG ou WebP)</code></pre>
+<pre data-title="PUT /v1/reports/{id}"><code class="language-http">PUT /v1/reports/e7e97972-2db3-47d0-a817-6912481e64ad
+Authorization: Bearer ...
+Content-Type: application/json
+
+{
+  &quot;text&quot;: &quot;Afinal começou a chover às 17h.&quot;
+}</code></pre>
+<ul>
+  <li><code>POST</code> responde <code>201</code> com o relato criado; <code>PUT</code> responde <code>200</code> com o relato alterado; <code>DELETE</code> responde <code>204</code>, sem corpo.</li>
+  <li>O texto tem de 1 a 500 caracteres. A fotografia tem até 8 MB; a API reduz para 1280 px no lado maior e grava em JPEG.</li>
+  <li>Alterar ou apagar um relato que não é teu dá <code>403</code>.</li>
+</ul>
+
+<h2>Erros</h2>
+<p>Quando algo corre mal, o código HTTP diz o tipo de erro e o corpo explica-o em português:</p>
+<pre data-title="GET /v1/islands/atlantida · 404"><code class="language-json">{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;not_found&quot;,
+    &quot;message&quot;: &quot;Não há nenhuma ilha com o id \&quot;atlantida\&quot;.&quot;
+  }
+}</code></pre>
+<div class="table-wrap"><table>
+<thead><tr><th>Código</th><th>Quando</th><th>O que a app deve fazer</th></tr></thead>
+<tbody>
+<tr><td><code>400</code></td><td>Pedido inválido: campo em falta, texto vazio ou longo, fotografia que não é imagem</td><td>Mostrar a <code>message</code> ao utilizador</td></tr>
+<tr><td><code>401</code></td><td>Sem token, token inválido ou expirado</td><td>Pedir um token novo e repetir o pedido</td></tr>
+<tr><td><code>403</code></td><td>O relato não é teu</td><td>Não mostrar editar e apagar nos relatos dos outros (<code>mine</code>)</td></tr>
+<tr><td><code>404</code></td><td>A ilha, o trilho ou o relato não existe</td><td>Mostrar "não encontrado"</td></tr>
+<tr><td><code>413</code></td><td>Fotografia com mais de 8 MB</td><td>Reduzir a fotografia antes de enviar</td></tr>
+<tr><td><code>502</code></td><td>O IPMA não respondeu</td><td>Mostrar um erro com "Tentar outra vez"</td></tr>
+</tbody></table></div>
+
+<h2>Em Dart</h2>
+<p>Com o pacote <a href="https://pub.dev/packages/http" target="_blank" rel="noopener">http</a> (<code>flutter pub add http</code>). Os exemplos foram testados contra a API.</p>
+<pre data-title="Obter o token"><code class="language-dart">import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+const base = 'https://api-pdm.sublimecipher.com';
+
+Future&lt;String&gt; getToken(String clientId, String clientSecret) async {
+  final res = await http.post(
+    Uri.parse('$base/v1/auth/token'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'clientId': clientId, 'clientSecret': clientSecret}),
+  );
+  if (res.statusCode != 200) {
+    throw Exception(jsonDecode(res.body)['error']['message']);
+  }
+  return jsonDecode(res.body)['accessToken'];
+}</code></pre>
+<pre data-title="GET com o token"><code class="language-dart">final res = await http.get(
+  Uri.parse('$base/v1/islands/faial/forecast'),
+  headers: {'Authorization': 'Bearer $token'},
+);
+final days = jsonDecode(res.body)['days'] as List&lt;dynamic&gt;;</code></pre>
+<pre data-title="POST com fotografia (multipart)"><code class="language-dart">final req = http.MultipartRequest('POST', Uri.parse('$base/v1/reports'))
+  ..headers['Authorization'] = 'Bearer $token'
+  ..fields['islandId'] = 'faial'
+  ..fields['text'] = 'Céu limpo na Horta, mar calmo.'
+  ..files.add(await http.MultipartFile.fromPath('photo', file.path));
+final res = await http.Response.fromStream(await req.send());
+// 201: jsonDecode(res.body) é o relato criado, com photoUrl</code></pre>
+<pre data-title="PUT do texto"><code class="language-dart">final res = await http.put(
+  Uri.parse('$base/v1/reports/$id'),
+  headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+  body: jsonEncode({'text': 'Afinal começou a chover às 17h.'}),
+);</code></pre>
+<p>No Chrome, <code>MultipartFile.fromPath</code> não funciona (não há sistema de ficheiros): usa <code>MultipartFile.fromBytes('photo', bytes, filename: 'foto.jpg')</code> com os bytes que o seletor de imagens devolve.</p>
 
 <h2>Regras de uso</h2>
 <ul>
-  <li>Cada grupo tem um client-id. Não o partilhes com outros grupos; os pedidos ficam registados por grupo.</li>
-  <li>Envia sempre os headers <code>X-Platform</code> (android, ios ou web) e <code>X-App-Version</code>.</li>
-  <li>Há limite de pedidos por minuto. Faz cache do lado da app: previsões não mudam a cada segundo.</li>
-  <li>O docente pode ligar o <em>modo caos</em> para o teu grupo: latência, respostas 429 e 500 aleatórias. A tua app deve continuar utilizável.</li>
+  <li>As credenciais são pessoais. Os pedidos ficam registados com o teu nome, e os relatos que publicares aparecem com ele à turma toda.</li>
+  <li>Os relatos são públicos dentro da turma: escreve como escreverias num grupo da turma. O docente pode apagar qualquer relato.</li>
+  <li>Faz cache do lado da app: a previsão só muda de 30 em 30 minutos, não precisas de a pedir a cada ecrã.</li>
+  <li>Se perderes o <code>clientSecret</code>, pede ao docente um novo.</li>
 </ul>
 
 <nav class="pager" id="pager"></nav>
@@ -56,6 +251,8 @@
 </div>
 
 <footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
