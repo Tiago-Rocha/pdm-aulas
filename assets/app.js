@@ -16,7 +16,7 @@
     { n: 8, d: "2026-10-06", h: "08:30-11:30", t: "Estado: do setState às arquiteturas", te: "State: from setState to architectures", repo: "pdm-aula-08", kind: "" },
     { n: 9, d: "2026-10-07", h: "16:00-18:00", t: "Navegação", te: "Navigation", repo: "pdm-aula-09", kind: "" },
     { n: 10, d: "2026-10-12", h: "16:00-18:00", t: "Navegação a fundo e mini-projeto", te: "Navigation in depth and mini-project", repo: "pdm-aula-10", kind: "" },
-    { n: 11, d: "2026-10-13", h: "08:30-10:30", t: "Qualidade: lints, organização e git flow", te: "Quality: lints, organisation and git flow", repo: "pdm-aula-11", kind: "" },
+    { n: 11, d: "2026-10-13", h: "08:30-10:30", t: "Acessibilidade e mini-projeto", te: "Accessibility and mini-project", repo: "pdm-aula-11", kind: "" },
     { n: 12, d: "2026-10-14", h: "16:00-18:00", t: "Network layer e a API do curso", te: "Network layer and the course API", repo: "pdm-aula-12", kind: "" },
     { n: 13, d: "2026-10-19", h: "16:00-18:00", t: "Arquitetura por camadas e gestão de estado", te: "Layered architecture and state management", repo: "pdm-aula-13", kind: "" },
     { n: 14, d: "2026-10-20", h: "08:30-10:30", t: "Resiliência: estados de UI, retry e modo caos", te: "Resilience: UI states, retry and chaos mode", repo: "pdm-aula-14", kind: "" },
