@@ -26,18 +26,17 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 11 · Week 6 · Tuesday, 13 October 2026 · 08:30 to 10:30</p>
   <h1>Accessibility and mini-project</h1>
-  <p class="lead">Theory: what makes an app usable for people who do not see well, use large text or a screen reader. Practice: three accessibility fixes in Tempo Açores and, after that, the Trilhos mini-project.</p>
-  <div class="meta"><span>Repository: pdm-aula-11</span></div>
-  <aside class="notes">Two-hour lesson. Reference times: theory until 09:00; the three steps until 09:30; mini-project until the end. The mini-project is still due tomorrow, Wednesday, at 16:00. Accessibility does not count towards the mini-project grade, but applying it to the Trilhos app is a good extra.</aside>
+  <p class="lead">Part one: accessibility in mobile, at a high level, and a video. Part two: carry on with the Trilhos mini-project, which is due tomorrow.</p>
+    <aside class="notes">Two-hour lesson. Reference times: theory and video until 09:15; mini-project until the end. The mini-project is still due tomorrow, Wednesday, at 16:00. Accessibility does not count towards the mini-project grade, but applying it to the Trilhos app is a good extra.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
     <li>Explain why accessibility is mandatory and what ignoring it costs.</li>
-    <li>Make a screen survive the phone's large text.</li>
-    <li>Give the screen reader sentences that make sense: <code>Semantics</code>, <code>semanticLabel</code> and <code>tooltip</code>.</li>
-    <li>Check all of this in Chrome, without needing TalkBack.</li>
+    <li>Recognise who benefits: permanent, temporary and situational disabilities.</li>
+    <li>Name the four rules that matter most in an app: large text, screen reader, buttons with a name, colour and contrast.</li>
+    <li>Test an app with TalkBack or VoiceOver and with the text at maximum.</li>
   </ul>
 </section>
 
@@ -54,13 +53,28 @@
 </section>
 
 <section class="slide">
+  <h2>Who it is for</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Permanent</th><th>Temporary</th><th>Situational</th></tr></thead>
+    <tbody>
+      <tr><td><strong>See</strong></td><td>Blindness, low vision</td><td>Eye surgery</td><td>Screen in the sun</td></tr>
+      <tr><td><strong>Move</strong></td><td>One arm</td><td>Broken arm</td><td>Holding a baby, one hand free</td></tr>
+      <tr><td><strong>Hear</strong></td><td>Deafness</td><td>Ear infection</td><td>Noisy café, no headphones</td></tr>
+      <tr><td><strong>Understand</strong></td><td>Dyslexia</td><td>Tiredness, medication</td><td>Distracted, in the middle of something else</td></tr>
+    </tbody>
+  </table></div>
+  <p>Designing for the permanent case solves the other two. An app that works one-handed and with your eyes closed works for everyone.</p>
+  <aside class="notes">This table comes from Microsoft's "Inclusive Design Toolkit". Ask the class which row they were in this week: almost everyone has been in the situational column (sun, one hand, noise). Video captions are the classic example: designed for deaf people, and today most people watch videos with the sound off.</aside>
+</section>
+
+<section class="slide">
   <h2>What matters, in four rules</h2>
   <div class="table-wrap"><table>
     <thead><tr><th>Rule</th><th>Minimum</th><th>In Tempo Açores</th></tr></thead>
     <tbody>
-      <tr><td><strong>Large text</strong>: nothing gets cut off</td><td>text at 200%</td><td>The row of days has a fixed height and breaks (step 1)</td></tr>
-      <tr><td><strong>Screen reader</strong>: everything has a name and reads as a sentence</td><td>TalkBack, VoiceOver</td><td>A day is read in pieces; the photos say nothing (step 2)</td></tr>
-      <tr><td><strong>Icon-only buttons</strong> have a name</td><td><code>tooltip</code></td><td>The search ✕ only says "button" (step 3)</td></tr>
+      <tr><td><strong>Large text</strong>: nothing gets cut off</td><td>text at 200%</td><td>Fixed heights around text break: <code>Wrap</code> instead of <code>Row</code></td></tr>
+      <tr><td><strong>Screen reader</strong>: everything has a name and reads as a sentence</td><td>TalkBack, VoiceOver</td><td><code>Semantics(label: ...)</code> and <code>semanticLabel</code> on images</td></tr>
+      <tr><td><strong>Icon-only buttons</strong> have a name</td><td><code>tooltip</code></td><td>Without a <code>tooltip</code>, the reader only says "button"</td></tr>
       <tr><td><strong>Colour is never the only signal</strong>; contrast and touch targets</td><td>4.5:1 and 48 dp</td><td><code>ColorScheme.fromSeed</code> and the Material widgets already comply</td></tr>
     </tbody>
   </table></div>
@@ -73,79 +87,10 @@
   <ul>
     <li><strong>On the phone:</strong> TalkBack on Android (Settings, Accessibility) or VoiceOver on iPhone (triple-click the side button). With the reader on, tap once to hear and twice to activate.</li>
     <li><strong>Large text:</strong> in the phone settings, font size at maximum.</li>
-    <li><strong>Today, in Chrome:</strong> the app has two switches in the Definições tab. <strong>Letra grande (200%)</strong> simulates the maximum text size; <strong>Mostrar semântica</strong> draws over each area what the screen reader reads.</li>
+    <li><strong>In Flutter:</strong> <code>showSemanticsDebugger: true</code> on <code>MaterialApp</code> draws over each area what the screen reader reads. It works in Chrome.</li>
   </ul>
   <div class="callout"><strong>Ask the class</strong> Five minutes with your eyes closed and TalkBack on: what do you think will go worst?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> Usually: icons without a name ("button, button, button"), images that say the file name or nothing, and cards read in pieces ("Seg", "23 degrees") with no sense that they belong together. These are exactly today's three steps. If you have an Android at hand, demo it with TalkBack: it is the moment that sticks.</aside>
-</section>
-
-<section class="slide" data-part="Practice">
-  <h2>Getting started</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-11.git
-cd pdm-aula-11
-flutter pub get</code></pre>
-  <ol class="steps">
-    <li>Open the <code>pdm-aula-11</code> folder in VS Code, pick your Android or <strong>Chrome</strong>, and <kbd>F5</kbd>.</li>
-    <li>Go to <strong>Definições</strong> and turn on <strong>Letra grande (200%)</strong>. Back in Previsão: the row of days breaks, with yellow and black stripes.</li>
-    <li>Turn large text off and turn on <strong>Mostrar semântica</strong>. Each area shows what the screen reader would say.</li>
-  </ol>
-  <p>It is Tempo Açores from lesson 9, without the trails. The mini-project carries on in your <code>pdm-miniprojeto</code> repository.</p>
-  <aside class="notes">With Mostrar semântica on, taps go through the semantics debugger; to turn it off, tap the switch again (or hot restart). The steps are in the branches <code>passo-1</code> to <code>passo-3</code>.</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 1: large text</h2>
-<pre data-title="lib/forecast_screen.dart · DaysRow, in branch passo-1"><code class="language-dart">// with large text the chips grow, so the row grows with them
-final scale = MediaQuery.textScalerOf(context).scale(16) / 16;
-return SizedBox(
-  height: 96 * scale,
-  child: ListView.separated(</code></pre>
-  <ul>
-    <li><code>MediaQuery.textScalerOf(context)</code> says how much the user enlarged the text. <code>scale(16) / 16</code> gives the factor: 1 normally, 2 with text at 200%.</li>
-    <li>A fixed height around text (<code>SizedBox(height: 96)</code>) is the most common cause of cut-off text.</li>
-  </ul>
-  <div class="callout task"><strong>Do it</strong> Multiply by the factor the row height in <code>DaysRow</code> (<code>forecast_screen.dart</code>) and the width of <code>DayChip</code> (<code>day_chip.dart</code>, <code>width: 72 * scale</code>).</div>
-  <p><strong>In the app:</strong> with large text on, the days get bigger and the yellow and black stripes are gone.</p>
-  <aside class="notes">The cleaner alternative is not to fix heights at all: let the content decide. Here the row is horizontal and needs a height, so it scales. In the mini-project, the <code>Wrap</code> on the distance and duration row does the same job: if it does not fit, it moves to the next line.</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 2: the screen reader reads sentences</h2>
-<pre data-title="lib/day_chip.dart · in branch passo-2"><code class="language-dart">// read as one sentence, not as three loose pieces
-return Semantics(
-  label:
-      '${forecast.weekday}, ${forecast.type.description}, '
-      'máxima ${forecast.tMax.round()} graus',
-  child: ExcludeSemantics(
-    child: SizedBox(</code></pre>
-<pre data-title="lib/island_card.dart · in branch passo-2"><code class="language-dart">child: Image.asset(
-  island.image,
-  fit: BoxFit.cover,
-  excludeFromSemantics: true, // the name below already says it
-),</code></pre>
-  <ul>
-    <li><code>Semantics(label: ...)</code> gives the reader one sentence; <code>ExcludeSemantics</code> silences the pieces inside, so nothing is read twice.</li>
-    <li>An image that carries information gets a <code>semanticLabel</code>; a decorative image, or one repeated by the text next to it, gets <code>excludeFromSemantics: true</code>.</li>
-  </ul>
-  <div class="callout task"><strong>Do it</strong> Wrap <code>DayChip</code> as above. In <code>island_card.dart</code>, the image is left out of the semantics. In <code>island_screen.dart</code>, the big photo gets <code>semanticLabel: 'Fotografia da ilha ${island.name}'</code>.</div>
-  <p><strong>In the app:</strong> with Mostrar semântica, each day says "Seg, Parcialmente nublado, máxima 23 graus".</p>
-  <aside class="notes">Typical mistake: forgetting <code>ExcludeSemantics</code>, so the reader reads the sentence and then the pieces again. Another: a <code>semanticLabel</code> equal to the name already written below it, so the reader says "Pico, Pico".</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 3: icon-only buttons have a name</h2>
-<pre data-title="lib/forecast_screen.dart · the search, in branch passo-3"><code class="language-dart">: IconButton(
-    icon: const Icon(Icons.clear),
-    tooltip: 'Limpar pesquisa', // read by the screen reader
-    onPressed: () =&gt; setState(_search.clear),
-  ),</code></pre>
-  <ul>
-    <li>The <code>tooltip</code> is read by the screen reader and shows on a long press. Without it, the reader only says "button".</li>
-    <li>The <code>AppBar</code> back arrow already has a name: Flutter handles it.</li>
-  </ul>
-  <div class="callout task"><strong>Do it</strong> Type "pi" in the search and add the <code>tooltip</code> to the ✕ button that appears.</div>
-  <p><strong>In the app:</strong> a long press on the ✕ shows "Limpar pesquisa"; with Mostrar semântica, the button says the same.</p>
-  <aside class="notes">After the three steps, challenge them to apply the same to the mini-project: a <code>tooltip</code> on any <code>IconButton</code>, the trail detail photo with a <code>semanticLabel</code>, and the distance, duration and difficulty row surviving large text. It does not count towards the grade, but it is exactly what a company would ask for.</aside>
+  <aside class="notes"><strong>Answers to the questions.</strong> Usually: icons without a name ("button, button, button"), images that say the file name or nothing, and cards read in pieces ("Seg", "23 degrees") with no sense that they belong together. These are the three problems in the previous table. If you have an Android at hand, demo it with TalkBack: it is the moment that sticks.</aside>
 </section>
 
 <section class="slide" data-part="Mini-project">
@@ -154,7 +99,7 @@ return Semantics(
     <li>Go back to your <code>pdm-miniprojeto</code> repository and carry on with the tasks from <a href="aula-10.html">lesson 10</a>.</li>
     <li>Commit and Sync after each finished task.</li>
     <li><strong>Deadline: tomorrow, Wednesday, 14 October, at 16:00.</strong> What counts is the last commit on GitHub at that time.</li>
-    <li>If you finish the four tasks: apply what we did today to the mini-project.</li>
+    <li>If you finish the four tasks: turn on TalkBack and try to use your app with your eyes closed.</li>
   </ul>
   <aside class="notes">Yesterday, at the end of class, Task 1 was at 7 of 10 and Task 2 at 3 of 10; nobody had Tasks 3 and 4 yet. The repository dashboard shows the progress: ask Claude to update it during class.</aside>
 </section>
