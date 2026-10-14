@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 12 · Network layer e a API do curso · PDM</title>
+<title>Aula 12 · Futures, HTTP e JSON · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,46 +25,84 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 12 · Semana 6 · Quarta, 14 de outubro de 2026 · 16:00 às 18:00</p>
-  <h1>Network layer e a API do curso</h1>
-  <p class="lead">Teoria: camada de rede: HTTP, JSON, códigos de estado, timeouts, retries e interceptors; catálogo de APIs e OpenAPI. Prática: ligação da app à API do curso e apresentação das localidades dos Açores obtidas do servidor.</p>
-  <div class="meta"><span>Repositório: pdm-aula-12</span></div>
-  <aside class="notes">Antes de começar, abre o Swagger da API no projetor e confirma que responde. Pergunta quem já usou fetch ou axios na web: quase todos. O que muda em mobile (rede intermitente, bateria, app suspensa a meio de um pedido) é o fio condutor dos primeiros 10 minutos. O client-id da turma só vai para o quadro na parte prática.</aside>
+  <h1>Futures, HTTP e JSON</h1>
+  <p class="lead">Como uma app vai buscar dados a um servidor sem congelar: <code>Future</code> e <code>async</code>/<code>await</code>, pedidos HTTP, JSON convertido em objetos Dart e o <code>FutureBuilder</code>. Pelo meio, lemos juntos a documentação Swagger da API do curso e experimentamos pedidos no browser.</p>
+  <aside class="notes">Aula de teoria, sem prática dos alunos nem trabalho para casa. Tempos de referência: Future e HTTP até às 16:30; API do curso e Swagger até às 16:45; prática no Swagger (parte 1, o token, até às 16:55; parte 2, caça ao erro e correção, até às 17:25); JSON, parsing, FutureBuilder e Streams até ao fim. Hoje os alunos não escrevem código: usam a API no browser ou no Postman. A entrega do mini-projeto Trilhos fechou às 16:00, no início desta aula.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Explicar os métodos HTTP, os códigos de estado mais comuns e o que a app deve fazer com cada um.</li>
-    <li>Distinguir REST, GraphQL, gRPC e WebSockets e dizer quando cada um aparece em mobile.</li>
-    <li>Ler um contrato OpenAPI e usar o Swagger UI para experimentar a API do curso.</li>
-    <li>Fazer pedidos HTTP em Flutter, converter JSON em modelos Dart e mostrar o resultado com <code>FutureBuilder</code>.</li>
-    <li>Centralizar base URL, headers e timeout num <code>ApiClient</code> único.</li>
+    <li>Explicar o que é um <code>Future</code> e porque um pedido à rede nunca pode bloquear a app.</li>
+    <li>Ler um pedido e uma resposta HTTP: método, URL, headers, corpo e código de estado.</li>
+    <li>Ler a documentação Swagger de uma API: operações, parâmetros, respostas, schemas e erros.</li>
+    <li>Converter JSON em objetos Dart com <code>fromJson</code> e saber onde o parsing costuma partir.</li>
+    <li>Mostrar dados da rede com <code>FutureBuilder</code>: a carregar, erro e dados.</li>
+    <li>Distinguir um <code>Future</code> (um valor) de uma <code>Stream</code> (muitos valores ao longo do tempo).</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Teoria">
-  <h2>HTTP em 10 minutos (1 de 2): métodos e idempotência</h2>
+<section class="slide" data-part="Future">
+  <h2>Um valor que ainda não chegou</h2>
+  <ul>
+    <li>Um pedido à rede demora 50 ms no Wi-Fi da escola e 5 s num túnel. A app não pode ficar parada à espera.</li>
+    <li>O Dart corre a tua app numa só linha de execução, que também desenha o ecrã. Se ela esperar, o ecrã congela: nem scroll, nem animações, nem toques.</li>
+    <li>Por isso <code>http.get</code> não devolve a resposta: devolve um <code>Future&lt;Response&gt;</code>, uma promessa de que a resposta vem mais tarde.</li>
+    <li>Um <code>Future</code> está num de três estados: <strong>por completar</strong>, <strong>completo com um valor</strong> ou <strong>completo com um erro</strong>.</li>
+  </ul>
+<pre data-title="a ordem em que as coisas acontecem"><code class="language-dart">print('1. antes do pedido');
+final future = http.get(url); // o pedido parte, a app continua
+print('2. o pedido já partiu');
+final response = await future; // aqui a função para até chegar a resposta
+print('3. chegou: ${response.statusCode}');</code></pre>
+  <div class="callout"><strong>Pergunta à turma</strong> Enquanto esta função está parada no <code>await</code>, o utilizador consegue fazer scroll na app?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Sim. O <code>await</code> suspende esta função, não a app: a linha de execução volta ao event loop e continua a desenhar frames e a tratar toques. Quando a resposta chega, a função retoma na linha seguinte. É igual ao <code>async</code>/<code>await</code> do JavaScript, que muitos já usaram com <code>fetch</code>: um <code>Future</code> é uma <code>Promise</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2><code>async</code> e <code>await</code></h2>
+<pre data-title="lib/api.dart · fetchIslands, resumida"><code class="language-dart">Future&lt;List&lt;Island&gt;&gt; fetchIslands(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/v1/islands'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  final list = jsonDecode(response.body) as List&lt;dynamic&gt;;
+  return list
+      .map((item) =&gt; Island.fromJson(item as Map&lt;String, dynamic&gt;))
+      .toList();
+}</code></pre>
+  <ul>
+    <li><code>async</code> marca a função: ela devolve sempre um <code>Future</code>, mesmo que o <code>return</code> devolva uma lista.</li>
+    <li><code>await</code> só se usa dentro de uma função <code>async</code>. Lê-se de cima para baixo como código normal.</li>
+    <li>Um erro dentro da função (sem rede, JSON errado) completa o <code>Future</code> com erro. Apanha-se com <code>try</code>/<code>catch</code> à volta do <code>await</code>.</li>
+    <li>Esquecer o <code>await</code> é o erro mais comum: ficas com um <code>Future</code> na mão em vez da resposta.</li>
+  </ul>
+  <aside class="notes">Mostra o erro de esquecer o await: <code>final response = http.get(...)</code> e depois <code>response.body</code> não compila, porque <code>Future</code> não tem <code>body</code>. O compilador apanha a maior parte destes casos; o caso perigoso é uma função que devolve <code>Future&lt;void&gt;</code> chamada sem <code>await</code>, que corre "em paralelo" sem ninguém ver o erro. A lint <code>unawaited_futures</code> avisa.</aside>
+</section>
+
+<section class="slide" data-part="HTTP">
+  <h2>HTTP em 10 minutos (1 de 2): pedido e resposta</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 310" role="img" aria-label="Anatomia de HTTP: um pedido com método, URL, headers e corpo vai ao servidor, que responde com código de estado, headers e corpo JSON; ao lado, as famílias 2xx, 4xx, 429 e 5xx">
-    <rect x="30" y="30" width="310" height="120" rx="10" class="box accent"/>
+  <svg viewBox="0 0 900 310" role="img" aria-label="Anatomia de HTTP: um pedido com método, URL e headers vai à API do curso, que responde com código de estado, headers e corpo JSON; ao lado, as famílias de códigos 2xx, 4xx, 429 e 5xx">
+    <rect x="30" y="30" width="330" height="120" rx="10" class="box accent"/>
     <text x="45" y="54" class="t b">Pedido</text>
-    <text x="45" y="76" class="t mono">GET /v1/forecast/12 HTTP/1.1</text>
-    <text x="45" y="96" class="t mono">Authorization: Bearer &lt;token&gt;</text>
+    <text x="45" y="76" class="t mono">GET /v1/islands/pico/forecast</text>
+    <text x="45" y="96" class="t mono">Authorization: Bearer eyJ0eX...</text>
     <text x="45" y="116" class="t mono">Accept: application/json</text>
     <text x="45" y="138" class="t s">corpo: vazio num GET, JSON num POST</text>
-    <path d="M340 90 L398 90" class="arrow accent"/>
+    <path d="M360 90 L398 90" class="arrow accent"/>
     <polygon points="385,83 399,90 385,97" class="ah accent"/>
     <rect x="400" y="50" width="140" height="200" rx="10" class="box"/>
     <text x="470" y="146" class="t b" text-anchor="middle">Servidor</text>
     <text x="470" y="166" class="t s" text-anchor="middle">API do curso</text>
-    <path d="M400 240 L342 240" class="arrow"/>
-    <polygon points="355,233 341,240 355,247" class="ah"/>
-    <rect x="30" y="180" width="310" height="120" rx="10" class="box ok"/>
+    <path d="M400 240 L362 240" class="arrow"/>
+    <polygon points="375,233 361,240 375,247" class="ah"/>
+    <rect x="30" y="180" width="330" height="120" rx="10" class="box ok"/>
     <text x="45" y="204" class="t b">Resposta</text>
     <text x="45" y="226" class="t mono">HTTP/1.1 200 OK</text>
     <text x="45" y="246" class="t mono">Content-Type: application/json</text>
-    <text x="45" y="266" class="t mono">ETag: "a1b2"</text>
-    <text x="45" y="288" class="t mono">corpo: {"temp": 21, "icone": "sol"}</text>
+    <text x="45" y="288" class="t mono">{"location": "Madalena", ...}</text>
+    <text x="45" y="266" class="t s">corpo:</text>
     <text x="590" y="54" class="t b">Códigos de estado</text>
     <rect x="590" y="70" width="280" height="44" rx="8" class="box ok"/>
     <text x="605" y="98" class="t b mono">2xx</text>
@@ -74,7 +112,7 @@
     <text x="660" y="154" class="t">erro do pedido</text>
     <rect x="590" y="182" width="280" height="44" rx="8" class="box accent"/>
     <text x="605" y="210" class="t b mono">429</text>
-    <text x="660" y="210" class="t">limite: espera</text>
+    <text x="660" y="210" class="t">demasiados pedidos</text>
     <rect x="590" y="238" width="280" height="44" rx="8" class="box danger"/>
     <text x="605" y="266" class="t b mono">5xx</text>
     <text x="660" y="266" class="t">erro do servidor</text>
@@ -82,33 +120,32 @@
   <figcaption>Pedido: método, URL, headers e corpo opcional. Resposta: código de estado, headers e corpo em JSON.</figcaption>
   </figure>
   <ul>
-    <li>Um pedido é <strong>método + URL + headers + corpo</strong> (opcional). A resposta é <strong>código + headers + corpo</strong>.</li>
-    <li><code>GET</code> lê e nunca altera. <code>POST</code> cria ou executa. <code>PUT</code> substitui. <code>PATCH</code> altera parte. <code>DELETE</code> apaga.</li>
-    <li><strong>Idempotente</strong>: repetir o pedido dá o mesmo resultado. <code>GET</code>, <code>PUT</code> e <code>DELETE</code> são; <code>POST</code> não é.</li>
-    <li>Por isso um <code>GET</code> que falhou pode ser repetido às cegas. Um <code>POST</code> repetido pode criar dois favoritos, ou cobrar duas vezes.</li>
-    <li>Exemplo real: a app do IPMA faz <code>GET</code> à previsão; um pagamento MB WAY é um <code>POST</code> que a app nunca repete sozinha.</li>
+    <li><code>GET</code> lê e nunca altera. <code>POST</code> cria. <code>PUT</code> substitui. <code>DELETE</code> apaga.</li>
+    <li><strong>Idempotente</strong>: repetir o pedido dá o mesmo resultado. <code>GET</code>, <code>PUT</code> e <code>DELETE</code> são; <code>POST</code> não é. Um <code>GET</code> que falhou pode repetir-se; um <code>POST</code> repetido pode criar dois relatos, ou cobrar duas vezes.</li>
   </ul>
-  <p><strong>Para os testes:</strong> a idempotência decide o que a app pode repetir automaticamente quando a rede falha.</p>
-  <div class="callout"><strong>Analogia</strong> Um restaurante. O menu é a documentação da API (o contrato OpenAPI); o pedido é o request, com método, URL e headers; a cozinha é o servidor. O prato chega numa caixa etiquetada (a resposta JSON, <code>Content-Type: application/json</code>) com um código na tampa: 200 está tudo bem, 404 não há, 500 a cozinha avariou, 429 pedidos a mais. A app não come da caixa: tira o conteúdo para o prato, que é o modelo Dart.</div>
-  <aside class="notes">Pergunta: "se o pedido de pagamento deu timeout, o dinheiro saiu ou não?" A resposta é "não sabes", e é isso que torna o POST perigoso de repetir. Voltamos a isto na aula 14 com as chaves de idempotência.</aside>
+  <p><strong>Para os testes:</strong> a idempotência decide o que a app pode repetir sozinha quando a rede falha.</p>
+  <aside class="notes">Abre as ferramentas do Chrome (separador Network) numa página qualquer e mostra um pedido a sério: método, URL, headers, código e corpo. Os alunos de DAW já viram isto na web; em mobile é exatamente o mesmo protocolo. Pergunta: "se o pedido de pagamento deu timeout, o dinheiro saiu ou não?" A resposta é "não sabes", e é isso que torna o POST perigoso de repetir.</aside>
 </section>
 
 <section class="slide">
-  <h2>HTTP em 10 minutos (2 de 2): códigos, headers, JSON</h2>
+  <h2>HTTP em 10 minutos (2 de 2): códigos e erros</h2>
   <div class="table-wrap"><table>
   <thead><tr><th>Código</th><th>Significa</th><th>O que a app faz</th></tr></thead>
   <tbody>
-  <tr><td><strong>2xx</strong> (200, 201, 204)</td><td>Correu bem; 204 não traz corpo</td><td>Usa os dados</td></tr>
+  <tr><td><strong>200, 201, 204</strong></td><td>Correu bem; 201 criou; 204 não traz corpo</td><td>Usa os dados</td></tr>
   <tr><td><strong>400, 404, 422</strong></td><td>O pedido está errado ou o recurso não existe</td><td>Bug nosso ou estado vazio; não repetir</td></tr>
-  <tr><td><strong>401, 403</strong></td><td>Sem token válido / sem permissão</td><td>Renovar token ou fazer login; 403 não adianta repetir</td></tr>
-  <tr><td><strong>429</strong></td><td>Demasiados pedidos</td><td>Esperar o <code>Retry-After</code> e repetir</td></tr>
-  <tr><td><strong>5xx</strong></td><td>Erro do servidor</td><td>Repetir com backoff, mostrar dados antigos</td></tr>
+  <tr><td><strong>401, 403</strong></td><td>Sem token válido; sem permissão</td><td>401: pedir token novo; 403: não adianta repetir</td></tr>
+  <tr><td><strong>429</strong></td><td>Demasiados pedidos</td><td>Esperar e repetir mais tarde</td></tr>
+  <tr><td><strong>5xx</strong></td><td>Erro do servidor</td><td>Repetir mais tarde, mostrar dados antigos</td></tr>
   </tbody></table></div>
-  <ul>
-    <li>Headers do dia a dia: <code>Content-Type: application/json</code>, <code>Accept</code>, <code>Authorization</code>, <code>Cache-Control</code>, <code>ETag</code>.</li>
-    <li>O corpo é JSON em UTF-8: objetos, listas, números, strings, booleanos e <code>null</code>. Tudo o que vem de fora pode faltar.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> 4xx é culpa do pedido, 5xx é culpa do servidor, 429 não é culpa de ninguém: é um limite.</p>
+  <p>Na API do curso, quando algo corre mal o corpo explica o erro em português:</p>
+<pre data-title="GET /v1/islands/atlantida/forecast · 404"><code class="language-json">{
+  "error": {
+    "code": "not_found",
+    "message": "Não há nenhuma ilha com o id \"atlantida\"."
+  }
+}</code></pre>
+  <p><strong>Para os testes:</strong> 4xx é culpa do pedido, 5xx é culpa do servidor, 429 é um limite.</p>
 </section>
 
 <section class="slide">
@@ -116,283 +153,349 @@
   <div class="table-wrap"><table>
   <thead><tr><th></th><th>REST</th><th>GraphQL</th><th>gRPC</th><th>WebSockets</th></tr></thead>
   <tbody>
-  <tr><td>Formato</td><td>JSON sobre HTTP, um URL por recurso</td><td>Uma rota <code>/graphql</code>, query em JSON</td><td>Protobuf binário sobre HTTP/2</td><td>Canal aberto, bidirecional</td></tr>
-  <tr><td>Ponto forte</td><td>Simples, cache HTTP, ferramentas por todo o lado</td><td>O cliente pede só os campos que quer</td><td>Rápido, contratos gerados, streaming</td><td>Tempo real</td></tr>
-  <tr><td>Onde aparece em mobile</td><td>Quase tudo; a API do curso</td><td>Apps com muitos ecrãs diferentes (GitHub, Shopify)</td><td>Serviços internos, IoT, apps da Google</td><td>Chat, cotações, jogos, colaboração</td></tr>
-  <tr><td>Custo</td><td>Pedir a mais ou a menos (over/under-fetching)</td><td>Cache difícil, servidor mais complexo</td><td>Ferramentas, difícil de inspecionar</td><td>Bateria, reconexão, sem cache</td></tr>
+  <tr><td>Formato</td><td>JSON sobre HTTP, um URL por recurso</td><td>Uma rota <code>/graphql</code>, o cliente escreve a query</td><td>Protobuf binário sobre HTTP/2</td><td>Ligação aberta nos dois sentidos</td></tr>
+  <tr><td>Ponto forte</td><td>Simples, cache HTTP, ferramentas por todo o lado</td><td>O cliente pede só os campos que quer</td><td>Rápido, contratos gerados</td><td>O servidor envia quando há novidades</td></tr>
+  <tr><td>Em mobile</td><td>Quase tudo; a API do curso</td><td>Apps com muitos ecrãs (GitHub, Shopify)</td><td>Serviços internos, apps da Google</td><td>Chat, cotações, jogos, mapas ao vivo</td></tr>
+  <tr><td>Custo</td><td>Pedir dados a mais ou a menos</td><td>Cache difícil, servidor mais complexo</td><td>Difícil de inspecionar</td><td>Bateria, ligação que cai e volta</td></tr>
   </tbody></table></div>
-  <p><strong>Para os testes:</strong> REST é o predefinido em mobile; GraphQL resolve over-fetching; gRPC é binário e rápido; WebSockets são para tempo real.</p>
+  <p><strong>Para os testes:</strong> REST é o normal em mobile; GraphQL evita pedir dados a mais; gRPC é binário e rápido; WebSockets são para tempo real.</p>
+  <aside class="notes">Não aprofundar: é para reconhecerem os nomes.</aside>
 </section>
 
-<section class="slide">
-  <h2>Catálogo de APIs e OpenAPI</h2>
-  <ul>
-    <li><strong>Contrato:</strong> um ficheiro <code>openapi.yaml</code> descreve rotas, parâmetros, esquemas de dados e códigos de resposta. É a fonte de verdade.</li>
-    <li><strong>Swagger UI:</strong> página gerada a partir do contrato onde experimentas cada rota sem escrever código. A API do curso tem uma em <code>/docs</code>.</li>
-    <li><strong>Geração de clientes:</strong> <code>openapi-generator</code> produz o código Dart a partir do contrato. Nós escrevemos à mão para perceber o que está lá dentro.</li>
-    <li><strong>Versionamento no URL:</strong> <code>/v1</code>. Quando algo muda de forma incompatível nasce <code>/v2</code> e <code>/v1</code> vive mais uns meses. Vais migrar na aula 28.</li>
-    <li><strong>Catálogo:</strong> uma empresa tem dezenas de APIs (Apigee, Postman, Backstage). Como cliente, lês o contrato antes de escrever a primeira linha.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> código de cliente que não bate certo com o contrato OpenAPI é um bug do cliente.</p>
-  <aside class="notes">Mostra o Swagger da API do curso ao vivo: expande GET /v1/locations, carrega em "Try it out", mostra a resposta. Dois minutos que poupam muitas perguntas na prática.</aside>
-</section>
-
-<section class="slide">
-  <h2>Timeouts, retries e cancelamento</h2>
-  <ul>
-    <li>Na web, um pedido pendurado é uma tab que gira. Em mobile é uma app "morta" e uma avaliação de uma estrela.</li>
-    <li><strong>Timeout:</strong> sem ele um pedido pode esperar minutos. Valores típicos: 10 s para ligar, 15 a 30 s no total.</li>
-    <li><strong>Retry com backoff:</strong> 1 s, 2 s, 4 s, com aleatoriedade. Só para falhas transitórias (timeout, 5xx, 429) e só em pedidos idempotentes. Detalhe na aula 14.</li>
-    <li><strong>Cancelamento:</strong> o utilizador saiu do ecrã; a resposta chega para um widget que já não existe. É a origem do erro <em>setState() called after dispose()</em>.</li>
-    <li>Porquê mais em mobile: a rede muda (Wi-Fi para 4G a meio), túneis, ecrã bloqueado, o sistema suspende a app com o pedido a meio.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> timeout limita a espera, retry repete falhas transitórias, cancelamento evita trabalho para ecrãs que já não existem.</p>
-</section>
-
-<section class="slide">
-  <h2>Interceptors e cliente HTTP único</h2>
-  <ul>
-    <li>Um <strong>interceptor</strong> vê todos os pedidos e respostas num só sítio: acrescenta headers, regista logs, renova o token, mede tempos.</li>
-    <li>Headers comuns: <code>Authorization: Bearer …</code>, <code>X-Platform</code> (android/ios), <code>X-App-Version</code>. Permitem ao backend saber que versão está a falhar e onde.</li>
-    <li><strong>Um só cliente</strong> na app: reutiliza ligações (keep-alive), tem a configuração num sítio e troca-se por um fake nos testes.</li>
-    <li>Com <code>http</code>: uma subclasse de <code>BaseClient</code> que sobrepõe <code>send</code>. Com <code>dio</code>: <code>InterceptorsWrapper</code> com <code>onRequest</code>, <code>onResponse</code>, <code>onError</code>.</li>
-    <li>Logging só em debug. Um token impresso na consola de release acaba num crash report.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> o interceptor é o ponto único de passagem; é onde vivem autenticação, logs e retries.</p>
-</section>
-
-<section class="slide">
+<section class="slide" data-part="A API do curso">
   <h2>A API do curso</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 250" role="img" aria-label="Cadeia de chamadas: a app Flutter fala por HTTPS com token Bearer com a API do curso, uma FastAPI com autenticação, cache, favoritos, telemetria e modo caos; só a API chama o IPMA, com cache de 30 a 60 minutos">
-    <rect x="30" y="60" width="190" height="120" rx="10" class="box accent"/>
-    <text x="45" y="86" class="t b">App Flutter</text>
-    <text x="45" y="110" class="t s">token do grupo (JWT)</text>
-    <text x="45" y="130" class="t s">X-Platform, X-App-Version</text>
-    <text x="45" y="150" class="t s">um só ApiClient</text>
-    <path d="M220 96 L328 96" class="arrow accent"/>
-    <text x="275" y="84" class="t s" text-anchor="middle">HTTPS + Bearer</text>
-    <path d="M330 130 L222 130" class="arrow dashed"/>
+  <svg viewBox="0 0 900 230" role="img" aria-label="Cadeia de chamadas: a app Flutter fala por HTTPS, com token Bearer, com a API do curso, que autentica, guarda relatos e pede a previsão ao IPMA no máximo de 30 em 30 minutos">
+    <rect x="30" y="50" width="190" height="120" rx="10" class="box accent"/>
+    <text x="45" y="76" class="t b">App Flutter</text>
+    <text x="45" y="100" class="t s">clientId e clientSecret</text>
+    <text x="45" y="120" class="t s">trocados por um token</text>
+    <text x="45" y="140" class="t s">válido 1 hora</text>
+    <path d="M220 86 L328 86" class="arrow accent"/>
+    <polygon points="315,79 329,86 315,93" class="ah accent"/>
+    <text x="275" y="74" class="t s" text-anchor="middle">HTTPS + Bearer</text>
+    <path d="M330 130 L222 130" class="arrow"/>
+    <polygon points="235,123 221,130 235,137" class="ah"/>
     <text x="275" y="150" class="t s" text-anchor="middle">JSON</text>
-    <rect x="330" y="60" width="260" height="120" rx="10" class="box"/>
-    <text x="345" y="86" class="t b">API do curso · FastAPI</text>
-    <text x="345" y="110" class="t s">auth (JWT) · cache · favoritos</text>
-    <text x="345" y="130" class="t s">telemetria por grupo</text>
-    <text x="345" y="150" class="t s">modo caos: latência, 429, 500</text>
-    <path d="M590 96 L698 96" class="arrow"/>
-    <text x="645" y="84" class="t s" text-anchor="middle">cache 30–60 min</text>
-    <path d="M700 130 L592 130" class="arrow dashed"/>
-    <text x="645" y="150" class="t s" text-anchor="middle">JSON aberto</text>
-    <rect x="700" y="60" width="170" height="120" rx="10" class="box"/>
-    <text x="715" y="86" class="t b">IPMA</text>
-    <text x="715" y="110" class="t s">dados abertos</text>
-    <text x="715" y="130" class="t s">previsão, avisos,</text>
-    <text x="715" y="150" class="t s">sismos</text>
-    <rect x="30" y="200" width="840" height="34" rx="8" class="box muted"/>
-    <text x="450" y="222" class="t s" text-anchor="middle">A app nunca chama o IPMA diretamente: um só ponto de entrada, um só token, um só formato.</text>
+    <rect x="330" y="50" width="260" height="120" rx="10" class="box"/>
+    <text x="345" y="76" class="t b">API Tempo Açores</text>
+    <text x="345" y="100" class="t s">autenticação com JWT</text>
+    <text x="345" y="120" class="t s">ilhas, trilhos, relatos da turma</text>
+    <text x="345" y="140" class="t s">fotografias</text>
+    <path d="M590 86 L698 86" class="arrow"/>
+    <polygon points="685,79 699,86 685,93" class="ah"/>
+    <text x="645" y="74" class="t s" text-anchor="middle">de 30 em 30 min</text>
+    <path d="M700 130 L592 130" class="arrow"/>
+    <polygon points="605,123 591,130 605,137" class="ah"/>
+    <text x="645" y="150" class="t s" text-anchor="middle">previsão</text>
+    <rect x="700" y="50" width="170" height="120" rx="10" class="box"/>
+    <text x="715" y="76" class="t b">IPMA</text>
+    <text x="715" y="100" class="t s">dados abertos</text>
+    <text x="715" y="120" class="t s">previsão a 5 dias</text>
+    <rect x="30" y="190" width="840" height="34" rx="8" class="box muted"/>
+    <text x="450" y="212" class="t s" text-anchor="middle">A app nunca chama o IPMA diretamente: um só endereço, um só token, um só formato.</text>
   </svg>
-  <figcaption>A API do curso fica no meio: autentica, guarda em cache e conta pedidos. O IPMA só vê a API, nunca as apps.</figcaption>
+  <figcaption>A API do curso fica no meio: autentica, guarda em cache e junta os dados num formato só.</figcaption>
   </figure>
-  <p>Base URL <code>https://api.pdm.example</code> (URL real na página <a href="../api.html">API</a>). Swagger em <code>/docs</code>. Envolve os dados abertos do IPMA e acrescenta autenticação, favoritos e telemetria.</p>
   <div class="table-wrap"><table>
-  <thead><tr><th>Endpoint</th><th>Devolve</th></tr></thead>
+  <thead><tr><th>Pedido</th><th>Devolve</th></tr></thead>
   <tbody>
-  <tr><td><code>POST /v1/auth/token</code></td><td>JWT a partir de <code>client_id</code> e <code>secret</code> do grupo</td></tr>
-  <tr><td><code>GET /v1/locations</code></td><td>Localidades dos Açores com id, nome, ilha e coordenadas</td></tr>
-  <tr><td><code>GET /v1/forecast/{locationId}</code></td><td>Previsão a 5 dias de uma localidade</td></tr>
-  <tr><td><code>GET /v1/warnings</code> · <code>GET /v1/seismic</code></td><td>Avisos meteorológicos · sismos recentes</td></tr>
-  <tr><td><code>GET/POST/DELETE /v1/me/favorites</code></td><td>Favoritos do grupo autenticado (aula 17)</td></tr>
+  <tr><td><code>POST /v1/auth/token</code></td><td>O token, a partir do teu <code>clientId</code> e <code>clientSecret</code></td></tr>
+  <tr><td><code>GET /v1/islands</code></td><td>As nove ilhas, com a fotografia em <code>imageUrl</code></td></tr>
+  <tr><td><code>GET /v1/islands/{id}/forecast</code></td><td>A previsão a 5 dias do IPMA</td></tr>
+  <tr><td><code>GET /v1/trails</code> · <code>GET /v1/reports</code></td><td>Os trilhos · os relatos da turma</td></tr>
   </tbody></table></div>
-  <div class="callout"><strong>Transparência</strong> Cada pedido leva <code>Authorization: Bearer</code>, <code>X-Platform</code> e <code>X-App-Version</code>. O backend conta pedidos por grupo para dar feedback, não para avaliar por volume. O docente pode ligar um <strong>modo caos</strong> por grupo (latência, 429, 500): é assim que treinamos resiliência na aula 14.</div>
-  <aside class="notes">Deixa claro que o modo caos é anunciado e não é partida: os grupos sabem quando está ligado. Hoje usam-se o client-id e o segredo da turma; os de grupo chegam na aula 15.</aside>
+  <p>Endereço: <code>https://api-pdm.sublimecipher.com</code>. Documentação completa na página <a href="../api.html">API</a>; documentação interativa em <code>/docs</code>.</p>
+  <aside class="notes">A seguir vêm três slides sobre o Swagger. Se preferires, faz tudo ao vivo no projetor em vez das capturas.</aside>
+</section>
+
+<section class="slide" data-part="Swagger">
+  <h2>Ler o Swagger (1 de 4): o mapa da API</h2>
+  <figure class="shot medium"><img src="../assets/img/aula-12/swagger-1-geral.png" alt="Topo da página /docs da API Tempo Açores: título, versão 1.0.0, link para /openapi.json, as instruções de autenticação, o botão Authorize e as operações agrupadas em Autenticação e Ilhas e trilhos."></figure>
+  <ul>
+    <li>O Swagger é uma página gerada a partir do <strong>contrato OpenAPI</strong> (<code>/openapi.json</code>): um ficheiro que descreve cada rota, os parâmetros, os dados e os erros. É a fonte de verdade.</li>
+    <li>As operações vêm agrupadas por tema. Cada linha é um método e um caminho: <code>GET /v1/islands</code>.</li>
+    <li>O <strong>cadeado</strong> diz que a operação precisa de token. O botão <strong>Authorize</strong> guarda o token para todos os pedidos da página.</li>
+  </ul>
+  <aside class="notes">Abre <code>https://api-pdm.sublimecipher.com/docs</code> no projetor e percorre a página de cima a baixo: os quatro grupos (Autenticação, Ilhas e trilhos, Previsão, Relatos) e, no fim, a secção Schemas. Clica em <code>/openapi.json</code> para mostrarem que o Swagger é só uma forma bonita de ler esse ficheiro. Ferramentas como o openapi-generator geram o código do cliente a partir dele; nós escrevemos à mão para perceber o que lá está.</aside>
 </section>
 
 <section class="slide">
+  <h2>Ler o Swagger (2 de 4): uma operação</h2>
+  <figure class="shot"><img src="../assets/img/aula-12/swagger-2-parametros.png" alt="Operação GET /v1/islands/{id}/forecast aberta: o parâmetro id, obrigatório, do tipo string, no caminho, com o valor sao-miguel."></figure>
+  <ul>
+    <li><strong>Parameters</strong>: o que tens de mandar. <code>id</code> é obrigatório (<code>* required</code>), é texto e vai no caminho (<code>path</code>): <code>/v1/islands/sao-miguel/forecast</code>. Outros vão na query: <code>/v1/trails?islandId=faial</code>.</li>
+    <li><strong>Execute</strong> faz o pedido a sério (nesta página o Try it out já vem ligado). O Swagger mostra o <code>curl</code>, o URL, o código e o corpo da resposta.</li>
+    <li><strong>Responses</strong>: uma entrada por código possível (200, 401, 404, 502), cada uma com um exemplo. É a lista de casos que a tua app tem de tratar.</li>
+  </ul>
+  <aside class="notes">Ao vivo: Try it out em POST /v1/auth/token com a conta Docente (~/.config/pdm-api/docente.json; não mostres o segredo no ecrã), copia o accessToken, Authorize, e depois Execute em GET /v1/islands/pico/forecast. Mostra o curl gerado: é o mesmo pedido que o código Dart vai fazer, com o header Authorization. Atenção: o curl mostra o token no ecrã; dura uma hora e é só da conta Docente.</aside>
+</section>
+
+<section class="slide">
+  <h2>Ler o Swagger (3 de 4): o schema</h2>
+  <figure class="shot medium"><img src="../assets/img/aula-12/swagger-3-schema.png" alt="Separador Schema da resposta 200 de GET /v1/islands/{id}/forecast, na parte de cada dia (Day): date string com formato date; weatherType com id integer, description string e category string com o enum sunny, partlyCloudy, cloudy, rain, storm; tMin e tMax number; rainChance integer. Todos os campos com asterisco vermelho."></figure>
+  <ul>
+    <li><strong>Schema</strong> (ao lado de Example Value) é a forma exata da resposta. O <code>*</code> vermelho quer dizer que o campo vem sempre.</li>
+    <li>Os tipos dizem como ler cada campo em Dart: <code>string</code>, <code>integer</code>, <code>number</code>, objetos dentro de objetos (<code>{ }</code>) e listas (<code>[Day]</code>). <code>Enum</code> é a lista fechada de valores: dá um <code>enum</code> em Dart.</li>
+  </ul>
+  <aside class="notes">Liga ao modelo: este schema é, campo a campo, o <code>DayForecast</code> que vamos escrever daqui a pouco. Pergunta: "o tMin é integer ou number?" É number, por isso em Dart lê-se como <code>num</code> e passa a <code>double</code> (o slide "Onde o parsing parte" explica porquê). O <code>category</code> tem os mesmos cinco valores do enum <code>WeatherType</code> das aulas.</aside>
+</section>
+
+<section class="slide">
+  <h2>Ler o Swagger (4 de 4): os erros</h2>
+  <figure class="shot"><img src="../assets/img/aula-12/swagger-4-erro404.png" alt="Resposta 404, Não existe, com o exemplo de erro: code not_found e message Não há nenhuma ilha com o id atlantida."></figure>
+  <ul>
+    <li>Cada código que a operação pode devolver tem uma entrada: em <code>/v1/islands/{id}/forecast</code> são 200, 401, 404 e 502.</li>
+    <li>Os erros têm sempre a mesma forma: <code>code</code> para o programa decidir (<code>not_found</code>, <code>unauthorized</code>...), <code>message</code> para mostrar à pessoa.</li>
+    <li>A lista de códigos é a lista de casos que o ecrã tem de tratar. Se o Swagger diz que pode vir 502, a app tem de ter o que mostrar quando vier.</li>
+  </ul>
+  <aside class="notes">O 502 aparece quando o IPMA não responde e a API não tem previsão guardada: não é culpa da app nem do aluno, e a app deve dizer "tenta daqui a pouco". Os códigos possíveis da API estão todos na página API do site, na tabela de erros.</aside>
+</section>
+
+<section class="slide" data-part="Prática">
+  <h2>Parte 1: toda a gente com token</h2>
+  <div class="callout task"><strong>Faz</strong>
+    <ol>
+      <li>Abre <code>https://api-pdm.sublimecipher.com/docs</code>. O teu <code>clientId</code> e o teu <code>clientSecret</code> estão na issue #1 do teu repositório <code>pdm-miniprojeto</code>.</li>
+      <li>Abre <code>POST /v1/auth/token</code>, cola os dois no pedido e carrega em <strong>Execute</strong>. Tem de dar <strong>200</strong> e um <code>accessToken</code>.</li>
+      <li>Carrega em <strong>Authorize</strong> e cola <strong>só o token</strong>, sem a palavra "Bearer".</li>
+      <li>Abre <code>GET /v1/me</code> e carrega em Execute: tem de aparecer <strong>o teu nome</strong>. Quando aparecer, mão no ar.</li>
+    </ol>
+  </div>
+  <div class="callout tip"><strong>Com o Postman</strong> O mesmo endereço; no separador Authorization escolhe <em>Bearer Token</em> e cola o token. Mais rápido: no Swagger, copia o <code>curl</code> que aparece depois do Execute e, no Postman, carrega em Import e cola-o.</div>
+  <p>Ninguém passa à parte 2 sem o nome no ecrã.</p>
+  <aside class="notes">Dez minutos, e só se avança quando toda a gente tiver o nome no ecrã. Os problemas mais comuns: colar "Bearer eyJ..." no Authorize (o Swagger acrescenta o Bearer sozinho e fica "Bearer Bearer", que dá 401 "Token inválido."); trocar o clientId com o clientSecret (401 "clientId ou clientSecret errados."); copiar o token com aspas ou com espaços; esquecer o Authorize (401 "Falta o header Authorization..."). O token dura uma hora: chega para a aula. Quem não tiver a issue #1 no repositório não recebeu credenciais: usa <code>GET /admin/students</code> para confirmar.</aside>
+</section>
+
+<section class="slide">
+  <h2>Parte 2: caça ao erro</h2>
+  <p>A API tem agora <strong>erros de propósito</strong>: respostas que não cumprem o contrato do Swagger. Cada missão diz onde procurar; o erro encontras tu.</p>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Missão</th><th>Pedido</th><th>Pista</th></tr></thead>
+  <tbody>
+  <tr><td><strong>1</strong></td><td><code>GET /v1/islands</code></td><td>A descrição da operação diz quantas ilhas há. Conta as que chegam. Qual falta?</td></tr>
+  <tr><td><strong>2</strong></td><td><code>GET /v1/trails?islandId=faial</code></td><td>Chegam dois trilhos. Um tem um campo a menos. Qual, e o schema diz que é obrigatório?</td></tr>
+  <tr><td><strong>3</strong></td><td><code>GET /v1/trails?islandId=sao-miguel</code></td><td>Um campo tem o tipo errado. Compara cada valor com o tipo no Schema.</td></tr>
+  <tr><td><strong>4</strong></td><td><code>GET /v1/islands/pico/forecast</code></td><td>Um dia tem um valor que não está na lista <code>Enum</code> do schema.</td></tr>
+  <tr><td><strong>Extra</strong></td><td><code>GET /v1/reports</code></td><td>Sem pistas. Está tudo certo?</td></tr>
+  </tbody></table></div>
+  <p>Para cada erro, anota três coisas: <strong>o pedido</strong>, <strong>o que o contrato diz</strong> e <strong>o que chegou</strong>.</p>
+  <div class="callout"><strong>Pergunta à turma</strong> Quem tem de corrigir estes erros: a app ou o backend?</div>
+  <aside class="notes">Antes desta parte, liga os erros no portátil: <code>pdm-bugs on</code>. No fim da correção, <code>pdm-bugs off</code>. Vinte minutos de procura e dez de correção em conjunto, missão a missão, com o Swagger no projetor. As respostas estão em <code>~/.config/pdm-api/bugs-aula-12.md</code>, e não aqui, porque estas notas são visíveis a toda a gente. Na missão extra não há erro: também é uma resposta válida, e boa de ouvir. Se o feed estiver vazio (<code>[]</code>), também cumpre o contrato: uma lista vazia continua a ser uma lista.<br><br><strong>Resposta à pergunta.</strong> O backend, porque é ele que não cumpre o contrato. Quem encontra o erro reporta-o a quem mantém a API com o pedido, o que o contrato diz e o que chegou: exatamente as três coisas que anotaram. Uma app bem feita também se defende, e é isso que vem a seguir, quando passarmos o JSON para Dart.</aside>
+</section>
+
+<section class="slide" data-part="JSON">
   <h2>Do JSON ao objeto Dart</h2>
-  <p>A resposta chega como texto: uma <code>String</code> com JSON no corpo e <code>Content-Type: application/json</code> no header. Até ser um objeto que a app pode usar passa sempre pelos mesmos dois passos: descodificar e tipar.</p>
+  <p>A resposta chega como texto. Até ser um objeto que a app pode usar passa sempre pelos mesmos dois passos: descodificar e dar tipos.</p>
   <figure class="diagram">
-  <svg viewBox="0 0 900 220" role="img" aria-label="Cadeia de conversão em seis caixas: o corpo da resposta é uma String com JSON; jsonDecode transforma-a num Map ou List dinâmico; Previsao.fromJson converte esse mapa num objeto Previsao tipado; uma lista de Previsao alimenta os widgets">
+  <svg viewBox="0 0 900 220" role="img" aria-label="Cadeia de conversão: o corpo da resposta é uma String com JSON; jsonDecode transforma-a num Map ou List sem tipos; Island.fromJson converte esse mapa num objeto Island; uma lista de Island alimenta os widgets">
     <rect x="30" y="24" width="270" height="64" rx="10" class="box accent"/>
     <text x="44" y="46" class="t b mono">String</text>
     <text x="44" y="64" class="t s">corpo da resposta</text>
-    <text x="44" y="80" class="t s mono">Content-Type: application/json</text>
+    <text x="44" y="80" class="t s mono">response.body</text>
     <path d="M300 56 L338 56" class="arrow"/>
+    <polygon points="325,49 339,56 325,63" class="ah"/>
     <rect x="340" y="24" width="210" height="64" rx="10" class="box"/>
     <text x="354" y="46" class="t b mono">jsonDecode</text>
     <text x="354" y="64" class="t s mono">dart:convert</text>
-    <text x="354" y="80" class="t s">texto → estrutura dinâmica</text>
+    <text x="354" y="80" class="t s">de texto a estrutura</text>
     <path d="M550 56 L588 56" class="arrow"/>
+    <polygon points="575,49 589,56 575,63" class="ah"/>
     <rect x="590" y="24" width="280" height="64" rx="10" class="box"/>
     <text x="604" y="46" class="t b mono">Map&lt;String, dynamic&gt;</text>
     <text x="604" y="64" class="t s mono">ou List&lt;dynamic&gt;</text>
     <text x="604" y="80" class="t s">lê-se por chave; nada é verificado</text>
     <path d="M730 88 L730 110 L145 110 L145 130" class="arrow"/>
+    <polygon points="138,117 145,131 152,117" class="ah"/>
     <rect x="30" y="132" width="230" height="64" rx="10" class="box"/>
-    <text x="44" y="154" class="t b mono">Previsao.fromJson</text>
-    <text x="44" y="172" class="t s">factory: valida e constrói</text>
-    <text x="44" y="188" class="t s">FormatException se faltar algo</text>
+    <text x="44" y="154" class="t b mono">Island.fromJson</text>
+    <text x="44" y="172" class="t s">lê cada campo com o tipo</text>
+    <text x="44" y="188" class="t s">e falha logo se não bater</text>
     <path d="M260 164 L298 164" class="arrow"/>
+    <polygon points="285,157 299,164 285,171" class="ah"/>
     <rect x="300" y="132" width="190" height="64" rx="10" class="box ok"/>
-    <text x="314" y="154" class="t b mono">Previsao</text>
-    <text x="314" y="172" class="t s">objeto tipado</text>
-    <text x="314" y="188" class="t s">campos com o tipo certo</text>
+    <text x="314" y="154" class="t b mono">Island</text>
+    <text x="314" y="172" class="t s">objeto com tipos</text>
+    <text x="314" y="188" class="t s">o editor completa</text>
     <path d="M490 164 L528 164" class="arrow"/>
+    <polygon points="515,157 529,164 515,171" class="ah"/>
     <rect x="530" y="132" width="200" height="64" rx="10" class="box ok"/>
-    <text x="544" y="154" class="t b mono">List&lt;Previsao&gt;</text>
-    <text x="544" y="172" class="t s mono">.map(…).toList()</text>
+    <text x="544" y="154" class="t b mono">List&lt;Island&gt;</text>
+    <text x="544" y="172" class="t s mono">.map(...).toList()</text>
     <text x="544" y="188" class="t s">objetos, nunca texto</text>
     <path d="M730 164 L768 164" class="arrow"/>
+    <polygon points="755,157 769,164 755,171" class="ah"/>
     <rect x="770" y="132" width="100" height="64" rx="10" class="box accent"/>
     <text x="820" y="160" class="t b" text-anchor="middle">widgets</text>
     <text x="820" y="180" class="t s mono" text-anchor="middle">ListView</text>
   </svg>
-  <figcaption>Dois passos: <code>jsonDecode</code> passa de texto a estrutura dinâmica; <code>fromJson</code> passa de dinâmico a tipado. Daqui para a frente a app só vê objetos.</figcaption>
+  <figcaption><code>jsonDecode</code> passa de texto a uma estrutura sem tipos; <code>fromJson</code> passa a objetos com tipos. Daqui para a frente a app só vê objetos.</figcaption>
   </figure>
-<pre data-title="de texto a objeto"><code class="language-dart">// O corpo de GET /v1/forecast/3 é texto. Uma previsão, resumida:
-// {
-//   "locationId": 3,
-//   "atualizadoEm": "2026-10-12T15:00:00Z",
-//   "dias": [ { "data": "2026-10-12", "tMin": 17.2, "tMax": 22.8, "tipo": "chuva" } ]
-// }
-final corpo = utf8.decode(resposta.bodyBytes);        // String
-final previsao = Previsao.fromJson(                   // Previsao, tipada
-  jsonDecode(corpo) as Map&lt;String, dynamic&gt;,          // Map, sem tipos verificados
-);
-previsao.dias.first.tMin;                             // double, não dynamic</code></pre>
-  <div class="callout"><strong>Analogia</strong> JSON é texto com etiquetas, como um formulário preenchido à mão. <code>jsonDecode</code> transforma o texto num dicionário (<code>Map&lt;String, dynamic&gt;</code>): já se consegue ler por chave, mas nada é verificado. <code>Previsao.fromJson</code> passa o formulário a limpo para uma ficha tipada: cada campo no sítio certo, com o tipo certo, e um erro claro se faltar algo. A partir daí o resto da app trabalha com fichas, nunca com texto.</div>
-</section>
-
-<section class="slide" data-part="Prática">
-  <h2>Repositório da aula</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-12.git
-cd pdm-aula-12/starter
-flutter pub get
-flutter run</code></pre>
-  <ul>
-    <li><code>starter/</code> tem TODOs numerados de 1 a 5 e testes a falhar em <code>test/</code>. Cada TODO corresponde a um bloco desta prática.</li>
-    <li><code>solucao/</code> é o estado final. Consulta-a quando estiveres bloqueado mais de cinco minutos, não antes.</li>
-    <li>O <code>pubspec.yaml</code> já tem <code>http</code>. Confirma com <code>flutter pub deps | grep http</code>.</li>
-  </ul>
-  <div class="callout task"><strong>Primeiro pedido, sem código.</strong> Abre o Swagger em <code>/docs</code>, executa <code>GET /v1/locations</code> e lê a resposta. É essa forma que vamos converter em Dart.</div>
+  <aside class="notes">Os dois passos são sempre os mesmos, seja qual for a API. O <code>jsonDecode</code> não sabe nada da previsão nem das ilhas; quem sabe é o <code>fromJson</code>, que escrevemos para cada modelo.</aside>
 </section>
 
 <section class="slide">
-  <h2>O que a API devolve</h2>
-<pre data-title="GET /v1/locations"><code class="language-json">[
-  { "id": 3, "nome": "Ponta Delgada", "ilha": "São Miguel", "lat": 37.74, "lon": -25.67 },
-  { "id": 7, "nome": "Angra do Heroísmo", "ilha": "Terceira", "lat": 38.66, "lon": -27.22 }
-]</code></pre>
-<pre data-title="GET /v1/forecast/3"><code class="language-json">{
-  "locationId": 3,
-  "atualizadoEm": "2026-10-12T15:00:00Z",
-  "dias": [
-    { "data": "2026-10-12", "tMin": 17.2, "tMax": 22.8, "tipo": "chuva", "probPrecipitacao": 60 },
-    { "data": "2026-10-13", "tMin": 16.9, "tMax": 23.1, "tipo": "nublado", "probPrecipitacao": 20 }
-  ]
+  <h2>Uma ilha: do JSON ao <code>Island</code></h2>
+<pre data-title="GET /v1/islands, a primeira ilha"><code class="language-json">{
+  "id": "sao-miguel",
+  "name": "São Miguel",
+  "imageUrl": "https://api-pdm.sublimecipher.com/static/islands/sao_miguel.jpg",
+  "trailCount": 3
 }</code></pre>
-  <p>Uma lista de objetos e um objeto com uma lista dentro. Os nomes dos campos são os do contrato: se o contrato mudar, o nosso código tem de mudar com ele.</p>
-</section>
-
-<section class="slide">
-  <h2>1. Um pedido com o package <code>http</code></h2>
-<pre data-title="lib/data/localidades_api.dart"><code class="language-dart">import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-const baseUrl = 'https://api.pdm.example'; // URL real na página API
-
-Future&lt;List&lt;Localidade&gt;&gt; obterLocalidades() async {
-  final uri = Uri.parse('$baseUrl/v1/locations');
-  final resposta = await http.get(uri).timeout(const Duration(seconds: 10));
-
-  if (resposta.statusCode != 200) {
-    throw ApiException('GET /v1/locations devolveu ${resposta.statusCode}',
-        statusCode: resposta.statusCode);
-  }
-
-  final json = jsonDecode(utf8.decode(resposta.bodyBytes)) as List&lt;dynamic&gt;;
-  return json
-      .map((e) =&gt; Localidade.fromJson(e as Map&lt;String, dynamic&gt;))
-      .toList();
+<pre data-title="lib/models.dart · Island"><code class="language-dart">factory Island.fromJson(Map&lt;String, dynamic&gt; json) {
+  return Island(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    imageUrl: json['imageUrl'] as String,
+  );
 }</code></pre>
+  <aside class="notes">O <code>trailCount</code> vem no JSON e o modelo ignora-o: o <code>fromJson</code> lê só o que a app usa. Se a API acrescentar campos, a app não parte; se tirar ou mudar um que a app lê, parte. Pergunta frequente: "porque não uso json_serializable ou freezed?" Podes, no projeto: geram este código. Hoje escrevemos à mão para perceber o que o gerador faz.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Um pedido: o que interessa</h2>
-  <ul>
-    <li><code>http.get</code> devolve um <code>Future&lt;Response&gt;</code>. Só com <code>await</code> tens o <code>statusCode</code> e o <code>body</code>.</li>
-    <li><code>.timeout(…)</code> lança <code>TimeoutException</code> se a resposta não chegar. Sem isto, um túnel deixa a app à espera para sempre.</li>
-    <li><code>jsonDecode</code> devolve <code>dynamic</code>: uma <code>List</code> ou um <code>Map&lt;String, dynamic&gt;</code>. O <code>as</code> confirma o que esperas e falha cedo se não for.</li>
-    <li><code>utf8.decode(bodyBytes)</code> em vez de <code>body</code> evita acentos estragados quando o servidor não declara o charset.</li>
-    <li>Verifica sempre o código de estado antes de tocar no corpo. Um 500 também tem corpo, e não é o que esperas.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Escreve <code>obterAvisos()</code> para <code>GET /v1/warnings</code>, que devolve <code>List&lt;Aviso&gt;</code>. Imprime quantos avisos há. O modelo <code>Aviso</code> já existe no starter.</div>
-</section>
-
-<section class="slide">
-  <h2>2. Modelos a partir de JSON, com validação</h2>
-<pre data-title="lib/models/localidade.dart"><code class="language-dart">class Localidade {
-  final int id;
-  final String nome;
-  final String ilha;
-
-  const Localidade({required this.id, required this.nome, required this.ilha});
-
-  factory Localidade.fromJson(Map&lt;String, dynamic&gt; json) {
-    final id = json['id'];
-    final nome = json['nome'];
-    if (id is! int || nome is! String) {
-      throw const FormatException('Localidade sem id ou nome');
-    }
-    return Localidade(id: id, nome: nome, ilha: json['ilha'] as String? ?? 'desconhecida');
+  <h2>JSON com objetos dentro de objetos</h2>
+<pre data-title="GET /v1/islands/sao-miguel/forecast, um dia"><code class="language-json">{
+  "date": "2026-10-14",
+  "weatherType": {
+    "id": 7,
+    "description": "Aguaceiros/chuva fracos",
+    "category": "rain"
+  },
+  "tMin": 20.0,
+  "tMax": 24.2,
+  "rainChance": 57,
+  "wind": {
+    "direction": "SW",
+    "class": 2,
+    "description": "Moderado"
   }
+}</code></pre>
+  <ul>
+    <li>Um objeto dentro de outro é mais um <code>Map</code>; uma lista é uma <code>List&lt;dynamic&gt;</code> que se percorre com <code>map</code>.</li>
+    <li>O JSON não tem datas nem enums: vêm como texto, e o <code>fromJson</code> converte (<code>DateTime.parse</code>, <code>values.byName</code>).</li>
+  </ul>
+</section>
 
-  Map&lt;String, dynamic&gt; toJson() =&gt; {'id': id, 'nome': nome, 'ilha': ilha};
+<section class="slide">
+  <h2>Um dia: <code>DayForecast.fromJson</code></h2>
+<pre data-title="lib/models.dart · DayForecast.fromJson"><code class="language-dart">factory DayForecast.fromJson(Map&lt;String, dynamic&gt; json) {
+  final weather = json['weatherType'] as Map&lt;String, dynamic&gt;;
+  final wind = json['wind'] as Map&lt;String, dynamic&gt;;
+  return DayForecast(
+    date: DateTime.parse(json['date'] as String),
+    type: WeatherType.values.byName(weather['category'] as String),
+    tMin: (json['tMin'] as num).toDouble(),
+    tMax: (json['tMax'] as num).toDouble(),
+    rainChance: json['rainChance'] as int,
+    windClass: wind['class'] as int,
+  );
+}</code></pre>
+  <ul>
+    <li>O modelo da app não tem de ser igual ao JSON. O IPMA não dá o vento em km/h, só a classe: o <code>windKmh</code> das aulas passa a <code>windClass</code>.</li>
+  </ul>
+  <aside class="notes">Liga ao enum <code>WeatherType</code> das aulas 5 a 11: os nomes (sunny, partlyCloudy, cloudy, rain, storm) foram escolhidos para coincidir com o <code>category</code> da API, e por isso o <code>byName</code> funciona sem tabela de conversão. A previsão inteira é um <code>Forecast</code> com <code>location</code> e uma lista <code>days</code>, cada um um <code>DayForecast.fromJson</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde o parsing parte</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>A API manda</th><th>O código espera</th><th>O que acontece</th><th>Como se escreve</th></tr></thead>
+  <tbody>
+  <tr><td><code>"tMin": 20</code></td><td><code>as double</code></td><td>Erro: <code>20</code> é <code>int</code>, não <code>double</code></td><td><code>(json['tMin'] as num).toDouble()</code></td></tr>
+  <tr><td>campo em falta ou <code>null</code></td><td><code>as String</code></td><td>Erro: <code>null</code> não é <code>String</code></td><td><code>as String?</code> e um valor por omissão</td></tr>
+  <tr><td><code>"category": "fog"</code></td><td><code>values.byName</code></td><td>Erro: valor que o enum não tem</td><td>Procurar e usar um valor por omissão</td></tr>
+  <tr><td><code>"date": "14/10/2026"</code></td><td><code>DateTime.parse</code></td><td><code>FormatException</code></td><td>Combinar o formato com a API (ISO 8601)</td></tr>
+  <tr><td>uma lista</td><td><code>as Map</code></td><td>Erro de tipo</td><td>Ver a resposta real no <code>/docs</code> antes de escrever</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>Um erro no <code>fromJson</code> completa o <code>Future</code> com erro: o ecrã mostra a mensagem de erro em vez dos dados, mas a app não fecha.</li>
+    <li>O contrato da API (a página <a href="../api.html">API</a> e o <code>/openapi.json</code>) diz o que pode faltar. O que não está no contrato, não contes com isso.</li>
+  </ul>
+  <div class="callout"><strong>Pergunta à turma</strong> Se a API mandar <code>"category": "fog"</code> num só dia, o que vê o utilizador no ecrã da previsão?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> O ecrã de erro, para a previsão toda: o <code>byName</code> lança um erro, o <code>fromJson</code> da lista inteira falha, o <code>Future</code> completa com erro e o <code>FutureBuilder</code> mostra o ramo de erro. Um valor inesperado num dia estraga os cinco dias. Por isso, para enums vindos de fora, vale a pena ter um valor por omissão em vez de falhar. Os acentos: o package <code>http</code> lê o corpo como UTF-8 quando o <code>Content-Type</code> é JSON; com outros tipos, usa <code>utf8.decode(response.bodyBytes)</code>, ou aparece "SÃ£o Miguel".</aside>
+</section>
+
+<section class="slide" data-part="Pedidos">
+  <h2>O pedido completo, com erros</h2>
+<pre data-title="lib/api.dart"><code class="language-dart">void _check(http.Response response) {
+  if (response.statusCode &gt;= 200 &amp;&amp; response.statusCode &lt; 300) return;
+  final body = jsonDecode(response.body) as Map&lt;String, dynamic&gt;;
+  final error = body['error'] as Map&lt;String, dynamic&gt;;
+  throw ApiException(response.statusCode, error['message'] as String);
 }
 
-class ApiException implements Exception {
-  const ApiException(this.mensagem, {this.statusCode});
-  final String mensagem;
-  final int? statusCode;
-  @override
-  String toString() =&gt; 'ApiException($statusCode): $mensagem';
+Future&lt;List&lt;Island&gt;&gt; fetchIslands(String token) async {
+  final response = await http
+      .get(
+        Uri.parse('$baseUrl/v1/islands'),
+        headers: {'Authorization': 'Bearer $token'},
+      )
+      .timeout(const Duration(seconds: 10));
+  _check(response);
+  final list = jsonDecode(response.body) as List&lt;dynamic&gt;;
+  return list
+      .map((item) =&gt; Island.fromJson(item as Map&lt;String, dynamic&gt;))
+      .toList();
 }</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. Modelos: o que interessa</h2>
   <ul>
-    <li><code>fromJson</code> é um <code>factory</code>: valida e constrói. Se o JSON está mal, lança <code>FormatException</code> com uma mensagem que diz o que faltou.</li>
-    <li><code>is!</code> promove o tipo: depois do <code>if</code>, o compilador sabe que <code>id</code> é <code>int</code>. Sem <code>!</code>, sem <code>as</code> às cegas.</li>
-    <li>Campos opcionais com valor por defeito (<code>?? 'desconhecida'</code>); campos obrigatórios falham cedo. Decide caso a caso.</li>
-    <li>A exceção própria (<code>ApiException</code>) leva o <code>statusCode</code>: na aula 14 a UI escolhe a mensagem por código.</li>
-    <li>Regra: a app nunca deve falhar porque o servidor mandou um campo a mais ou a menos. Testa com JSON estragado.</li>
+    <li>O <code>http</code> não lança erro num 404 ou num 500: a resposta chega na mesma. Quem verifica o <code>statusCode</code> és tu.</li>
+    <li>Sem <code>timeout</code>, um pedido num túnel pode ficar pendurado minutos. Com ele, ao fim de 10 s o <code>Future</code> completa com erro.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Em <code>Previsao.fromJson</code>, valida que <code>dias</code> é uma lista e que cada dia tem <code>tMin</code> e <code>tMax</code> numéricos. Corre <code>flutter test test/previsao_test.dart</code>: usa o ficheiro <code>test/fixtures/previsao_mau.json</code> e tem de ficar verde.</div>
-  <aside class="notes">Dúvida frequente: "porque não uso json_serializable?" Resposta: podes, no projeto; hoje escrevemos à mão para perceber o que o gerador faz. Mostra num minuto o que o tMin do IPMA é (uma string!) e porque a API do curso o converte para número.</aside>
+  <aside class="notes">Mostra o resultado real dos dois erros, que estão no código de demonstração: GET /v1/islands/atlantida/forecast dá "404: Não há nenhuma ilha com o id "atlantida"." e um token com segredo errado dá "401: clientId ou clientSecret errados.". O <code>ApiException</code> é uma classe nossa com <code>statusCode</code> e <code>message</code>; mais à frente a app decide o que fazer por código (aula de resiliência).</aside>
 </section>
 
 <section class="slide">
-  <h2>3. <code>FutureBuilder</code>: o primeiro ecrã ligado à API</h2>
-<pre data-title="lib/ui/localidades_screen.dart"><code class="language-dart">class _LocalidadesScreenState extends State&lt;LocalidadesScreen&gt; {
-  late final Future&lt;List&lt;Localidade&gt;&gt; _futuro = obterLocalidades();
+  <h2>O token e o segredo</h2>
+<pre data-title="lib/api.dart · fetchToken"><code class="language-dart">Future&lt;String&gt; fetchToken(String clientId, String clientSecret) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/v1/auth/token'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'clientId': clientId, 'clientSecret': clientSecret}),
+  );
+  _check(response);
+  final json = jsonDecode(response.body) as Map&lt;String, dynamic&gt;;
+  return json['accessToken'] as String;
+}</code></pre>
+<pre data-title="lib/main.dart"><code class="language-dart">const clientId = String.fromEnvironment('CLIENT_ID');
+const clientSecret = String.fromEnvironment('CLIENT_SECRET');</code></pre>
+<pre data-title="terminal"><code class="language-bash">flutter run -d chrome \
+  --dart-define=CLIENT_ID=pdm-ab12cd \
+  --dart-define=CLIENT_SECRET=o-teu-segredo</code></pre>
+  <ul>
+    <li>Num <code>POST</code> o corpo vai em JSON: <code>jsonEncode</code> faz o contrário do <code>jsonDecode</code>.</li>
+    <li>O segredo não vai para o código nem para o git. O <code>--dart-define</code> passa-o na hora de correr.</li>
+  </ul>
+  <aside class="notes">Aviso honesto: o <code>--dart-define</code> tira o segredo do git, mas ele fica dentro da app compilada, e quem abrir o APK consegue lê-lo. Numa app a sério, o utilizador faz login e o segredo nunca está no telemóvel; isso é a aula de autenticação. Para o curso chega, porque cada aluno tem o seu e a API sabe quem fez cada pedido.</aside>
+</section>
+
+<section class="slide" data-part="FutureBuilder">
+  <h2><code>FutureBuilder</code>: o ecrã que espera</h2>
+<pre data-title="lib/islands_screen.dart"><code class="language-dart">class _IslandsScreenState extends State&lt;IslandsScreen&gt; {
+  late final Future&lt;List&lt;Island&gt;&gt; _islands;
+
+  @override
+  void initState() {
+    super.initState();
+    _islands = fetchIslands(widget.token); // once, not in build
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder&lt;List&lt;Localidade&gt;&gt;(
-      future: _futuro,
+    return FutureBuilder&lt;List&lt;Island&gt;&gt;(
+      future: _islands,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Não foi possível carregar: ${snapshot.error}'));
+          return Center(child: Text('${snapshot.error}'));
         }
-        final lista = snapshot.data ?? const &lt;Localidade&gt;[];
+        final islands = snapshot.data!;
         return ListView.builder(
-          itemCount: lista.length,
-          itemBuilder: (_, i) =&gt; ListTile(
-            title: Text(lista[i].nome),
-            subtitle: Text(lista[i].ilha),
+          itemCount: islands.length,
+          itemBuilder: (context, i) =&gt; ListTile(
+            leading: Image.network(islands[i].imageUrl, width: 56),
+            title: Text(islands[i].name),
           ),
         );
       },
@@ -402,119 +505,54 @@ class ApiException implements Exception {
 </section>
 
 <section class="slide">
-  <h2>3. <code>FutureBuilder</code>: o que interessa</h2>
+  <h2><code>FutureBuilder</code>: o que interessa</h2>
   <ul>
-    <li><code>connectionState</code> é <code>waiting</code> enquanto o Future corre e <code>done</code> quando termina, com <code>hasData</code> ou <code>hasError</code>.</li>
-    <li>O Future cria-se <strong>uma vez</strong>, num campo do <code>State</code>. Se o criares dentro de <code>build</code>, cada rebuild faz um pedido novo à API.</li>
-    <li><code>snapshot.data</code> é nullable. <code>?? const []</code> em vez de <code>!</code>.</li>
-    <li>Mostrar <code>snapshot.error</code> cru serve para aprender; em produção a mensagem é escolhida pela app (aula 14).</li>
-    <li><code>FutureBuilder</code> chega para um ecrã isolado. Segunda movemos isto para um notifier, para partilhar entre ecrãs e testar sem rede.</li>
+    <li>O <code>builder</code> corre de novo cada vez que o <code>Future</code> muda de estado. O <code>snapshot</code> diz em que estado está.</li>
+    <li>Três ramos, sempre: <strong>a carregar</strong> (<code>connectionState</code>), <strong>erro</strong> (<code>hasError</code>, <code>error</code>) e <strong>dados</strong> (<code>data</code>). Os três estados do <code>Future</code>, desenhados.</li>
+    <li>O <code>Future</code> cria-se <strong>uma vez</strong>, no <code>initState</code>. Se escreveres <code>future: fetchIslands(token)</code> dentro do <code>build</code>, cada rebuild faz um pedido novo.</li>
+    <li><code>Image.network</code> em vez de <code>Image.asset</code>: a fotografia também vem da rede, e o Flutter guarda-a em cache.</li>
+    <li>Para voltar a pedir (botão "Tentar de novo"), atribui um <code>Future</code> novo dentro de <code>setState</code>.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 3</strong> Mostra o número de localidades no título da <code>AppBar</code> quando os dados chegam, e no estado de erro um botão "Tentar de novo" que recria o Future com <code>setState</code>.</div>
-  <aside class="notes">Erro clássico ao vivo: põe `future: obterLocalidades()` diretamente no FutureBuilder, faz hot reload duas vezes e mostra no terminal do backend (ou no log) os pedidos repetidos. Fica na memória.</aside>
+  <div class="callout"><strong>Pergunta à turma</strong> O <code>build</code> de um ecrã corre quantas vezes? E quantos pedidos fazia o servidor se o <code>Future</code> fosse criado lá dentro?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Muitas e sem controlo: cada <code>setState</code>, cada mudança de tema ou de tamanho de letra, cada vez que o teclado abre ou o ecrã roda, e cada hot reload. Com o <code>Future</code> no <code>build</code>, cada uma é um pedido novo e o ecrã volta a mostrar o "a carregar". Demonstração ao vivo: muda <code>future: _islands</code> para <code>future: fetchIslands(widget.token)</code>, faz hot reload três vezes e mostra no separador Network do Chrome os pedidos repetidos.<br><br>Código de demonstração em <code>../pdm-aula-12</code> (local, sem remote). Corre com <code>flutter run -d chrome --dart-define=CLIENT_ID=... --dart-define=CLIENT_SECRET=...</code> com a conta Docente de <code>~/.config/pdm-api/docente.json</code>.</aside>
 </section>
 
-<section class="slide">
-  <h2>4. <code>ApiClient</code>: base URL, headers e timeout num só sítio</h2>
-<pre data-title="lib/data/api_client.dart"><code class="language-dart">class ApiClient {
-  ApiClient({required this.baseUrl, http.Client? client, this.token})
-      : _client = client ?? http.Client();
-
-  final String baseUrl;
-  final http.Client _client;
-  String? token;
-
-  Map&lt;String, String&gt; get _headers =&gt; {
-        'Accept': 'application/json',
-        'X-Platform': defaultTargetPlatform.name,
-        'X-App-Version': '1.0.0',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
-
-  Future&lt;dynamic&gt; get(String caminho) async {
-    final resposta = await _client
-        .get(Uri.parse('$baseUrl$caminho'), headers: _headers)
-        .timeout(const Duration(seconds: 10));
-    if (resposta.statusCode &gt;= 400) {
-      throw ApiException('GET $caminho falhou', statusCode: resposta.statusCode);
-    }
-    return jsonDecode(utf8.decode(resposta.bodyBytes));
-  }
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>4. <code>ApiClient</code>: o que interessa</h2>
+<section class="slide" data-part="Streams">
+  <h2>E se os dados não param de chegar?</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th><code>Future&lt;T&gt;</code></th><th><code>Stream&lt;T&gt;</code></th></tr></thead>
+  <tbody>
+  <tr><td>Quantos valores</td><td>Um, uma vez</td><td>Muitos, ao longo do tempo</td></tr>
+  <tr><td>Como se espera</td><td><code>await</code></td><td><code>await for</code> ou <code>listen</code></td></tr>
+  <tr><td>Widget</td><td><code>FutureBuilder</code></td><td><code>StreamBuilder</code></td></tr>
+  <tr><td>Exemplos</td><td>A previsão de hoje, o token, uma fotografia</td><td>A posição do GPS, mensagens de chat, cotações, um autocarro em movimento</td></tr>
+  </tbody></table></div>
   <ul>
-    <li>Uma instância para toda a app, criada no <code>main</code> e passada por construtor a quem precisa. Segunda o Provider trata da distribuição.</li>
-    <li>O <code>http.Client</code> é injetável: nos testes passas um <code>MockClient</code> do package <code>http/testing</code> e não há rede.</li>
-    <li><code>defaultTargetPlatform.name</code> (de <code>package:flutter/foundation.dart</code>) dá <code>android</code> ou <code>iOS</code>. A versão vem do <code>package_info_plus</code> no projeto.</li>
-    <li>Os erros 4xx e 5xx viram <code>ApiException</code> com <code>statusCode</code>. <code>TimeoutException</code> e <code>SocketException</code> (sem rede) passam como estão. Tratamos os três na aula 14.</li>
-    <li>O <code>token</code> é mutável de propósito: hoje é atribuído no arranque; na aula 17 passa a ser renovado por um interceptor.</li>
+    <li>Um <code>Future</code> é uma encomenda: chega uma vez. Uma <code>Stream</code> é uma assinatura: chega sempre que há uma edição nova, até cancelares.</li>
+    <li>De onde vêm os dados em tempo real: <strong>polling</strong> (a app pergunta de X em X segundos), <strong>Server-Sent Events</strong> ou <strong>WebSockets</strong> (o servidor envia quando há novidades).</li>
+    <li>O <code>StreamBuilder</code> tem o mesmo <code>snapshot</code> do <code>FutureBuilder</code>, mas o <code>builder</code> corre de novo a cada valor novo.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 4</strong> Substitui as chamadas diretas a <code>http.get</code> por <code>ApiClient.get</code>. Acrescenta um método genérico <code>Future&lt;List&lt;T&gt;&gt; getList&lt;T&gt;(String caminho, T Function(Map&lt;String, dynamic&gt;) fromJson)</code> e usa-o em <code>obterLocalidades</code>.</div>
-</section>
-
-<section class="slide">
-  <h2>5. Token da turma e previsão de uma localidade</h2>
-<pre data-title="lib/data/api_client.dart · lib/main.dart"><code class="language-dart">// Em ApiClient
-Future&lt;Map&lt;String, dynamic&gt;&gt; post(String caminho, {Object? body}) async {
-  final resposta = await _client
-      .post(Uri.parse('$baseUrl$caminho'),
-          headers: {..._headers, 'Content-Type': 'application/json'},
-          body: jsonEncode(body))
-      .timeout(const Duration(seconds: 10));
-  if (resposta.statusCode &gt;= 400) {
-    throw ApiException('POST $caminho falhou', statusCode: resposta.statusCode);
-  }
-  return jsonDecode(utf8.decode(resposta.bodyBytes)) as Map&lt;String, dynamic&gt;;
-}
-
-// No arranque da app: o client-id e o segredo vêm do docente, nunca do código
-final api = ApiClient(baseUrl: 'https://api.pdm.example'); // URL real na página API
-final auth = await api.post('/v1/auth/token', body: {
-  'client_id': const String.fromEnvironment('PDM_CLIENT_ID'),
-  'secret': const String.fromEnvironment('PDM_SECRET'),
-});
-api.token = auth['access_token'] as String;
-
-final previsao = await api.get('/v1/forecast/3') as Map&lt;String, dynamic&gt;;
-print(previsao['dias']);</code></pre>
-<pre class="term"><code class="language-bash">flutter run --dart-define=PDM_CLIENT_ID=daw2-turma --dart-define=PDM_SECRET=o-segredo-do-quadro</code></pre>
-</section>
-
-<section class="slide">
-  <h2>5. Token e previsão: o que interessa</h2>
-  <ul>
-    <li><code>POST /v1/auth/token</code> recebe JSON com <code>client_id</code> e <code>secret</code> e devolve <code>access_token</code>: um JWT que expira. Vemos o que tem dentro na aula 17.</li>
-    <li>O segredo entra pela linha de comandos com <code>--dart-define</code> e <code>String.fromEnvironment</code>. Nunca no código, nunca no git. Porquê, na aula 18.</li>
-    <li>Com o token no <code>ApiClient</code>, todos os pedidos seguintes levam <code>Authorization: Bearer</code> sem mais código.</li>
-    <li>Um 401 significa token em falta ou expirado. Hoje resolve-se reiniciando a app; na aula 17 fica automático.</li>
-    <li>Spread <code>{..._headers, 'Content-Type': …}</code>: um mapa novo com os headers comuns mais um. Idiomático em Dart.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 5</strong> Ecrã de lista de localidades vinda da API, com indicador de loading, agrupada por ilha (cabeçalho por ilha), com o token obtido no arranque. Quando terminares, compara com <code>solucao/</code> e anota o que fizeste diferente.</div>
-  <aside class="notes">Dá 25 minutos para o exercício 5. Quem acabar cedo liga o toque numa localidade a GET /v1/forecast/{id} e imprime os dias no terminal: é o TPC adiantado. Cinco minutos antes do fim, pede a dois alunos que mostrem o ecrã no telemóvel.</aside>
+  <aside class="notes">O polling é o mais simples e o que mais gasta: com 1000 telemóveis a perguntar de 5 em 5 segundos, são 200 pedidos por segundo, quase todos com a mesma resposta. Com WebSockets, o servidor pergunta uma vez e envia a todos. É uma das perguntas a fazer ao desenhar uma app em tempo real.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até segunda</h2>
   <div class="cols">
     <div>
-      <h3>Para fazer</h3>
-      <ul class="checklist">
-        <li>Liga o ecrã de detalhe a <code>GET /v1/forecast/{id}</code>: ao tocar numa localidade, mostra os 5 dias com <code>tMin</code> e <code>tMax</code>.</li>
-        <li>Explora o Swagger da API em <code>/docs</code>: executa cada endpoint uma vez e anota um campo que não esperavas.</li>
-        <li>Deixa os testes do starter verdes: <code>flutter test</code>.</li>
+      <h3>Próxima aula</h3>
+      <ul>
+        <li>Segunda, 19 de outubro, das 16:00 às 18:00.</li>
+        <li>Arquitetura por camadas: tirar os pedidos HTTP de dentro dos ecrãs.</li>
       </ul>
     </div>
     <div>
-      <h3>Para ler</h3>
+      <h3>Para quem quiser ler mais</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/cookbook/networking/fetch-data" target="_blank" rel="noopener">Fetch data from the internet</a>: o cookbook oficial, com <code>http.get</code>, <code>fromJson</code> e <code>FutureBuilder</code>.</li>
-        <li><a href="https://docs.flutter.dev/data-and-backend/serialization/json" target="_blank" rel="noopener">JSON and serialization</a>: <code>fromJson</code> à mão vs <code>json_serializable</code>, e quando cada um compensa.</li>
-        <li><a href="https://dart.dev/libraries/serialization/json" target="_blank" rel="noopener">Using JSON</a> (dart.dev): <code>jsonDecode</code>, <code>jsonEncode</code> e os tipos que saem de <code>dart:convert</code>.</li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview" target="_blank" rel="noopener">MDN: HTTP overview</a> e <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener">HTTP status codes</a>: a referência para métodos, headers e cada código de estado.</li>
-        <li><a href="https://pub.dev/packages/http" target="_blank" rel="noopener">package http</a>: <code>Client</code>, <code>BaseClient</code> e <code>MockClient</code> para testes.</li>
+        <li><a href="https://dart.dev/libraries/async/async-await" target="_blank" rel="noopener">Asynchronous programming: futures, async, await</a>: o tutorial oficial do Dart.</li>
+        <li><a href="https://docs.flutter.dev/cookbook/networking/fetch-data" target="_blank" rel="noopener">Fetch data from the internet</a>: o <code>http</code> com <code>FutureBuilder</code>, passo a passo.</li>
+        <li><a href="https://swagger.io/docs/specification/v3_0/basic-structure/" target="_blank" rel="noopener">OpenAPI: basic structure</a>: como se lê um contrato OpenAPI.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/serialization/json" target="_blank" rel="noopener">JSON and serialization</a>: à mão e com geradores de código.</li>
+        <li><a href="https://dart.dev/libraries/async/using-streams" target="_blank" rel="noopener">Asynchronous programming: Streams</a>: o passo seguinte ao <code>Future</code>.</li>
       </ul>
     </div>
   </div>
