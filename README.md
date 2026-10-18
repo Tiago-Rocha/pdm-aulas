@@ -9,7 +9,7 @@ Site das aulas da UC, em HTML puro, sem build. Publicado tal como está pelo Git
 
 - `en/`: a versão em inglês, espelho do site com os mesmos nomes de ficheiro (`en/index.html`, `en/aulas/aula-NN.html`, …). Usa os mesmos `assets/`.
 
-Para ver localmente basta abrir `index.html` no browser. Para publicar: Settings → Pages → Deploy from branch `main`, pasta `/ (root)`.
+Para ver localmente basta abrir `index.html` no browser. Para publicar: abrir Settings, depois Pages, e escolher Deploy from branch `main`, pasta `/ (root)`.
 
 ## Notas do docente
 
