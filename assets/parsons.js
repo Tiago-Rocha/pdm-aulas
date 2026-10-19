@@ -93,7 +93,7 @@
     function paint() {
       if (joined()) {
         bar.innerHTML = '<span class="pz-me">' + esc(T.inRoom(me.room, me.name, me.team)) + '</span> <button type="button" class="pz-leave">' + T.leave + "</button>";
-        bar.querySelector(".pz-leave").onclick = function () { setMe({ id: me.id }); };
+        bar.querySelector(".pz-leave").onclick = function () { setMe({ id: me.id, name: me.name, team: me.team }); };
       } else {
         var opts = ""; for (var i = 1; i <= 12; i++) opts += "<option>" + i + "</option>";
         bar.innerHTML = '<input class="pz-room" inputmode="numeric" maxlength="6" placeholder="' + T.room + '" aria-label="' + T.room + '">' +
@@ -288,23 +288,24 @@
     var head = el("div", "pz-part");
     set.insertBefore(head, set.firstChild);
     set.insertBefore(joinBar(), head);
-    function show(part) {
+    function show(part, given) {
       boxes.forEach(function (b) { b.hidden = b.getAttribute("data-part") !== part; });
       var b = boxes[names.indexOf(part)];
-      if (b && joined()) head.innerHTML = "<strong>" + T.yourPart + ":</strong> " + esc(b.getAttribute("data-layer")) + " · <code>" + esc(b.getAttribute("data-label")) + "</code>";
+      // "A tua parte" só quando foi a API que a deu; sem ligação, fica a lista para escolher
+      if (b && given) head.innerHTML = "<strong>" + T.yourPart + ":</strong> " + esc(b.getAttribute("data-layer")) + " · <code>" + esc(b.getAttribute("data-label")) + "</code>";
     }
     function offline() {
       var opts = boxes.map(function (b) { return '<option value="' + esc(b.getAttribute("data-part")) + '">' + esc(b.getAttribute("data-layer") + " · " + b.getAttribute("data-label")) + "</option>"; }).join("");
       head.innerHTML = "<label>" + T.choose + ' <select class="pz-pick">' + opts + "</select></label> <span class=\"pz-note\">" + T.waitPart + "</span>";
       var sel = head.querySelector(".pz-pick");
-      sel.onchange = function () { show(sel.value); };
-      show(names[0]);
+      sel.onchange = function () { show(sel.value, false); };
+      show(names[0], false);
     }
     function sync() {
       if (!joined()) { offline(); return; }
       head.textContent = "…";
       send(id, { right: 0, total: 0, tries: 0, ms: 0, solved: false, parts: names }).then(function (r) {
-        if (r && r.you && r.you.part) show(r.you.part); else { offline(); head.insertAdjacentHTML("beforeend", ' <span class="pz-note bad">' + T.offline + "</span>"); }
+        if (r && r.you && r.you.part) show(r.you.part, true); else { offline(); head.insertAdjacentHTML("beforeend", ' <span class="pz-note bad">' + T.offline + "</span>"); }
       });
     }
     listeners.push(sync); sync();
