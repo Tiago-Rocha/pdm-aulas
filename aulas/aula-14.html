@@ -72,8 +72,9 @@ figure.diagram figcaption { font-size: 1rem; }
     }
   }
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Estado: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem."], "why": "Os dois notifyListeners() são as campainhas: um quando o pedido parte, outro no finally, com ilhas ou com erro."}</script>
   </div>
-  <aside class="notes">Um voluntário vem ao computador da sala e arrasta; a turma diz-lhe o que fazer, em voz alta. Antes de "Verificar", pergunta: onde toca a primeira campainha? E a segunda? Depois de acertar: porque é que o segundo <code>notifyListeners()</code> está no <code>finally</code>? (Para tocar com sucesso ou com erro.)</aside>
+  <aside class="notes">Um voluntário vem ao computador da sala e arrasta; a turma diz-lhe o que fazer, em voz alta. No fim aparece uma pergunta de escolha múltipla: antes de alguém clicar, a turma vota de mão no ar em cada opção, e só depois o voluntário responde (só vale a primeira resposta). Antes de "Verificar", pergunta: onde toca a primeira campainha? E a segunda? Depois de acertar: porque é que o segundo <code>notifyListeners()</code> está no <code>finally</code>? (Para tocar com sucesso ou com erro.)</aside>
 </section>
 
 <section class="slide">
@@ -82,6 +83,7 @@ figure.diagram figcaption { font-size: 1rem; }
     <li>No teu computador, abre <code>tiago-rocha.github.io/pdm-aulas/aulas/aula-14.html</code> e vai ao slide seguinte a este.</li>
     <li>Escreve o <strong>código da sala</strong> que está no ecrã, o teu primeiro nome e o número da tua mesa: a mesa é a tua equipa.</li>
     <li>Arrasta as peças. No aquecimento, a peça que fica no sítio certo prende-se e fica verde; na construção, és tu que carregas em <strong>Verificar</strong>. O ecrã da sala mostra o progresso de todos.</li>
+    <li>Depois de ordenar, aparece uma pergunta sobre o que faz o código. Pensa antes de clicar: <strong>só vale a primeira resposta</strong>, e o ecrã da sala mostra quantos acertaram.</li>
   </ol>
   <div class="callout"><strong>Regra</strong> Ninguém ganha sozinho. A meta é a turma toda acabar. Quando acabas, vais ajudar quem ainda está a construir: o ecrã diz quem é.</div>
 </section>
@@ -97,6 +99,7 @@ figure.diagram figcaption { font-size: 1rem; }
         .toList();
   }
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: mostra só as ilhas marcadas, lendo dois notifiers."], "why": "É o único sítio que conhece o caminho /v1/islands e o JSON; para cima só sobem objetos Island."}</script>
   </div>
   <aside class="notes">Projeta o slide seguinte (o placar) enquanto eles jogam aqui. Três minutos.</aside>
 </section>
@@ -152,6 +155,7 @@ class FakeForecastRepository implements ForecastRepository {
 
 }
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Estado: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem."], "why": "Implementa a mesma interface que o HttpForecastRepository; o notifier não sabe qual dos dois recebeu."}</script>
   </div>
   <div class="parsons" data-part="estado-favs" data-layer="Estado" data-label="FavoritesNotifier" data-title="lib/state/favorites_notifier.dart" data-seed="32">
 <script type="text/plain">
@@ -165,6 +169,7 @@ class FavoritesNotifier extends ChangeNotifier {
   }
 }
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "UI: desenha a estrela de uma ilha e, ao tocar, marca ou desmarca essa ilha.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas."], "why": "Um Set de ids: uma ilha é favorita ou não, sem repetições. O toggle tira ou põe e toca a campainha."}</script>
   </div>
   <div class="parsons" data-part="estado-main" data-layer="Estado" data-label="MultiProvider" data-title="lib/main.dart · runApp" data-seed="33">
 <script type="text/plain">
@@ -176,6 +181,7 @@ class FavoritesNotifier extends ChangeNotifier {
         ChangeNotifierProvider(create: (_) => FavoritesNotifier()),
       ],
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["Estado: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas."], "why": "Por estar por cima do MaterialApp, os dois ecrãs encontram os dois notifiers, mesmo depois de navegar."}</script>
   </div>
   <div class="parsons" data-part="ui-estrela" data-layer="UI" data-label="FavoriteButton" data-title="lib/widgets/favorite_button.dart" data-seed="34">
 <script type="text/plain">
@@ -192,6 +198,7 @@ class FavoriteButton extends StatelessWidget {
   }
 }
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["UI: desenha a estrela de uma ilha e, ao tocar, marca ou desmarca essa ilha.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas.", "UI: mostra só as ilhas marcadas, lendo dois notifiers."], "why": "watch para desenhar a estrela certa, read no onPressed para mudar sem ficar a ouvir."}</script>
   </div>
   <div class="parsons" data-part="ui-contador" data-layer="UI" data-label="o contador" data-title="lib/screens/islands_screen.dart · actions" data-seed="35">
 <script type="text/plain">
@@ -209,6 +216,7 @@ class FavoriteButton extends StatelessWidget {
             ),
           ),
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["UI: mostra quantas favoritas há e abre o ecrã das favoritas.", "UI: desenha a estrela de uma ilha e, ao tocar, marca ou desmarca essa ilha.", "UI: mostra só as ilhas marcadas, lendo dois notifiers.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam."], "why": "O Consumer só redesenha este botão quando as favoritas mudam, não o ecrã inteiro."}</script>
   </div>
   <div class="parsons" data-part="ui-favoritas" data-layer="UI" data-label="FavoritesScreen" data-blocks data-title="lib/screens/favorites_screen.dart" data-seed="36">
 <script type="text/plain">
@@ -245,6 +253,7 @@ class FavoritesScreen extends StatelessWidget {
   }
 }
 </script>
+<script type="application/json">{"q": "O que faz esta peça, e em que camada vive?", "options": ["UI: mostra só as ilhas marcadas, lendo dois notifiers.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede."], "why": "As ilhas vêm do ForecastNotifier e as escolhas do FavoritesNotifier; o where junta os dois."}</script>
   </div>
   </div>
   <aside class="notes">As peças são distribuídas pela API: quem entra recebe a que tem menos gente. Seis peças: o repository a fingir (dados), o <code>FavoritesNotifier</code> e o <code>MultiProvider</code> (estado), a estrela, o contador e o ecrã das favoritas (UI). Projeta o placar (slide seguinte). Quando alguém acaba, pergunta-lhe em voz alta: em que camada está a tua peça, e com quem fala? Depois manda-o ajudar alguém da lista "Ainda a construir".</aside>

@@ -21,11 +21,12 @@
     return "https://api-pdm.sublimecipher.com";
   })() + "/v1/play/";
   var T = EN
-    ? { check: "Check", shuffle: "Shuffle", copy: "Copy code", copied: "Copied", tries: "tries", time: "time",
+    ? { check: "Check", shuffle: "Shuffle", copy: "Copy code", copied: "Copied", tries: "tries", try1: "try", time: "time",
         hint: "Drag the pieces into the right order. On the keyboard: Tab to a piece, Alt + up or down to move it.",
         ok: function (t, n) { return "Done in " + t + ", " + n + (n === 1 ? " try." : " tries."); },
         bad: function (k, n) { return k + " of " + n + " in the right place. Green ones are right; move the red ones."; },
         helper: "Drag the pieces. A piece in the right place locks and turns green.",
+        quiz: "Question (one answer only):", quizOk: "Right.", quizNo: "Not quite.", understood: function (a, b) { return a + " of " + b + " answered right"; },
         room: "Room", name: "Name", team: "Team", join: "Join", leave: "Leave", optional: "Join the room to show up on the scoreboard.",
         inRoom: function (r, n, t) { return "Room " + r + " · " + n + " · team " + t; }, offline: "no connection to the scoreboard",
         yourPart: "Your part", choose: "Choose a part", waitPart: "Join the room to get your part.",
@@ -33,11 +34,12 @@
         classDone: function (t) { return "The whole class in " + t; }, goalOk: "goal reached", goalMiss: "goal missed",
         waiting: "Waiting for players. Open this lesson, scroll to the exercise and join with the code.",
         still: "Still building, go and help:", built: function (t) { return "The app is built! " + t; }, ready: "ready" }
-    : { check: "Verificar", shuffle: "Baralhar", copy: "Copiar código", copied: "Copiado", tries: "tentativas", time: "tempo",
+    : { check: "Verificar", shuffle: "Baralhar", copy: "Copiar código", copied: "Copiado", tries: "tentativas", try1: "tentativa", time: "tempo",
         hint: "Arrasta as peças para a ordem certa. No teclado: Tab até uma peça, Alt + cima ou baixo para a mover.",
         ok: function (t, n) { return "Feito em " + t + ", à " + n + "ª tentativa."; },
         bad: function (k, n) { return k + " de " + n + " no sítio certo. As verdes estão certas; mexe nas vermelhas."; },
         helper: "Arrasta as peças. A que fica no sítio certo prende-se e fica verde.",
+        quiz: "Pergunta (só vale a primeira resposta):", quizOk: "Certo.", quizNo: "Não é bem isso.", understood: function (a, b) { return a + " de " + b + " acertaram na pergunta"; },
         room: "Sala", name: "Nome", team: "Equipa", join: "Entrar", leave: "Sair", optional: "Entra na sala para apareceres no placar.",
         inRoom: function (r, n, t) { return "Sala " + r + " · " + n + " · equipa " + t; }, offline: "sem ligação ao placar",
         yourPart: "A tua parte", choose: "Escolhe uma parte", waitPart: "Entra na sala para receberes a tua parte.",
@@ -110,6 +112,8 @@
   // ----- um exercício -----
   function initPuzzle(box, report) {
     var src = box.querySelector("script[type='text/plain']");
+    var qs = box.querySelector("script[type='application/json']");
+    var quiz = qs ? JSON.parse(qs.textContent) : null;
     var raw = src.textContent.replace(/^\n+|\s+$/g, "");
     var blocks = box.hasAttribute("data-blocks");
     var parts = blocks ? raw.split(/\n[ \t]*\n/) : raw.split("\n");
@@ -122,11 +126,11 @@
     var bar = box.appendChild(el("div", "pz-bar",
       '<button type="button" class="pz-check">' + T.check + '</button>' +
       '<button type="button" class="pz-shuffle">' + T.shuffle + '</button>' +
-      '<span class="pz-stat"><span class="pz-tries">0</span> ' + T.tries + " · " + T.time + ' <span class="pz-time">0:00</span></span>'));
+      '<span class="pz-stat"><span class="pz-tries">0</span> <span class="pz-tl">' + T.tries + "</span> · " + T.time + ' <span class="pz-time">0:00</span></span>'));
     var msg = box.appendChild(el("p", "pz-msg")); msg.textContent = T.hint;
 
     var tries = 0, t0 = null, timer = null, done = false;
-    var timeEl = bar.querySelector(".pz-time"), triesEl = bar.querySelector(".pz-tries");
+    var timeEl = bar.querySelector(".pz-time"), triesEl = bar.querySelector(".pz-tries"), tlEl = bar.querySelector(".pz-tl");
     function start() {
       if (t0 || done) return;
       t0 = Date.now();
@@ -156,8 +160,9 @@
       }
     }
     function reset(seed) {
-      done = false; tries = 0; locked = 0; triesEl.textContent = "0"; t0 = null; clearInterval(timer); timeEl.textContent = "0:00";
+      done = false; tries = 0; locked = 0; triesEl.textContent = "0"; tlEl.textContent = T.tries; t0 = null; clearInterval(timer); timeEl.textContent = "0:00";
       box.classList.remove("solved"); msg.textContent = helper ? T.helper : T.hint; msg.className = "pz-msg";
+      var oq = box.querySelector(".pz-quiz"); if (oq) oq.remove();
       var c = box.querySelector(".pz-copy"); if (c) c.remove();
       render(shuffle(pieces, rng(seed)));
       lockCheck();
@@ -166,14 +171,15 @@
 
     function verify() {
       if (done) return;
-      start(); tries++; triesEl.textContent = String(tries);
+      start(); tries++; triesEl.textContent = String(tries); tlEl.textContent = tries === 1 ? T.try1 : T.tries;
       var right = 0;
       Array.prototype.forEach.call(list.children, function (li, i) {
         var good = li.dataset.text === answer[i]; if (good) right++;
         li.classList.toggle("ok", good); li.classList.toggle("bad", !good);
       });
       var ms = Date.now() - t0, won = right === answer.length;
-      report && report({ right: right, total: answer.length, tries: tries, ms: ms, solved: won });
+      last = { right: right, total: answer.length, tries: tries, ms: ms, solved: won };
+      report && report(last);
       if (won) {
         done = true; clearInterval(timer); box.classList.add("solved");
         msg.textContent = T.ok(fmt(ms), tries); msg.className = "pz-msg ok";
@@ -182,9 +188,34 @@
           navigator.clipboard.writeText(answer.join(blocks ? "\n\n" : "\n") + "\n").then(function () { cp.textContent = T.copied; });
         });
         bar.insertBefore(cp, bar.querySelector(".pz-stat"));
+        if (quiz) askQuiz();
       } else {
         msg.textContent = T.bad(right, answer.length); msg.className = "pz-msg bad";
       }
+    }
+
+    // Pergunta de escolha múltipla depois de ordenar: não bloqueia, mas só a primeira resposta conta
+    var last = null;
+    function askQuiz() {
+      var seed = 0, key = (me && me.id) || String(Math.random());
+      for (var i = 0; i < key.length; i++) seed = (seed * 31 + key.charCodeAt(i)) >>> 0;
+      var opts = shuffle(quiz.options.map(function (o, i) { return { text: o, id: i }; }), rng(seed + 1));
+      var q = el("div", "pz-quiz", "<p class=\"pz-q\"><strong>" + T.quiz + "</strong> " + esc(quiz.q) + "</p>");
+      var ul = q.appendChild(el("div", "pz-opts"));
+      opts.forEach(function (o) {
+        var b = el("button", "pz-opt"); b.type = "button"; b.textContent = o.text; b.dataset.id = o.id; ul.appendChild(b);
+      });
+      var why = q.appendChild(el("p", "pz-why"));
+      ul.addEventListener("click", function (e) {
+        var b = e.target.closest(".pz-opt"); if (!b || q.classList.contains("answered")) return;
+        var good = b.dataset.id === "0";
+        q.classList.add("answered");
+        Array.prototype.forEach.call(ul.children, function (x) { x.disabled = true; if (x.dataset.id === "0") x.classList.add("right"); });
+        if (!good) b.classList.add("wrong");
+        why.innerHTML = "<strong>" + (good ? T.quizOk : T.quizNo) + "</strong> " + esc(quiz.why || "");
+        if (report && last) { last.quiz = good; report(last); }
+      });
+      box.appendChild(q);
     }
     bar.querySelector(".pz-shuffle").addEventListener("click", function () { reset(Math.floor(Math.random() * 1e9)); });
     bar.querySelector(".pz-check").addEventListener("click", verify);
@@ -306,7 +337,8 @@
       var pct = p.total ? Math.round(100 * p.right / p.total) : 0;
       var state = p.solved ? "✓ " + fmt(p.ms) : started(p) ? fmt(live(p)) : T.ready;
       return '<li class="' + (p.solved ? "done" : "") + '"><span class="pz-n">' + esc(p.name) + '</span><span class="pz-mini"><i style="width:' + pct + '%"></i></span>' +
-        '<span class="pz-t">' + state + (p.tries ? " · " + p.tries + "×" : "") + "</span></li>";
+        '<span class="pz-t">' + state + (p.tries ? " · " + p.tries + "×" : "") +
+        (p.quiz === true ? ' <span class="pz-qm ok">?✓</span>' : p.quiz === false ? ' <span class="pz-qm no">?✗</span>' : "") + "</span></li>";
     }
     function render(players) {
       var solved = players.filter(function (p) { return p.solved; }).length;
@@ -314,6 +346,8 @@
       var all = players.length && solved === players.length;
       var total = all ? Math.max.apply(null, players.map(function (p) { return p.ms; })) : 0;
       var txt = T.solved(solved, players.length);
+      var answered = players.filter(function (p) { return p.quiz != null; });
+      if (answered.length) txt += " · " + T.understood(answered.filter(function (p) { return p.quiz; }).length, answered.length);
       if (all) txt += " · " + (build ? T.built(fmt(total)) : T.classDone(fmt(total))) + (goal ? " · " + (total <= goal * 1000 ? T.goalOk : T.goalMiss) : "");
       count.textContent = txt;
       board.classList.toggle("all", !!all);
