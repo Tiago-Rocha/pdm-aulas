@@ -64,6 +64,11 @@
     if (window.hljs) { try { return window.hljs.highlight(s, { language: "dart", ignoreIllegals: true }).value; } catch (e) {} }
     return esc(s);
   }
+  // Duas peças com o mesmo código são equivalentes: os comentários e os espaços não contam
+  function same(a, b) {
+    var n = function (s) { return s.replace(/\/\/[^\n]*/g, "").replace(/\s+/g, " ").trim(); };
+    return n(a) === n(b);
+  }
   function fmt(ms) { var s = Math.max(0, Math.floor(ms / 1000)); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -150,7 +155,7 @@
       if (!helper || done) return;
       var n = 0;
       Array.prototype.forEach.call(list.children, function (li, i) {
-        if (li.dataset.text === answer[i]) { li.classList.add("locked", "ok"); n++; }
+        if (same(li.dataset.text, answer[i])) { li.classList.add("locked", "ok"); n++; }
       });
       if (n !== locked) {
         locked = n;
@@ -174,7 +179,7 @@
       start(); tries++; triesEl.textContent = String(tries); tlEl.textContent = tries === 1 ? T.try1 : T.tries;
       var right = 0;
       Array.prototype.forEach.call(list.children, function (li, i) {
-        var good = li.dataset.text === answer[i]; if (good) right++;
+        var good = same(li.dataset.text, answer[i]); if (good) right++;
         li.classList.toggle("ok", good); li.classList.toggle("bad", !good);
       });
       var ms = Date.now() - t0, won = right === answer.length;
@@ -241,11 +246,14 @@
     });
     list.addEventListener("pointermove", function (e) {
       if (!drag) return;
-      var li = drag.li, dy = e.clientY - drag.y, next = sib(li, 1), prev = sib(li, -1), old = li.offsetTop;
-      if (next && dy > next.offsetTop - li.offsetTop - next.offsetHeight / 2) {
-        swap(li, next); drag.y += li.offsetTop - old;
-      } else if (prev && -dy > li.offsetTop - prev.offsetTop - prev.offsetHeight / 2) {
-        swap(li, prev); drag.y += li.offsetTop - old;
+      // um arrasto rápido salta várias linhas num só evento: avança uma a uma até chegar ao rato
+      var li = drag.li, guard = 100;
+      while (guard--) {
+        var dy = e.clientY - drag.y, next = sib(li, 1), prev = sib(li, -1), old = li.offsetTop;
+        if (next && dy > next.offsetTop - li.offsetTop - next.offsetHeight / 2) swap(li, next);
+        else if (prev && -dy > li.offsetTop - prev.offsetTop - prev.offsetHeight / 2) swap(li, prev);
+        else break;
+        drag.y += li.offsetTop - old;
       }
       li.style.transform = "translateY(" + (e.clientY - drag.y) + "px)";
     });
