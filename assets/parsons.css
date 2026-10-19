@@ -1,0 +1,78 @@
+/* PDM · parsons.css · exercícios de ordenar código (ver parsons.js) */
+.parsons { margin: 1rem 0; }
+.parsons .pz-title { font: 600 .75rem var(--mono); color: var(--muted); margin-bottom: .4em; }
+.parsons .pz-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.deck .slide .parsons li.pz-item { margin: 0; }
+.parsons .pz-item {
+  background: var(--code-bg, #0b0f14); color: var(--code-fg, #e6edf3); border: 2px solid var(--border); border-radius: 8px;
+  margin: 0; padding: .12em .7em; cursor: grab; touch-action: none; user-select: none; position: relative;
+  transition: border-color .15s, background-color .15s;
+}
+.parsons .pz-item code { font: .85rem/1.45 var(--mono); white-space: pre; background: none; padding: 0; color: inherit; }
+.parsons .pz-item:hover, .parsons .pz-item:focus-visible { border-color: var(--accent); outline: none; }
+.parsons .pz-item.dragging { cursor: grabbing; z-index: 2; border-color: var(--accent); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); transition: none; }
+.parsons .pz-item.ok { border-color: var(--ok); }
+.parsons .pz-item.bad { border-color: var(--danger); }
+.parsons.solved .pz-item { cursor: default; border-color: var(--ok); }
+.parsons .pz-bar { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .8rem; }
+.parsons .pz-bar button {
+  font: 700 .85rem var(--font); cursor: pointer; border-radius: 8px; padding: .45em 1em;
+  border: 1px solid var(--border); background: var(--surface); color: var(--fg);
+}
+.parsons .pz-bar .pz-check { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.parsons .pz-bar .pz-copy { background: var(--ok); border-color: var(--ok); color: var(--accent-fg); }
+.parsons .pz-stat { margin-left: auto; font: 600 .85rem var(--mono); color: var(--muted); }
+.parsons .pz-msg { margin: .5rem 0 0; font-size: .85rem; color: var(--muted); }
+.parsons .pz-msg.ok { color: var(--ok); font-weight: 700; }
+.parsons .pz-msg.bad { color: var(--danger); }
+
+/* Entrar na sala (aluno) */
+.pz-join { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .6rem 0; font-size: .8rem; }
+.pz-join input, .pz-join select { font: inherit; padding: .35em .6em; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--fg); }
+.pz-join .pz-room { width: 6em; } .pz-join .pz-name { width: 10em; }
+.pz-join button { font: 700 .8rem var(--font); cursor: pointer; border-radius: 8px; padding: .4em .9em; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
+.pz-join .pz-leave { background: var(--surface); color: var(--fg); border-color: var(--border); }
+.pz-join .pz-me { font-weight: 700; color: var(--ok); }
+.pz-note { color: var(--muted); font-size: .8rem; } .pz-note.bad { color: var(--danger); }
+.pz-part { margin: .4rem 0; font-size: .95rem; }
+.pz-part select { font: inherit; padding: .25em .5em; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--fg); }
+
+/* Placar (ecrã da sala) */
+.pz-board { margin: .6rem 0; }
+.pz-board .pz-top { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+.pz-board .pz-code span, .pz-board .pz-clock span { display: block; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.pz-board .pz-code b { font: 800 2.6rem/1 var(--mono); letter-spacing: .08em; color: var(--accent); }
+.pz-board .pz-clock b { font: 700 2rem/1 var(--mono); }
+.pz-board .pz-actions { margin-left: auto; display: flex; gap: .5rem; }
+.pz-board .pz-actions button { font: 700 .8rem var(--font); cursor: pointer; border-radius: 8px; padding: .45em 1em; border: 1px solid var(--border); background: var(--surface); color: var(--fg); }
+.pz-board .pz-actions .pz-start { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.pz-board .pz-class { margin: .8rem 0; }
+.pz-track { height: 18px; border-radius: 9px; background: var(--border); overflow: hidden; }
+.pz-track i { display: block; height: 100%; width: 0; background: var(--ok); border-radius: 9px; transition: width .6s ease; }
+.pz-track.big { height: 26px; border-radius: 13px; }
+.pz-board .pz-count { display: block; margin-top: .3rem; font-weight: 700; }
+.pz-board.all .pz-count { color: var(--ok); }
+.pz-board.off .pz-top::after { content: "sem ligação"; color: var(--danger); font-size: .8rem; }
+.pz-wait { color: var(--muted); }
+.pz-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .7rem; }
+.pz-team { border: 2px solid var(--border); border-radius: 12px; padding: .5rem .8rem; background: var(--surface); }
+.pz-team.done { border-color: var(--ok); background: var(--ok-soft); }
+.pz-team h4 { margin: 0 0 .3rem; display: flex; justify-content: space-between; font-size: .95rem; }
+.pz-rank { font: 700 .85rem var(--mono); color: var(--ok); } .pz-rank.todo { color: var(--muted); }
+.pz-board ul { list-style: none; margin: 0; padding: 0; }
+.deck .slide .pz-board li { margin: .15em 0; }
+.pz-board li { display: grid; grid-template-columns: minmax(0, 1fr) 70px auto; gap: .5rem; align-items: center; font-size: .8rem; }
+.pz-board li .pz-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pz-board li .pz-mini { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.pz-board li .pz-mini i { display: block; height: 100%; background: var(--accent); }
+.pz-board li.done .pz-mini i { background: var(--ok); }
+.pz-board li .pz-t { font: 600 .75rem var(--mono); color: var(--muted); }
+.pz-board li.done .pz-t { color: var(--ok); }
+.pz-layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .8rem; }
+.pz-layer { border: 2px solid var(--border); border-radius: 12px; padding: .6rem .8rem; background: var(--surface); }
+.pz-layer .pz-lh { display: flex; justify-content: space-between; margin-bottom: .3rem; font-size: 1.05rem; }
+.pz-layer[data-layer="Dados"] { border-color: var(--danger); } .pz-layer[data-layer="Dados"] .pz-track i { background: var(--danger); }
+.pz-layer[data-layer="Estado"] { border-color: var(--warn); } .pz-layer[data-layer="Estado"] .pz-track i { background: var(--warn); }
+.pz-layer[data-layer="UI"] { border-color: var(--accent); } .pz-layer[data-layer="UI"] .pz-track i { background: var(--accent); }
+.pz-piece { margin-top: .5rem; } .pz-piece code { font-size: .8rem; }
+.pz-help { margin-top: .8rem; font-size: .9rem; }
