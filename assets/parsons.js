@@ -25,6 +25,7 @@
         hint: "Drag the pieces into the right order. On the keyboard: Tab to a piece, Alt + up or down to move it.",
         ok: function (t, n) { return "Done in " + t + ", " + n + (n === 1 ? " try." : " tries."); },
         bad: function (k, n) { return k + " of " + n + " in the right place. Green ones are right; move the red ones."; },
+        helper: "Drag the pieces. A piece in the right place locks and turns green.",
         room: "Room", name: "Name", team: "Team", join: "Join", leave: "Leave", optional: "Join the room to show up on the scoreboard.",
         inRoom: function (r, n, t) { return "Room " + r + " · " + n + " · team " + t; }, offline: "no connection to the scoreboard",
         yourPart: "Your part", choose: "Choose a part", waitPart: "Join the room to get your part.",
@@ -36,6 +37,7 @@
         hint: "Arrasta as peças para a ordem certa. No teclado: Tab até uma peça, Alt + cima ou baixo para a mover.",
         ok: function (t, n) { return "Feito em " + t + ", à " + n + "ª tentativa."; },
         bad: function (k, n) { return k + " de " + n + " no sítio certo. As verdes estão certas; mexe nas vermelhas."; },
+        helper: "Arrasta as peças. A que fica no sítio certo prende-se e fica verde.",
         room: "Sala", name: "Nome", team: "Equipa", join: "Entrar", leave: "Sair", optional: "Entra na sala para apareceres no placar.",
         inRoom: function (r, n, t) { return "Sala " + r + " · " + n + " · equipa " + t; }, offline: "sem ligação ao placar",
         yourPart: "A tua parte", choose: "Escolhe uma parte", waitPart: "Entra na sala para receberes a tua parte.",
@@ -137,17 +139,32 @@
         var li = el("li", "pz-item", "<code>" + hl(p.text) + "</code>"); li.tabIndex = 0; li.dataset.text = p.text; list.appendChild(li);
       });
     }
-    function clearMarks() { Array.prototype.forEach.call(list.children, function (li) { li.classList.remove("ok", "bad"); }); }
+    var helper = box.hasAttribute("data-helper"), locked = 0;
+    function clearMarks() { Array.prototype.forEach.call(list.children, function (li) { if (!li.classList.contains("locked")) li.classList.remove("ok", "bad"); }); }
+    // Modo de ajuda: a peça que fica no sítio certo prende-se e fica verde
+    function lockCheck() {
+      if (!helper || done) return;
+      var n = 0;
+      Array.prototype.forEach.call(list.children, function (li, i) {
+        if (li.dataset.text === answer[i]) { li.classList.add("locked", "ok"); n++; }
+      });
+      if (n !== locked) {
+        locked = n;
+        if (n === answer.length) { verify(); return; }
+        if (t0) report && report({ right: n, total: answer.length, tries: tries, ms: Date.now() - t0, solved: false });
+        msg.textContent = T.bad(n, answer.length).split(".")[0] + "."; msg.className = "pz-msg";
+      }
+    }
     function reset(seed) {
-      done = false; tries = 0; triesEl.textContent = "0"; t0 = null; clearInterval(timer); timeEl.textContent = "0:00";
-      box.classList.remove("solved"); msg.textContent = T.hint; msg.className = "pz-msg";
+      done = false; tries = 0; locked = 0; triesEl.textContent = "0"; t0 = null; clearInterval(timer); timeEl.textContent = "0:00";
+      box.classList.remove("solved"); msg.textContent = helper ? T.helper : T.hint; msg.className = "pz-msg";
       var c = box.querySelector(".pz-copy"); if (c) c.remove();
       render(shuffle(pieces, rng(seed)));
+      lockCheck();
     }
     reset(parseInt(box.getAttribute("data-seed") || "1", 10));
 
-    bar.querySelector(".pz-shuffle").addEventListener("click", function () { reset(Math.floor(Math.random() * 1e9)); });
-    bar.querySelector(".pz-check").addEventListener("click", function () {
+    function verify() {
       if (done) return;
       start(); tries++; triesEl.textContent = String(tries);
       var right = 0;
@@ -168,37 +185,50 @@
       } else {
         msg.textContent = T.bad(right, answer.length); msg.className = "pz-msg bad";
       }
-    });
+    }
+    bar.querySelector(".pz-shuffle").addEventListener("click", function () { reset(Math.floor(Math.random() * 1e9)); });
+    bar.querySelector(".pz-check").addEventListener("click", verify);
+
+    // Trocar duas peças sem mexer nas que estão presas pelo meio
+    function sib(li, dir) {
+      var n = dir > 0 ? li.nextElementSibling : li.previousElementSibling;
+      while (n && n.classList.contains("locked")) n = dir > 0 ? n.nextElementSibling : n.previousElementSibling;
+      return n;
+    }
+    function swap(a, b) {
+      var ph = document.createElement("li");
+      list.replaceChild(ph, a); list.replaceChild(a, b); list.replaceChild(b, ph);
+    }
 
     // Arrastar (rato e toque)
     var drag = null;
     list.addEventListener("pointerdown", function (e) {
-      var li = e.target.closest(".pz-item"); if (!li || done || e.button > 0) return;
+      var li = e.target.closest(".pz-item"); if (!li || done || e.button > 0 || li.classList.contains("locked")) return;
       e.preventDefault(); start(); clearMarks();
       li.setPointerCapture(e.pointerId);
       drag = { li: li, y: e.clientY }; li.classList.add("dragging");
     });
     list.addEventListener("pointermove", function (e) {
       if (!drag) return;
-      var li = drag.li, dy = e.clientY - drag.y;
-      li.style.transform = "translateY(" + dy + "px)";
-      var prev = li.previousElementSibling, next = li.nextElementSibling;
-      if (next && dy > next.offsetHeight / 2 + 2) {
-        list.insertBefore(next, li); drag.y += next.offsetHeight + 4; li.style.transform = "translateY(" + (e.clientY - drag.y) + "px)";
-      } else if (prev && -dy > prev.offsetHeight / 2 + 2) {
-        list.insertBefore(li, prev); drag.y -= prev.offsetHeight + 4; li.style.transform = "translateY(" + (e.clientY - drag.y) + "px)";
+      var li = drag.li, dy = e.clientY - drag.y, next = sib(li, 1), prev = sib(li, -1), old = li.offsetTop;
+      if (next && dy > next.offsetTop - li.offsetTop - next.offsetHeight / 2) {
+        swap(li, next); drag.y += li.offsetTop - old;
+      } else if (prev && -dy > li.offsetTop - prev.offsetTop - prev.offsetHeight / 2) {
+        swap(li, prev); drag.y += li.offsetTop - old;
       }
+      li.style.transform = "translateY(" + (e.clientY - drag.y) + "px)";
     });
-    function end() { if (!drag) return; drag.li.style.transform = ""; drag.li.classList.remove("dragging"); drag = null; }
+    function end() { if (!drag) return; drag.li.style.transform = ""; drag.li.classList.remove("dragging"); drag = null; lockCheck(); }
     list.addEventListener("pointerup", end);
     list.addEventListener("pointercancel", end);
     list.addEventListener("touchend", function (e) { e.stopPropagation(); });
 
     // Teclado: Alt + cima ou baixo
     list.addEventListener("keydown", function (e) {
-      var li = e.target.closest(".pz-item"); if (!li || done || !e.altKey) return;
-      if (e.key === "ArrowUp" && li.previousElementSibling) { e.preventDefault(); start(); clearMarks(); list.insertBefore(li, li.previousElementSibling); li.focus(); }
-      if (e.key === "ArrowDown" && li.nextElementSibling) { e.preventDefault(); start(); clearMarks(); list.insertBefore(li.nextElementSibling, li); li.focus(); }
+      var li = e.target.closest(".pz-item"); if (!li || done || !e.altKey || li.classList.contains("locked")) return;
+      var other = e.key === "ArrowUp" ? sib(li, -1) : e.key === "ArrowDown" ? sib(li, 1) : null;
+      if (!other) return;
+      e.preventDefault(); start(); clearMarks(); swap(li, other); li.focus(); lockCheck();
     });
   }
 
