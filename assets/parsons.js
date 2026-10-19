@@ -28,10 +28,13 @@
         helper: "Drag the pieces. A piece in the right place locks and turns green.",
         quiz: "One answer only.", quizOk: "Right.", quizNo: "Not quite.", understood: function (a, b) { return a + " of " + b + " answered right"; },
         room: "Room code", name: "Name", team: "Team", join: "Join the game", leave: "Leave",
-        inRoom: function (r, n, t) { return "Room " + r + " · " + n + " · team " + t; }, offline: "no connection to the scoreboard",
+        inRoom: function (r, n) { return "Room " + r + " · " + n; }, offline: "no connection to the scoreboard",
         yourPart: "Your part", choose: "Choose a part", waitPart: "Join the room to get your part.",
         code: "Room code", newRoom: "New room", start: "Start", restart: "Restart", goal: "Goal", solved: function (a, b) { return a + " of " + b + " solved"; },
         classDone: function (t) { return "The whole class in " + t; }, goalOk: "goal reached", goalMiss: "goal missed",
+        already: "Already solved.", students: function (n) { return n + (n === 1 ? " student" : " students"); }, ex: function (k, n) { return "Exercise " + k + " of " + n; }, prev: "Previous", next: "Next", skip: "Skip",
+        help: "Ask for help", helping: "Help is coming", student: "Student", stuck: function (m) { return "no check for " + m + " min"; },
+        asked: "asked for help", done: function (a, b) { return a + " of " + b + " exercises"; }, noone: "Nobody yet. Students open this lesson, go to the exercises and join with the code.",
         waiting: "Waiting for players. Open this lesson, scroll to the exercise and join with the code.",
         still: "Still building, go and help:", built: function (t) { return "The app is built! " + t; }, ready: "ready" }
     : { check: "Verificar", shuffle: "Baralhar", tries: "tentativas", try1: "tentativa", time: "tempo",
@@ -41,10 +44,13 @@
         helper: "Arrasta as peças. A que fica no sítio certo prende-se e fica verde.",
         quiz: "Só uma resposta.", quizOk: "Certo.", quizNo: "Não é bem isso.", understood: function (a, b) { return a + " de " + b + " acertaram na pergunta"; },
         room: "Código da sala", name: "Nome", team: "Equipa", join: "Entrar no jogo", leave: "Sair",
-        inRoom: function (r, n, t) { return "Sala " + r + " · " + n + " · equipa " + t; }, offline: "sem ligação ao placar",
+        inRoom: function (r, n) { return "Sala " + r + " · " + n; }, offline: "sem ligação ao placar",
         yourPart: "A tua parte", choose: "Escolhe uma parte", waitPart: "Entra na sala para receberes a tua parte.",
         code: "Código da sala", newRoom: "Nova sala", start: "Começar", restart: "Recomeçar", goal: "Meta", solved: function (a, b) { return a + " de " + b + " resolveram"; },
         classDone: function (t) { return "A turma toda em " + t; }, goalOk: "meta cumprida", goalMiss: "meta falhada",
+        already: "Já resolvido.", students: function (n) { return n + (n === 1 ? " aluno" : " alunos"); }, ex: function (k, n) { return "Exercício " + k + " de " + n; }, prev: "Anterior", next: "Seguinte", skip: "Saltar",
+        help: "✋ Pedir ajuda", helping: "✋ A ajuda vem a caminho", student: "Aluno", stuck: function (m) { return "sem verificar há " + m + " min"; },
+        asked: "pediu ajuda", done: function (a, b) { return a + " de " + b + " exercícios"; }, noone: "Ainda ninguém. Os alunos abrem esta aula, vão aos exercícios e entram com o código.",
         waiting: "À espera dos alunos. Abrem esta aula, vão até ao exercício e entram com o código.",
         still: "Ainda a construir, vai ajudar:", built: function (t) { return "A app está construída! " + t; }, ready: "pronto" };
 
@@ -93,20 +99,17 @@
     function paint() {
       bar.classList.toggle("gate", !joined());
       if (joined()) {
-        bar.innerHTML = '<span class="pz-me">' + esc(T.inRoom(me.room, me.name, me.team)) + '</span> <button type="button" class="pz-leave">' + T.leave + "</button>";
+        bar.innerHTML = '<span class="pz-me">' + esc(T.inRoom(me.room, me.name)) + '</span> <button type="button" class="pz-leave">' + T.leave + "</button>";
         bar.querySelector(".pz-leave").onclick = function () { setMe({ id: me.id, name: me.name, team: me.team }); };
       } else {
-        var opts = ""; for (var i = 1; i <= 12; i++) opts += "<option>" + i + "</option>";
         bar.innerHTML = '<input class="pz-room" inputmode="numeric" maxlength="6" placeholder="' + T.room + '" aria-label="' + T.room + '">' +
           '<input class="pz-name" maxlength="24" placeholder="' + T.name + '" aria-label="' + T.name + '">' +
-          '<label>' + T.team + ' <select class="pz-team">' + opts + "</select></label>" +
           '<button type="button" class="pz-go">' + T.join + "</button>";
         if (me && me.name) bar.querySelector(".pz-name").value = me.name;
-        if (me && me.team) bar.querySelector(".pz-team").value = me.team;
         bar.querySelector(".pz-go").onclick = function () {
           var room = bar.querySelector(".pz-room").value.trim(), name = bar.querySelector(".pz-name").value.trim();
           if (!room || !name) { (room ? bar.querySelector(".pz-name") : bar.querySelector(".pz-room")).focus(); return; }
-          setMe({ id: (me && me.id) || (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)), room: room, name: name, team: bar.querySelector(".pz-team").value });
+          setMe({ id: (me && me.id) || (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)), room: room, name: name, team: "" });
         };
         bar.addEventListener("keydown", function (e) { if (e.key === "Enter") bar.querySelector(".pz-go").click(); e.stopPropagation(); });
       }
@@ -116,7 +119,7 @@
   }
 
   // ----- um exercício -----
-  function initPuzzle(box, report) {
+  function initPuzzle(box, report, hooks) {
     var src = box.querySelector("script[type='text/plain']");
     var qs = box.querySelector("script[type='application/json']");
     var quiz = qs ? JSON.parse(qs.textContent) : null;
@@ -125,6 +128,12 @@
     var parts = blocks ? raw.split(/\n[ \t]*\n/) : raw.split("\n");
     var pieces = parts.filter(function (p) { return p.trim() !== ""; }).map(function (p, i) { return { id: i, text: p }; });
     var answer = pieces.map(function (p) { return p.text; });
+    // data-free="1,2;5,6": peças (pela ordem certa, a contar do 0) que podem trocar entre si
+    var groups = (box.getAttribute("data-free") || "").split(";").filter(Boolean).map(function (g) { return g.split(",").map(Number); });
+    function okAt(text, i) {
+      if (same(text, answer[i])) return true;
+      return groups.some(function (g) { return g.indexOf(i) >= 0 && g.some(function (j) { return same(text, answer[j]); }); });
+    }
 
     box.innerHTML = "";
     if (box.getAttribute("data-title")) box.appendChild(el("div", "pz-title")).textContent = box.getAttribute("data-title");
@@ -156,7 +165,7 @@
       if (!helper || done) return;
       var n = 0;
       Array.prototype.forEach.call(list.children, function (li, i) {
-        if (same(li.dataset.text, answer[i])) { li.classList.add("locked", "ok"); n++; }
+        if (okAt(li.dataset.text, i)) { li.classList.add("locked", "ok"); n++; }
       });
       if (n !== locked) {
         locked = n;
@@ -179,7 +188,7 @@
       start(); tries++; triesEl.textContent = String(tries); tlEl.textContent = tries === 1 ? T.try1 : T.tries;
       var right = 0;
       Array.prototype.forEach.call(list.children, function (li, i) {
-        var good = same(li.dataset.text, answer[i]); if (good) right++;
+        var good = okAt(li.dataset.text, i); if (good) right++;
         li.classList.toggle("ok", good); li.classList.toggle("bad", !good);
       });
       var ms = Date.now() - t0, won = right === answer.length;
@@ -191,6 +200,7 @@
         requestAnimationFrame(function () { box.classList.add("merged"); });
         msg.textContent = T.ok(fmt(ms), tries); msg.className = "pz-msg ok";
         if (quiz) askQuiz();
+        if (hooks && hooks.onSolved) hooks.onSolved();
       } else {
         msg.textContent = T.bad(right, answer.length); msg.className = "pz-msg bad";
       }
@@ -247,7 +257,8 @@
       var li = drag.li, guard = 100;
       while (guard--) {
         var dy = e.clientY - drag.y, next = sib(li, 1), prev = sib(li, -1), old = li.offsetTop;
-        if (next && dy > next.offsetTop - li.offsetTop - next.offsetHeight / 2) swap(li, next);
+        // desce quando o fundo da peça passa o meio da de baixo; sobe quando o topo passa o meio da de cima
+        if (next && dy > next.offsetTop + next.offsetHeight / 2 - li.offsetTop - li.offsetHeight) swap(li, next);
         else if (prev && -dy > li.offsetTop - prev.offsetTop - prev.offsetHeight / 2) swap(li, prev);
         else break;
         drag.y += li.offsetTop - old;
@@ -266,6 +277,13 @@
       if (!other) return;
       e.preventDefault(); start(); clearMarks(); swap(li, other); li.focus(); lockCheck();
     });
+
+    // Já resolvido noutra visita: mostra o bloco final, sem animação e sem enviar nada
+    function restore() {
+      render(pieces); done = true; clearInterval(timer);
+      box.classList.add("solved", "merged", "instant"); msg.textContent = T.already; msg.className = "pz-msg ok";
+    }
+    return { last: function () { return last; }, restore: restore, total: answer.length };
   }
 
   // ----- exercício solto, com placar -----
@@ -421,10 +439,154 @@
     poll(); setInterval(poll, 1500);
   }
 
+
+  // ----- sequência de exercícios, cada aluno ao seu ritmo -----
+  //   <div class="pz-seq" data-id="a14"> com vários .parsons, cada um com data-id e data-label
+  function initTrack(track) {
+    var tid = track.getAttribute("data-id");
+    var boxes = Array.prototype.slice.call(track.querySelectorAll(".parsons"));
+    var key = "pz-track-" + tid, st = load(key) || { cur: 0, solved: [] };
+    var nav = el("div", "pz-nav");
+    var ctl = boxes.map(function (b, i) {
+      var id = b.getAttribute("data-id");
+      return initPuzzle(b, function (body) { send(id, body); }, { onSolved: function () {
+        if (st.solved.indexOf(id) < 0) st.solved.push(id);
+        save(key, st); paint();
+      } });
+    });
+    var gate = joinBar();
+    track.insertBefore(gate, track.firstChild);
+    track.insertBefore(nav, gate.nextSibling);
+    boxes.forEach(function (b, i) { if (st.solved.indexOf(b.getAttribute("data-id")) >= 0) ctl[i].restore(); });
+    var help = false;
+    function paint() {
+      var on = !!joined();
+      nav.hidden = !on;
+      boxes.forEach(function (b, i) { b.hidden = !on || i !== st.cur; });
+      if (!on) return;
+      var n = boxes.length, solved = function (i) { return st.solved.indexOf(boxes[i].getAttribute("data-id")) >= 0; };
+      // números agrupados por capítulo (data-chapter), na ordem em que aparecem
+      var chapters = [];
+      boxes.forEach(function (b, i) {
+        var c = b.getAttribute("data-chapter") || "";
+        if (!chapters.length || chapters[chapters.length - 1].name !== c) chapters.push({ name: c, idx: [] });
+        chapters[chapters.length - 1].idx.push(i);
+      });
+      var dots = chapters.map(function (c) {
+        return '<div class="pz-chap">' + (c.name ? "<span>" + esc(c.name) + "</span>" : "") + '<div class="pz-dots">' + c.idx.map(function (i) {
+          var b = boxes[i];
+          return '<button type="button" class="pz-dot' + (solved(i) ? " done" : "") + (i === st.cur ? " cur" : "") + '" data-i="' + i + '" title="' + esc(b.getAttribute("data-label") || "") + '">' + (i + 1) + "</button>";
+        }).join("") + "</div></div>";
+      }).join("");
+      var chap = boxes[st.cur].getAttribute("data-chapter");
+      nav.innerHTML = '<div class="pz-chaps">' + dots + "</div>" +
+        '<div class="pz-navrow">' + (chap ? '<span class="pz-chapname">' + esc(chap) + "</span> " : "") + "<b>" + T.ex(st.cur + 1, n) + "</b> · " + esc(boxes[st.cur].getAttribute("data-label") || "") +
+        '<span class="pz-navbtns"><button type="button" class="pz-help' + (help ? " on" : "") + '">' + (help ? T.helping : T.help) + "</button>" +
+        '<button type="button" class="pz-prev"' + (st.cur ? "" : " disabled") + ">" + T.prev + "</button>" +
+        '<button type="button" class="pz-next' + (solved(st.cur) ? " go" : "") + '"' + (st.cur < n - 1 ? "" : " disabled") + ">" + (solved(st.cur) ? T.next : T.skip) + "</button></span></div>";
+    }
+    function go(i) {
+      if (i < 0 || i >= boxes.length) return;
+      if (help) setHelp(false);
+      st.cur = i; save(key, st); paint();
+      var id = boxes[i].getAttribute("data-id");
+      // avisa o painel de que o aluno está neste exercício (sem apagar progresso que já lá esteja)
+      if (!ctl[i].last() && st.solved.indexOf(id) < 0) send(id, { right: 0, total: ctl[i].total, tries: 0, ms: 0, solved: false });
+      // só desliza se o início dos exercícios estiver fora de vista, e sem animação (não se arrasta a meio)
+      var top = track.getBoundingClientRect().top;
+      if (top < 0 || top > innerHeight * 0.6) track.scrollIntoView({ block: "start" });
+    }
+    function setHelp(v) {
+      help = v;
+      var i = st.cur, id = boxes[i].getAttribute("data-id"), body = {};
+      var l = ctl[i].last() || { right: 0, total: ctl[i].total, tries: 0, ms: 0, solved: false };
+      Object.keys(l).forEach(function (k) { if (k !== "quiz") body[k] = l[k]; });
+      body.help = v; send(id, body); paint();
+    }
+    nav.addEventListener("click", function (e) {
+      var d = e.target.closest(".pz-dot"); if (d) { go(Number(d.dataset.i)); return; }
+      if (e.target.closest(".pz-prev")) go(st.cur - 1);
+      else if (e.target.closest(".pz-next")) go(st.cur + 1);
+      else if (e.target.closest(".pz-help")) setHelp(!help);
+    });
+    listeners.push(function () { paint(); if (joined()) go(st.cur); });
+    paint();
+    if (joined()) go(st.cur);
+  }
+
+  // ----- painel do professor: estado da turma, todos os exercícios -----
+  //   <div class="pz-room-board" data-track="a14"></div>
+  function initRoomBoard(board) {
+    var track = document.querySelector('.pz-seq[data-id="' + board.getAttribute("data-track") + '"]');
+    var ex = track ? Array.prototype.map.call(track.querySelectorAll(".parsons"), function (b) {
+      return { id: b.getAttribute("data-id"), label: b.getAttribute("data-label") || b.getAttribute("data-id"), chapter: b.getAttribute("data-chapter") || "" };
+    }) : [];
+    var host = load("pz-host") || {}, day = new Date().toISOString().slice(0, 10);
+    if (!host.code || host.day !== day) { host = { code: String(1000 + Math.floor(Math.random() * 9000)), day: day, starts: {} }; save("pz-host", host); }
+    board.innerHTML = '<div class="pz-top"><div class="pz-code"><span>' + T.code + '</span><b></b></div>' +
+      '<div class="pz-sum"></div><div class="pz-actions"><button type="button" class="pz-new">' + T.newRoom + "</button></div></div>" +
+      '<div class="pz-grid"></div>';
+    var codeEl = board.querySelector(".pz-code b"), grid = board.querySelector(".pz-grid"), sum = board.querySelector(".pz-sum");
+    codeEl.textContent = host.code;
+    board.querySelector(".pz-new").onclick = function () {
+      host = { code: String(1000 + Math.floor(Math.random() * 9000)), day: day, starts: {} }; save("pz-host", host);
+      codeEl.textContent = host.code; grid.innerHTML = "";
+    };
+    function render(room) {
+      var people = {};
+      Object.keys(room.puzzles).forEach(function (pid) {
+        room.puzzles[pid].forEach(function (p) {
+          var s = people[p.id] = people[p.id] || { name: p.name, by: {}, idle: 1e9, cur: null };
+          s.by[pid] = p;
+          if (p.idle < s.idle) { s.idle = p.idle; s.cur = pid; }
+        });
+      });
+      var list = Object.keys(people).map(function (k) { return people[k]; });
+      list.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      if (!list.length) { grid.innerHTML = '<p class="pz-wait">' + T.noone + "</p>"; sum.textContent = ""; return; }
+      var solvedBy = {}, quizOk = 0, quizN = 0;
+      var chaps = [];
+      ex.forEach(function (e) { if (!chaps.length || chaps[chaps.length - 1].name !== e.chapter) chaps.push({ name: e.chapter, n: 0 }); chaps[chaps.length - 1].n++; });
+      var head = (chaps.some(function (c) { return c.name; }) ? '<tr class="chap"><th></th>' + chaps.map(function (c) { return '<th colspan="' + c.n + '">' + esc(c.name) + "</th>"; }).join("") + "<th></th></tr>" : "") +
+        "<tr><th>" + T.student + "</th>" + ex.map(function (e, i) { return '<th title="' + esc(e.label) + '">' + (i + 1) + "</th>"; }).join("") + "<th></th></tr>";
+      var rows = list.map(function (s) {
+        var n = 0, helpNow = false;
+        var cells = ex.map(function (e) {
+          var p = s.by[e.id];
+          if (!p) return '<td class="c"></td>';
+          if (p.quiz != null) { quizN++; if (p.quiz) quizOk++; }
+          if (p.help) helpNow = true;
+          var q = p.quiz === true ? '<i class="q ok"></i>' : p.quiz === false ? '<i class="q no"></i>' : "";
+          if (p.solved) { n++; solvedBy[e.id] = (solvedBy[e.id] || 0) + 1; return '<td class="c done' + (s.cur === e.id ? " cur" : "") + '">✓' + q + "</td>"; }
+          var pct = p.total ? Math.round(100 * p.right / p.total) : 0;
+          return '<td class="c work' + (s.cur === e.id ? " cur" : "") + (p.help ? " help" : "") + '"><span class="pz-mini"><i style="width:' + pct + '%"></i></span>' + (p.tries ? "<small>" + p.tries + "×</small>" : "") + "</td>";
+        }).join("");
+        var curP = s.cur && s.by[s.cur], note = "";
+        if (helpNow) note = '<span class="pz-flag help">✋ ' + T.asked + "</span>";
+        else if (curP && !curP.solved && curP.idle >= 180) note = '<span class="pz-flag stuck">' + T.stuck(Math.floor(curP.idle / 60)) + "</span>";
+        return '<tr class="' + (helpNow ? "help" : "") + '"><td class="n">' + esc(s.name) + "<small>" + T.done(n, ex.length) + "</small></td>" + cells + "<td>" + note + "</td></tr>";
+      }).join("");
+      var foot = "<tr class=\"tot\"><td></td>" + ex.map(function (e) { return "<td>" + (solvedBy[e.id] || 0) + "</td>"; }).join("") + "<td></td></tr>";
+      grid.innerHTML = '<table class="pz-table">' + head + rows + foot + "</table>";
+      sum.textContent = T.students(list.length) + (quizN ? " · " + T.understood(quizOk, quizN) : "");
+    }
+    function active() { var s = board.closest(".slide"); return !s || s.classList.contains("active") || document.querySelector(".deck.doc"); }
+    function poll() {
+      if (!active() || document.hidden) return;
+      fetch(API + encodeURIComponent(host.code))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { if (d) render(d); board.classList.toggle("off", !d); })
+        .catch(function () { board.classList.add("off"); });
+    }
+    poll(); setInterval(poll, 2000);
+  }
+
   function boot() {
+    document.querySelectorAll(".pz-seq").forEach(initTrack);
     document.querySelectorAll(".pz-set").forEach(initSet);
-    document.querySelectorAll(".parsons").forEach(function (b) { if (!b.closest(".pz-set")) initSingle(b); });
+    document.querySelectorAll(".parsons").forEach(function (b) { if (!b.closest(".pz-set") && !b.closest(".pz-seq")) initSingle(b); });
     document.querySelectorAll(".pz-board").forEach(initBoard);
+    document.querySelectorAll(".pz-room-board").forEach(initRoomBoard);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
 })();

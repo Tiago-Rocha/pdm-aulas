@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 14 · Construir em conjunto: as camadas na prática · PDM</title>
+<title>Aula 14 · Exercícios: as camadas na prática · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -17,7 +17,6 @@ html.deck.proj { --fs: 28px; }
 .deck .slide table { font-size: 1rem; }
 figure.diagram svg { max-height: 74vh; }
 figure.diagram figcaption { font-size: 1rem; }
-.deck .slide .parsons + .pz-join, .pz-set .pz-join { margin-top: 0; }
 </style>
 <link rel="stylesheet" href="../assets/parsons.css">
 </head>
@@ -38,23 +37,22 @@ figure.diagram figcaption { font-size: 1rem; }
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 14 · Semana 7 · Terça, 20 de outubro de 2026 · 08:30 às 10:30</p>
-  <h1>Construir em conjunto: as camadas na prática</h1>
-  <p class="lead">Ontem partimos uma classe em dados, estado e UI. Hoje a turma inteira constrói as ilhas favoritas da app, uma peça de cada camada por pessoa, até as três barras chegarem ao fim.</p>
+  <h1>Exercícios: as camadas na prática</h1>
+  <p class="lead">Ontem partimos uma classe em dados, estado e UI. Hoje lês muito código: 21 exercícios para pôr por ordem, camada a camada, do modelo ao ecrã das favoritas, cada um ao seu ritmo.</p>
   <div class="meta"><span>Repositório: pdm-aula-13</span></div>
-  <aside class="notes">Tempos de referência: aquecimento no quadro até às 08:40; aquecimento com placar até às 08:50; clone até às 09:05; construir em conjunto até às 09:40; a app que construímos até às 09:55; parte a rede até às 10:15; fecho até às 10:30. Com 7 a 9 alunos: três equipas (mesas 1, 2 e 3), e na construção cada uma das seis peças fica com uma ou duas pessoas. Ninguém compete: a meta é da turma. Quem acaba vai ajudar quem ainda está a construir; o placar diz quem é. O placar precisa da API do curso; se falhar, os exercícios funcionam na mesma, só sem placar.</aside>
+  <aside class="notes">Tempos de referência: o load() no quadro até às 08:40; entrar e arrancar até às 08:45; exercícios até às 09:55; a app inteira até às 10:15; partir a rede se houver tempo; fecho às 10:25. A maior parte da aula são os exercícios: tu circulas pela sala e acompanhas no painel "Estado da turma" (slide 6) quem está a avançar, quem está parado e quem pediu ajuda. Os exercícios estão em capítulos, pelas camadas: Modelos, Dados, Estado, UI e Ligar tudo. O primeiro exercício de cada capítulo (menos o último) prende as linhas certas; os outros são com o botão Verificar. Algumas linhas podem trocar entre si e contam como certas (por exemplo os campos de uma classe, ou isLoading e error no início do load()).</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Ler uma peça de código e dizer em que camada vive.</li>
-    <li>Pôr por ordem um repository, um notifier e um widget, e explicar porquê.</li>
-    <li>Correr a app sem a API, com um repository a fingir.</li>
-    <li>Ver o ecrã aguentar uma falha de rede sem mudar uma linha.</li>
+    <li>Ler uma peça de código e dizer o que faz e em que camada vive.</li>
+    <li>Pôr por ordem um modelo, um repository, um notifier e um widget, e explicar porquê.</li>
+    <li>Correr a app inteira sem a API, com um repository a fingir.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Aquecer">
+<section class="slide" data-part="Quadro">
   <h2>No quadro: põe o <code>load()</code> por ordem</h2>
   <div class="parsons" data-helper data-title="lib/state/forecast_notifier.dart · load()" data-seed="13">
 <script type="text/plain">
@@ -72,25 +70,104 @@ figure.diagram figcaption { font-size: 1rem; }
     }
   }
 </script>
-<script type="application/json">{"q": "O que faz esta peça?", "options": ["Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Estado: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem."], "why": "Os dois notifyListeners() são as campainhas: um quando o pedido parte, outro no finally, com ilhas ou com erro."}</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Ligar: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem."], "why": "Os dois notifyListeners() são as campainhas: um quando o pedido parte, outro no finally, com ilhas ou com erro."}</script>
   </div>
-  <aside class="notes">Um voluntário vem ao computador da sala e arrasta; a turma diz-lhe o que fazer, em voz alta. No fim aparece uma pergunta de escolha múltipla: antes de alguém clicar, a turma vota de mão no ar em cada opção, e só depois o voluntário responde (só vale a primeira resposta). Antes de "Verificar", pergunta: onde toca a primeira campainha? E a segunda? Depois de acertar: porque é que o segundo <code>notifyListeners()</code> está no <code>finally</code>? (Para tocar com sucesso ou com erro.)</aside>
+  <aside class="notes">Um voluntário vem ao computador da sala e arrasta; a turma diz-lhe o que fazer, em voz alta. As linhas certas prendem-se e ficam verdes. No fim aparece uma pergunta: antes de alguém clicar, a turma vota de mão no ar em cada opção, e só depois o voluntário responde (só vale a primeira resposta).</aside>
 </section>
 
-<section class="slide">
-  <h2>Como funciona o jogo</h2>
+<section class="slide" data-part="Exercícios">
+  <h2>Como funciona</h2>
   <ol class="steps">
     <li>No teu computador, abre <code>tiago-rocha.github.io/pdm-aulas/aulas/aula-14.html</code> e vai ao slide seguinte a este.</li>
-    <li>Escreve o <strong>código da sala</strong> que está no ecrã, o teu primeiro nome e o número da tua mesa: a mesa é a tua equipa.</li>
-    <li>Arrasta as peças. No aquecimento, a peça que fica no sítio certo prende-se e fica verde; na construção, és tu que carregas em <strong>Verificar</strong>. O ecrã da sala mostra o progresso de todos.</li>
-    <li>Depois de ordenar, aparece uma pergunta sobre o que faz o código. Pensa antes de clicar: <strong>só vale a primeira resposta</strong>, e o ecrã da sala mostra quantos acertaram.</li>
+    <li>Escreve o <strong>código da sala</strong> que está no ecrã e o teu primeiro nome.</li>
+    <li>São 21 exercícios, em capítulos pelas camadas: Modelos, Dados, Estado, UI e Ligar tudo. No primeiro de cada capítulo, a linha certa prende-se e fica verde; nos outros és tu que carregas em <strong>Verificar</strong>.</li>
+    <li>Depois de cada exercício há uma pergunta. Pensa antes de clicar: <strong>só vale a primeira resposta</strong>.</li>
+    <li>Preso? Carrega em <strong>✋ Pedir ajuda</strong>, ou salta e volta mais tarde.</li>
   </ol>
-  <div class="callout"><strong>Regra</strong> Ninguém ganha sozinho. A meta é a turma toda acabar. Quando acabas, vais ajudar quem ainda está a construir: o ecrã diz quem é.</div>
 </section>
 
 <section class="slide">
-  <h2>Aquecimento: o <code>fetchIslands</code></h2>
-  <div class="parsons" data-id="aquece" data-helper data-title="lib/data/http_forecast_repository.dart · fetchIslands()" data-seed="7">
+  <h2>Exercícios</h2>
+  <div class="pz-seq" data-id="a14">
+  <div class="parsons" data-id="e01" data-chapter="Modelos" data-label="Island" data-helper data-free="1,2,3,4;7,8,9" data-title="lib/models/island.dart" data-seed="40">
+<script type="text/plain">
+class Island {
+  const Island({required this.id, required this.name, required this.imageUrl});
+  final String id;
+  final String name;
+  final String imageUrl;
+  factory Island.fromJson(Map<String, dynamic> json) {
+    return Island(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      imageUrl: json['imageUrl'] as String,
+    );
+  }
+}
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Modelo: uma ilha com id, nome e fotografia, e como se lê do JSON.", "Modelo: a previsão de um sítio, com a lista de dias, lida do JSON.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam."], "why": "É a única classe que sabe os nomes dos campos do JSON de uma ilha; as outras camadas só veem Island."}</script>
+  </div>
+  <div class="parsons" data-id="e02" data-chapter="Modelos" data-label="WeatherType" data-free="1,2,3,4;6,7,8" data-title="lib/models/forecast.dart · WeatherType" data-seed="41">
+<script type="text/plain">
+enum WeatherType {
+  sunny('Sol', Icons.wb_sunny),
+  partlyCloudy('Parcialmente nublado', Icons.cloud_queue),
+  cloudy('Nublado', Icons.cloud),
+  rain('Chuva', Icons.umbrella),
+  storm('Trovoada', Icons.thunderstorm);
+  const WeatherType(this.description, this.icon);
+  final String description;
+  final IconData icon;
+}
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Modelo: os tipos de tempo possíveis, cada um com descrição e ícone.", "Modelo: lê um dia do JSON: data, tipo de tempo, temperaturas, chuva e vento.", "Modelo: uma ilha com id, nome e fotografia, e como se lê do JSON.", "Dados: diz o que a app pode pedir (as ilhas e a previsão), sem dizer como."], "why": "Um enum com campos: cada valor traz a descrição em português e o ícone, prontos para a UI."}</script>
+  </div>
+  <div class="parsons" data-id="e03" data-chapter="Modelos" data-label="Forecast" data-free="1,2,3" data-title="lib/models/forecast.dart · Forecast" data-seed="42">
+<script type="text/plain">
+class Forecast {
+  const Forecast({required this.location, required this.days});
+  final String location;
+  final List<DayForecast> days;
+  factory Forecast.fromJson(Map<String, dynamic> json) {
+    final days = json['days'] as List<dynamic>;
+    return Forecast(
+      location: json['location'] as String,
+      days: days
+          .map((day) => DayForecast.fromJson(day as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Modelo: a previsão de um sítio, com a lista de dias, lida do JSON.", "Modelo: lê um dia do JSON: data, tipo de tempo, temperaturas, chuva e vento.", "Modelo: uma ilha com id, nome e fotografia, e como se lê do JSON.", "Dados: a receita verdadeira do repository, que pede tudo à API pelo ApiClient."], "why": "Lê a lista \"days\" e entrega cada dia ao DayForecast.fromJson: cada classe lê só o seu pedaço de JSON."}</script>
+  </div>
+  <div class="parsons" data-id="e04" data-chapter="Modelos" data-label="DayForecast.fromJson" data-free="1,2;4,5,6,7,8,9" data-title="lib/models/forecast.dart · DayForecast.fromJson" data-seed="43">
+<script type="text/plain">
+  factory DayForecast.fromJson(Map<String, dynamic> json) {
+    final weather = json['weatherType'] as Map<String, dynamic>;
+    final wind = json['wind'] as Map<String, dynamic>;
+    return DayForecast(
+      date: DateTime.parse(json['date'] as String),
+      type: WeatherType.values.byName(weather['category'] as String),
+      tMin: (json['tMin'] as num).toDouble(),
+      tMax: (json['tMax'] as num).toDouble(),
+      rainChance: json['rainChance'] as int,
+      windClass: wind['class'] as int,
+    );
+  }
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Modelo: lê um dia do JSON: data, tipo de tempo, temperaturas, chuva e vento.", "Modelo: a previsão de um sítio, com a lista de dias, lida do JSON.", "Modelo: os tipos de tempo possíveis, cada um com descrição e ícone.", "Dados: se a resposta não for 2xx, lança o erro com a mensagem da API."], "why": "Os números do JSON chegam como num: o toDouble() garante double. byName transforma \"rain\" em WeatherType.rain."}</script>
+  </div>
+  <div class="parsons" data-id="e05" data-chapter="Dados" data-label="A interface" data-helper data-free="1,2" data-title="lib/data/forecast_repository.dart" data-seed="44">
+<script type="text/plain">
+abstract class ForecastRepository {
+  Future<List<Island>> fetchIslands();
+  Future<Forecast> fetchForecast(String islandId);
+}
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: diz o que a app pode pedir (as ilhas e a previsão), sem dizer como.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Modelo: uma ilha com id, nome e fotografia, e como se lê do JSON.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro."], "why": "Uma abstract class só com as assinaturas: é a ementa. O Http e o Fake são duas receitas para a mesma ementa."}</script>
+  </div>
+  <div class="parsons" data-id="e06" data-chapter="Dados" data-label="fetchIslands" data-helper data-title="lib/data/http_forecast_repository.dart · fetchIslands()" data-seed="45">
 <script type="text/plain">
   Future<List<Island>> fetchIslands() async {
     final list = await _api.get('/v1/islands') as List<dynamic>;
@@ -99,39 +176,38 @@ figure.diagram figcaption { font-size: 1rem; }
         .toList();
   }
 </script>
-<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: mostra só as ilhas marcadas, lendo dois notifiers."], "why": "É o único sítio que conhece o caminho /v1/islands e o JSON; para cima só sobem objetos Island."}</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: desenha a lista de ilhas, uma linha com fotografia e nome por ilha."], "why": "É o único sítio que conhece o caminho /v1/islands e o JSON; para cima só sobem objetos Island."}</script>
   </div>
-  <aside class="notes">Projeta o slide seguinte (o placar) enquanto eles jogam aqui. Três minutos.</aside>
-</section>
+  <div class="parsons" data-id="e07" data-chapter="Dados" data-label="HttpForecastRepository" data-blocks data-free="1,2;3,4" data-title="lib/data/http_forecast_repository.dart" data-seed="46">
+<script type="text/plain">
+class HttpForecastRepository implements ForecastRepository {
 
-<section class="slide">
-  <h2>Placar: aquecimento</h2>
-  <div class="pz-board" data-id="aquece" data-goal="180"></div>
-  <aside class="notes">Carrega em "Começar" quando disseres "já". A meta é a turma toda em três minutos. Se alguém ficar preso, quem acabou da mesma mesa vai ajudar. Quando a turma acabar, pergunta: em que camada vive este código? (Dados: é o único sítio que conhece o caminho da API e o JSON.)</aside>
-</section>
+  HttpForecastRepository(this._api); // injected, not created here
 
-<section class="slide" data-part="Arranque">
-  <h2>Começar: o repositório de hoje</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-13.git
-cd pdm-aula-13
-flutter pub get</code></pre>
-  <ol class="steps">
-    <li>Abre a pasta no VS Code. O <code>clientId</code> e o <code>clientSecret</code> estão na issue #1 do teu repositório <code>pdm-miniprojeto</code>.</li>
-    <li>No terminal do VS Code, numa só linha, com os teus valores: <code>flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd --dart-define=CLIENT_SECRET=o-teu-segredo</code></li>
-    <li>Tens de ver a lista das ilhas, cada uma com a fotografia. Mão no ar quando aparecer.</li>
-    <li>Abre um segundo terminal (o <strong>+</strong> do painel do terminal) para os comandos <code>git</code>. No primeiro, onde corre a app, <kbd>r</kbd> é hot reload, <kbd>R</kbd> é hot restart e <kbd>q</kbd> fecha.</li>
-  </ol>
-  <div class="callout warn"><strong>Aparece <code>401: clientId ou clientSecret errados.</code>?</strong> Faltam os dois <code>--dart-define</code> ou têm um erro. O F5 do VS Code não os passa: corre pelo terminal. As credenciais nunca vão para o código nem para o git.</div>
-  <aside class="notes">Dez minutos, e só se avança com toda a gente com as ilhas no ecrã. O <code>main</code> já é o código arrumado por pastas. Problemas mais comuns: as barras invertidas para partir a linha (no PowerShell do Windows não funcionam: tudo numa linha); trocar o <code>clientId</code> com o <code>clientSecret</code>; espaços à volta do <code>=</code>; carregar em F5 (corre sem credenciais e dá o 401); sem a issue #1 no repositório, a pessoa não recebeu credenciais. Quem não conseguir de todo segue com o colega do lado até ao passo 1, que corre sem credenciais. O <code>provider</code> já está no <code>pubspec.yaml</code>.</aside>
-</section>
+  final ApiClient _api;
 
-<section class="slide" data-part="Construir">
-  <h2>Construir em conjunto: a tua peça</h2>
-  <p>Hoje a turma constrói as ilhas favoritas: uma estrela em cada ilha, um contador e um ecrã só com as favoritas. Cada pessoa recebe uma peça, de uma das três camadas.</p>
-  <div class="pz-set" data-id="favs">
-  <div class="parsons" data-part="dados-fake" data-layer="Dados" data-label="FakeForecastRepository" data-blocks data-title="lib/data/fake_forecast_repository.dart" data-seed="31">
+  @override
+  Future<List<Island>> fetchIslands() async {
+    final list = await _api.get('/v1/islands') as List<dynamic>;
+    return list
+        .map((item) => Island.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<Forecast> fetchForecast(String islandId) async {
+    final json = await _api.get('/v1/islands/$islandId/forecast');
+    return Forecast.fromJson(json as Map<String, dynamic>);
+  }
+
+}
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: a receita verdadeira do repository, que pede tudo à API pelo ApiClient.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Dados: faz um GET com o token, espera no máximo 10 segundos e devolve o JSON.", "Dados: diz o que a app pode pedir (as ilhas e a previsão), sem dizer como."], "why": "implements obriga a escrever os dois métodos da interface; o ApiClient chega pelo construtor."}</script>
+  </div>
+  <div class="parsons" data-id="e08" data-chapter="Dados" data-label="O repository a fingir" data-blocks data-free="1,2;3,4" data-title="lib/data/fake_forecast_repository.dart" data-seed="47">
 <script type="text/plain">
 class FakeForecastRepository implements ForecastRepository {
+
   FakeForecastRepository({this.fail = false});
 
   final bool fail; // true: shows the error screen
@@ -140,7 +216,6 @@ class FakeForecastRepository implements ForecastRepository {
   Future<List<Island>> fetchIslands() async {
     await Future.delayed(const Duration(seconds: 1)); // a slow network
     if (fail) throw Exception('Sem rede (fake)');
-
     return const [
       Island(id: 'corvo', name: 'Corvo', imageUrl: '$_img/corvo.jpg'),
       Island(id: 'faial', name: 'Faial', imageUrl: '$_img/faial.jpg'),
@@ -155,9 +230,69 @@ class FakeForecastRepository implements ForecastRepository {
 
 }
 </script>
-<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Estado: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem."], "why": "Implementa a mesma interface que o HttpForecastRepository; o notifier não sabe qual dos dois recebeu."}</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Dados: a receita verdadeira do repository, que pede tudo à API pelo ApiClient.", "Dados: diz o que a app pode pedir (as ilhas e a previsão), sem dizer como.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam."], "why": "Implementa a mesma interface que o HttpForecastRepository; o notifier não sabe qual dos dois recebeu."}</script>
   </div>
-  <div class="parsons" data-part="estado-favs" data-layer="Estado" data-label="FavoritesNotifier" data-title="lib/state/favorites_notifier.dart" data-seed="32">
+  <div class="parsons" data-id="e09" data-chapter="Dados" data-label="ApiException" data-free="1,2,3" data-title="lib/data/api_client.dart · ApiException" data-seed="48">
+<script type="text/plain">
+class ApiException implements Exception {
+  ApiException(this.statusCode, this.message);
+  final int statusCode;
+  final String message;
+  @override
+  String toString() => '$statusCode: $message';
+}
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: o erro da API, com o código HTTP e a mensagem do servidor.", "Dados: se a resposta não for 2xx, lança o erro com a mensagem da API.", "UI: mostra a roda a carregar, ou o erro com o botão \"Tentar de novo\".", "Modelo: uma ilha com id, nome e fotografia, e como se lê do JSON."], "why": "implements Exception deixa fazer throw ApiException(...); o toString é o texto que o ecrã mostra."}</script>
+  </div>
+  <div class="parsons" data-id="e10" data-chapter="Dados" data-label="ApiClient.get" data-title="lib/data/api_client.dart · get()" data-seed="49">
+<script type="text/plain">
+  Future<dynamic> get(String path) async {
+    _token ??= await _fetchToken(); // only the first time
+    final response = await http
+        .get(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Authorization': 'Bearer $_token'},
+        )
+        .timeout(const Duration(seconds: 10));
+    _check(response);
+    return jsonDecode(response.body);
+  }
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: faz um GET com o token, espera no máximo 10 segundos e devolve o JSON.", "Dados: se a resposta não for 2xx, lança o erro com a mensagem da API.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Dados: a receita verdadeira do repository, que pede tudo à API pelo ApiClient."], "why": "O ??= só pede o token da primeira vez; o timeout evita ficar à espera para sempre."}</script>
+  </div>
+  <div class="parsons" data-id="e11" data-chapter="Dados" data-label="ApiClient._check" data-title="lib/data/api_client.dart · _check()" data-seed="50">
+<script type="text/plain">
+  void _check(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+    if (response.statusCode == 401) {
+      _token = null; // expired or wrong: ask for a new one next time
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final error = body['error'] as Map<String, dynamic>;
+    throw ApiException(response.statusCode, error['message'] as String);
+  }
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Dados: se a resposta não for 2xx, lança o erro com a mensagem da API.", "Dados: o erro da API, com o código HTTP e a mensagem do servidor.", "Dados: faz um GET com o token, espera no máximo 10 segundos e devolve o JSON.", "UI: mostra a roda a carregar, ou o erro com o botão \"Tentar de novo\"."], "why": "Com 401 esquece o token, para pedir outro da próxima vez. A mensagem vem do JSON de erro da API."}</script>
+  </div>
+  <div class="parsons" data-id="e12" data-chapter="Estado" data-label="O load()" data-helper data-free="1,2" data-title="lib/state/forecast_notifier.dart · load()" data-seed="51">
+<script type="text/plain">
+  Future<void> load() async {
+    isLoading = true;
+    error = null;
+    notifyListeners(); // the screen shows the spinner
+    try {
+      islands = await _repository.fetchIslands();
+    } catch (e) {
+      error = '$e';
+    } finally {
+      isLoading = false;
+      notifyListeners(); // the screen shows the islands or the error
+    }
+  }
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Dados: pede as ilhas à API e transforma o JSON em objetos Island.", "Ligar: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem."], "why": "Os dois notifyListeners() são as campainhas: um quando o pedido parte, outro no finally, com ilhas ou com erro."}</script>
+  </div>
+  <div class="parsons" data-id="e13" data-chapter="Estado" data-label="FavoritesNotifier" data-free="1,2,3" data-title="lib/state/favorites_notifier.dart" data-seed="52">
 <script type="text/plain">
 class FavoritesNotifier extends ChangeNotifier {
   final Set<String> _ids = {};
@@ -171,19 +306,34 @@ class FavoritesNotifier extends ChangeNotifier {
 </script>
 <script type="application/json">{"q": "O que faz esta peça?", "options": ["Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "UI: desenha a estrela de uma ilha e, ao tocar, marca ou desmarca essa ilha.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas."], "why": "Um Set de ids: uma ilha é favorita ou não, sem repetições. O toggle tira ou põe e toca a campainha."}</script>
   </div>
-  <div class="parsons" data-part="estado-main" data-layer="Estado" data-label="MultiProvider" data-title="lib/main.dart · runApp" data-seed="33">
+  <div class="parsons" data-id="e14" data-chapter="UI" data-label="O build" data-helper data-free="6,7" data-title="lib/screens/islands_screen.dart · build()" data-seed="53">
 <script type="text/plain">
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => ForecastNotifier(repository)..load(),
-        ),
-        ChangeNotifierProvider(create: (_) => FavoritesNotifier()),
-      ],
+class IslandsScreen extends StatelessWidget {
+  const IslandsScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final forecast = context.watch<ForecastNotifier>(); // rebuilds on notify
+    return Scaffold(
+      appBar: AppBar(title: const Text('Tempo Açores')),
+      body: _body(context, forecast),
+    );
+  }
 </script>
-<script type="application/json">{"q": "O que faz esta peça?", "options": ["Estado: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas."], "why": "Por estar por cima do MaterialApp, os dois ecrãs encontram os dois notifiers, mesmo depois de navegar."}</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["UI: desenha a barra de cima e o corpo do ecrã, de olho no notifier.", "UI: mostra só as ilhas marcadas, lendo dois notifiers.", "Estado: avisa o ecrã quando o pedido começa e quando chegam as ilhas ou o erro.", "UI: desenha a lista de ilhas, uma linha com fotografia e nome por ilha."], "why": "O watch no build faz o ecrã redesenhar a cada campainha do ForecastNotifier."}</script>
   </div>
-  <div class="parsons" data-part="ui-estrela" data-layer="UI" data-label="FavoriteButton" data-title="lib/widgets/favorite_button.dart" data-seed="34">
+  <div class="parsons" data-id="e15" data-chapter="UI" data-label="A lista" data-free="3,4" data-title="lib/screens/islands_screen.dart · _body(), a lista" data-seed="54">
+<script type="text/plain">
+    return ListView.builder(
+      itemCount: forecast.islands.length,
+      itemBuilder: (context, i) => ListTile(
+        leading: Image.network(forecast.islands[i].imageUrl, width: 56),
+        title: Text(forecast.islands[i].name),
+      ),
+    );
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["UI: desenha a lista de ilhas, uma linha com fotografia e nome por ilha.", "UI: mostra só as ilhas marcadas, lendo dois notifiers.", "UI: desenha a barra de cima e o corpo do ecrã, de olho no notifier.", "Modelo: uma ilha com id, nome e fotografia, e como se lê do JSON."], "why": "O ListView.builder só constrói as linhas que estão à vista; itemCount diz quantas há."}</script>
+  </div>
+  <div class="parsons" data-id="e16" data-chapter="UI" data-label="A estrela" data-free="1,2;7,8" data-title="lib/widgets/favorite_button.dart" data-seed="55">
 <script type="text/plain">
 class FavoriteButton extends StatelessWidget {
   const FavoriteButton({super.key, required this.islandId});
@@ -200,7 +350,7 @@ class FavoriteButton extends StatelessWidget {
 </script>
 <script type="application/json">{"q": "O que faz esta peça?", "options": ["UI: desenha a estrela de uma ilha e, ao tocar, marca ou desmarca essa ilha.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas.", "UI: mostra só as ilhas marcadas, lendo dois notifiers."], "why": "watch para desenhar a estrela certa, read no onPressed para mudar sem ficar a ouvir."}</script>
   </div>
-  <div class="parsons" data-part="ui-contador" data-layer="UI" data-label="o contador" data-title="lib/screens/islands_screen.dart · actions" data-seed="35">
+  <div class="parsons" data-id="e17" data-chapter="UI" data-label="O contador" data-free="3,4,5" data-title="lib/screens/islands_screen.dart · actions" data-seed="56">
 <script type="text/plain">
           Consumer<FavoritesNotifier>(
             builder: (context, favorites, child) => IconButton(
@@ -218,7 +368,30 @@ class FavoriteButton extends StatelessWidget {
 </script>
 <script type="application/json">{"q": "O que faz esta peça?", "options": ["UI: mostra quantas favoritas há e abre o ecrã das favoritas.", "UI: desenha a estrela de uma ilha e, ao tocar, marca ou desmarca essa ilha.", "UI: mostra só as ilhas marcadas, lendo dois notifiers.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam."], "why": "O Consumer só redesenha este botão quando as favoritas mudam, não o ecrã inteiro."}</script>
   </div>
-  <div class="parsons" data-part="ui-favoritas" data-layer="UI" data-label="FavoritesScreen" data-blocks data-title="lib/screens/favorites_screen.dart" data-seed="36">
+  <div class="parsons" data-id="e18" data-chapter="UI" data-label="A carregar e o erro" data-free="11,12" data-title="lib/screens/islands_screen.dart · _body(), a carregar e o erro" data-seed="57">
+<script type="text/plain">
+  Widget _body(BuildContext context, ForecastNotifier forecast) {
+    if (forecast.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (forecast.error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(forecast.error!),
+            TextButton(
+              onPressed: () => context.read<ForecastNotifier>().load(),
+              child: const Text('Tentar de novo'),
+            ),
+          ],
+        ),
+      );
+    }
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["UI: mostra a roda a carregar, ou o erro com o botão \"Tentar de novo\".", "Dados: se a resposta não for 2xx, lança o erro com a mensagem da API.", "UI: desenha a lista de ilhas, uma linha com fotografia e nome por ilha.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas."], "why": "O ecrã não sabe porque falhou: só desenha o estado. O botão usa read, porque é um callback."}</script>
+  </div>
+  <div class="parsons" data-id="e19" data-chapter="UI" data-label="O ecrã das favoritas" data-blocks data-title="lib/screens/favorites_screen.dart" data-seed="58">
 <script type="text/plain">
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -253,56 +426,81 @@ class FavoritesScreen extends StatelessWidget {
   }
 }
 </script>
-<script type="application/json">{"q": "O que faz esta peça?", "options": ["UI: mostra só as ilhas marcadas, lendo dois notifiers.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede."], "why": "As ilhas vêm do ForecastNotifier e as escolhas do FavoritesNotifier; o where junta os dois."}</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["UI: mostra só as ilhas marcadas, lendo dois notifiers.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "UI: desenha a lista de ilhas, uma linha com fotografia e nome por ilha."], "why": "As ilhas vêm do ForecastNotifier e as escolhas do FavoritesNotifier; o where junta os dois."}</script>
+  </div>
+  <div class="parsons" data-id="e20" data-chapter="Ligar tudo" data-label="API ou fake?" data-title="lib/main.dart · main()" data-seed="59">
+<script type="text/plain">
+  final ForecastRepository repository = useFake
+      ? FakeForecastRepository()
+      : HttpForecastRepository(
+          ApiClient(clientId: clientId, clientSecret: clientSecret),
+        );
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Ligar: escolhe se a app usa a API verdadeira ou o repository a fingir.", "Ligar: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem.", "Dados: finge ser a API e devolve sempre as mesmas três ilhas, sem rede.", "Dados: diz o que a app pode pedir (as ilhas e a previsão), sem dizer como."], "why": "O --dart-define=FAKE=true decide; o tipo ForecastRepository à esquerda deixa os dois lados do ? caberem na mesma variável."}</script>
+  </div>
+  <div class="parsons" data-id="e21" data-chapter="Ligar tudo" data-label="MultiProvider" data-blocks data-free="1,2" data-title="lib/main.dart · runApp" data-seed="60">
+<script type="text/plain">
+    MultiProvider(
+      providers: [
+
+        ChangeNotifierProvider(
+          create: (_) => ForecastNotifier(repository)..load(),
+        ),
+
+        ChangeNotifierProvider(create: (_) => FavoritesNotifier()),
+
+      ],
+</script>
+<script type="application/json">{"q": "O que faz esta peça?", "options": ["Ligar: põe os dois notifiers por cima da app, para todos os ecrãs os encontrarem.", "Estado: guarda os ids das ilhas favoritas e avisa quem ouve quando mudam.", "Ligar: escolhe se a app usa a API verdadeira ou o repository a fingir.", "UI: mostra quantas favoritas há e abre o ecrã das favoritas."], "why": "Por estar por cima do MaterialApp, os dois ecrãs encontram os dois notifiers, mesmo depois de navegar."}</script>
   </div>
   </div>
-  <aside class="notes">As peças são distribuídas pela API: quem entra recebe a que tem menos gente. Com 7 a 9 alunos, as seis peças ficam todas com alguém; quem acaba primeiro ajuda quem ficou com a peça mais longa (o ecrã das favoritas ou o repository a fingir). Seis peças: o repository a fingir (dados), o <code>FavoritesNotifier</code> e o <code>MultiProvider</code> (estado), a estrela, o contador e o ecrã das favoritas (UI). Projeta o placar (slide seguinte). Quando alguém acaba, pergunta-lhe em voz alta: em que camada está a tua peça, e com quem fala? Depois manda-o ajudar alguém da lista "Ainda a construir".</aside>
+  <aside class="notes">Os alunos fazem os 21 ao seu ritmo; os números em cima levam a qualquer um, e estão agrupados por capítulo. Quem acaba todos pode voltar aos que saltou. O teu painel é o slide seguinte.</aside>
 </section>
 
 <section class="slide">
-  <h2>Placar: a app a crescer</h2>
-  <div class="pz-board" data-id="favs" data-build data-goal="1200"></div>
-  <aside class="notes">Cada barra é uma camada; enche com as peças de quem lá está. A meta é a app inteira em vinte minutos. A barra só chega ao fim quando todos da camada acabam: quem acaba ajuda. No fim, junta as peças em voz alta, de baixo para cima: o repository a fingir dá as ilhas, o notifier guarda as favoritas, o <code>MultiProvider</code> põe-no na árvore, a estrela e o contador leem-no e mudam-no, o ecrã das favoritas lê os dois notifiers.</aside>
+  <h2>Estado da turma</h2>
+  <div class="pz-room-board" data-track="a14"></div>
+  <aside class="notes">Uma linha por aluno, uma coluna por exercício. Verde com ✓: resolvido; o ponto no canto diz se acertou na pergunta (verde) ou não (vermelho). Azul com barra: a fazer, com as tentativas. O contorno azul é o exercício em que o aluno está agora. Laranja com ✋: pediu ajuda. "Sem verificar há X min": está parado; vai lá. A linha de baixo conta quantos resolveram cada exercício: um número baixo numa coluna diz-te o que explicar à turma toda.</aside>
 </section>
 
 <section class="slide" data-part="A app">
-  <h2>A app que construímos</h2>
-<pre class="term"><code class="language-bash">git stash -u
+  <h2>A app inteira</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-13.git
+cd pdm-aula-13
 git checkout passo-2
+flutter pub get
 flutter run -d chrome --dart-define=FAKE=true</code></pre>
-  <p>O branch <code>passo-2</code> tem as seis peças da turma, juntas. Corre sem credenciais: as ilhas vêm do repository a fingir.</p>
+  <p>O branch <code>passo-2</code> tem todas as peças dos exercícios, juntas. Corre sem credenciais: as ilhas vêm do repository a fingir.</p>
   <ol class="steps">
     <li>Marca o Pico e o Corvo: o contador mostra 2.</li>
     <li>Abre as Favoritas pela estrela de cima e tira o Corvo. Volta atrás: na lista, o Corvo já não tem estrela.</li>
-    <li>Abre no VS Code o ficheiro da tua peça e encontra-a.</li>
+    <li>Escolhe três exercícios que fizeste e encontra-os nos ficheiros, no VS Code. Em que pasta está cada um?</li>
   </ol>
   <div class="callout"><strong>Pergunta à turma</strong> Para trocar a API pelo repository a fingir, quantas linhas mudaram em <code>screens/</code>?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> Zero. Só o <code>main</code> escolhe o repository (<code>--dart-define=FAKE=true</code>). É a prova de que a arrumação de ontem funciona. Fechar a app perde as favoritas: estão só em memória. Guardar no telemóvel fica para mais à frente, e será um repository novo em <code>data/</code>.</aside>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Zero. Só o <code>main</code> escolhe o repository (<code>--dart-define=FAKE=true</code>): é o exercício "API ou fake?". Fechar a app perde as favoritas: estão só em memória.</aside>
 </section>
 
-<section class="slide" data-part="Parte a rede">
-  <h2>Parte a rede tu mesmo</h2>
+<section class="slide">
+  <h2>Se houver tempo: parte a rede</h2>
   <ol class="steps">
-    <li>Fecha a app (<kbd>q</kbd>) e corre-a com a API verdadeira, com as tuas credenciais (o comando do início da aula).</li>
-    <li>No Chrome da app, <kbd>F12</kbd>, separador <strong>Network</strong>. Clica com o botão direito num pedido a <code>api-pdm.sublimecipher.com</code> e escolhe <strong>Block request domain</strong>.</li>
-    <li>No terminal, <kbd>R</kbd>: a app arranca sem conseguir chegar à API.</li>
-    <li>No separador <strong>Network request blocking</strong>, desliga o bloqueio e carrega em "Tentar de novo".</li>
+    <li>Fecha a app (<kbd>q</kbd>) e corre-a com a API verdadeira e as tuas credenciais: <code>flutter run -d chrome --dart-define=CLIENT_ID=... --dart-define=CLIENT_SECRET=...</code></li>
+    <li>No Chrome da app, <kbd>F12</kbd>, separador <strong>Network</strong>. Botão direito num pedido a <code>api-pdm.sublimecipher.com</code> e <strong>Block request domain</strong>.</li>
+    <li>No terminal, <kbd>R</kbd>: a app arranca sem chegar à API. Depois desliga o bloqueio e carrega em "Tentar de novo".</li>
   </ol>
-  <div class="callout"><strong>Pergunta à turma</strong> A mensagem de erro que apareceu serve a uma pessoa normal? O que devia dizer? E porque é que o ecrã aguentou a falha sem mudarmos nada?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> A mensagem é técnica (algo como <code>ClientException: XMLHttpRequest error</code>): serve ao programador, não ao utilizador. Devia dizer algo como "Sem ligação à internet. Tenta de novo." O ecrã aguentou porque o repository lança a exceção, o notifier guarda-a em <code>error</code> e o ecrã só desenha o estado: a cozinha avisou o passe, o empregado deu a notícia. Mensagens para pessoas e repetir sozinho são o próximo passo da resiliência. Se o "Block request domain" não aparecer, usa <strong>More tools</strong> e depois <strong>Network request blocking</strong> e acrescenta <code>api-pdm.sublimecipher.com</code>.</aside>
+  <div class="callout"><strong>Pergunta à turma</strong> A mensagem de erro serve a uma pessoa normal? E porque é que o ecrã aguentou a falha sem mudarmos nada?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> A mensagem é técnica (algo como <code>ClientException: XMLHttpRequest error</code>); devia dizer "Sem ligação à internet. Tenta de novo." O ecrã aguentou porque o repository lança a exceção, o notifier guarda-a em <code>error</code> e o ecrã só desenha o estado. Se o "Block request domain" não aparecer: More tools, Network request blocking, e acrescentar <code>api-pdm.sublimecipher.com</code>.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Onde ficámos</h2>
   <ol class="steps">
-    <li>Cada peça da app tem uma camada: o repository em dados, os notifiers em estado, a estrela, o contador e os ecrãs em UI.</li>
+    <li>Cada peça tem uma camada: o modelo em <code>models/</code>, os repositories em <code>data/</code>, os notifiers em <code>state/</code>, a estrela, o contador e os ecrãs na UI.</li>
     <li>O <code>FakeForecastRepository</code> troca a API sem mexer nos ecrãs.</li>
     <li>O <code>FavoritesNotifier</code> é partilhado por dois ecrãs, com <code>MultiProvider</code>.</li>
-    <li>Quando a rede falha, o erro passa de camada em camada até ao ecrã, que só o desenha.</li>
   </ol>
-  <p><strong>Amanhã:</strong> quarta, 21 de outubro, às 16:00, arranca o projeto de grupo. Vamos usar estas pastas e esta forma de trabalhar em equipa.</p>
+  <p><strong>Amanhã:</strong> quarta, 21 de outubro, às 16:00, arranca o projeto de grupo, com estas pastas.</p>
   <nav class="pager" id="pager"></nav>
-  <aside class="notes">Pergunta final, de braço no ar: quem ajudou alguém hoje? A construção só acabou porque toda a gente ajudou: é assim que vai ser no projeto.</aside>
+  <aside class="notes">Olha para a linha de baixo do painel antes de fechar: o exercício com menos resolvidos é o que vale a pena rever amanhã em dois minutos.</aside>
 </section>
 
 </div>
