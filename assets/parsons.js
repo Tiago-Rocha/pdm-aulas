@@ -21,29 +21,29 @@
     return "https://api-pdm.sublimecipher.com";
   })() + "/v1/play/";
   var T = EN
-    ? { check: "Check", shuffle: "Shuffle", copy: "Copy code", copied: "Copied", tries: "tries", try1: "try", time: "time",
+    ? { check: "Check", shuffle: "Shuffle", tries: "tries", try1: "try", time: "time",
         hint: "Drag the pieces into the right order. On the keyboard: Tab to a piece, Alt + up or down to move it.",
         ok: function (t, n) { return "Done in " + t + ", " + n + (n === 1 ? " try." : " tries."); },
         bad: function (k, n) { return k + " of " + n + " in the right place. Green ones are right; move the red ones."; },
         helper: "Drag the pieces. A piece in the right place locks and turns green.",
-        quiz: "Question (one answer only):", quizOk: "Right.", quizNo: "Not quite.", understood: function (a, b) { return a + " of " + b + " answered right"; },
-        room: "Room", name: "Name", team: "Team", join: "Join", leave: "Leave", optional: "Join the room to show up on the scoreboard.",
+        quiz: "One answer only.", quizOk: "Right.", quizNo: "Not quite.", understood: function (a, b) { return a + " of " + b + " answered right"; },
+        room: "Room code", name: "Name", team: "Team", join: "Join the game", leave: "Leave",
         inRoom: function (r, n, t) { return "Room " + r + " · " + n + " · team " + t; }, offline: "no connection to the scoreboard",
         yourPart: "Your part", choose: "Choose a part", waitPart: "Join the room to get your part.",
-        code: "Room code", newRoom: "New room", start: "Start", goal: "Goal", solved: function (a, b) { return a + " of " + b + " solved"; },
+        code: "Room code", newRoom: "New room", start: "Start", restart: "Restart", goal: "Goal", solved: function (a, b) { return a + " of " + b + " solved"; },
         classDone: function (t) { return "The whole class in " + t; }, goalOk: "goal reached", goalMiss: "goal missed",
         waiting: "Waiting for players. Open this lesson, scroll to the exercise and join with the code.",
         still: "Still building, go and help:", built: function (t) { return "The app is built! " + t; }, ready: "ready" }
-    : { check: "Verificar", shuffle: "Baralhar", copy: "Copiar código", copied: "Copiado", tries: "tentativas", try1: "tentativa", time: "tempo",
+    : { check: "Verificar", shuffle: "Baralhar", tries: "tentativas", try1: "tentativa", time: "tempo",
         hint: "Arrasta as peças para a ordem certa. No teclado: Tab até uma peça, Alt + cima ou baixo para a mover.",
         ok: function (t, n) { return "Feito em " + t + ", à " + n + "ª tentativa."; },
         bad: function (k, n) { return k + " de " + n + " no sítio certo. As verdes estão certas; mexe nas vermelhas."; },
         helper: "Arrasta as peças. A que fica no sítio certo prende-se e fica verde.",
-        quiz: "Pergunta (só vale a primeira resposta):", quizOk: "Certo.", quizNo: "Não é bem isso.", understood: function (a, b) { return a + " de " + b + " acertaram na pergunta"; },
-        room: "Sala", name: "Nome", team: "Equipa", join: "Entrar", leave: "Sair", optional: "Entra na sala para apareceres no placar.",
+        quiz: "Só uma resposta.", quizOk: "Certo.", quizNo: "Não é bem isso.", understood: function (a, b) { return a + " de " + b + " acertaram na pergunta"; },
+        room: "Código da sala", name: "Nome", team: "Equipa", join: "Entrar no jogo", leave: "Sair",
         inRoom: function (r, n, t) { return "Sala " + r + " · " + n + " · equipa " + t; }, offline: "sem ligação ao placar",
         yourPart: "A tua parte", choose: "Escolhe uma parte", waitPart: "Entra na sala para receberes a tua parte.",
-        code: "Código da sala", newRoom: "Nova sala", start: "Começar", goal: "Meta", solved: function (a, b) { return a + " de " + b + " resolveram"; },
+        code: "Código da sala", newRoom: "Nova sala", start: "Começar", restart: "Recomeçar", goal: "Meta", solved: function (a, b) { return a + " de " + b + " resolveram"; },
         classDone: function (t) { return "A turma toda em " + t; }, goalOk: "meta cumprida", goalMiss: "meta falhada",
         waiting: "À espera dos alunos. Abrem esta aula, vão até ao exercício e entram com o código.",
         still: "Ainda a construir, vai ajudar:", built: function (t) { return "A app está construída! " + t; }, ready: "pronto" };
@@ -91,6 +91,7 @@
   function joinBar() {
     var bar = el("div", "pz-join");
     function paint() {
+      bar.classList.toggle("gate", !joined());
       if (joined()) {
         bar.innerHTML = '<span class="pz-me">' + esc(T.inRoom(me.room, me.name, me.team)) + '</span> <button type="button" class="pz-leave">' + T.leave + "</button>";
         bar.querySelector(".pz-leave").onclick = function () { setMe({ id: me.id, name: me.name, team: me.team }); };
@@ -99,7 +100,7 @@
         bar.innerHTML = '<input class="pz-room" inputmode="numeric" maxlength="6" placeholder="' + T.room + '" aria-label="' + T.room + '">' +
           '<input class="pz-name" maxlength="24" placeholder="' + T.name + '" aria-label="' + T.name + '">' +
           '<label>' + T.team + ' <select class="pz-team">' + opts + "</select></label>" +
-          '<button type="button" class="pz-go">' + T.join + '</button><span class="pz-note">' + T.optional + "</span>";
+          '<button type="button" class="pz-go">' + T.join + "</button>";
         if (me && me.name) bar.querySelector(".pz-name").value = me.name;
         if (me && me.team) bar.querySelector(".pz-team").value = me.team;
         bar.querySelector(".pz-go").onclick = function () {
@@ -166,9 +167,8 @@
     }
     function reset(seed) {
       done = false; tries = 0; locked = 0; triesEl.textContent = "0"; tlEl.textContent = T.tries; t0 = null; clearInterval(timer); timeEl.textContent = "0:00";
-      box.classList.remove("solved"); msg.textContent = helper ? T.helper : T.hint; msg.className = "pz-msg";
+      box.classList.remove("solved", "merged"); msg.textContent = helper ? T.helper : T.hint; msg.className = "pz-msg";
       var oq = box.querySelector(".pz-quiz"); if (oq) oq.remove();
-      var c = box.querySelector(".pz-copy"); if (c) c.remove();
       render(shuffle(pieces, rng(seed)));
       lockCheck();
     }
@@ -187,12 +187,9 @@
       report && report(last);
       if (won) {
         done = true; clearInterval(timer); box.classList.add("solved");
+        Array.prototype.forEach.call(list.children, function (li, i) { li.style.setProperty("--i", i); li.style.transform = ""; });
+        requestAnimationFrame(function () { box.classList.add("merged"); });
         msg.textContent = T.ok(fmt(ms), tries); msg.className = "pz-msg ok";
-        var cp = el("button", "pz-copy"); cp.type = "button"; cp.textContent = T.copy;
-        cp.addEventListener("click", function () {
-          navigator.clipboard.writeText(answer.join(blocks ? "\n\n" : "\n") + "\n").then(function () { cp.textContent = T.copied; });
-        });
-        bar.insertBefore(cp, bar.querySelector(".pz-stat"));
         if (quiz) askQuiz();
       } else {
         msg.textContent = T.bad(right, answer.length); msg.className = "pz-msg bad";
@@ -205,7 +202,7 @@
       var seed = 0, key = (me && me.id) || String(Math.random());
       for (var i = 0; i < key.length; i++) seed = (seed * 31 + key.charCodeAt(i)) >>> 0;
       var opts = shuffle(quiz.options.map(function (o, i) { return { text: o, id: i }; }), rng(seed + 1));
-      var q = el("div", "pz-quiz", "<p class=\"pz-q\"><strong>" + T.quiz + "</strong> " + esc(quiz.q) + "</p>");
+      var q = el("div", "pz-quiz", "<p class=\"pz-q\"><strong>" + esc(quiz.q) + "</strong> <span class=\"pz-note\">" + T.quiz + "</span></p>");
       var ul = q.appendChild(el("div", "pz-opts"));
       opts.forEach(function (o) {
         var b = el("button", "pz-opt"); b.type = "button"; b.textContent = o.text; b.dataset.id = o.id; ul.appendChild(b);
@@ -276,7 +273,10 @@
     var id = box.getAttribute("data-id");
     if (id) box.parentNode.insertBefore(joinBar(), box);
     initPuzzle(box, id ? function (b) { send(id, b); } : null);
-    if (id) listeners.push(function () { if (joined()) send(id, { right: 0, total: 0, tries: 0, ms: 0, solved: false }); });
+    if (!id) return;
+    // com placar, primeiro entra-se na sala; só depois aparece o jogo
+    function gate() { box.hidden = !joined(); if (joined()) send(id, { right: 0, total: 0, tries: 0, ms: 0, solved: false }); }
+    listeners.push(gate); gate();
   }
 
   // ----- construir a app em conjunto: cada aluno recebe uma parte -----
@@ -302,8 +302,8 @@
       show(names[0], false);
     }
     function sync() {
-      if (!joined()) { offline(); return; }
-      head.textContent = "…";
+      if (!joined()) { head.hidden = true; boxes.forEach(function (b) { b.hidden = true; }); return; }
+      head.hidden = false; head.textContent = "…";
       send(id, { right: 0, total: 0, tries: 0, ms: 0, solved: false, parts: names }).then(function (r) {
         if (r && r.you && r.you.part) show(r.you.part, true); else { offline(); head.insertAdjacentHTML("beforeend", ' <span class="pz-note bad">' + T.offline + "</span>"); }
       });
@@ -328,8 +328,22 @@
     var fill = board.querySelector(".pz-class i"), count = board.querySelector(".pz-count"), elapsed = board.querySelector(".pz-elapsed");
     board.querySelector(".pz-goal").textContent = goal ? T.goal + " " + fmt(goal * 1000) + " · " : "";
     codeEl.textContent = host.code;
-    function startAt() { return (host.starts || {})[id]; }
-    board.querySelector(".pz-start").onclick = function () { host.starts = host.starts || {}; host.starts[id] = Date.now(); save("pz-host", host); };
+    // O início da meta fica no localStorage do professor: sobrevive a recarregar a página
+    function startAt() { var h = load("pz-host") || host; return (h.starts || {})[id]; }
+    var startBtn = board.querySelector(".pz-start"), clock = board.querySelector(".pz-clock");
+    function paintStart() {
+      var s = startAt();
+      startBtn.textContent = s ? T.restart : T.start;
+      startBtn.classList.toggle("restart", !!s);
+      clock.classList.toggle("running", !!s);
+      elapsed.textContent = s ? fmt(Date.now() - s) : "0:00";
+    }
+    startBtn.onclick = function () {
+      host = load("pz-host") || host; host.starts = host.starts || {}; host.starts[id] = Date.now(); save("pz-host", host);
+      paintStart();
+      clock.classList.remove("kick"); void clock.offsetWidth; clock.classList.add("kick");
+    };
+    paintStart(); setInterval(paintStart, 250);
     board.querySelector(".pz-new").onclick = function () {
       host = { code: String(1000 + Math.floor(Math.random() * 9000)), day: day, starts: {} }; save("pz-host", host); codeEl.textContent = host.code; body.innerHTML = "";
     };
@@ -403,7 +417,6 @@
           .then(function (d) { if (d) render(d.players); board.classList.toggle("off", !d); })
           .catch(function () { board.classList.add("off"); });
       }
-      var s = startAt(); elapsed.textContent = s ? fmt(Date.now() - s) : "0:00";
     }
     poll(); setInterval(poll, 1500);
   }

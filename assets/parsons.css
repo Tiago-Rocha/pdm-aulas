@@ -22,7 +22,6 @@
   border: 1px solid var(--border); background: var(--surface); color: var(--fg);
 }
 .parsons .pz-bar .pz-check { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-.parsons .pz-bar .pz-copy { background: var(--ok); border-color: var(--ok); color: var(--accent-fg); }
 .parsons .pz-stat { margin-left: auto; font: 600 .85rem var(--mono); color: var(--muted); }
 .parsons .pz-msg { margin: .5rem 0 0; font-size: .85rem; color: var(--muted); }
 .parsons .pz-msg.ok { color: var(--ok); font-weight: 700; }
@@ -91,3 +90,47 @@
 .pz-why { margin: .6rem 0 0; font-size: .9rem; }
 .pz-why:empty { display: none; }
 .pz-qm { font-weight: 800; } .pz-qm.ok { color: var(--ok); } .pz-qm.no { color: var(--danger); }
+
+/* Começar / Recomeçar e o relógio a correr */
+.pz-board .pz-actions .pz-start.restart { background: var(--danger); border-color: var(--danger); color: #fff; }
+.pz-board .pz-clock b { display: inline-flex; align-items: center; gap: .3em; transform-origin: left center; }
+.pz-board .pz-clock b::before { content: ""; width: .32em; height: .32em; border-radius: 50%; background: var(--border); flex: none; }
+.pz-board .pz-clock.running b::before { background: var(--danger); animation: pz-rec 1.2s ease-in-out infinite; }
+.pz-board .pz-clock.running b { color: var(--fg); }
+.pz-board .pz-clock.kick b { animation: pz-kick .7s cubic-bezier(.2, 1.7, .35, 1); }
+@keyframes pz-rec {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 70%, transparent); }
+  60% { opacity: .55; box-shadow: 0 0 0 .45em color-mix(in srgb, var(--danger) 0%, transparent); }
+}
+@keyframes pz-kick { 0% { transform: scale(1); } 35% { transform: scale(1.28); color: var(--danger); } 100% { transform: scale(1); } }
+
+/* Resolvido: as linhas juntam-se num bloco único */
+.parsons .pz-list { position: relative; border: 0 solid transparent; border-radius: 10px;
+  transition: gap .45s cubic-bezier(.65, 0, .35, 1) .25s, border-color .3s .55s, background-color .3s .55s, box-shadow .6s .6s; }
+.parsons .pz-item { transition: border-color .3s, border-radius .4s .3s, background-color .3s, padding .4s .3s; }
+.parsons.merged .pz-list { gap: 0; border-width: 2px; border-color: var(--ok); background: var(--code-bg, #0b0f14);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ok) 18%, transparent); overflow: hidden; animation: pz-settle .9s cubic-bezier(.2, 1.4, .4, 1) .5s both; }
+.parsons.merged .pz-item { border-color: transparent; border-radius: 0; background: transparent; cursor: default; padding-top: 0; padding-bottom: 0;
+  animation: pz-flash .5s ease-out both; animation-delay: calc(var(--i, 0) * 28ms); }
+.parsons.merged .pz-item::after { content: none; }
+.parsons.merged .pz-list::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--ok) 35%, transparent) 50%, transparent 65%);
+  transform: translateX(-100%); animation: pz-sweep 1s ease-in-out .85s both; }
+@keyframes pz-flash { 0% { background: color-mix(in srgb, var(--ok) 45%, transparent); } 100% { background: transparent; } }
+@keyframes pz-settle { 0% { transform: scale(1); } 40% { transform: scale(1.015); } 100% { transform: scale(1); } }
+@keyframes pz-sweep { to { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .parsons .pz-list, .parsons .pz-item { transition: none; }
+  .parsons.merged .pz-list, .parsons.merged .pz-item, .parsons.merged .pz-list::after,
+  .pz-board .pz-clock.running b::before, .pz-board .pz-clock.kick b { animation: none; }
+  .parsons.merged .pz-list::after { display: none; }
+}
+
+/* Antes de entrar: só o formulário, grande */
+.pz-join.gate { display: grid; grid-template-columns: 1fr 2fr auto; gap: .7rem; align-items: end; max-width: 760px;
+  padding: 1.2rem; border: 2px solid var(--accent); border-radius: 14px; background: var(--accent-soft); font-size: 1rem; }
+.pz-join.gate input, .pz-join.gate select { font-size: 1.1rem; padding: .5em .7em; width: 100%; box-sizing: border-box; }
+.pz-join.gate label { display: grid; gap: .2rem; font-size: .8rem; color: var(--muted); }
+.pz-join.gate .pz-go { grid-column: 1 / -1; font-size: 1.1rem; padding: .7em 1em; }
+@media (max-width: 640px) { .pz-join.gate { grid-template-columns: 1fr; } }
