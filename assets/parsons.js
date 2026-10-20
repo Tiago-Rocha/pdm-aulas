@@ -28,13 +28,13 @@
         helper: "Drag the pieces. A piece in the right place locks and turns green.",
         quiz: "One answer only.", quizOk: "Right.", quizNo: "Not quite.", understood: function (a, b) { return a + " of " + b + " answered right"; },
         room: "Room code", name: "Name", team: "Team", join: "Join the game", leave: "Leave",
-        inRoom: function (r, n) { return "Room " + r + " · " + n; }, offline: "no connection to the scoreboard",
+        inRoom: function (n) { return "Playing as " + n; }, offline: "no connection to the scoreboard",
         yourPart: "Your part", choose: "Choose a part", waitPart: "Join the room to get your part.",
         code: "Room code", newRoom: "New room", start: "Start", restart: "Restart", goal: "Goal", solved: function (a, b) { return a + " of " + b + " solved"; },
         classDone: function (t) { return "The whole class in " + t; }, goalOk: "goal reached", goalMiss: "goal missed",
         already: "Already solved.", students: function (n) { return n + (n === 1 ? " student" : " students"); }, ex: function (k, n) { return "Exercise " + k + " of " + n; }, prev: "Previous", next: "Next", skip: "Skip",
         student: "Student", stuck: function (m) { return "no check for " + m + " min"; },
-        done: function (a, b) { return a + " of " + b + " exercises"; }, noone: "Nobody yet. Students open this lesson, go to the exercises and join with the code.",
+        done: function (a, b) { return a + " of " + b + " exercises"; }, noone: "Nobody yet. Students open this lesson, go to the exercises and type their name.",
         waiting: "Waiting for players. Open this lesson, scroll to the exercise and join with the code.",
         still: "Still building, go and help:", built: function (t) { return "The app is built! " + t; }, ready: "ready" }
     : { check: "Verificar", shuffle: "Baralhar", tries: "tentativas", try1: "tentativa", time: "tempo",
@@ -44,13 +44,13 @@
         helper: "Arrasta as peças. A que fica no sítio certo prende-se e fica verde.",
         quiz: "Só uma resposta.", quizOk: "Certo.", quizNo: "Não é bem isso.", understood: function (a, b) { return a + " de " + b + " acertaram na pergunta"; },
         room: "Código da sala", name: "Nome", team: "Equipa", join: "Entrar no jogo", leave: "Sair",
-        inRoom: function (r, n) { return "Sala " + r + " · " + n; }, offline: "sem ligação ao placar",
+        inRoom: function (n) { return "A jogar como " + n; }, offline: "sem ligação ao placar",
         yourPart: "A tua parte", choose: "Escolhe uma parte", waitPart: "Entra na sala para receberes a tua parte.",
         code: "Código da sala", newRoom: "Nova sala", start: "Começar", restart: "Recomeçar", goal: "Meta", solved: function (a, b) { return a + " de " + b + " resolveram"; },
         classDone: function (t) { return "A turma toda em " + t; }, goalOk: "meta cumprida", goalMiss: "meta falhada",
         already: "Já resolvido.", students: function (n) { return n + (n === 1 ? " aluno" : " alunos"); }, ex: function (k, n) { return "Exercício " + k + " de " + n; }, prev: "Anterior", next: "Seguinte", skip: "Saltar",
         student: "Aluno", stuck: function (m) { return "sem verificar há " + m + " min"; },
-        done: function (a, b) { return a + " de " + b + " exercícios"; }, noone: "Ainda ninguém. Os alunos abrem esta aula, vão aos exercícios e entram com o código.",
+        done: function (a, b) { return a + " de " + b + " exercícios"; }, noone: "Ainda ninguém. Os alunos abrem esta aula, vão aos exercícios e escrevem o nome.",
         waiting: "À espera dos alunos. Abrem esta aula, vão até ao exercício e entram com o código.",
         still: "Ainda a construir, vai ajudar:", built: function (t) { return "A app está construída! " + t; }, ready: "pronto" };
 
@@ -80,11 +80,20 @@
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
+  // ----- a sala: a aula e o dia, sem código para escrever -----
+  // (?sala=xyz no link força outra sala, para testes)
+  function roomOf() {
+    try { var q = new URLSearchParams(location.search).get("sala"); if (q) return q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40); } catch (e) {}
+    var d = new Date(), pad2 = function (n) { return ("0" + n).slice(-2); };
+    return "a" + (document.body.getAttribute("data-aula") || "") + "-" + d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
   // ----- quem sou eu (aluno) -----
   var me = load("pz-me");
   var listeners = [];
   function setMe(v) { me = v; save("pz-me", v); listeners.forEach(function (f) { f(); }); }
-  function joined() { return me && me.room && me.name; }
+  // entrar noutro dia (ou noutra sala) pede o nome outra vez, já preenchido
+  function joined() { return !!(me && me.name && me.room === roomOf()); }
   function send(puzzle, body) {
     if (!joined()) return Promise.resolve(null);
     body.player = me.id; body.name = me.name; body.team = me.team;
@@ -99,17 +108,16 @@
     function paint() {
       bar.classList.toggle("gate", !joined());
       if (joined()) {
-        bar.innerHTML = '<span class="pz-me">' + esc(T.inRoom(me.room, me.name)) + '</span> <button type="button" class="pz-leave">' + T.leave + "</button>";
+        bar.innerHTML = '<span class="pz-me">' + esc(T.inRoom(me.name)) + '</span> <button type="button" class="pz-leave">' + T.leave + "</button>";
         bar.querySelector(".pz-leave").onclick = function () { setMe({ id: me.id, name: me.name, team: me.team }); };
       } else {
-        bar.innerHTML = '<input class="pz-room" inputmode="numeric" maxlength="6" placeholder="' + T.room + '" aria-label="' + T.room + '">' +
-          '<input class="pz-name" maxlength="24" placeholder="' + T.name + '" aria-label="' + T.name + '">' +
+        bar.innerHTML = '<input class="pz-name" maxlength="24" placeholder="' + T.name + '" aria-label="' + T.name + '">' +
           '<button type="button" class="pz-go">' + T.join + "</button>";
         if (me && me.name) bar.querySelector(".pz-name").value = me.name;
         bar.querySelector(".pz-go").onclick = function () {
-          var room = bar.querySelector(".pz-room").value.trim(), name = bar.querySelector(".pz-name").value.trim();
-          if (!room || !name) { (room ? bar.querySelector(".pz-name") : bar.querySelector(".pz-room")).focus(); return; }
-          setMe({ id: (me && me.id) || (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)), room: room, name: name, team: "" });
+          var name = bar.querySelector(".pz-name").value.trim();
+          if (!name) { bar.querySelector(".pz-name").focus(); return; }
+          setMe({ id: (me && me.id) || (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)), room: roomOf(), name: name, team: "" });
         };
         bar.addEventListener("keydown", function (e) { if (e.key === "Enter") bar.querySelector(".pz-go").click(); e.stopPropagation(); });
       }
@@ -510,17 +518,9 @@
     var ex = track ? Array.prototype.map.call(track.querySelectorAll(".parsons"), function (b) {
       return { id: b.getAttribute("data-id"), label: b.getAttribute("data-label") || b.getAttribute("data-id"), chapter: b.getAttribute("data-chapter") || "" };
     }) : [];
-    var host = load("pz-host") || {}, day = new Date().toISOString().slice(0, 10);
-    if (!host.code || host.day !== day) { host = { code: String(1000 + Math.floor(Math.random() * 9000)), day: day, starts: {} }; save("pz-host", host); }
-    board.innerHTML = '<div class="pz-top"><div class="pz-code"><span>' + T.code + '</span><b></b></div>' +
-      '<div class="pz-sum"></div><div class="pz-actions"><button type="button" class="pz-new">' + T.newRoom + "</button></div></div>" +
-      '<div class="pz-grid"></div>';
-    var codeEl = board.querySelector(".pz-code b"), grid = board.querySelector(".pz-grid"), sum = board.querySelector(".pz-sum");
-    codeEl.textContent = host.code;
-    board.querySelector(".pz-new").onclick = function () {
-      host = { code: String(1000 + Math.floor(Math.random() * 9000)), day: day, starts: {} }; save("pz-host", host);
-      codeEl.textContent = host.code; grid.innerHTML = "";
-    };
+    var room = roomOf();
+    board.innerHTML = '<div class="pz-top"><div class="pz-sum"></div></div><div class="pz-grid"></div>';
+    var grid = board.querySelector(".pz-grid"), sum = board.querySelector(".pz-sum");
     function render(room) {
       var people = {};
       Object.keys(room.puzzles).forEach(function (pid) {
@@ -560,7 +560,7 @@
     function active() { var s = board.closest(".slide"); return !s || s.classList.contains("active") || document.querySelector(".deck.doc"); }
     function poll() {
       if (!active() || document.hidden) return;
-      fetch(API + encodeURIComponent(host.code))
+      fetch(API + encodeURIComponent(room))
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) { if (d) render(d); board.classList.toggle("off", !d); })
         .catch(function () { board.classList.add("off"); });
