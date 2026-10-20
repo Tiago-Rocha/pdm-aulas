@@ -17,6 +17,21 @@ html.deck.proj { --fs: 28px; }
 .deck .slide table { font-size: 1rem; }
 figure.diagram svg { max-height: 74vh; }
 figure.diagram figcaption { font-size: 1rem; }
+details.resp { margin-top: .8rem; font-size: 1.15rem; }
+details.resp summary { cursor: pointer; font-weight: 700; display: inline-block; padding: .35rem .9rem; border: 2px solid currentColor; border-radius: 8px; }
+details.resp[open] summary { opacity: .5; }
+.tree { font-size: 1.25rem; line-height: 1.6; }
+html.deck.proj .slide pre { font-size: .85rem; }
+.lay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+.lay div { border-radius: 12px; padding: .8rem 1rem; border-left: 10px solid; font-size: 1.15rem; }
+.lay b { display: block; font-size: 1.5rem; letter-spacing: .04em; }
+.lay .d { background: var(--danger-soft); border-color: var(--danger); }
+.lay .s { background: var(--warn-soft); border-color: var(--warn); }
+.lay .u { background: var(--accent-soft); border-color: var(--accent); }
+.lay code { font-size: 1.05rem; }
+.lay-main { text-align: center; font-size: 1.1rem; }
+.tag { padding: .1rem .5rem; border-radius: 6px; font-weight: 700; }
+.tag.d { background: var(--danger-soft); } .tag.s { background: var(--warn-soft); } .tag.u { background: var(--accent-soft); }
 </style>
 <link rel="stylesheet" href="../assets/parsons.css">
 </head>
@@ -462,6 +477,423 @@ class FavoritesScreen extends StatelessWidget {
   <div class="pz-room-board" data-track="a14"></div>
   <aside class="notes">Uma linha por aluno, uma coluna por exercício. Verde com ✓: resolvido; o ponto no canto diz se acertou na pergunta (verde) ou não (vermelho). Azul com barra: a fazer, com as tentativas. O contorno azul é o exercício em que o aluno está agora. "Sem verificar há X min": está parado; vai lá. A linha de baixo conta quantos resolveram cada exercício: um número baixo numa coluna diz-te o que explicar à turma toda.</aside>
 </section>
+
+<section class="slide title" data-part="Arrumar">
+  <p class="kicker">Aula 14 · Segunda parte</p>
+  <h1>Arrumar por camadas</h1>
+  <p>Os doze ficheiros da app estão todos soltos em <code>lib/</code>. Arruma-os em pastas, uma por camada.</p>
+  <aside class="notes">Segunda parte da aula, depois dos exercícios de ordenar. Uns 20 minutos a arrumar, depois a correção ficheiro a ficheiro.</aside>
+</section>
+
+<section class="slide" data-part="Tarefa">
+  <h2>A tarefa: doze ficheiros, três camadas</h2>
+  <div class="lay">
+    <div class="d"><b>DATA</b>vai buscar e dá forma aos dados<br><code>models/</code> <code>data/</code></div>
+    <div class="s"><b>STATE</b>guarda o que a app sabe e avisa<br><code>state/</code></div>
+    <div class="u"><b>UI</b>só desenha e reage ao toque<br><code>screens/</code> <code>widgets/</code></div>
+  </div>
+  <p class="lay-main"><code>main.dart</code> fica na raiz: liga as três.</p>
+  <pre><code class="language-bash">git clone -b arrumar https://github.com/Tiago-Rocha/pdm-aula-13.git arrumar
+cd arrumar
+code .</code></pre>
+  <p>Arrasta cada ficheiro de <code>lib/</code> para a sua pasta no VS Code e aceita atualizar os imports. No fim, a app corre igual:
+  <code>flutter run -d chrome --dart-define=FAKE=true</code></p>
+  <aside class="notes">O comando cria uma pasta nova <code>arrumar</code> já no branch certo, por isso funciona também para quem já tinha o <code>pdm-aula-13</code>. O branch <code>arrumar</code> é o <code>passo-2</code> com os ficheiros todos em <code>lib/</code>. A solução é o próprio <code>passo-2</code>: <code>git diff arrumar passo-2 --stat</code> mostra só renomeações. Se o VS Code não atualizar os imports, os erros vermelhos dizem qual falta. O <code>main.dart</code> fica na raiz.</aside>
+</section>
+
+<section class="slide" data-part="Ficheiros">
+  <h2>1 de 12 · <code>favorite_button.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'favorites_notifier.dart';
+
+/// The star of one island. Used by both screens.
+class FavoriteButton extends StatelessWidget {
+  const FavoriteButton({super.key, required this.islandId});
+
+  final String islandId;
+
+  @override
+  Widget build(BuildContext context) {
+    final favorite = context.watch&lt;FavoritesNotifier&gt;().contains(islandId);
+    return IconButton(
+      icon: Icon(favorite ? Icons.star : Icons.star_border),
+      onPressed: () =&gt; context.read&lt;FavoritesNotifier&gt;().toggle(islandId),
+    );
+  }
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag u">UI</span> <strong>lib/widgets/</strong> · É UI: desenha uma estrela. Não é um ecrã inteiro, é um pedaço que os dois ecrãs usam, por isso vai para <code>widgets/</code> e não para <code>screens/</code>.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. É UI: desenha uma estrela. Não é um ecrã inteiro, é um pedaço que os dois ecrãs usam, por isso vai para <code>widgets/</code> e não para <code>screens/</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>2 de 12 · <code>api_client.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+const baseUrl = 'https://api-pdm.sublimecipher.com';
+// ...
+/// Talks HTTP to the course API: token, headers, status codes and JSON.
+/// It knows nothing about islands or forecasts.
+class ApiClient {
+  ApiClient({required this.clientId, required this.clientSecret});
+
+  final String clientId;
+  final String clientSecret;
+  String? _token;
+
+  Future&lt;dynamic&gt; get(String path) async {
+    _token ??= await _fetchToken(); // only the first time
+    final response = await http
+        .get(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Authorization': 'Bearer $_token'},
+        )
+        .timeout(const Duration(seconds: 10));
+    _check(response);
+    return jsonDecode(response.body);
+  // ...</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Dados: fala com a rede, guarda o token, trata dos códigos HTTP e do JSON. Não sabe o que é uma ilha.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Dados: fala com a rede, guarda o token, trata dos códigos HTTP e do JSON. Não sabe o que é uma ilha.</aside>
+</section>
+
+<section class="slide">
+  <h2>3 de 12 · <code>forecast_notifier.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/foundation.dart';
+
+import 'forecast_repository.dart';
+import 'island.dart';
+
+/// The state of the islands screen. Knows the repository, not the widgets.
+class ForecastNotifier extends ChangeNotifier {
+  ForecastNotifier(this._repository); // injected, not created here
+
+  final ForecastRepository _repository;
+
+  bool isLoading = false;
+  String? error;
+  List&lt;Island&gt; islands = const [];
+
+  Future&lt;void&gt; load() async {
+    isLoading = true;
+    error = null;
+    notifyListeners(); // the screen shows the spinner
+    try {
+      islands = await _repository.fetchIslands();
+    } catch (e) {
+      error = '$e';
+    } finally {
+      isLoading = false;
+      notifyListeners(); // the screen shows the islands or the error
+    }
+  }
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag s">STATE</span> <strong>lib/state/</strong> · Estado: um <code>ChangeNotifier</code> que guarda <code>isLoading</code>, <code>error</code> e <code>islands</code> e avisa os ecrãs. Pede ao repository, não sabe URLs nem widgets.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Estado: um <code>ChangeNotifier</code> que guarda <code>isLoading</code>, <code>error</code> e <code>islands</code> e avisa os ecrãs. Pede ao repository, não sabe URLs nem widgets.</aside>
+</section>
+
+<section class="slide">
+  <h2>4 de 12 · <code>island.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">class Island {
+  const Island({required this.id, required this.name, required this.imageUrl});
+
+  final String id;
+  final String name;
+  final String imageUrl;
+
+  factory Island.fromJson(Map&lt;String, dynamic&gt; json) {
+    return Island(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      imageUrl: json['imageUrl'] as String,
+    );
+  }
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag d">DATA</span> <strong>lib/models/</strong> · Modelo: só a forma de uma ilha e como se lê do JSON. Não importa Flutter nem http.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Modelo: só a forma de uma ilha e como se lê do JSON. Não importa Flutter nem http.</aside>
+</section>
+
+<section class="slide">
+  <h2>5 de 12 · <code>islands_screen.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'favorites_notifier.dart';
+import 'forecast_notifier.dart';
+import 'favorite_button.dart';
+import 'favorites_screen.dart';
+
+/// Draws the state of the ForecastNotifier. Knows no URLs and no JSON.
+class IslandsScreen extends StatelessWidget {
+  const IslandsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final forecast = context.watch&lt;ForecastNotifier&gt;(); // rebuilds on notify
+    return Scaffold(
+      appBar: AppBar(
+  // ...
+    return ListView.builder(
+      itemCount: forecast.islands.length,
+      itemBuilder: (context, i) =&gt; ListTile(
+        leading: Image.network(forecast.islands[i].imageUrl, width: 56),
+        title: Text(forecast.islands[i].name),
+        trailing: FavoriteButton(islandId: forecast.islands[i].id),
+      ),
+    );
+  }
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag u">UI</span> <strong>lib/screens/</strong> · UI: um ecrã inteiro, com <code>Scaffold</code>. Lê o estado com <code>context.watch</code> e só desenha.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. UI: um ecrã inteiro, com <code>Scaffold</code>. Lê o estado com <code>context.watch</code> e só desenha.</aside>
+</section>
+
+<section class="slide">
+  <h2>6 de 12 · <code>fake_forecast_repository.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'forecast.dart';
+import 'island.dart';
+import 'forecast_repository.dart';
+
+/// Same interface, fixed data: no API and no credentials.
+class FakeForecastRepository implements ForecastRepository {
+  FakeForecastRepository({this.fail = false});
+
+  final bool fail; // true: shows the error screen
+
+  @override
+  Future&lt;List&lt;Island&gt;&gt; fetchIslands() async {
+    await Future.delayed(const Duration(seconds: 1)); // a slow network
+    if (fail) throw Exception('Sem rede (fake)');
+    return const [
+      Island(id: 'corvo', name: 'Corvo', imageUrl: '$_img/corvo.jpg'),
+      Island(id: 'faial', name: 'Faial', imageUrl: '$_img/faial.jpg'),
+      Island(id: 'pico', name: 'Pico', imageUrl: '$_img/pico.jpg'),
+    ];
+  }
+
+  // ...</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Dados: a mesma interface que o repository a sério, com ilhas fixas e sem rede. Fica ao lado do verdadeiro porque faz o mesmo trabalho.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Dados: a mesma interface que o repository a sério, com ilhas fixas e sem rede. Fica ao lado do verdadeiro porque faz o mesmo trabalho.</aside>
+</section>
+
+<section class="slide">
+  <h2>7 de 12 · <code>favorites_notifier.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/foundation.dart';
+
+/// Favourite islands, in memory. Shared by two screens.
+class FavoritesNotifier extends ChangeNotifier {
+  final Set&lt;String&gt; _ids = {};
+
+  int get count =&gt; _ids.length;
+  bool contains(String islandId) =&gt; _ids.contains(islandId);
+
+  void toggle(String islandId) {
+    if (!_ids.remove(islandId)) _ids.add(islandId);
+    notifyListeners();
+  }
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag s">STATE</span> <strong>lib/state/</strong> · Estado: as favoritas em memória, partilhadas por dois ecrãs. Avisa com <code>notifyListeners</code>.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Estado: as favoritas em memória, partilhadas por dois ecrãs. Avisa com <code>notifyListeners</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>8 de 12 · <code>forecast_repository.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'forecast.dart';
+import 'island.dart';
+
+/// What the app can ask for. The screens only see this.
+abstract class ForecastRepository {
+  Future&lt;List&lt;Island&gt;&gt; fetchIslands();
+  Future&lt;Forecast&gt; fetchForecast(String islandId);
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Dados: o contrato do que a app pode pedir. Os ecrãs e o notifier só conhecem isto, não sabem se vem da API ou do fake.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Dados: o contrato do que a app pode pedir. Os ecrãs e o notifier só conhecem isto, não sabem se vem da API ou do fake.</aside>
+</section>
+
+<section class="slide">
+  <h2>9 de 12 · <code>forecast.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/material.dart';
+
+enum WeatherType {
+  sunny('Sol', Icons.wb_sunny),
+  partlyCloudy('Parcialmente nublado', Icons.cloud_queue),
+  cloudy('Nublado', Icons.cloud),
+  rain('Chuva', Icons.umbrella),
+  storm('Trovoada', Icons.thunderstorm);
+
+  const WeatherType(this.description, this.icon);
+
+  final String description;
+  final IconData icon;
+}
+// ...
+class DayForecast {
+  const DayForecast({
+    required this.date,
+    required this.type,
+    required this.tMin,
+    required this.tMax,
+    required this.rainChance,
+    required this.windClass,
+  });
+
+  final DateTime date;
+  final WeatherType type;
+  final double tMin;
+  final double tMax;
+  final int rainChance; // 0 to 100
+  final int windClass; // 1 weak to 4 very strong
+  // ...</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag d">DATA</span> <strong>lib/models/</strong> · Modelo: o tempo de um dia. Importa <code>material.dart</code> só por causa dos ícones, mas não desenha nada nem vai à rede.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Modelo: o tempo de um dia. Importa <code>material.dart</code> só por causa dos ícones, mas não desenha nada nem vai à rede.</aside>
+</section>
+
+<section class="slide">
+  <h2>10 de 12 · <code>favorites_screen.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">// ...
+/// The favourite islands. Reads two notifiers.
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final favorites = context.watch&lt;FavoritesNotifier&gt;();
+    final islands = context
+        .watch&lt;ForecastNotifier&gt;()
+        .islands
+        .where((island) =&gt; favorites.contains(island.id))
+        .toList();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Favoritas')),
+      body: islands.isEmpty
+          ? const Center(child: Text('Ainda não há ilhas favoritas.'))
+          : ListView(
+              children: [
+                for (final island in islands)
+                  ListTile(
+                    title: Text(island.name),
+                    trailing: FavoriteButton(islandId: island.id),
+                  ),
+              ],
+            ),
+    );
+  }
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag u">UI</span> <strong>lib/screens/</strong> · UI: o ecrã das favoritas. Lê dois notifiers e desenha a lista.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. UI: o ecrã das favoritas. Lê dois notifiers e desenha a lista.</aside>
+</section>
+
+<section class="slide">
+  <h2>11 de 12 · <code>http_forecast_repository.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'forecast.dart';
+import 'island.dart';
+import 'api_client.dart';
+import 'forecast_repository.dart';
+
+/// How: HTTP to the course API, through the ApiClient.
+class HttpForecastRepository implements ForecastRepository {
+  HttpForecastRepository(this._api); // injected, not created here
+
+  final ApiClient _api;
+
+  @override
+  Future&lt;List&lt;Island&gt;&gt; fetchIslands() async {
+    final list = await _api.get('/v1/islands') as List&lt;dynamic&gt;;
+    return list
+        .map((item) =&gt; Island.fromJson(item as Map&lt;String, dynamic&gt;))
+        .toList();
+  }
+
+  @override
+  Future&lt;Forecast&gt; fetchForecast(String islandId) async {
+    final json = await _api.get('/v1/islands/$islandId/forecast');
+    return Forecast.fromJson(json as Map&lt;String, dynamic&gt;);
+  }
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Dados: o repository a sério. Usa o <code>ApiClient</code> e converte o JSON em <code>Island</code> e <code>Forecast</code>.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Dados: o repository a sério. Usa o <code>ApiClient</code> e converte o JSON em <code>Island</code> e <code>Forecast</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>12 de 12 · <code>main.dart</code></h2>
+  <p>Em que pasta puseste este ficheiro? Porquê? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">// ...
+const clientId = String.fromEnvironment('CLIENT_ID');
+const clientSecret = String.fromEnvironment('CLIENT_SECRET');
+const useFake = bool.fromEnvironment('FAKE'); // --dart-define=FAKE=true
+
+void main() {
+  final ForecastRepository repository = useFake
+      ? FakeForecastRepository()
+      : HttpForecastRepository(
+          ApiClient(clientId: clientId, clientSecret: clientSecret),
+        );
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) =&gt; ForecastNotifier(repository)..load(),
+        ),
+        ChangeNotifierProvider(create: (_) =&gt; FavoritesNotifier()),
+      ],
+      child: MaterialApp(
+        title: 'Tempo Açores',
+        theme: ThemeData(colorSchemeSeed: Colors.teal),
+        home: const IslandsScreen(),
+      ),
+    ),
+  );
+}</code></pre>
+  <details class="resp"><summary>Resposta</summary><p><span class="tag">LIGA TUDO</span> <strong>lib/ (fica na raiz)</strong> · Liga tudo: escolhe o repository (API ou fake), cria os notifiers e põe-nos acima do <code>MaterialApp</code>. É o único ficheiro que conhece todas as camadas.</p></details>
+  <aside class="notes">Pergunta primeiro a quem pôs noutra pasta e porquê. Só depois abre a resposta. Liga tudo: escolhe o repository (API ou fake), cria os notifiers e põe-nos acima do <code>MaterialApp</code>. É o único ficheiro que conhece todas as camadas.</aside>
+</section>
+
+<section class="slide" data-part="Solução">
+  <h2>Como fica</h2>
+  <pre class="tree"><code>lib/
+  main.dart                  liga tudo
+  models/                    a forma dos dados
+    island.dart
+    forecast.dart
+  data/                      vai buscar os dados
+    api_client.dart
+    forecast_repository.dart
+    http_forecast_repository.dart
+    fake_forecast_repository.dart
+  state/                     guarda e avisa
+    forecast_notifier.dart
+    favorites_notifier.dart
+  screens/                   desenha um ecrã
+    islands_screen.dart
+    favorites_screen.dart
+  widgets/                   pedaços de UI
+    favorite_button.dart</code></pre>
+  <aside class="notes">É o branch <code>passo-2</code>. Pergunta final: se amanhã a API mudar o JSON, em que pastas mexes? (models e data). Se mudar a cor da estrela? (widgets). Se a lista passar a ser uma grelha? (screens).</aside>
+</section>
+
+<section class="slide" data-part="Onde mexes">
+  <h2>Onde mexes?</h2>
+  <ul>
+    <li>A API mudou o nome de um campo do JSON.</li>
+    <li>A estrela passa a ser um coração.</li>
+    <li>As favoritas passam a ficar guardadas no telemóvel.</li>
+    <li>Queremos testar a app sem rede.</li>
+  </ul>
+  <aside class="notes"><strong>Respostas.</strong> Campo do JSON: <code>models/</code> (o <code>fromJson</code>). Coração: <code>widgets/favorite_button.dart</code>. Guardar as favoritas: <code>state/favorites_notifier.dart</code> (ou um repository novo em <code>data/</code>). Sem rede: <code>data/fake_forecast_repository.dart</code> e o <code>main.dart</code> com <code>FAKE=true</code>.</aside>
+</section>
+
 
 <section class="slide" data-part="A app">
   <h2>A app inteira</h2>
