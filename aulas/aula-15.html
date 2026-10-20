@@ -7,6 +7,25 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* Aula para ler do fundo da sala: letra e diagramas maiores. */
+html.deck { --fs: 24px; }
+html.deck.proj { --fs: 28px; }
+.deck { max-width: 1400px; }
+.deck .slide h2 { font-size: 2.1rem; }
+.deck .slide pre { font-size: .95rem; line-height: 1.45; }
+.deck .slide table { font-size: 1rem; }
+figure.diagram svg { max-height: 74vh; }
+figure.diagram figcaption { font-size: 1rem; }
+.lay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+.lay div { border-radius: 12px; padding: .8rem 1rem; border-left: 10px solid; font-size: 1.05rem; }
+.lay b { display: block; font-size: 1.3rem; }
+.lay .d { background: var(--danger-soft); border-color: var(--danger); }
+.lay .s { background: var(--warn-soft); border-color: var(--warn); }
+.lay .u { background: var(--accent-soft); border-color: var(--accent); }
+.how { font-size: 1.05rem; }
+</style>
+<link rel="stylesheet" href="../assets/parsons.css">
 </head>
 <body data-aula="15">
 <header class="site"><div class="wrap">
@@ -26,164 +45,217 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 15 · Semana 7 · Quarta, 21 de outubro de 2026 · 16:00 às 18:00</p>
   <h1>Kickoff do projeto Tempo Açores</h1>
-  <p class="lead">Teoria (30 minutos): método de projeto: MVP, backlog, definição de pronto e fluxo de trabalho por pull requests. Prática: formação dos grupos, criação dos repositórios no GitHub Classroom, atribuição do client-id da API e planeamento da sprint 1.</p>
+  <p class="lead">Hoje arranca o projeto de grupo. Antes de escrever código, decidimos três coisas: o que é o mínimo, quando é que uma coisa está pronta, e como dois colegas trabalham ao mesmo tempo sem se atropelarem. Com jogos.</p>
   <div class="meta"><span>Projeto: Tempo Açores</span></div>
-  <aside class="notes">Traz os client-ids e segredos impressos, um envelope por grupo. Confirma que o assignment do GitHub Classroom está aberto e que o template compila. Começa por perguntar quem já tem grupo: os que não têm formam-se nos primeiros cinco minutos da parte prática, não agora.</aside>
+  <aside class="notes">Tempos de referência: entrar e memória até às 16:10; resultados da memória até às 16:15; o projeto até às 16:30; MVP e "corta o MVP" até às 16:55; definição de pronto e "está pronto?" até às 17:25; contrato primeiro até às 17:45; sprints e grupos até às 18:00. Os alunos entram uma vez (slide 3) e ficam dentro para os quatro jogos: a sala é a aula e o dia. Os painéis de resultados não mostram as respostas certas até carregares em "Mostrar respostas". Hoje não há repositórios nem backlog: isso fica para a próxima aula.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Definir o MVP do Tempo Açores e distinguir cortar funcionalidades de cortar qualidade.</li>
-    <li>Escrever issues com título, critérios de aceitação e estimativa grosseira.</li>
-    <li>Aplicar a definição de pronto a cada pull request do grupo.</li>
-    <li>Seguir o fluxo issue → branch → PR → revisão → merge sem ninguém fazer push para <code>main</code>.</li>
-    <li>Sair da aula com grupo, repositório, client-id da API e backlog da sprint 1.</li>
+    <li>Lembrar as camadas e os Futures sem abrir os apontamentos.</li>
+    <li>Separar o mínimo do Tempo Açores dos extras, e explicar porque é que qualidade não se corta.</li>
+    <li>Dizer se um pull request está pronto, com a definição de pronto do grupo.</li>
+    <li>Combinar um contrato (uma interface) para dois colegas trabalharem ao mesmo tempo.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Teoria">
+<section class="slide" data-part="Memória">
+  <h2>5 minutos de memória</h2>
+  <ol class="steps how"><li>Abre <code>tiago-rocha.github.io/pdm-aulas/aulas/aula-15.html</code> no teu computador e vem a este slide.</li><li>Escreve o primeiro nome e entra. Ficas dentro para os jogos da aula toda.</li><li>Cinco perguntas, sem apontamentos. <strong>Só vale a primeira resposta.</strong></li></ol>
+  <div class="pz-seq" data-id="a15-mem" data-word="Pergunta">
+  <div class="pz-mcq" data-id="a15-m13-json" data-label="Camadas"><script type="application/json">{"q": "A API passou a mandar \"nome\" em vez de \"name\" nas ilhas. Que ficheiro abres?", "options": ["models/island.dart, no fromJson", "screens/islands_screen.dart", "state/forecast_notifier.dart", "data/api_client.dart"], "why": "O JSON só passa a Island no fromJson do modelo. O ecrã e o notifier recebem uma Island e nem sabem que houve JSON."}</script></div>
+  <div class="pz-mcq" data-id="a15-m13-notify" data-label="Estado"><script type="application/json">{"q": "Falta o último notifyListeners() no load(). O que vê o utilizador?", "code": "Future<void> load() async {\n  isLoading = true;\n  notifyListeners();\n  islands = await _repository.fetchIslands();\n  isLoading = false;\n}", "options": ["O spinner a rodar para sempre", "A lista, como sempre", "Um erro vermelho no ecrã", "A app a fechar"], "why": "O isLoading passa a false, mas ninguém avisa o ecrã. Sem notifyListeners, o ecrã não se reconstrói e continua no spinner."}</script></div>
+  <div class="pz-mcq" data-id="a15-m13-inject" data-label="Camadas"><script type="application/json">{"q": "Porque é que o ForecastNotifier recebe o repository no construtor, em vez de o criar lá dentro?", "options": ["Para o main lhe poder dar a API ou o fake sem mexer no notifier", "Porque o Provider obriga a isso", "Para o pedido à API ser mais rápido", "Porque um ChangeNotifier não pode criar objetos"], "why": "Quem cria escolhe. Se o notifier criasse o HttpForecastRepository, trocar pelo fake obrigava a mexer no notifier."}</script></div>
+  <div class="pz-mcq" data-id="a15-m12-future" data-label="Futures"><script type="application/json">{"q": "O que é um Future<List<Island>>?", "options": ["Uma lista de ilhas que ainda não chegou", "Uma lista que se atualiza sozinha sempre que a API muda", "Uma lista guardada para usar sem rede", "Uma lista que bloqueia o ecrã até chegar"], "why": "É um valor que chega mais tarde. Com await esperas por ele sem bloquear o ecrã. Uma lista que se atualiza sozinha seria uma Stream."}</script></div>
+  <div class="pz-mcq" data-id="a15-m8-read" data-label="Estado"><script type="application/json">{"q": "No botão da estrela, porque se usa context.read e não context.watch?", "code": "onPressed: () => context.read<FavoritesNotifier>().toggle(islandId),", "options": ["No onPressed só queremos chamar o método, não ficar à escuta", "O read é mais recente e o watch está obsoleto", "O watch só funciona em StatefulWidget", "O read guarda as favoritas no telemóvel"], "why": "O watch fica à escuta e reconstrói o widget a cada notifyListeners, por isso vive no build. Num onPressed só se usa o notifier uma vez: read."}</script></div>
+  </div>
+  <aside class="notes">Lembrar custa, e é esse esforço que fixa a matéria. Nada disto conta para a nota: diz-lhes isso antes de começarem. Quatro perguntas são das últimas aulas e uma é de matéria mais antiga (o context.read): todas as aulas vão abrir assim, sempre com uma pergunta antiga, para não se esquecer.</aside>
+</section>
+
+<section class="slide">
+  <h2>Memória: a turma</h2>
+  <div class="pz-poll" data-track="a15-mem"></div>
+  <aside class="notes">Olha para a pergunta com menos respostas certas e pergunta a quem acertou: "como pensaste?". Só depois carrega em "Mostrar respostas". Se a do notifyListeners correu mal, volta ao load() da aula de ontem durante dois minutos.</aside>
+</section>
+
+<section class="slide" data-part="Projeto">
+  <h2>O projeto: Tempo Açores</h2>
+  <p>Uma app de meteorologia e trilhos para os Açores, feita em grupo sobre a API do curso: a previsão a 5 dias de cada ilha com dados do IPMA, trilhos pedestres, relatos da turma com fotografia, favoritos, e a funcionar sem rede.</p>
+  <table>
+    <tr><th>Grupos</th><td>2 a 3 pessoas, formados hoje</td></tr>
+    <tr><th>Sprints</th><td>Três, com review em aula a 02/11, 18/11 e 02/12</td></tr>
+    <tr><th>Testers</th><td>A app no telemóvel de outras pessoas a partir de 20/11</td></tr>
+    <tr><th>Freeze e defesas</th><td>Freeze a 09/12; defesas a 14 e 16/12</td></tr>
+  </table>
+  <p>O enunciado completo, com os requisitos mínimos e os extras, está na página <a href="../projeto.html">Projeto</a>.</p>
+  <aside class="notes">Não leias o enunciado todo agora: o jogo seguinte obriga-os a lê-lo com atenção. Responde às perguntas do costume: "podemos usar o package X?" (sim, se souberem explicar), "podemos mudar o design?" (sim, se respeitar os estados e a acessibilidade), "e se um membro não trabalhar?" (a defesa é individual e os PRs têm autor).</aside>
+</section>
+
+<section class="slide" data-part="MVP">
   <h2>MVP: o mínimo que se instala e se usa</h2>
-  <ul>
-    <li>O <strong>produto mínimo viável</strong> é a versão mais pequena que alguém instala e usa com proveito. Não é um protótipo, nem uma demo.</li>
-    <li>No Tempo Açores: lista de localidades, previsão de uma localidade, favoritos, e continuar a funcionar sem rede com dados antigos.</li>
-    <li><strong>Cortar funcionalidades, não qualidade.</strong> Um ecrã com os quatro estados tratados vale mais do que três ecrãs meio feitos.</li>
-    <li>Pergunta por funcionalidade: "se isto não existir, a app é inútil?" Se a resposta é não, vai para a lista "depois".</li>
-    <li>Exemplos reais: o Instagram v1 só tinha fotos com filtro e um feed; o WhatsApp v1 era uma app de estados. Cresceram depois.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> o MVP corta âmbito, nunca qualidade; cada funcionalidade que fica, fica completa.</p>
+  <ol class="steps">
+    <li>O produto mínimo viável é a versão mais pequena que alguém instala e usa com proveito. Não é um protótipo, nem uma demo.</li>
+    <li><strong>Cortar funcionalidades, não qualidade.</strong> Um ecrã com os estados de carregamento, erro, vazio e dados tratados vale mais do que três ecrãs meio feitos.</li>
+    <li>A pergunta para cada funcionalidade: "se isto não existir, a app é inútil?" Se não, vai para depois.</li>
+  </ol>
+  <div class="callout"><strong>Exemplo</strong> O Instagram começou só com fotografias, filtros e um feed. Cresceu depois.</div>
 </section>
 
 <section class="slide">
-  <h2>Backlog em issues</h2>
-  <ul>
-    <li><strong>Título:</strong> verbo + objeto. "Mostrar previsão a 5 dias da localidade", não "Previsão".</li>
-    <li><strong>Corpo:</strong> contexto em uma frase e critérios de aceitação em checklist, no formato "dado X, quando Y, então Z".</li>
-    <li><strong>Estimativa grosseira:</strong> P (meio dia), M (um dia), G (dois ou mais). Uma issue G divide-se em duas M antes de entrar na sprint.</li>
-    <li><strong>Labels e responsável:</strong> <code>sprint-1</code>, <code>ui</code>, <code>dados</code>, <code>bug</code>; uma pessoa por issue; ligada ao board do projeto.</li>
-    <li>Exemplo de critério: "Sem rede, o ecrã mostra a última previsão guardada e a hora a que foi obtida."</li>
-  </ul>
-  <p><strong>Para os testes:</strong> uma issue boa tem título com verbo, critérios de aceitação verificáveis e uma estimativa.</p>
-  <aside class="notes">Escreve uma issue má no quadro ("Fazer o ecrã de detalhe") e pede à turma para a corrigir em voz alta. Dois minutos. Depois mostra uma issue real de um projeto open source em Flutter com critérios de aceitação.</aside>
+  <h2>Jogo: corta o MVP</h2>
+  <div class="pz-seq" data-id="a15-mvp">
+  <div class="pz-sort" data-id="a15-mvp" data-label="Corta o MVP"><script type="application/json">{"q": "Para cada funcionalidade: é mínimo, extra ou fica fora do projeto?", "cols": ["Mínimo", "Extra", "Fora"], "why": "Cortar funcionalidades, não qualidade: funcionar sem rede, tratar erros, as camadas e o CI são mínimos, não luxos.", "cards": [{"t": "Lista das ilhas com pesquisa", "a": 0, "why": "Sem isto não há app."}, {"t": "Previsão a 5 dias de uma ilha", "a": 0, "why": "É a razão de a app existir."}, {"t": "Funcionar sem rede, com \"atualizado há 2 h\"", "a": 0, "why": "Qualidade, não funcionalidade: nos Açores a rede falha."}, {"t": "\"Tentar outra vez\" quando a rede falha, em todos os ecrãs", "a": 0, "why": "Um ecrã sem estado de erro está a meio."}, {"t": "Favoritos que ficam depois de fechar a app", "a": 0, "why": "Está nos mínimos do enunciado."}, {"t": "Nenhum ecrã faz pedidos HTTP (camadas)", "a": 0, "why": "Camadas desde o primeiro dia: depois é tarde."}, {"t": "CI no GitHub com analyze e testes", "a": 0, "why": "Mínimo: é o que apanha os erros antes do main."}, {"t": "Mapa das ilhas com o tempo de hoje", "a": 1, "why": "Extra valorizado, depois dos mínimos."}, {"t": "Notificação com a previsão de amanhã", "a": 1, "why": "Extra valorizado, depois dos mínimos."}, {"t": "Tema escuro e app em inglês", "a": 1, "why": "Extra valorizado, depois dos mínimos."}, {"t": "Entrar com a conta Google", "a": 2, "why": "Não está no enunciado: a app usa o token do grupo."}, {"t": "Chat entre utilizadores", "a": 2, "why": "Bonito, mas é outra app."}]}</script></div>
+  </div>
+  <aside class="notes">Cinco minutos. Quem acabar pode abrir a página Projeto e confirmar. Os cartões que mais erram costumam ser "funcionar sem rede", "Tentar outra vez" e o CI: parecem extras e são mínimos. É a frase do slide anterior: corta-se funcionalidade, não qualidade.</aside>
 </section>
 
 <section class="slide">
+  <h2>MVP: a turma</h2>
+  <div class="pz-poll" data-track="a15-mvp"></div>
+  <aside class="notes">Começa pelos cartões marcados como "dividida" e pede a duas pessoas que escolheram colunas diferentes para se explicarem. Só depois "Mostrar respostas".</aside>
+</section>
+
+<section class="slide" data-part="Pronto">
   <h2>Definição de pronto</h2>
-  <p>Uma issue está pronta quando o PR que a fecha cumpre tudo isto. Se falha um ponto, não está pronta, por muito que "funcione no meu portátil".</p>
-  <ul class="checklist">
-    <li>Corre no telemóvel, não só no emulador.</li>
-    <li><code>flutter analyze</code> sem avisos e <code>flutter test</code> verde.</li>
-    <li>PR revisto e aprovado por outro membro do grupo.</li>
-    <li>Estados loading, erro, vazio e dados tratados em cada ecrã tocado.</li>
-    <li>Sem segredos no código (aula 18) e a issue fechada pelo PR (<code>Closes #12</code>).</li>
-  </ul>
-  <p><strong>Para os testes:</strong> "pronto" é uma lista objetiva, não uma opinião.</p>
-</section>
-
-<section class="slide">
-  <h2>Fluxo: issue → branch → PR → revisão → merge</h2>
+  <p>Uma issue só fecha quando o pull request cumpre <strong>tudo</strong> isto. Se falha um ponto, não está pronta, por muito que "funcione no meu portátil".</p>
   <ol class="steps">
-    <li><strong>Issue atribuída</strong> a uma pessoa, na coluna "Em curso" do board.</li>
-    <li><strong>Branch a partir de <code>main</code> atualizado:</strong> <code>git switch -c feat/12-previsao-5-dias</code>. O número da issue no nome.</li>
-    <li><strong>Commits pequenos</strong> com conventional commits: <code>feat(previsao): mostrar 5 dias</code>, <code>fix(api): tratar 429</code>.</li>
-    <li><strong>PR pequeno</strong> (menos de 300 linhas), com descrição, screenshot do telemóvel e <code>Closes #12</code>.</li>
-    <li><strong>Revisão por um colega:</strong> pelo menos um comentário útil; o autor responde ou corrige.</li>
-    <li><strong>Merge</strong> (squash) feito pelo revisor; branch apagada. <code>main</code> está protegido: ninguém faz push direto.</li>
+    <li>Corre no telemóvel, não só no Chrome ou no emulador.</li>
+    <li><code>flutter analyze</code> sem avisos.</li>
+    <li>Trata os estados de carregamento, erro e vazio.</li>
+    <li>Foi revisto e aprovado por outro membro do grupo.</li>
   </ol>
-  <p><strong>Para os testes:</strong> <code>main</code> protegido, PR pequeno e revisão de um colega é o fluxo mínimo de uma equipa.</p>
+  <div class="callout"><strong>Para os testes</strong> "Pronto" é uma lista objetiva, não uma opinião.</div>
 </section>
 
 <section class="slide">
+  <h2>Jogo: está pronto?</h2>
+  <ol class="steps how"><li>Lê o cenário e vota sozinho.</li><li>Discute com o colega do lado: porquê essa resposta? Convence-o, ou deixa-te convencer.</li><li>Vota outra vez. Só depois vês a resposta.</li></ol>
+  <div class="pz-seq" data-id="a15-pronto" data-word="Cenário">
+  <div class="pz-mcq" data-id="a15-p1" data-label="Lista das ilhas" data-revote><script type="application/json">{"q": "PR \"Lista das ilhas\". Corre no telemóvel da Ana, o analyze não dá avisos e o Rui reviu e aprovou. Sem rede, mostra \"Sem ligação\" e \"Tentar outra vez\".", "options": ["Está pronto", "Falta correr no telemóvel", "Falta tratar o erro", "Falta a revisão de um colega", "Tem avisos do analyze"], "why": "Cumpre os quatro pontos. Pronto não quer dizer perfeito: quer dizer que cumpre a lista."}</script></div>
+  <div class="pz-mcq" data-id="a15-p2" data-label="Previsão a 5 dias" data-revote><script type="application/json">{"q": "PR \"Previsão a 5 dias\". Corre no telemóvel, o analyze não dá avisos e o Rui aprovou. Sem rede, o spinner fica a rodar para sempre.", "options": ["Falta tratar o erro", "Está pronto", "Falta correr no telemóvel", "Falta a revisão de um colega", "Tem avisos do analyze"], "why": "Um spinner eterno é um estado de erro que ninguém tratou. O utilizador não sabe se espera ou desiste."}</script></div>
+  <div class="pz-mcq" data-id="a15-p3" data-label="Pesquisa" data-revote><script type="application/json">{"q": "PR \"Pesquisa de ilhas\". Corre no telemóvel, trata o erro e o analyze está limpo. O Rui estava doente e a Ana fez merge do próprio PR.", "options": ["Falta a revisão de um colega", "Está pronto", "Falta correr no telemóvel", "Falta tratar o erro", "Tem avisos do analyze"], "why": "Sem revisão de outra pessoa não está pronto, por muito bem feito que esteja. O revisor é a segunda pessoa que percebe aquele código."}</script></div>
+  <div class="pz-mcq" data-id="a15-p4" data-label="Favoritos" data-revote><script type="application/json">{"q": "PR \"Favoritos\". Corre no telemóvel, trata o erro e o Rui aprovou. O analyze mostra 3 avisos de imports que não se usam.", "options": ["Tem avisos do analyze", "Está pronto", "Falta correr no telemóvel", "Falta tratar o erro", "Falta a revisão de um colega"], "why": "\"São só avisos\" é como começa um projeto com 200 avisos onde ninguém vê o que importa. Corrigir leva um minuto."}</script></div>
+  <div class="pz-mcq" data-id="a15-p5" data-label="Detalhe do trilho" data-revote><script type="application/json">{"q": "PR \"Detalhe do trilho\". Testado com flutter run -d chrome. Trata o erro, o analyze está limpo e o Rui aprovou.", "options": ["Falta correr no telemóvel", "Está pronto", "Falta tratar o erro", "Falta a revisão de um colega", "Tem avisos do analyze"], "why": "O Chrome não é um telemóvel: o teclado, o ecrã pequeno, os gestos e a rede móvel só se veem no dispositivo."}</script></div>
+  </div>
+  <aside class="notes">Vão todos ao mesmo ritmo: diz "cenário 1", deixa votar, dá um minuto de discussão aos pares, segunda votação, e passa ao painel do slide seguinte. A primeira votação é a que conta no painel dos pontos; o que interessa é a mudança entre a primeira e a segunda. Se a primeira votação já tiver mais de 70% certos, não vale a pena discutir: passa ao seguinte.</aside>
+</section>
+
+<section class="slide">
+  <h2>Está pronto? A turma</h2>
+  <div class="pz-poll" data-track="a15-pronto"></div>
+  <aside class="notes">Compara as duas barras de cada cenário: se a segunda votação tem mais respostas certas, a discussão funcionou. O cenário dos avisos do analyze costuma dividir a turma: vale a pena ouvir quem diz "são só avisos".</aside>
+</section>
+
+<section class="slide" data-part="Contrato">
+  <h2>Contrato primeiro</h2>
+  <p>Num grupo, o maior atraso é esperar pelo colega. Por isso, antes de escrever código, o grupo combina o <strong>contrato</strong>: a interface do repository. Depois cada um trabalha do seu lado.</p>
+  <div class="lay">
+    <div class="u"><b>A Ana</b>faz o ecrã dos trilhos contra o <code>FakeTrailRepository</code></div>
+    <div class="s"><b>O contrato</b><code>TrailRepository</code>: o que se pode pedir, sem dizer como</div>
+    <div class="d"><b>O Rui</b>faz o <code>HttpTrailRepository</code>, que fala com a API</div>
+  </div>
+  <p>É o que fizemos nas aulas de camadas, agora a dois: o fake de ontem passa a ser a forma de não esperar pelo colega.</p>
+</section>
+
+<section class="slide">
+  <h2>Jogo: o contrato</h2>
+  <div class="pz-seq" data-id="a15-contrato">
+  <div class="parsons" data-id="a15-c1" data-label="A interface" data-title="lib/data/trail_repository.dart" data-seed="5" data-helper data-free="3,4">
+<script type="text/plain">
+import '../models/trail.dart';
+/// The contract: what the screens can ask about trails.
+abstract class TrailRepository {
+  Future<List<Trail>> fetchTrails(String islandId);
+  Future<Trail> fetchTrail(String trailId);
+}
+</script><script type="application/json">{"q": "Porque é que a interface vem primeiro, num PR só dela?", "options": ["Para os dois trabalharem ao mesmo tempo contra o mesmo contrato", "Porque o Dart obriga a compilar a interface antes", "Para o professor ver trabalho mais cedo", "Porque uma interface não se pode mudar depois"], "why": "Com o contrato no main, a Ana faz o ecrã e o Rui faz a rede ao mesmo tempo, sem um esperar pelo outro."}</script>
+  </div>
+  <div class="parsons" data-id="a15-c2" data-label="O fake" data-title="lib/data/fake_trail_repository.dart" data-seed="8" data-blocks data-free="2,3">
+<script type="text/plain">
+import '../models/trail.dart';
+import 'trail_repository.dart';
+
+/// Same contract, fixed data: the screen is built before the API code.
+class FakeTrailRepository implements TrailRepository {
+
+  @override
+  Future<List<Trail>> fetchTrails(String islandId) async {
+    await Future.delayed(const Duration(seconds: 1)); // a slow network
+    return _trails.where((t) => t.islandId == islandId).toList();
+  }
+
+  @override
+  Future<Trail> fetchTrail(String trailId) async {
+    await Future.delayed(const Duration(seconds: 1));
+    return _trails.firstWhere((t) => t.id == trailId);
+  }
+
+}
+
+const _trails = [
+  Trail(
+    id: 'montanha-do-pico',
+    name: 'Montanha do Pico',
+    islandId: 'pico',
+    distanceKm: 7.6,
+  ),
+];
+</script><script type="application/json">{"q": "Para que serve o FakeTrailRepository no projeto?", "options": ["Fazer e testar o ecrã sem esperar pela API nem pelo colega", "Substituir a API na versão final da app", "Guardar os trilhos no telemóvel para funcionar sem rede", "Esconder o clientSecret do grupo"], "why": "O fake cumpre o contrato com dados fixos. Guardar dados para usar sem rede é outra coisa: a cache, mais à frente."}</script>
+  </div>
+  <div class="parsons" data-id="a15-c3" data-label="Quem faz o quê" data-title="Um grupo de dois: a Ana e o Rui" data-seed="3" data-lang="text" data-free="1,2">
+<script type="text/plain">
+O grupo escreve a interface TrailRepository e faz merge dela num PR pequeno.
+A Ana escreve o FakeTrailRepository e o ecrã dos trilhos contra o fake.
+O Rui escreve o HttpTrailRepository, que fala com GET /v1/trails.
+No main.dart, troca-se o FakeTrailRepository pelo HttpTrailRepository.
+O ecrã dos trilhos corre igual, sem mudar uma linha.
+</script><script type="application/json">{"q": "Quando trocam o fake pela API, que ficheiro muda?", "options": ["Só o main.dart", "O ecrã dos trilhos", "O TrailRepository", "Todos os que usam trilhos"], "why": "Quem cria escolhe: o main cria o repository e dá-o ao notifier. O resto só conhece o contrato."}</script>
+  </div>
+  </div>
+  <aside class="notes">Três exercícios de ordenar: a interface (as linhas certas prendem-se), o fake e a ordem do trabalho num grupo de dois. Os dois métodos da interface podem trocar entre si, tal como os dois métodos do fake e os passos da Ana e do Rui, que acontecem ao mesmo tempo. O painel do slide seguinte mostra quem já acabou.</aside>
+</section>
+
+<section class="slide">
+  <h2>Estado da turma</h2>
+  <div class="pz-room-board" data-track="a15-contrato"></div>
+  <aside class="notes">Uma linha por aluno, uma coluna por exercício. Verde com ✓: resolvido; o ponto diz se acertou na pergunta. "Sem verificar há X min": está parado, vai lá.</aside>
+</section>
+
+<section class="slide" data-part="Sprints">
   <h2>Sprints e reviews</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Sprint</th><th>Datas</th><th>Review em aula</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Sprint 1</strong></td><td>21/10 a 02/11</td><td>Aula 19, segunda 02/11</td></tr>
-  <tr><td><strong>Sprint 2</strong></td><td>02/11 a 18/11 (com o teste 1 pelo meio)</td><td>Aula 26, quarta 18/11</td></tr>
-  <tr><td><strong>Sprint 3</strong></td><td>18/11 a 02/12</td><td>Aula 32, quarta 02/12</td></tr>
-  <tr><td><strong>Freeze e defesas</strong></td><td>Tag <code>v1.0.0</code> a 09/12</td><td>Defesas a 14 e 16/12</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li><strong>O que se mostra numa review:</strong> 5 minutos por grupo, a app no telemóvel projetado, o que ficou por fazer e porquê. Sem slides.</li>
-    <li><strong>Retrospetiva</strong> de 15 minutos: começar, parar, continuar. Muda-se o processo, não se procuram culpados.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> a review mostra software a funcionar no dispositivo; a retro melhora o processo da sprint seguinte.</p>
-  <aside class="notes">Sublinha que a sprint 2 é mais longa por causa do teste e do feriado: espera-se menos trabalho nessa semana, não mais. Diz agora as regras da review para não haver surpresas na aula 19: sem slides, telemóvel projetado com scrcpy.</aside>
+  <table>
+    <tr><th>Sprint</th><th>Datas</th><th>Review em aula</th></tr>
+    <tr><td>Sprint 1</td><td>21/10 a 02/11</td><td>Segunda, 02/11</td></tr>
+    <tr><td>Sprint 2</td><td>02/11 a 18/11</td><td>Quarta, 18/11</td></tr>
+    <tr><td>Sprint 3</td><td>18/11 a 02/12</td><td>Quarta, 02/12</td></tr>
+    <tr><td>Freeze e defesas</td><td>Freeze a 09/12</td><td>14 e 16/12</td></tr>
+  </table>
+  <p>Numa review, cada grupo tem 5 minutos para mostrar a app no telemóvel e dizer o que ficou por fazer, e porquê. Sem slides. Conta o que estiver no <code>main</code> à hora da review.</p>
+  <aside class="notes">A sprint 2 tem o teste 1 pelo meio: espera-se menos trabalho nessa semana, não mais.</aside>
 </section>
 
-<section class="slide" data-part="Sprint">
-  <h2>Hoje: enunciado, grupos, repositórios, backlog</h2>
-  <ul>
-    <li><strong>Objetivo da aula:</strong> cada grupo sai com repositório criado, app template a correr no telemóvel com dados da API, e backlog da sprint 1 no board.</li>
-    <li><strong>Enunciado e rubrica</strong> (15 min): leitura em conjunto da página <a href="../projeto.html">Projeto</a>. Requisitos mínimos, extras, o que a rubrica valoriza na app, no processo e na defesa. Perguntas no fim de cada secção.</li>
-    <li><strong>Sprint 1</strong> (até 02/11): lista de localidades da API, detalhe com 5 dias, navegação e tema, estados tratados em todos os ecrãs, favoritos locais.</li>
-    <li>O que não entra na sprint 1: cache em disco (aula 16), autenticação com renovação (aula 17), mapa e notificações (sprints 2 e 3).</li>
-  </ul>
-  <div class="callout tip"><strong>Regra de ouro</strong> Os mínimos primeiro, completos. Um extra só entra no backlog quando todos os mínimos estão na coluna "Feito".</div>
-  <aside class="notes">Lê a rubrica em voz alta, secção a secção, e para nas perguntas. As dúvidas do costume: "podemos usar package X?" (sim, se souberem explicar), "podemos mudar o design?" (sim, se respeitar os estados e a acessibilidade), "e se um membro não trabalhar?" (a defesa é individual e os PRs têm autor).</aside>
-</section>
-
-<section class="slide">
-  <h2>Grupos, GitHub Classroom e client-id</h2>
+<section class="slide" data-part="Grupos">
+  <h2>Grupos</h2>
   <ol class="steps">
-    <li><strong>Grupos de 2 a 3.</strong> Nome do grupo e membros no formulário do Moodle. Sem grupos de 1 nem de 4.</li>
-    <li><strong>Aceitar o assignment</strong> no GitHub Classroom (link no Moodle). O primeiro membro cria a equipa, os outros juntam-se. O repositório nasce a partir do template <code>tempo-acores-template</code>.</li>
-    <li><strong>Clonar e correr.</strong> O template já tem <code>ApiClient</code>, tema, navegação e os widgets de estado das aulas 12 a 14.
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/tempo-acores-grupo-07.git
-cd tempo-acores-grupo-07
-flutter pub get
-flutter run --dart-define=PDM_CLIENT_ID=grupo-07 --dart-define=PDM_SECRET=segredo-do-envelope</code></pre></li>
-    <li><strong>Receber o client-id e o segredo</strong> do grupo, em mão. O segredo nunca entra no repositório: passa por <code>--dart-define</code> ou por um <code>.env.json</code> ignorado pelo git.</li>
-    <li><strong>Primeiro pedido:</strong> a app template mostra a lista de localidades vinda de <code>GET /v1/locations</code> com o token do grupo. Se aparecer 401, o segredo está mal escrito.</li>
+    <li>Grupos de 2 a 3. Sem grupos de 1 nem de 4.</li>
+    <li>Antes de sair, cada grupo diz ao professor os nomes dos membros.</li>
+    <li>Quem não veio hoje é colocado num grupo pelo professor.</li>
   </ol>
-</section>
-
-<section class="slide">
-  <h2>Backlog da sprint 1 e board</h2>
-  <ul class="checklist">
-    <li>Board do projeto com as colunas Backlog, Sprint 1, Em curso, Em revisão, Feito.</li>
-    <li>Entre 6 e 10 issues na sprint 1, cada uma com critérios de aceitação e estimativa P/M/G. Os mínimos primeiro.</li>
-    <li>Sugestão de divisão: lista de localidades e pesquisa · detalhe com 5 dias · navegação, tema e definições · favoritos locais · estados de erro e mensagens · README e CI básico.</li>
-    <li>Cada membro responsável por 2 a 3 issues. Ninguém fica só com "UI" nem só com "dados": todos tocam nas duas camadas.</li>
-    <li>Uma issue "Auditoria de segurança" vazia, para a aula 18.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Backlog da sprint 1 escrito e organizado no board até ao fim da aula. O docente passa por cada grupo e valida três coisas: títulos com verbo, critérios verificáveis, mínimos antes de extras.</div>
-</section>
-
-<section class="slide">
-  <h2>Primeira PR e o que o docente faz</h2>
-  <ul>
-    <li><strong>Primeira PR do grupo:</strong> <code>README.md</code> com nomes, divisão inicial de trabalho e um screenshot do template a correr no telemóvel. Aberta por um membro, revista e feita merge por outro. Serve para testar o fluxo antes de haver código.</li>
-    <li><strong>Branch protection</strong> em <code>main</code>: o docente ativa em todos os repositórios até amanhã. A partir daí só entra código por PR aprovado.</li>
-    <li><strong>O docente hoje:</strong> valida grupos e repositórios, entrega client-ids, passa por cada grupo para ver o backlog e o primeiro pedido à API no telemóvel.</li>
-    <li><strong>O docente durante a sprint:</strong> comenta PRs, acompanha a telemetria da API por grupo, responde no fórum do Moodle. Não faz código pelo grupo.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Primeira PR aberta, revista e com merge antes de sair da sala. Confirma que o revisor deixou pelo menos um comentário, mesmo que seja "LGTM, falta o screenshot".</div>
-  <aside class="notes">Reserva os últimos 15 minutos para circular: cada grupo mostra o board e a app no telemóvel. Grupos sem primeiro pedido à API ficam com prioridade na segunda, antes da matéria. Anota quem ainda não tem grupo para resolver por email hoje.</aside>
+  <p><strong>Na próxima aula:</strong> o repositório do grupo, as credenciais da API, o backlog da sprint 1 em issues e a primeira pull request.</p>
+  <aside class="notes">Anota os grupos à saída. Os repositórios (GitHub Classroom ou repositório criado por um membro a partir de um template) e as credenciais da API ficam para a próxima aula.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
-  <h2>Até segunda</h2>
-  <div class="cols">
-    <div>
-      <h3>Para fazer</h3>
-      <ul class="checklist">
-        <li>Backlog da sprint 1 fechado até sexta: issues com critérios, estimativas e responsáveis, no board.</li>
-        <li>Cada membro com pelo menos um PR aberto até segunda, ligado a uma issue.</li>
-        <li>Segredo do grupo guardado fora do repositório; <code>.env.json</code> no <code>.gitignore</code>.</li>
-      </ul>
-    </div>
-    <div>
-      <h3>Para ler</h3>
-      <ul>
-        <li><a href="https://docs.flutter.dev/app-architecture/case-study" target="_blank" rel="noopener">Architecture case study</a>: uma app Flutter organizada como o template do projeto, camada a camada.</li>
-        <li><a href="https://docs.github.com/en/get-started/using-github/hello-world" target="_blank" rel="noopener">GitHub Docs: Hello World</a>: branch, commit, pull request, revisão e merge em 10 minutos; é o fluxo desta aula.</li>
-        <li><a href="https://developer.android.com/quality" target="_blank" rel="noopener">Android app quality guidelines</a>: a lista que as lojas usam; serve de inspiração para critérios de aceitação.</li>
-        <li><a href="https://developer.apple.com/design/human-interface-guidelines" target="_blank" rel="noopener">Human Interface Guidelines</a>: para quem vai fazer iOS.</li>
-      </ul>
-    </div>
-  </div>
+  <h2>Onde ficámos</h2>
+  <ol class="steps">
+    <li>O mínimo corta funcionalidades, nunca qualidade: sem rede, erros tratados, camadas e CI são mínimos.</li>
+    <li>Pronto é uma lista: telemóvel, analyze sem avisos, estados tratados e revisão de um colega.</li>
+    <li>O contrato primeiro deixa dois colegas trabalhar ao mesmo tempo: um contra o fake, outro contra a API.</li>
+  </ol>
+  <p><strong>Até à próxima aula:</strong> o grupo formado e o enunciado lido, com as dúvidas escritas.</p>
   <nav class="pager" id="pager"></nav>
+  <aside class="notes">Antes de fechar, olha para o painel da memória: a pergunta com menos acertos entra outra vez nos 5 minutos da próxima aula.</aside>
 </section>
 
 </div>
@@ -192,5 +264,6 @@ flutter run --dart-define=PDM_CLIENT_ID=grupo-07 --dart-define=PDM_SECRET=segred
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../assets/app.js"></script>
+<script src="../assets/parsons.js"></script>
 </body>
 </html>
