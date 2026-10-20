@@ -33,8 +33,8 @@
         code: "Room code", newRoom: "New room", start: "Start", restart: "Restart", goal: "Goal", solved: function (a, b) { return a + " of " + b + " solved"; },
         classDone: function (t) { return "The whole class in " + t; }, goalOk: "goal reached", goalMiss: "goal missed",
         already: "Already solved.", students: function (n) { return n + (n === 1 ? " student" : " students"); }, ex: function (k, n) { return "Exercise " + k + " of " + n; }, prev: "Previous", next: "Next", skip: "Skip",
-        help: "Ask for help", helping: "Help is coming", student: "Student", stuck: function (m) { return "no check for " + m + " min"; },
-        asked: "asked for help", done: function (a, b) { return a + " of " + b + " exercises"; }, noone: "Nobody yet. Students open this lesson, go to the exercises and join with the code.",
+        student: "Student", stuck: function (m) { return "no check for " + m + " min"; },
+        done: function (a, b) { return a + " of " + b + " exercises"; }, noone: "Nobody yet. Students open this lesson, go to the exercises and join with the code.",
         waiting: "Waiting for players. Open this lesson, scroll to the exercise and join with the code.",
         still: "Still building, go and help:", built: function (t) { return "The app is built! " + t; }, ready: "ready" }
     : { check: "Verificar", shuffle: "Baralhar", tries: "tentativas", try1: "tentativa", time: "tempo",
@@ -49,8 +49,8 @@
         code: "Código da sala", newRoom: "Nova sala", start: "Começar", restart: "Recomeçar", goal: "Meta", solved: function (a, b) { return a + " de " + b + " resolveram"; },
         classDone: function (t) { return "A turma toda em " + t; }, goalOk: "meta cumprida", goalMiss: "meta falhada",
         already: "Já resolvido.", students: function (n) { return n + (n === 1 ? " aluno" : " alunos"); }, ex: function (k, n) { return "Exercício " + k + " de " + n; }, prev: "Anterior", next: "Seguinte", skip: "Saltar",
-        help: "✋ Pedir ajuda", helping: "✋ A ajuda vem a caminho", student: "Aluno", stuck: function (m) { return "sem verificar há " + m + " min"; },
-        asked: "pediu ajuda", done: function (a, b) { return a + " de " + b + " exercícios"; }, noone: "Ainda ninguém. Os alunos abrem esta aula, vão aos exercícios e entram com o código.",
+        student: "Aluno", stuck: function (m) { return "sem verificar há " + m + " min"; },
+        done: function (a, b) { return a + " de " + b + " exercícios"; }, noone: "Ainda ninguém. Os alunos abrem esta aula, vão aos exercícios e entram com o código.",
         waiting: "À espera dos alunos. Abrem esta aula, vão até ao exercício e entram com o código.",
         still: "Ainda a construir, vai ajudar:", built: function (t) { return "A app está construída! " + t; }, ready: "pronto" };
 
@@ -458,7 +458,6 @@
     track.insertBefore(gate, track.firstChild);
     track.insertBefore(nav, gate.nextSibling);
     boxes.forEach(function (b, i) { if (st.solved.indexOf(b.getAttribute("data-id")) >= 0) ctl[i].restore(); });
-    var help = false;
     function paint() {
       var on = !!joined();
       nav.hidden = !on;
@@ -481,13 +480,11 @@
       var chap = boxes[st.cur].getAttribute("data-chapter");
       nav.innerHTML = '<div class="pz-chaps">' + dots + "</div>" +
         '<div class="pz-navrow">' + (chap ? '<span class="pz-chapname">' + esc(chap) + "</span> " : "") + "<b>" + T.ex(st.cur + 1, n) + "</b> · " + esc(boxes[st.cur].getAttribute("data-label") || "") +
-        '<span class="pz-navbtns"><button type="button" class="pz-help' + (help ? " on" : "") + '">' + (help ? T.helping : T.help) + "</button>" +
-        '<button type="button" class="pz-prev"' + (st.cur ? "" : " disabled") + ">" + T.prev + "</button>" +
+        '<span class="pz-navbtns"><button type="button" class="pz-prev"' + (st.cur ? "" : " disabled") + ">" + T.prev + "</button>" +
         '<button type="button" class="pz-next' + (solved(st.cur) ? " go" : "") + '"' + (st.cur < n - 1 ? "" : " disabled") + ">" + (solved(st.cur) ? T.next : T.skip) + "</button></span></div>";
     }
     function go(i) {
       if (i < 0 || i >= boxes.length) return;
-      if (help) setHelp(false);
       st.cur = i; save(key, st); paint();
       var id = boxes[i].getAttribute("data-id");
       // avisa o painel de que o aluno está neste exercício (sem apagar progresso que já lá esteja)
@@ -496,18 +493,10 @@
       var top = track.getBoundingClientRect().top;
       if (top < 0 || top > innerHeight * 0.6) track.scrollIntoView({ block: "start" });
     }
-    function setHelp(v) {
-      help = v;
-      var i = st.cur, id = boxes[i].getAttribute("data-id"), body = {};
-      var l = ctl[i].last() || { right: 0, total: ctl[i].total, tries: 0, ms: 0, solved: false };
-      Object.keys(l).forEach(function (k) { if (k !== "quiz") body[k] = l[k]; });
-      body.help = v; send(id, body); paint();
-    }
     nav.addEventListener("click", function (e) {
       var d = e.target.closest(".pz-dot"); if (d) { go(Number(d.dataset.i)); return; }
       if (e.target.closest(".pz-prev")) go(st.cur - 1);
       else if (e.target.closest(".pz-next")) go(st.cur + 1);
-      else if (e.target.closest(".pz-help")) setHelp(!help);
     });
     listeners.push(function () { paint(); if (joined()) go(st.cur); });
     paint();
@@ -550,21 +539,19 @@
       var head = (chaps.some(function (c) { return c.name; }) ? '<tr class="chap"><th></th>' + chaps.map(function (c) { return '<th colspan="' + c.n + '">' + esc(c.name) + "</th>"; }).join("") + "<th></th></tr>" : "") +
         "<tr><th>" + T.student + "</th>" + ex.map(function (e, i) { return '<th title="' + esc(e.label) + '">' + (i + 1) + "</th>"; }).join("") + "<th></th></tr>";
       var rows = list.map(function (s) {
-        var n = 0, helpNow = false;
+        var n = 0;
         var cells = ex.map(function (e) {
           var p = s.by[e.id];
           if (!p) return '<td class="c"></td>';
           if (p.quiz != null) { quizN++; if (p.quiz) quizOk++; }
-          if (p.help) helpNow = true;
           var q = p.quiz === true ? '<i class="q ok"></i>' : p.quiz === false ? '<i class="q no"></i>' : "";
           if (p.solved) { n++; solvedBy[e.id] = (solvedBy[e.id] || 0) + 1; return '<td class="c done' + (s.cur === e.id ? " cur" : "") + '">✓' + q + "</td>"; }
           var pct = p.total ? Math.round(100 * p.right / p.total) : 0;
-          return '<td class="c work' + (s.cur === e.id ? " cur" : "") + (p.help ? " help" : "") + '"><span class="pz-mini"><i style="width:' + pct + '%"></i></span>' + (p.tries ? "<small>" + p.tries + "×</small>" : "") + "</td>";
+          return '<td class="c work' + (s.cur === e.id ? " cur" : "") + '"><span class="pz-mini"><i style="width:' + pct + '%"></i></span>' + (p.tries ? "<small>" + p.tries + "×</small>" : "") + "</td>";
         }).join("");
         var curP = s.cur && s.by[s.cur], note = "";
-        if (helpNow) note = '<span class="pz-flag help">✋ ' + T.asked + "</span>";
-        else if (curP && !curP.solved && curP.idle >= 180) note = '<span class="pz-flag stuck">' + T.stuck(Math.floor(curP.idle / 60)) + "</span>";
-        return '<tr class="' + (helpNow ? "help" : "") + '"><td class="n">' + esc(s.name) + "<small>" + T.done(n, ex.length) + "</small></td>" + cells + "<td>" + note + "</td></tr>";
+        if (curP && !curP.solved && curP.idle >= 180) note = '<span class="pz-flag stuck">' + T.stuck(Math.floor(curP.idle / 60)) + "</span>";
+        return '<tr><td class="n">' + esc(s.name) + "<small>" + T.done(n, ex.length) + "</small></td>" + cells + "<td>" + note + "</td></tr>";
       }).join("");
       var foot = "<tr class=\"tot\"><td></td>" + ex.map(function (e) { return "<td>" + (solvedBy[e.id] || 0) + "</td>"; }).join("") + "<td></td></tr>";
       grid.innerHTML = '<table class="pz-table">' + head + rows + foot + "</table>";
