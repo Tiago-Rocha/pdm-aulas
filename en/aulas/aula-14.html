@@ -3,10 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lesson 14 · Resilience: UI states, retry and chaos mode · PDM</title>
+<title>Lesson 14 · Exercises: the layers in practice · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* A lesson to read from the back of the room: larger text and diagrams. */
+html.deck { --fs: 24px; }
+html.deck.proj { --fs: 28px; }
+.deck { max-width: 1400px; }
+.deck .slide h2 { font-size: 2.1rem; }
+.deck .slide pre { font-size: .95rem; line-height: 1.45; }
+.deck .slide table { font-size: 1rem; }
+figure.diagram svg { max-height: 74vh; }
+figure.diagram figcaption { font-size: 1rem; }
+details.resp { margin-top: .8rem; font-size: 1.15rem; }
+details.resp summary { cursor: pointer; font-weight: 700; display: inline-block; padding: .35rem .9rem; border: 2px solid currentColor; border-radius: 8px; }
+details.resp[open] summary { opacity: .5; }
+.tree { font-size: 1.25rem; line-height: 1.6; }
+html.deck.proj .slide pre { font-size: .85rem; }
+.lay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+.lay div { border-radius: 12px; padding: .8rem 1rem; border-left: 10px solid; font-size: 1.15rem; }
+.lay b { display: block; font-size: 1.5rem; letter-spacing: .04em; }
+.lay .d { background: var(--danger-soft); border-color: var(--danger); }
+.lay .s { background: var(--warn-soft); border-color: var(--warn); }
+.lay .u { background: var(--accent-soft); border-color: var(--accent); }
+.lay code { font-size: 1.05rem; }
+.lay-main { text-align: center; font-size: 1.1rem; }
+.tag { padding: .1rem .5rem; border-radius: 6px; font-weight: 700; }
+.tag.d { background: var(--danger-soft); } .tag.s { background: var(--warn-soft); } .tag.u { background: var(--accent-soft); }
+</style>
+<link rel="stylesheet" href="../../assets/parsons.css">
 </head>
 <body data-aula="14">
 <header class="site"><div class="wrap">
@@ -25,396 +52,886 @@
 
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 14 · Week 7 · Tuesday, 20 October 2026 · 08:30 to 10:30</p>
-  <h1>Resilience: UI states, retry and chaos mode</h1>
-  <p class="lead">Theory: network failures, 500 and 429 responses, unexpected JSON; offline-first, HTTP cache and pagination. Practice: modelling the four states of each screen, retry with backoff, pull-to-refresh and testing the app with the API's chaos mode switched on.</p>
-  <div class="meta"><span>Repository: pdm-aula-14</span></div>
-  <aside class="notes">Open the lesson with the phone in airplane mode and yesterday's app: a red screen with a raw exception. That is the "before". Announce right away that chaos mode will be switched on at around 10:00 and that it is announced, not a prank.</aside>
+  <h1>Exercises: the layers in practice</h1>
+  <p class="lead">Yesterday we split a class into data, state and UI. Today you read a lot of code: 21 exercises to put in order, layer by layer, from the model to the favourites screen, each at your own pace.</p>
+  <div class="meta"><span>Repository: pdm-aula-13</span></div>
+  <aside class="notes">Reference times: the load() on the board until 08:40; joining and getting started until 08:45; exercises until 09:55; the whole app until 10:15; breaking the network if there is time; wrap-up at 10:25. Most of the lesson is the exercises: you walk around the room and follow on the "State of the class" board (slide 6) who is moving on and who is stuck. The exercises are in chapters, by layer: Models, Data, State, UI and Wiring. The first exercise of each chapter (except the last) locks the right lines in place; the others use the Check button. Some lines can swap places and still count as right (for example the fields of a class, or isLoading and error at the start of load()).</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
-    <li>List the ways a request fails on mobile and what the app should do in each one.</li>
-    <li>Explain offline-first, HTTP cache with <code>ETag</code> and <code>Cache-Control</code>, pagination and rate limiting.</li>
-    <li>Model the state of a screen as a <code>sealed class</code> and handle it with an exhaustive <code>switch</code>.</li>
-    <li>Implement retry with exponential backoff and jitter, and know when not to retry.</li>
-    <li>Build error, empty and loading screens the user understands, with pull-to-refresh and the age of the data.</li>
+    <li>Read a piece of code and say what it does and which layer it lives in.</li>
+    <li>Put a model, a repository, a notifier and a widget in order, and explain why.</li>
+    <li>Run the whole app without the API, with a fake repository.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Theory">
-  <h2>Everything fails</h2>
-  <ul>
-    <li><strong>No network:</strong> airplane mode, a tunnel, a garage. <code>SocketException</code> within milliseconds.</li>
-    <li><strong>Slow network:</strong> weak 3G, café Wi-Fi with a login portal. A 20-second request, or a <code>TimeoutException</code>.</li>
-    <li><strong>Server down:</strong> 500, 502, 503. Or 429 because the app asked too much.</li>
-    <li><strong>Unexpected JSON:</strong> a field set to <code>null</code>, a string where a number should be, an empty list. <code>FormatException</code> or <code>TypeError</code>.</li>
-    <li>Examples: Spotify in offline mode keeps playing what it downloaded; Google Maps shows the cached map; the bank app says "no connection" but shows the last balance.</li>
-    <li>The worst possible result: a blank screen or a crash. The second worst: "Error: SocketException…".</li>
-  </ul>
-  <p><strong>For the tests:</strong> on mobile a network failure is not an exception, it is a normal case; the app is designed for it.</p>
-  <div class="callout"><strong>Analogy</strong> A counter always has one of four signs on display: "being prepared", "nothing available", "out of order, try again", or the dish on the counter. It is never left without a sign. A screen is the same: it is loading, it is empty, it failed or it has data; the blank screen is the counter with no sign at all.</div>
-</section>
-
-<section class="slide">
-  <h2>Offline-first</h2>
-  <ul>
-    <li><strong>Show what there is first.</strong> If there was ever any data, never show an empty screen: show the cache, then refresh.</li>
-    <li><strong>Mark it as old.</strong> "Updated 12 min ago", an icon, a colour. The user decides whether to trust it.</li>
-    <li><strong>Sync when possible.</strong> When the app opens, when the network comes back, when the list is pulled. Not every second.</li>
-    <li><strong>Offline writes:</strong> a favourite marked with no network goes into a queue and is uploaded when there is a connection. Conflicts are resolved with rules (last one wins, or the server wins).</li>
-    <li>Detecting the connection: <code>connectivity_plus</code> says whether there is Wi-Fi or mobile data, not whether there is Internet. The only proof is a request that gets a response.</li>
-  </ul>
-  <p><strong>For the tests:</strong> offline-first is cache first, network second, and always telling the user the age of the data.</p>
-  <aside class="notes">Question: "which apps do you use with no network?" Spotify, Maps, Notes, Kindle. Then: "and what annoys you when there is no network?" Usually: endless spinners. Use that to justify the slide.</aside>
-</section>
-
-<section class="slide">
-  <h2>HTTP cache: <code>ETag</code>, <code>Cache-Control</code>, 304</h2>
-  <ul>
-    <li><strong>ETag</strong> is a fingerprint of the response. The client stores it and sends <code>If-None-Match: "abc"</code> in the next request. If nothing changed, the server replies <strong>304 Not Modified</strong> with no body.</li>
-    <li><strong>Cache-Control: max-age=600</strong> allows the client to reuse the response for 10 minutes without asking. <code>no-store</code> forbids storing it (sensitive data).</li>
-    <li>304 saves data and battery, but there is still a request. <code>max-age</code> avoids the request altogether.</li>
-    <li>Cache on the client (the app stores it) and cache on the server or CDN (stored for all users) coexist.</li>
-    <li>The <code>http</code> package does not cache by itself. Options: <code>dio</code> + <code>dio_cache_interceptor</code>, or our local database (lesson 16).</li>
-  </ul>
-  <p><strong>For the tests:</strong> <code>ETag</code> + <code>If-None-Match</code> give 304 "not changed"; <code>Cache-Control</code> says for how long the response is valid.</p>
-</section>
-
-<section class="slide">
-  <h2>Pagination and rate limiting</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Pagination</th><th>How</th><th>Pros and cons</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Offset</strong></td><td><code>?page=3&amp;size=20</code></td><td>Simple; skips or repeats items when the list changes between requests</td></tr>
-  <tr><td><strong>Cursor</strong></td><td><code>?after=eyJpZCI6NDJ9</code></td><td>Stable (Twitter, Instagram); cannot jump to page 7</td></tr>
-  <tr><td><strong>Infinite scroll</strong></td><td>Request the next page when the scroll gets close to the end</td><td>Natural on mobile; needs a loader at the end of the list and handling of an error halfway through</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li><strong>Rate limiting:</strong> the server limits requests per client (for example 100 per minute) and replies <strong>429 Too Many Requests</strong> with <code>Retry-After: 30</code>.</li>
-    <li>The app respects <code>Retry-After</code>. Retrying straight away makes it worse and can get the token blocked.</li>
-  </ul>
-  <p><strong>For the tests:</strong> 429 asks for a wait, not an immediate retry; <code>Retry-After</code> says how long.</p>
-</section>
-
-<section class="slide">
-  <h2>Retry with exponential backoff and jitter</h2>
-  <ul>
-    <li><strong>Exponential backoff:</strong> wait 1 s, 2 s, 4 s, 8 s between attempts. A maximum number of attempts (3) and a ceiling on the wait (30 s).</li>
-    <li><strong>Jitter:</strong> a random part in each wait. Without it, a thousand phones that failed at the same time retry at the same time and bring the server down again (thundering herd).</li>
-    <li><strong>Retry:</strong> timeouts, connection failures, 5xx, 429 (respecting <code>Retry-After</code>).</li>
-    <li><strong>Do not retry:</strong> 4xx (the request is wrong, it will fail again) and a non-idempotent <code>POST</code>: creating two favourites, paying twice.</li>
-    <li>If a <code>POST</code> really has to be retried, use an idempotency key (<code>Idempotency-Key</code>), like Stripe: the server ignores the repetition.</li>
-  </ul>
-  <p><strong>For the tests:</strong> retry only transient failures, only idempotent requests, with exponential backoff and jitter.</p>
-  <aside class="notes">Do the sum on the board: 3 attempts with 1, 2, 4 s are 7 s of waiting in the worst case, plus 3 timeouts of 10 s. Is that too much? It depends: for a forecast yes, which is why the retry timeout should be shorter than that of the first request.</aside>
-</section>
-
-<section class="slide" data-part="Practice">
-  <h2>Lesson repository</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-14.git
-cd pdm-aula-14/starter
-flutter pub get
-flutter run</code></pre>
-  <ul>
-    <li><code>starter/</code> is yesterday's app (repository + notifier + Provider) with TODOs numbered 1 to 5 and failing tests for each state.</li>
-    <li><code>solucao/</code> is the final state, and it is what will withstand chaos mode at the end of the lesson.</li>
-    <li>New in <code>pubspec.yaml</code>: <code>skeletonizer</code> for loading. It is already installed.</li>
-  </ul>
-  <div class="callout task"><strong>Warm-up</strong> Switch on airplane mode and open the starter app. Note down in two lines what you see and what you should see. That is the acceptance test for the end of the lesson.</div>
-</section>
-
-<section class="slide">
-  <h2>1. State as a <code>sealed class</code></h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 320" role="img" aria-label="State machine of the screen: from Loading it moves to Data, Empty or Failure; from Failure, try again goes back to Loading; from Data, pull-to-refresh goes back to Loading while keeping the old data visible">
-    <rect x="60" y="128" width="170" height="60" rx="10" class="box accent"/>
-    <text x="145" y="153" class="t b mono" text-anchor="middle">Loading</text>
-    <text x="145" y="173" class="t s" text-anchor="middle">spinner, no data</text>
-    <rect x="560" y="38" width="170" height="60" rx="10" class="box ok"/>
-    <text x="645" y="63" class="t b mono" text-anchor="middle">Data</text>
-    <text x="645" y="83" class="t s" text-anchor="middle">list + fetchedAt</text>
-    <rect x="560" y="128" width="170" height="60" rx="10" class="box muted"/>
-    <text x="645" y="153" class="t b mono" text-anchor="middle">Empty</text>
-    <text x="645" y="173" class="t s" text-anchor="middle">no results</text>
-    <rect x="560" y="218" width="170" height="60" rx="10" class="box danger"/>
-    <text x="645" y="243" class="t b mono" text-anchor="middle">Failure</text>
-    <text x="645" y="263" class="t s" text-anchor="middle">message, canRetry</text>
-    <path d="M230 158 L558 68" class="arrow"/>
-    <path d="M230 158 L558 158" class="arrow"/>
-    <path d="M230 158 L558 248" class="arrow"/>
-    <text x="548" y="62" class="t s" text-anchor="end">with items</text>
-    <text x="548" y="150" class="t s" text-anchor="end">no items</text>
-    <text x="548" y="264" class="t s" text-anchor="end">failed or timeout</text>
-    <path d="M645 38 L645 10 L145 10 L145 126" class="arrow accent dashed"/>
-    <text x="395" y="28" class="t s" text-anchor="middle">pull-to-refresh: reloads, keeps the old data on screen</text>
-    <path d="M645 278 L645 306 L145 306 L145 190" class="arrow accent"/>
-    <text x="395" y="300" class="t s" text-anchor="middle">try again (if canRetry)</text>
-  </svg>
-  <figcaption>A single state field, four cases. The exhaustive switch in the UI guarantees that none is left undrawn.</figcaption>
-  </figure>
-<pre data-title="lib/forecast/forecast_state.dart"><code class="language-dart">sealed class ForecastState {
-  const ForecastState();
-}
-
-class Loading extends ForecastState {
-  const Loading();
-}
-
-class Failure extends ForecastState {
-  const Failure(this.message, {this.canRetry = true});
-  final String message;
-  final bool canRetry;
-}
-
-class Empty extends ForecastState {
-  const Empty();
-}
-
-class Data extends ForecastState {
-  const Data(this.locations, {required this.fetchedAt});
-  final List&lt;Location&gt; locations;
-  final DateTime fetchedAt;
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. The notifier now has a single field</h2>
-<pre data-title="lib/forecast/forecast_notifier.dart"><code class="language-dart">class ForecastNotifier extends ChangeNotifier {
-  ForecastNotifier(this._repo);
-  final ForecastRepository _repo;
-
-  ForecastState state = const Loading();
-
-  Future&lt;void&gt; load({bool silent = false}) async {
-    if (!silent) {
-      state = const Loading();
-      notifyListeners();
-    }
+<section class="slide" data-part="Board">
+  <h2>On the board: put <code>load()</code> in order</h2>
+  <div class="parsons" data-helper data-title="lib/state/forecast_notifier.dart · load()" data-seed="13">
+<script type="text/plain">
+  Future<void> load() async {
+    isLoading = true;
+    error = null;
+    notifyListeners(); // the screen shows the spinner
     try {
-      final items = await _repo.locations();
-      state = items.isEmpty
-          ? const Empty()
-          : Data(items, fetchedAt: DateTime.now());
-    } on ApiException catch (e) {
-      state = Failure(messageFor(e), canRetry: e.transient);
+      islands = await _repository.fetchIslands();
     } catch (e) {
-      state = Failure(messageFor(e));
+      error = '$e';
+    } finally {
+      isLoading = false;
+      notifyListeners(); // the screen shows the islands or the error
     }
+  }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["State: tells the screen when the request starts and when the islands or the error arrive.", "State: keeps the ids of the favourite islands and tells its listeners when they change.", "Data: asks the API for the islands and turns the JSON into Island objects.", "Wiring: puts the two notifiers above the app, so every screen finds them."], "why": "The two notifyListeners() are the bells: one when the request goes out, the other in finally, with islands or with an error."}</script>
+  </div>
+  <aside class="notes">A volunteer comes to the room computer and drags; the class tells them what to do, out loud. The right lines lock in place and turn green. At the end a question appears: before anyone clicks, the class votes on each option with a show of hands, and only then does the volunteer answer (only the first answer counts).</aside>
+</section>
+
+<section class="slide" data-part="Exercises">
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li>On your computer, open <code>tiago-rocha.github.io/pdm-aulas/en/aulas/aula-14.html</code> and go to the slide after this one.</li>
+    <li>Type your first name and press <strong>Join the game</strong>.</li>
+    <li>There are 21 exercises, in chapters by layer: Models, Data, State, UI and Wiring. In the first of each chapter, the right line locks in place and turns green; in the others you press <strong>Check</strong>.</li>
+    <li>After each exercise there is a question. Think before you click: <strong>only the first answer counts</strong>.</li>
+    <li>Stuck? Skip it and come back later, or call the teacher.</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>Exercises</h2>
+  <div class="pz-seq" data-id="a14">
+  <div class="parsons" data-id="e01" data-chapter="Models" data-label="Island" data-helper data-free="1,2,3,4;7,8,9" data-title="lib/models/island.dart" data-seed="40">
+<script type="text/plain">
+class Island {
+  const Island({required this.id, required this.name, required this.imageUrl});
+  final String id;
+  final String name;
+  final String imageUrl;
+  factory Island.fromJson(Map<String, dynamic> json) {
+    return Island(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      imageUrl: json['imageUrl'] as String,
+    );
+  }
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Model: an island with id, name and photo, and how it is read from JSON.", "Model: the forecast for a place, with the list of days, read from JSON.", "Data: asks the API for the islands and turns the JSON into Island objects.", "State: keeps the ids of the favourite islands and tells its listeners when they change."], "why": "It is the only class that knows the names of the JSON fields of an island; the other layers only see Island."}</script>
+  </div>
+  <div class="parsons" data-id="e02" data-chapter="Models" data-label="WeatherType" data-free="1,2,3,4;6,7,8" data-title="lib/models/forecast.dart · WeatherType" data-seed="41">
+<script type="text/plain">
+enum WeatherType {
+  sunny('Sol', Icons.wb_sunny),
+  partlyCloudy('Parcialmente nublado', Icons.cloud_queue),
+  cloudy('Nublado', Icons.cloud),
+  rain('Chuva', Icons.umbrella),
+  storm('Trovoada', Icons.thunderstorm);
+  const WeatherType(this.description, this.icon);
+  final String description;
+  final IconData icon;
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Model: the possible weather types, each with a description and an icon.", "Model: reads one day from JSON: date, weather type, temperatures, rain and wind.", "Model: an island with id, name and photo, and how it is read from JSON.", "Data: says what the app can ask for (the islands and the forecast), without saying how."], "why": "An enum with fields: each value carries the description in Portuguese and the icon, ready for the UI."}</script>
+  </div>
+  <div class="parsons" data-id="e03" data-chapter="Models" data-label="Forecast" data-free="1,2,3" data-title="lib/models/forecast.dart · Forecast" data-seed="42">
+<script type="text/plain">
+class Forecast {
+  const Forecast({required this.location, required this.days});
+  final String location;
+  final List<DayForecast> days;
+  factory Forecast.fromJson(Map<String, dynamic> json) {
+    final days = json['days'] as List<dynamic>;
+    return Forecast(
+      location: json['location'] as String,
+      days: days
+          .map((day) => DayForecast.fromJson(day as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Model: the forecast for a place, with the list of days, read from JSON.", "Model: reads one day from JSON: date, weather type, temperatures, rain and wind.", "Model: an island with id, name and photo, and how it is read from JSON.", "Data: the real recipe for the repository, which asks the API for everything through the ApiClient."], "why": "It reads the \"days\" list and hands each day to DayForecast.fromJson: each class reads only its own piece of JSON."}</script>
+  </div>
+  <div class="parsons" data-id="e04" data-chapter="Models" data-label="DayForecast.fromJson" data-free="1,2;4,5,6,7,8,9" data-title="lib/models/forecast.dart · DayForecast.fromJson" data-seed="43">
+<script type="text/plain">
+  factory DayForecast.fromJson(Map<String, dynamic> json) {
+    final weather = json['weatherType'] as Map<String, dynamic>;
+    final wind = json['wind'] as Map<String, dynamic>;
+    return DayForecast(
+      date: DateTime.parse(json['date'] as String),
+      type: WeatherType.values.byName(weather['category'] as String),
+      tMin: (json['tMin'] as num).toDouble(),
+      tMax: (json['tMax'] as num).toDouble(),
+      rainChance: json['rainChance'] as int,
+      windClass: wind['class'] as int,
+    );
+  }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Model: reads one day from JSON: date, weather type, temperatures, rain and wind.", "Model: the forecast for a place, with the list of days, read from JSON.", "Model: the possible weather types, each with a description and an icon.", "Data: if the response is not 2xx, throws the error with the message from the API."], "why": "JSON numbers arrive as num: toDouble() guarantees a double. byName turns \"rain\" into WeatherType.rain."}</script>
+  </div>
+  <div class="parsons" data-id="e05" data-chapter="Data" data-label="The interface" data-helper data-free="1,2" data-title="lib/data/forecast_repository.dart" data-seed="44">
+<script type="text/plain">
+abstract class ForecastRepository {
+  Future<List<Island>> fetchIslands();
+  Future<Forecast> fetchForecast(String islandId);
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Data: says what the app can ask for (the islands and the forecast), without saying how.", "Data: pretends to be the API and always returns the same three islands, with no network.", "Model: an island with id, name and photo, and how it is read from JSON.", "State: tells the screen when the request starts and when the islands or the error arrive."], "why": "An abstract class with only the signatures: it is the menu. Http and Fake are two recipes for the same menu."}</script>
+  </div>
+  <div class="parsons" data-id="e06" data-chapter="Data" data-label="fetchIslands" data-helper data-title="lib/data/http_forecast_repository.dart · fetchIslands()" data-seed="45">
+<script type="text/plain">
+  Future<List<Island>> fetchIslands() async {
+    final list = await _api.get('/v1/islands') as List<dynamic>;
+    return list
+        .map((item) => Island.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Data: asks the API for the islands and turns the JSON into Island objects.", "Data: pretends to be the API and always returns the same three islands, with no network.", "State: tells the screen when the request starts and when the islands or the error arrive.", "UI: draws the list of islands, one row with photo and name per island."], "why": "It is the only place that knows the /v1/islands path and the JSON; only Island objects go up."}</script>
+  </div>
+  <div class="parsons" data-id="e07" data-chapter="Data" data-label="HttpForecastRepository" data-blocks data-free="1,2;3,4" data-title="lib/data/http_forecast_repository.dart" data-seed="46">
+<script type="text/plain">
+class HttpForecastRepository implements ForecastRepository {
+
+  HttpForecastRepository(this._api); // injected, not created here
+
+  final ApiClient _api;
+
+  @override
+  Future<List<Island>> fetchIslands() async {
+    final list = await _api.get('/v1/islands') as List<dynamic>;
+    return list
+        .map((item) => Island.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<Forecast> fetchForecast(String islandId) async {
+    final json = await _api.get('/v1/islands/$islandId/forecast');
+    return Forecast.fromJson(json as Map<String, dynamic>);
+  }
+
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Data: the real recipe for the repository, which asks the API for everything through the ApiClient.", "Data: pretends to be the API and always returns the same three islands, with no network.", "Data: makes a GET with the token, waits 10 seconds at most and returns the JSON.", "Data: says what the app can ask for (the islands and the forecast), without saying how."], "why": "implements forces you to write both methods of the interface; the ApiClient arrives through the constructor."}</script>
+  </div>
+  <div class="parsons" data-id="e08" data-chapter="Data" data-label="The fake repository" data-blocks data-free="1,2;3,4" data-title="lib/data/fake_forecast_repository.dart" data-seed="47">
+<script type="text/plain">
+class FakeForecastRepository implements ForecastRepository {
+
+  FakeForecastRepository({this.fail = false});
+
+  final bool fail; // true: shows the error screen
+
+  @override
+  Future<List<Island>> fetchIslands() async {
+    await Future.delayed(const Duration(seconds: 1)); // a slow network
+    if (fail) throw Exception('Sem rede (fake)');
+    return const [
+      Island(id: 'corvo', name: 'Corvo', imageUrl: '$_img/corvo.jpg'),
+      Island(id: 'faial', name: 'Faial', imageUrl: '$_img/faial.jpg'),
+      Island(id: 'pico', name: 'Pico', imageUrl: '$_img/pico.jpg'),
+    ];
+  }
+
+  @override
+  Future<Forecast> fetchForecast(String islandId) {
+    throw UnimplementedError(); // not used yet
+  }
+
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Data: pretends to be the API and always returns the same three islands, with no network.", "Data: the real recipe for the repository, which asks the API for everything through the ApiClient.", "Data: says what the app can ask for (the islands and the forecast), without saying how.", "State: keeps the ids of the favourite islands and tells its listeners when they change."], "why": "It implements the same interface as HttpForecastRepository; the notifier does not know which of the two it was given."}</script>
+  </div>
+  <div class="parsons" data-id="e09" data-chapter="Data" data-label="ApiException" data-free="1,2,3" data-title="lib/data/api_client.dart · ApiException" data-seed="48">
+<script type="text/plain">
+class ApiException implements Exception {
+  ApiException(this.statusCode, this.message);
+  final int statusCode;
+  final String message;
+  @override
+  String toString() => '$statusCode: $message';
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Data: the API error, with the HTTP code and the message from the server.", "Data: if the response is not 2xx, throws the error with the message from the API.", "UI: shows the loading spinner, or the error with the \"Tentar de novo\" (try again) button.", "Model: an island with id, name and photo, and how it is read from JSON."], "why": "implements Exception lets you throw ApiException(...); toString is the text the screen shows."}</script>
+  </div>
+  <div class="parsons" data-id="e10" data-chapter="Data" data-label="ApiClient.get" data-title="lib/data/api_client.dart · get()" data-seed="49">
+<script type="text/plain">
+  Future<dynamic> get(String path) async {
+    _token ??= await _fetchToken(); // only the first time
+    final response = await http
+        .get(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Authorization': 'Bearer $_token'},
+        )
+        .timeout(const Duration(seconds: 10));
+    _check(response);
+    return jsonDecode(response.body);
+  }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Data: makes a GET with the token, waits 10 seconds at most and returns the JSON.", "Data: if the response is not 2xx, throws the error with the message from the API.", "Data: asks the API for the islands and turns the JSON into Island objects.", "Data: the real recipe for the repository, which asks the API for everything through the ApiClient."], "why": "The ??= only asks for the token the first time; the timeout avoids waiting forever."}</script>
+  </div>
+  <div class="parsons" data-id="e11" data-chapter="Data" data-label="ApiClient._check" data-title="lib/data/api_client.dart · _check()" data-seed="50">
+<script type="text/plain">
+  void _check(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+    if (response.statusCode == 401) {
+      _token = null; // expired or wrong: ask for a new one next time
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final error = body['error'] as Map<String, dynamic>;
+    throw ApiException(response.statusCode, error['message'] as String);
+  }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Data: if the response is not 2xx, throws the error with the message from the API.", "Data: the API error, with the HTTP code and the message from the server.", "Data: makes a GET with the token, waits 10 seconds at most and returns the JSON.", "UI: shows the loading spinner, or the error with the \"Tentar de novo\" (try again) button."], "why": "With 401 it forgets the token, to ask for a new one next time. The message comes from the error JSON of the API."}</script>
+  </div>
+  <div class="parsons" data-id="e12" data-chapter="State" data-label="The load()" data-helper data-free="1,2" data-title="lib/state/forecast_notifier.dart · load()" data-seed="51">
+<script type="text/plain">
+  Future<void> load() async {
+    isLoading = true;
+    error = null;
+    notifyListeners(); // the screen shows the spinner
+    try {
+      islands = await _repository.fetchIslands();
+    } catch (e) {
+      error = '$e';
+    } finally {
+      isLoading = false;
+      notifyListeners(); // the screen shows the islands or the error
+    }
+  }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["State: tells the screen when the request starts and when the islands or the error arrive.", "State: keeps the ids of the favourite islands and tells its listeners when they change.", "Data: asks the API for the islands and turns the JSON into Island objects.", "Wiring: puts the two notifiers above the app, so every screen finds them."], "why": "The two notifyListeners() are the bells: one when the request goes out, the other in finally, with islands or with an error."}</script>
+  </div>
+  <div class="parsons" data-id="e13" data-chapter="State" data-label="FavoritesNotifier" data-free="1,2,3" data-title="lib/state/favorites_notifier.dart" data-seed="52">
+<script type="text/plain">
+class FavoritesNotifier extends ChangeNotifier {
+  final Set<String> _ids = {};
+  int get count => _ids.length;
+  bool contains(String islandId) => _ids.contains(islandId);
+  void toggle(String islandId) {
+    if (!_ids.remove(islandId)) _ids.add(islandId);
+    notifyListeners();
+  }
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["State: keeps the ids of the favourite islands and tells its listeners when they change.", "UI: draws the star of an island and, when tapped, marks or unmarks that island.", "State: tells the screen when the request starts and when the islands or the error arrive.", "UI: shows how many favourites there are and opens the favourites screen."], "why": "A Set of ids: an island is a favourite or it is not, with no repeats. toggle removes or adds and rings the bell."}</script>
+  </div>
+  <div class="parsons" data-id="e14" data-chapter="UI" data-label="The build" data-helper data-free="6,7" data-title="lib/screens/islands_screen.dart · build()" data-seed="53">
+<script type="text/plain">
+class IslandsScreen extends StatelessWidget {
+  const IslandsScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final forecast = context.watch<ForecastNotifier>(); // rebuilds on notify
+    return Scaffold(
+      appBar: AppBar(title: const Text('Tempo Açores')),
+      body: _body(context, forecast),
+    );
+  }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["UI: draws the top bar and the body of the screen, keeping an eye on the notifier.", "UI: shows only the marked islands, reading two notifiers.", "State: tells the screen when the request starts and when the islands or the error arrive.", "UI: draws the list of islands, one row with photo and name per island."], "why": "The watch in build makes the screen redraw every time the ForecastNotifier rings."}</script>
+  </div>
+  <div class="parsons" data-id="e15" data-chapter="UI" data-label="The list" data-free="3,4" data-title="lib/screens/islands_screen.dart · _body(), the list" data-seed="54">
+<script type="text/plain">
+    return ListView.builder(
+      itemCount: forecast.islands.length,
+      itemBuilder: (context, i) => ListTile(
+        leading: Image.network(forecast.islands[i].imageUrl, width: 56),
+        title: Text(forecast.islands[i].name),
+      ),
+    );
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["UI: draws the list of islands, one row with photo and name per island.", "UI: shows only the marked islands, reading two notifiers.", "UI: draws the top bar and the body of the screen, keeping an eye on the notifier.", "Model: an island with id, name and photo, and how it is read from JSON."], "why": "ListView.builder only builds the rows that are on screen; itemCount says how many there are."}</script>
+  </div>
+  <div class="parsons" data-id="e16" data-chapter="UI" data-label="The star" data-free="1,2;7,8" data-title="lib/widgets/favorite_button.dart" data-seed="55">
+<script type="text/plain">
+class FavoriteButton extends StatelessWidget {
+  const FavoriteButton({super.key, required this.islandId});
+  final String islandId;
+  @override
+  Widget build(BuildContext context) {
+    final favorite = context.watch<FavoritesNotifier>().contains(islandId);
+    return IconButton(
+      icon: Icon(favorite ? Icons.star : Icons.star_border),
+      onPressed: () => context.read<FavoritesNotifier>().toggle(islandId),
+    );
+  }
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["UI: draws the star of an island and, when tapped, marks or unmarks that island.", "State: keeps the ids of the favourite islands and tells its listeners when they change.", "UI: shows how many favourites there are and opens the favourites screen.", "UI: shows only the marked islands, reading two notifiers."], "why": "watch to draw the right star, read in onPressed to change it without listening."}</script>
+  </div>
+  <div class="parsons" data-id="e17" data-chapter="UI" data-label="The counter" data-free="3,4,5" data-title="lib/screens/islands_screen.dart · actions" data-seed="56">
+<script type="text/plain">
+          Consumer<FavoritesNotifier>(
+            builder: (context, favorites, child) => IconButton(
+              icon: Badge(
+                isLabelVisible: favorites.count > 0,
+                label: Text('${favorites.count}'),
+                child: const Icon(Icons.star),
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+              ),
+            ),
+          ),
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["UI: shows how many favourites there are and opens the favourites screen.", "UI: draws the star of an island and, when tapped, marks or unmarks that island.", "UI: shows only the marked islands, reading two notifiers.", "State: keeps the ids of the favourite islands and tells its listeners when they change."], "why": "The Consumer only redraws this button when the favourites change, not the whole screen."}</script>
+  </div>
+  <div class="parsons" data-id="e18" data-chapter="UI" data-label="Loading and the error" data-free="11,12" data-title="lib/screens/islands_screen.dart · _body(), loading and the error" data-seed="57">
+<script type="text/plain">
+  Widget _body(BuildContext context, ForecastNotifier forecast) {
+    if (forecast.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (forecast.error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(forecast.error!),
+            TextButton(
+              onPressed: () => context.read<ForecastNotifier>().load(),
+              child: const Text('Tentar de novo'),
+            ),
+          ],
+        ),
+      );
+    }
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["UI: shows the loading spinner, or the error with the \"Tentar de novo\" (try again) button.", "Data: if the response is not 2xx, throws the error with the message from the API.", "UI: draws the list of islands, one row with photo and name per island.", "UI: shows how many favourites there are and opens the favourites screen."], "why": "The screen does not know why it failed: it only draws the state. The button uses read, because it is a callback."}</script>
+  </div>
+  <div class="parsons" data-id="e19" data-chapter="UI" data-label="The favourites screen" data-blocks data-title="lib/screens/favorites_screen.dart" data-seed="58">
+<script type="text/plain">
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final favorites = context.watch<FavoritesNotifier>();
+
+    final islands = context
+        .watch<ForecastNotifier>()
+        .islands
+        .where((island) => favorites.contains(island.id))
+        .toList();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Favoritas')),
+
+      body: islands.isEmpty
+          ? const Center(child: Text('Ainda não há ilhas favoritas.'))
+
+          : ListView(
+              children: [
+                for (final island in islands)
+                  ListTile(
+                    title: Text(island.name),
+                    trailing: FavoriteButton(islandId: island.id),
+                  ),
+              ],
+            ),
+
+    );
+  }
+}
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["UI: shows only the marked islands, reading two notifiers.", "UI: shows how many favourites there are and opens the favourites screen.", "State: keeps the ids of the favourite islands and tells its listeners when they change.", "UI: draws the list of islands, one row with photo and name per island."], "why": "The islands come from the ForecastNotifier and the choices from the FavoritesNotifier; where puts the two together."}</script>
+  </div>
+  <div class="parsons" data-id="e20" data-chapter="Wiring" data-label="API or fake?" data-title="lib/main.dart · main()" data-seed="59">
+<script type="text/plain">
+  final ForecastRepository repository = useFake
+      ? FakeForecastRepository()
+      : HttpForecastRepository(
+          ApiClient(clientId: clientId, clientSecret: clientSecret),
+        );
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Wiring: chooses whether the app uses the real API or the fake repository.", "Wiring: puts the two notifiers above the app, so every screen finds them.", "Data: pretends to be the API and always returns the same three islands, with no network.", "Data: says what the app can ask for (the islands and the forecast), without saying how."], "why": "--dart-define=FAKE=true decides; the ForecastRepository type on the left lets both sides of the ? fit in the same variable."}</script>
+  </div>
+  <div class="parsons" data-id="e21" data-chapter="Wiring" data-label="MultiProvider" data-blocks data-free="1,2" data-title="lib/main.dart · runApp" data-seed="60">
+<script type="text/plain">
+    MultiProvider(
+      providers: [
+
+        ChangeNotifierProvider(
+          create: (_) => ForecastNotifier(repository)..load(),
+        ),
+
+        ChangeNotifierProvider(create: (_) => FavoritesNotifier()),
+
+      ],
+</script>
+<script type="application/json">{"q": "What does this piece do?", "options": ["Wiring: puts the two notifiers above the app, so every screen finds them.", "State: keeps the ids of the favourite islands and tells its listeners when they change.", "Wiring: chooses whether the app uses the real API or the fake repository.", "UI: shows how many favourites there are and opens the favourites screen."], "why": "Because it sits above the MaterialApp, both screens find both notifiers, even after navigating."}</script>
+  </div>
+  </div>
+  <aside class="notes">The students do the 21 at their own pace; the numbers at the top lead to any of them, and they are grouped by chapter. Whoever finishes them all can go back to the ones they skipped. Your board is the next slide.</aside>
+</section>
+
+<section class="slide">
+  <h2>State of the class</h2>
+  <div class="pz-room-board" data-track="a14"></div>
+  <aside class="notes">One row per student, one column per exercise. Green with ✓: solved; the dot in the corner says whether they got the question right (green) or not (red). Blue with a bar: in progress, with the tries. The blue outline is the exercise the student is on now. "No check for X min": they are stuck; go over. The bottom row counts how many solved each exercise: a low number in a column tells you what to explain to the whole class.</aside>
+</section>
+
+<section class="slide title" data-part="Sort">
+  <p class="kicker">Lesson 14 · Second part</p>
+  <h1>Sort into layers</h1>
+  <p>The twelve files of the app are all loose in <code>lib/</code>. Sort them into folders, one per layer.</p>
+  <aside class="notes">Second part of the lesson, after the ordering exercises. About 20 minutes of sorting, then the answer file by file.</aside>
+</section>
+
+<section class="slide" data-part="Task">
+  <h2>The task: twelve files, three layers</h2>
+  <div class="lay">
+    <div class="d"><b>DATA</b>fetches the data and gives it shape<br><code>models/</code> <code>data/</code></div>
+    <div class="s"><b>STATE</b>keeps what the app knows and notifies<br><code>state/</code></div>
+    <div class="u"><b>UI</b>only draws and reacts to touch<br><code>screens/</code> <code>widgets/</code></div>
+  </div>
+  <p class="lay-main"><code>main.dart</code> stays at the root: it connects the three.</p>
+  <pre><code class="language-bash">git clone -b arrumar https://github.com/Tiago-Rocha/pdm-aula-13.git arrumar
+cd arrumar
+code .</code></pre>
+  <p>Drag each file from <code>lib/</code> to its folder in VS Code and accept updating the imports. At the end, the app runs the same:
+  <code>flutter run -d chrome --dart-define=FAKE=true</code></p>
+  <aside class="notes">The command creates a new folder <code>arrumar</code> already on the right branch, so it also works for anyone who already had <code>pdm-aula-13</code>. The <code>arrumar</code> branch is <code>passo-2</code> with all the files in <code>lib/</code>. The solution is <code>passo-2</code> itself: <code>git diff arrumar passo-2 --stat</code> shows only renames. If VS Code does not update the imports, the red errors tell you which one is missing. <code>main.dart</code> stays at the root.</aside>
+</section>
+
+<section class="slide" data-part="Files">
+  <h2>1 of 12 · <code>favorite_button.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'favorites_notifier.dart';
+
+/// The star of one island. Used by both screens.
+class FavoriteButton extends StatelessWidget {
+  const FavoriteButton({super.key, required this.islandId});
+
+  final String islandId;
+
+  @override
+  Widget build(BuildContext context) {
+    final favorite = context.watch&lt;FavoritesNotifier&gt;().contains(islandId);
+    return IconButton(
+      icon: Icon(favorite ? Icons.star : Icons.star_border),
+      onPressed: () =&gt; context.read&lt;FavoritesNotifier&gt;().toggle(islandId),
+    );
+  }
+}</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag u">UI</span> <strong>lib/widgets/</strong> · It is UI: it draws a star. It is not a whole screen, it is a piece that both screens use, so it goes in <code>widgets/</code> and not in <code>screens/</code>.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. It is UI: it draws a star. It is not a whole screen, it is a piece that both screens use, so it goes in <code>widgets/</code> and not in <code>screens/</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>2 of 12 · <code>api_client.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+const baseUrl = 'https://api-pdm.sublimecipher.com';
+// ...
+/// Talks HTTP to the course API: token, headers, status codes and JSON.
+/// It knows nothing about islands or forecasts.
+class ApiClient {
+  ApiClient({required this.clientId, required this.clientSecret});
+
+  final String clientId;
+  final String clientSecret;
+  String? _token;
+
+  Future&lt;dynamic&gt; get(String path) async {
+    _token ??= await _fetchToken(); // only the first time
+    final response = await http
+        .get(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Authorization': 'Bearer $_token'},
+        )
+        .timeout(const Duration(seconds: 10));
+    _check(response);
+    return jsonDecode(response.body);
+  // ...</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Data: it talks to the network, keeps the token, deals with the HTTP codes and the JSON. It does not know what an island is.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. Data: it talks to the network, keeps the token, deals with the HTTP codes and the JSON. It does not know what an island is.</aside>
+</section>
+
+<section class="slide">
+  <h2>3 of 12 · <code>forecast_notifier.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/foundation.dart';
+
+import 'forecast_repository.dart';
+import 'island.dart';
+
+/// The state of the islands screen. Knows the repository, not the widgets.
+class ForecastNotifier extends ChangeNotifier {
+  ForecastNotifier(this._repository); // injected, not created here
+
+  final ForecastRepository _repository;
+
+  bool isLoading = false;
+  String? error;
+  List&lt;Island&gt; islands = const [];
+
+  Future&lt;void&gt; load() async {
+    isLoading = true;
+    error = null;
+    notifyListeners(); // the screen shows the spinner
+    try {
+      islands = await _repository.fetchIslands();
+    } catch (e) {
+      error = '$e';
+    } finally {
+      isLoading = false;
+      notifyListeners(); // the screen shows the islands or the error
+    }
+  }
+}</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag s">STATE</span> <strong>lib/state/</strong> · State: a <code>ChangeNotifier</code> that keeps <code>isLoading</code>, <code>error</code> and <code>islands</code> and notifies the screens. It asks the repository; it knows no URLs and no widgets.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. State: a <code>ChangeNotifier</code> that keeps <code>isLoading</code>, <code>error</code> and <code>islands</code> and notifies the screens. It asks the repository; it knows no URLs and no widgets.</aside>
+</section>
+
+<section class="slide">
+  <h2>4 of 12 · <code>island.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">class Island {
+  const Island({required this.id, required this.name, required this.imageUrl});
+
+  final String id;
+  final String name;
+  final String imageUrl;
+
+  factory Island.fromJson(Map&lt;String, dynamic&gt; json) {
+    return Island(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      imageUrl: json['imageUrl'] as String,
+    );
+  }
+}</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag d">DATA</span> <strong>lib/models/</strong> · Model: only the shape of an island and how it is read from JSON. It does not import Flutter or http.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. Model: only the shape of an island and how it is read from JSON. It does not import Flutter or http.</aside>
+</section>
+
+<section class="slide">
+  <h2>5 of 12 · <code>islands_screen.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'favorites_notifier.dart';
+import 'forecast_notifier.dart';
+import 'favorite_button.dart';
+import 'favorites_screen.dart';
+
+/// Draws the state of the ForecastNotifier. Knows no URLs and no JSON.
+class IslandsScreen extends StatelessWidget {
+  const IslandsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final forecast = context.watch&lt;ForecastNotifier&gt;(); // rebuilds on notify
+    return Scaffold(
+      appBar: AppBar(
+  // ...
+    return ListView.builder(
+      itemCount: forecast.islands.length,
+      itemBuilder: (context, i) =&gt; ListTile(
+        leading: Image.network(forecast.islands[i].imageUrl, width: 56),
+        title: Text(forecast.islands[i].name),
+        trailing: FavoriteButton(islandId: forecast.islands[i].id),
+      ),
+    );
+  }
+}</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag u">UI</span> <strong>lib/screens/</strong> · UI: a whole screen, with a <code>Scaffold</code>. It reads the state with <code>context.watch</code> and only draws.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. UI: a whole screen, with a <code>Scaffold</code>. It reads the state with <code>context.watch</code> and only draws.</aside>
+</section>
+
+<section class="slide">
+  <h2>6 of 12 · <code>fake_forecast_repository.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'forecast.dart';
+import 'island.dart';
+import 'forecast_repository.dart';
+
+/// Same interface, fixed data: no API and no credentials.
+class FakeForecastRepository implements ForecastRepository {
+  FakeForecastRepository({this.fail = false});
+
+  final bool fail; // true: shows the error screen
+
+  @override
+  Future&lt;List&lt;Island&gt;&gt; fetchIslands() async {
+    await Future.delayed(const Duration(seconds: 1)); // a slow network
+    if (fail) throw Exception('Sem rede (fake)');
+    return const [
+      Island(id: 'corvo', name: 'Corvo', imageUrl: '$_img/corvo.jpg'),
+      Island(id: 'faial', name: 'Faial', imageUrl: '$_img/faial.jpg'),
+      Island(id: 'pico', name: 'Pico', imageUrl: '$_img/pico.jpg'),
+    ];
+  }
+
+  // ...</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Data: the same interface as the real repository, with fixed islands and no network. It sits next to the real one because it does the same job.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. Data: the same interface as the real repository, with fixed islands and no network. It sits next to the real one because it does the same job.</aside>
+</section>
+
+<section class="slide">
+  <h2>7 of 12 · <code>favorites_notifier.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/foundation.dart';
+
+/// Favourite islands, in memory. Shared by two screens.
+class FavoritesNotifier extends ChangeNotifier {
+  final Set&lt;String&gt; _ids = {};
+
+  int get count =&gt; _ids.length;
+  bool contains(String islandId) =&gt; _ids.contains(islandId);
+
+  void toggle(String islandId) {
+    if (!_ids.remove(islandId)) _ids.add(islandId);
     notifyListeners();
   }
 }</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag s">STATE</span> <strong>lib/state/</strong> · State: the favourites in memory, shared by two screens. It notifies with <code>notifyListeners</code>.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. State: the favourites in memory, shared by two screens. It notifies with <code>notifyListeners</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Exhaustive <code>switch</code> in the UI</h2>
-<pre data-title="lib/forecast/locations_screen.dart"><code class="language-dart">@override
-Widget build(BuildContext context) {
-  final state = context.watch&lt;ForecastNotifier&gt;().state;
+  <h2>8 of 12 · <code>forecast_repository.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'forecast.dart';
+import 'island.dart';
 
-  return switch (state) {
-    Loading() =&gt; const ListSkeleton(),
-    Empty() =&gt; EmptyState(
-        message: 'No locations yet.',
-        action: 'Refresh',
-        onAction: () =&gt; context.read&lt;ForecastNotifier&gt;().load(),
-      ),
-    Failure(:final message, :final canRetry) =&gt; ErrorState(
-        message: message,
-        onRetry: canRetry
-            ? () =&gt; context.read&lt;ForecastNotifier&gt;().load()
-            : null,
-      ),
-    Data(:final locations, :final fetchedAt) =&gt; LocationList(
-        locations: locations,
-        fetchedAt: fetchedAt,
-      ),
-  };
+/// What the app can ask for. The screens only see this.
+abstract class ForecastRepository {
+  Future&lt;List&lt;Island&gt;&gt; fetchIslands();
+  Future&lt;Forecast&gt; fetchForecast(String islandId);
 }</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Data: the contract of what the app can ask for. The screens and the notifier only know this; they do not know whether the data comes from the API or from the fake.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. Data: the contract of what the app can ask for. The screens and the notifier only know this; they do not know whether the data comes from the API or from the fake.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. States: what matters</h2>
-  <ul>
-    <li><code>sealed</code> closes the hierarchy: only these four subclasses exist. The compiler knows it and forces the <code>switch</code> to handle all of them.</li>
-    <li>Add a <code>Partial</code> state and <code>build</code> stops compiling until you handle it. It is impossible to forget a case.</li>
-    <li>With three booleans (<code>isLoading</code>, <code>error</code>, <code>items</code>) there were eight combinations, four of them impossible. Now there are four states, all of them possible.</li>
-    <li><code>Failure(:final message)</code> is an <em>object pattern</em>: it extracts the field in the <code>case</code> itself.</li>
-    <li>The data lives inside the state (<code>Data.locations</code>): there is no list "left hanging" when the state is <code>Failure</code>.</li>
-  </ul>
-  <div class="callout task"><strong>Exercise 1</strong> Migrate <code>DetailNotifier</code> to <code>DetailState</code> with the same four cases and an exhaustive <code>switch</code> in the detail screen. The test <code>test/detail_state_test.dart</code> checks each transition.</div>
-  <aside class="notes">Frequent question: "why not an enum?" Because an enum does not carry data: Failure needs the message, Data needs the list. Show the compile error when you delete a case from the switch: it is the strongest argument for sealed.</aside>
-</section>
+  <h2>9 of 12 · <code>forecast.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'package:flutter/material.dart';
 
-<section class="slide">
-  <h2>2. Error, empty and loading widgets</h2>
-<pre data-title="lib/core/widgets/error_state.dart"><code class="language-dart">class ErrorState extends StatelessWidget {
-  const ErrorState({super.key, required this.message, this.onRetry});
-  final String message;
-  final VoidCallback? onRetry;
+enum WeatherType {
+  sunny('Sol', Icons.wb_sunny),
+  partlyCloudy('Parcialmente nublado', Icons.cloud_queue),
+  cloudy('Nublado', Icons.cloud),
+  rain('Chuva', Icons.umbrella),
+  storm('Trovoada', Icons.thunderstorm);
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_off, size: 48),
-          const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center),
-          if (onRetry != null) ...[
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try again'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}</code></pre>
-</section>
+  const WeatherType(this.description, this.icon);
 
-<section class="slide">
-  <h2>2. Visual states: what matters</h2>
-  <ul>
-    <li><strong>Error:</strong> an icon, a human message and a "Try again" button only when it makes sense (a null <code>onRetry</code> hides it). A 404 is not retried.</li>
-    <li><strong>Empty:</strong> it is not an error. "No warnings yet" with a calm icon and, if possible, an action ("Refresh", "Add favourite").</li>
-    <li><strong>Loading:</strong> a skeleton instead of a spinner in the centre: <code>Skeletonizer(enabled: true, child: LocationList(locations: Location.sample))</code> draws the shape of the list in grey.</li>
-    <li>All three are reusable widgets in <code>lib/core/widgets/</code>: every screen of the project uses the same ones.</li>
-    <li>States are part of the design (lesson 6): they are designed with the same care as the screen with data.</li>
-  </ul>
-  <div class="callout task"><strong>Exercise 2</strong> Create <code>EmptyState</code> (icon, message, optional button) and <code>ListSkeleton</code> with <code>skeletonizer</code>. Use them in the warnings screen: with no active warnings it shows the empty state with the "Refresh" action.</div>
-</section>
-
-<section class="slide">
-  <h2>3. Retry with backoff in <code>ApiClient</code></h2>
-<pre data-title="lib/core/api_client.dart"><code class="language-dart">Future&lt;dynamic&gt; get(String path, {int attempts = 3}) async {
-  var delay = const Duration(seconds: 1);
-  for (var i = 1; ; i++) {
-    try {
-      return await _getOnce(path);               // the get from lesson 12
-    } on ApiException catch (e) {
-      if (!e.transient || i &gt;= attempts) rethrow;
-      await Future.delayed(e.retryAfter ?? _withJitter(delay));
-    } on TimeoutException catch (_) {
-      if (i &gt;= attempts) rethrow;
-      await Future.delayed(_withJitter(delay));
-    } on SocketException catch (_) {
-      if (i &gt;= attempts) rethrow;
-      await Future.delayed(_withJitter(delay));
-    }
-    delay *= 2;                                    // 1 s, 2 s, 4 s
-  }
+  final String description;
+  final IconData icon;
 }
+// ...
+class DayForecast {
+  const DayForecast({
+    required this.date,
+    required this.type,
+    required this.tMin,
+    required this.tMax,
+    required this.rainChance,
+    required this.windClass,
+  });
 
-Duration _withJitter(Duration base) =&gt;
-    base + Duration(milliseconds: Random().nextInt(300));
-
-// In ApiException: 429 and 5xx are transient; 4xx are not
-bool get transient =&gt; statusCode == 429 || (statusCode ?? 0) &gt;= 500;</code></pre>
+  final DateTime date;
+  final WeatherType type;
+  final double tMin;
+  final double tMax;
+  final int rainChance; // 0 to 100
+  final int windClass; // 1 weak to 4 very strong
+  // ...</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag d">DATA</span> <strong>lib/models/</strong> · Model: the weather for a day. It imports <code>material.dart</code> only because of the icons, but it draws nothing and does not go to the network.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. Model: the weather for a day. It imports <code>material.dart</code> only because of the icons, but it draws nothing and does not go to the network.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. Human messages for each kind of failure</h2>
-<pre data-title="lib/core/messages.dart"><code class="language-dart">String messageFor(Object error) =&gt; switch (error) {
-      SocketException() =&gt; 'No connection. Check the network and try again.',
-      TimeoutException() =&gt; 'The server is taking too long. Try again shortly.',
-      ApiException(statusCode: 429) =&gt; 'Too many requests in a row. Wait a few seconds.',
-      ApiException(statusCode: 401) =&gt; 'The session has expired. Sign in again.',
-      ApiException(statusCode: final c?) when c &gt;= 500 =&gt;
-        'The service is having problems. We are showing the latest data we have.',
-      FormatException() =&gt; 'We received unexpected data. We are already working on it.',
-      _ =&gt; 'Something went wrong. Try again.',
-    };</code></pre>
-  <ul>
-    <li>Only <code>get</code> retries: <code>post</code> and <code>delete</code> fail on the first attempt, because they are not idempotent.</li>
-    <li><code>retryAfter</code> comes from the <code>Retry-After</code> header in seconds; the starter already reads it in <code>_getOnce</code>.</li>
-    <li>One message per kind of failure, with no jargon, and saying what the user can do. The original exception goes to the log.</li>
-  </ul>
-  <div class="callout task"><strong>Exercise 3</strong> Add a test with <code>MockClient</code> that replies 503, 503 and then 200: <code>get</code> has to return the data and have made exactly three requests. Then one that replies 404: a single request and <code>ApiException</code>.</div>
-</section>
-
-<section class="slide">
-  <h2>4. Pull-to-refresh and the age of the data</h2>
-<pre data-title="lib/forecast/location_list.dart"><code class="language-dart">class LocationList extends StatelessWidget {
-  const LocationList({super.key, required this.locations, required this.fetchedAt});
-  final List&lt;Location&gt; locations;
-  final DateTime fetchedAt;
+  <h2>10 of 12 · <code>favorites_screen.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">// ...
+/// The favourite islands. Reads two notifiers.
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final minutes = DateTime.now().difference(fetchedAt).inMinutes;
-    return RefreshIndicator(
-      onRefresh: () =&gt; context.read&lt;ForecastNotifier&gt;().load(silent: true),
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: locations.length + 1,
-        itemBuilder: (_, i) {
-          if (i == 0) {
-            return ListTile(
-              dense: true,
-              leading: const Icon(Icons.schedule, size: 18),
-              title: Text(minutes == 0 ? 'Updated just now' : 'Data from $minutes min ago'),
-            );
-          }
-          return ListTile(title: Text(locations[i - 1].name), subtitle: Text(locations[i - 1].island));
-        },
-      ),
+    final favorites = context.watch&lt;FavoritesNotifier&gt;();
+    final islands = context
+        .watch&lt;ForecastNotifier&gt;()
+        .islands
+        .where((island) =&gt; favorites.contains(island.id))
+        .toList();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Favoritas')),
+      body: islands.isEmpty
+          ? const Center(child: Text('Ainda não há ilhas favoritas.'))
+          : ListView(
+              children: [
+                for (final island in islands)
+                  ListTile(
+                    title: Text(island.name),
+                    trailing: FavoriteButton(islandId: island.id),
+                  ),
+              ],
+            ),
     );
   }
 }</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag u">UI</span> <strong>lib/screens/</strong> · UI: the favourites screen. It reads two notifiers and draws the list.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. UI: the favourites screen. It reads two notifiers and draws the list.</aside>
 </section>
 
 <section class="slide">
-  <h2>4. Refresh: what matters</h2>
+  <h2>11 of 12 · <code>http_forecast_repository.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">import 'forecast.dart';
+import 'island.dart';
+import 'api_client.dart';
+import 'forecast_repository.dart';
+
+/// How: HTTP to the course API, through the ApiClient.
+class HttpForecastRepository implements ForecastRepository {
+  HttpForecastRepository(this._api); // injected, not created here
+
+  final ApiClient _api;
+
+  @override
+  Future&lt;List&lt;Island&gt;&gt; fetchIslands() async {
+    final list = await _api.get('/v1/islands') as List&lt;dynamic&gt;;
+    return list
+        .map((item) =&gt; Island.fromJson(item as Map&lt;String, dynamic&gt;))
+        .toList();
+  }
+
+  @override
+  Future&lt;Forecast&gt; fetchForecast(String islandId) async {
+    final json = await _api.get('/v1/islands/$islandId/forecast');
+    return Forecast.fromJson(json as Map&lt;String, dynamic&gt;);
+  }
+}</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag d">DATA</span> <strong>lib/data/</strong> · Data: the real repository. It uses the <code>ApiClient</code> and turns the JSON into <code>Island</code> and <code>Forecast</code>.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. Data: the real repository. It uses the <code>ApiClient</code> and turns the JSON into <code>Island</code> and <code>Forecast</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>12 of 12 · <code>main.dart</code></h2>
+  <p>Which folder did you put this file in? Why? <span class="tag d">DATA</span> <span class="tag s">STATE</span> <span class="tag u">UI</span></p>
+  <pre><code class="language-dart">// ...
+const clientId = String.fromEnvironment('CLIENT_ID');
+const clientSecret = String.fromEnvironment('CLIENT_SECRET');
+const useFake = bool.fromEnvironment('FAKE'); // --dart-define=FAKE=true
+
+void main() {
+  final ForecastRepository repository = useFake
+      ? FakeForecastRepository()
+      : HttpForecastRepository(
+          ApiClient(clientId: clientId, clientSecret: clientSecret),
+        );
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) =&gt; ForecastNotifier(repository)..load(),
+        ),
+        ChangeNotifierProvider(create: (_) =&gt; FavoritesNotifier()),
+      ],
+      child: MaterialApp(
+        title: 'Tempo Açores',
+        theme: ThemeData(colorSchemeSeed: Colors.teal),
+        home: const IslandsScreen(),
+      ),
+    ),
+  );
+}</code></pre>
+  <details class="resp"><summary>Answer</summary><p><span class="tag">WIRING</span> <strong>lib/ (stays at the root)</strong> · Wires it all up: it chooses the repository (API or fake), creates the notifiers and puts them above the <code>MaterialApp</code>. It is the only file that knows every layer.</p></details>
+  <aside class="notes">First ask someone who put it in another folder, and why. Only then open the answer. Wires it all up: it chooses the repository (API or fake), creates the notifiers and puts them above the <code>MaterialApp</code>. It is the only file that knows every layer.</aside>
+</section>
+
+<section class="slide" data-part="Solution">
+  <h2>How it ends up</h2>
+  <pre class="tree"><code>lib/
+  main.dart                  wires it all up
+  models/                    the shape of the data
+    island.dart
+    forecast.dart
+  data/                      fetches the data
+    api_client.dart
+    forecast_repository.dart
+    http_forecast_repository.dart
+    fake_forecast_repository.dart
+  state/                     keeps and notifies
+    forecast_notifier.dart
+    favorites_notifier.dart
+  screens/                   draws a screen
+    islands_screen.dart
+    favorites_screen.dart
+  widgets/                   pieces of UI
+    favorite_button.dart</code></pre>
+  <aside class="notes">It is the <code>passo-2</code> branch. Final question: if tomorrow the API changes the JSON, which folders do you touch? (models and data). If the colour of the star changes? (widgets). If the list becomes a grid? (screens).</aside>
+</section>
+
+<section class="slide" data-part="Where">
+  <h2>Where do you change it?</h2>
   <ul>
-    <li><code>RefreshIndicator</code> calls <code>onRefresh</code> and keeps the circle visible until the <code>Future</code> completes. That is why <code>load</code> returns <code>Future&lt;void&gt;</code>.</li>
-    <li><code>silent: true</code> does not go through <code>Loading</code>: the list stays visible during the refresh. Without it, the skeleton replaced the list and the gesture looked broken.</li>
-    <li><code>AlwaysScrollableScrollPhysics</code> lets you pull even when the list fits on the screen.</li>
-    <li>"Data from 12 min ago" only makes sense if <code>fetchedAt</code> lives in the state. That is why it is in <code>Data</code>, not in the widget.</li>
-    <li>A refresh that fails with data on screen shows a <code>SnackBar</code> and keeps the data: it never swaps valid data for an error screen.</li>
+    <li>The API changed the name of a field in the JSON.</li>
+    <li>The star becomes a heart.</li>
+    <li>The favourites are now saved on the phone.</li>
+    <li>We want to test the app without a network.</li>
   </ul>
-  <div class="callout task"><strong>Exercise 4</strong> When <code>load(silent: true)</code> fails and the current state is <code>Data</code>, keep the data and store the message in a <code>refreshWarning</code> field. The screen shows it in a <code>SnackBar</code> only once.</div>
-  <aside class="notes">The question here is "where do I put the SnackBar if the notifier does not know the context?" Answer: the screen observes the field and shows it in a listener (or in onRefresh, with context.mounted). Show the solution from solucao/ if nobody gets there in 10 minutes.</aside>
+  <aside class="notes"><strong>Answers.</strong> JSON field: <code>models/</code> (the <code>fromJson</code>). Heart: <code>widgets/favorite_button.dart</code>. Saving the favourites: <code>state/favorites_notifier.dart</code> (or a new repository in <code>data/</code>). No network: <code>data/fake_forecast_repository.dart</code> and <code>main.dart</code> with <code>FAKE=true</code>.</aside>
+</section>
+
+<section class="slide" data-part="The app">
+  <h2>The whole app</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-13.git
+cd pdm-aula-13
+git checkout passo-2
+flutter pub get
+flutter run -d chrome --dart-define=FAKE=true</code></pre>
+  <p>The <code>passo-2</code> branch has all the pieces from the exercises, put together. It runs without credentials: the islands come from the fake repository.</p>
+  <ol class="steps">
+    <li>Mark Pico and Corvo: the counter shows 2.</li>
+    <li>Open Favoritas (the favourites) with the star at the top and remove Corvo. Go back: in the list, Corvo no longer has a star.</li>
+    <li>Pick three exercises you did and find them in the files, in VS Code. Which folder is each one in?</li>
+  </ol>
+  <div class="callout"><strong>Ask the class</strong> To swap the API for the fake repository, how many lines changed in <code>screens/</code>?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> Zero. Only <code>main</code> chooses the repository (<code>--dart-define=FAKE=true</code>): it is the "API or fake?" exercise. Closing the app loses the favourites: they are only in memory.</aside>
 </section>
 
 <section class="slide">
-  <h2>5. Chaos mode: observe, fix, repeat</h2>
+  <h2>If there is time: break the network</h2>
   <ol class="steps">
-    <li><strong>The teacher switches on chaos mode for your group:</strong> 3 s of latency on half the requests, 20% of 500 responses, a 429 every ten requests with <code>Retry-After: 5</code>.</li>
-    <li><strong>Use the app for two minutes</strong> like a user: open the list, go into a detail, pull to refresh, go back. Note down everything you see and should not see.</li>
-    <li><strong>Fix in order of severity:</strong> crash or blank screen, then raw messages, then retry hammering the 429, then valid data replaced by an error.</li>
-    <li><strong>Repeat</strong> until the app withstands five minutes of chaos with no crash, no blank screen and no technical message.</li>
+    <li>Quit the app (<kbd>q</kbd>) and run it with the real API and your credentials: <code>flutter run -d chrome --dart-define=CLIENT_ID=... --dart-define=CLIENT_SECRET=...</code></li>
+    <li>In the app's Chrome, <kbd>F12</kbd>, <strong>Network</strong> tab. Right-click a request to <code>api-pdm.sublimecipher.com</code> and choose <strong>Block request domain</strong>.</li>
+    <li>In the terminal, <kbd>R</kbd>: the app starts without reaching the API. Then turn the block off and press "Tentar de novo" (try again).</li>
   </ol>
-  <div class="callout task"><strong>Exercise 5</strong> Record in the starter's <code>README</code> three things you fixed with chaos mode switched on and what the user saw before and after. Bring this list to tomorrow's lesson: it is the pattern you will apply to every screen of the project.</div>
-  <aside class="notes">Switch on chaos mode for one group at a time, with 25 minutes of the lesson left, and announce on the projector which group. Walk around: the most common mistake is the retry repeating 429 without waiting (check whether they read Retry-After) and the refresh wiping the list. Switch chaos off five minutes before the end for the final demo.</aside>
+  <div class="callout"><strong>Ask the class</strong> Is the error message any use to an ordinary person? And why did the screen survive the failure without us changing anything?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> The message is technical (something like <code>ClientException: XMLHttpRequest error</code>); it should say "No internet connection. Try again." The screen survived because the repository throws the exception, the notifier keeps it in <code>error</code> and the screen only draws the state. If "Block request domain" does not appear: More tools, Network request blocking, and add <code>api-pdm.sublimecipher.com</code>.</aside>
 </section>
 
 <section class="slide" data-part="End">
-  <h2>See you tomorrow</h2>
-  <div class="cols">
-    <div>
-      <h3>To do</h3>
-      <ul class="checklist">
-        <li>Leave every screen of the app (locations, detail, warnings) with the four states handled by an exhaustive <code>switch</code>.</li>
-        <li>Write three human error messages for three different failures (no network, 500, invalid JSON) and put them in <code>messageFor</code>.</li>
-        <li>The project kicks off tomorrow: come with your group in mind (2 to 3 people).</li>
-      </ul>
-    </div>
-    <div>
-      <h3>To read</h3>
-      <ul>
-        <li><a href="https://docs.flutter.dev/cookbook/networking/fetch-data" target="_blank" rel="noopener">Fetch data from the internet</a>: the official cookbook, in particular the section on handling errors and what to show the user.</li>
-        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener">MDN: HTTP status codes</a>: each code with its meaning and what the client should do; 304, 429 and 5xx are the ones from this lesson.</li>
-        <li><a href="https://dart.dev/language/class-modifiers#sealed" target="_blank" rel="noopener">Sealed classes</a> and <a href="https://dart.dev/language/patterns" target="_blank" rel="noopener">patterns</a> on dart.dev: <code>sealed</code>, the exhaustive <code>switch</code> and the object patterns we used.</li>
-        <li><a href="https://pub.dev/packages/skeletonizer" target="_blank" rel="noopener">skeletonizer</a>: loading with the shape of the content, instead of a spinner in the centre.</li>
-      </ul>
-    </div>
-  </div>
+  <h2>Where we got to</h2>
+  <ol class="steps">
+    <li>Each piece has a layer: the model in <code>models/</code>, the repositories in <code>data/</code>, the notifiers in <code>state/</code>, the star, the counter and the screens in the UI.</li>
+    <li>The <code>FakeForecastRepository</code> swaps out the API without touching the screens.</li>
+    <li>The <code>FavoritesNotifier</code> is shared by two screens, with <code>MultiProvider</code>.</li>
+  </ol>
+  <p><strong>Tomorrow:</strong> Wednesday, 21 October, at 16:00, the group project starts, with these folders.</p>
   <nav class="pager" id="pager"></nav>
+  <aside class="notes">Look at the bottom row of the board before closing: the exercise with the fewest solved is the one worth going over tomorrow in two minutes.</aside>
 </section>
 
 </div>
@@ -423,5 +940,6 @@ bool get transient =&gt; statusCode == 429 || (statusCode ?? 0) &gt;= 500;</code
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../../assets/app.js"></script>
+<script src="../../assets/parsons.js"></script>
 </body>
 </html>
