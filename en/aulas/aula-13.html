@@ -7,6 +7,17 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* Lesson to read from the back of the room: bigger text and diagrams. */
+html.deck { --fs: 24px; }
+html.deck.proj { --fs: 28px; }
+.deck { max-width: 1400px; }
+.deck .slide h2 { font-size: 2.1rem; }
+.deck .slide pre { font-size: .95rem; line-height: 1.45; }
+.deck .slide table { font-size: 1rem; }
+figure.diagram svg { max-height: 74vh; }
+figure.diagram figcaption { font-size: 1rem; }
+</style>
 </head>
 <body data-aula="13">
 <header class="site"><div class="wrap">
@@ -26,26 +37,33 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 13 · Week 7 · Monday, 19 October 2026 · 16:00 to 18:00</p>
   <h1>Layered architecture and state management</h1>
-  <p class="lead">Today the app fetches the islands from the course API, with code you write. We start from a screen that does everything by itself (request, JSON and states) and put each job in its own layer: a repository for the data, a notifier for the state, and Provider to connect them to the screen.</p>
+  <p class="lead">Today we look at a class that does everything by itself, work out together how many jobs it has and split it into layers: data, state and UI. Tomorrow we get our hands on the code.</p>
   <div class="meta"><span>Repository: pdm-aula-13</span></div>
-  <aside class="notes">Reference times: theory until 16:35; clone and app running until 16:45; step 1 until 17:00; step 2 until 17:20; step 3 until 17:30; step 4 until 17:45; wrap-up and homework until 18:00. In the last lesson the students wrote no code, only Swagger: today is the first time each of them runs the app against the API, with their own credentials. The clone and the credentials are where the lesson can get stuck; do not move on to step 1 until everyone has the list of islands on screen. Before the lesson, make sure the deliberate errors from the bug hunt are switched off (<code>pdm-bugs off</code>): with them on, the list arrives with eight islands.</aside>
+  <aside class="notes">Theory lesson, with exercises on the board: the practice is for tomorrow. Order: the whole class in three slides (they find the responsibilities), the responsibilities coloured in, the class split up, the folders, the restaurant, why it is worth it, AI, the code of each layer and a "where do you change it" exercise. Anyone who wants can clone and follow along on the computer: the code from before is on the <code>antes</code> branch, the organised code on <code>main</code>.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
-    <li>Explain why an app is split into layers and what each layer is allowed to know.</li>
-    <li>Write a repository with an interface and an HTTP implementation.</li>
-    <li>Keep the state of a screen (loading, error, data) in a <code>ChangeNotifier</code>.</li>
-    <li>Connect the notifier to the screen with Provider: <code>context.watch</code>, <code>context.read</code> and <code>Consumer</code>.</li>
-    <li>Inject dependencies through the constructor and swap the API for a fake repository without touching the screen.</li>
-    <li>Share state between two screens.</li>
+    <li>Look at a class and say what jobs it does.</li>
+    <li>Split a class into three layers: <strong>data</strong>, <strong>state</strong> and <strong>UI</strong>.</li>
+    <li>Say which folder each thing lives in: <code>models/</code>, <code>data/</code>, <code>state/</code> and <code>screens/</code>.</li>
+    <li>Explain why this matters in a group project, and even more when the code is written with AI.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Theory">
-  <h2>The screen that does everything</h2>
-<pre data-title="lib/islands_screen.dart · on main in today's repository"><code class="language-dart">class _IslandsScreenState extends State&lt;IslandsScreen&gt; {
+<section class="slide" data-part="Exercise">
+  <h2>What does this class do? (1 of 3)</h2>
+<pre data-title="lib/islands_screen.dart · antes branch"><code class="language-dart">class IslandsScreen extends StatefulWidget {
+  const IslandsScreen({super.key, required this.api});
+
+  final ApiClient api;
+
+  @override
+  State&lt;IslandsScreen&gt; createState() =&gt; _IslandsScreenState();
+}
+
+class _IslandsScreenState extends State&lt;IslandsScreen&gt; {
   late Future&lt;List&lt;Island&gt;&gt; _islands;
 
   @override
@@ -59,172 +77,529 @@
     return list
         .map((item) =&gt; Island.fromJson(item as Map&lt;String, dynamic&gt;))
         .toList();
-  }
+  }</code></pre>
+  <div class="callout"><strong>Ask the class</strong> Read it with me, line by line. Every time this class does a different job, say it out loud.</div>
+  <aside class="notes">Read the code slowly, without explaining yet. Write on the board what they say. Here you should hear: "receives the ApiClient", "holds a Future", "asks the API", "converts the JSON into Island". Anyone who cloned: <code>git checkout antes</code> and open <code>lib/islands_screen.dart</code>.</aside>
+</section>
 
-  @override
+<section class="slide">
+  <h2>What does this class do? (2 of 3)</h2>
+<pre data-title="lib/islands_screen.dart · continued"><code class="language-dart">  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Tempo Açores')),
       body: FutureBuilder&lt;List&lt;Island&gt;&gt;(
         future: _islands,
         builder: (context, snapshot) {
-          // loading, error and data, as in the last lesson</code></pre>
-  <ul>
-    <li>It is the <code>FutureBuilder</code> from the last lesson, and it works. But this screen knows the API path, knows how to read the JSON, holds the <code>Future</code> and decides what to show in each state.</li>
-    <li>The <code>ApiClient</code> handles the token, the headers, the status codes and the <code>jsonDecode</code>. It does not know what an island is.</li>
-  </ul>
-  <div class="callout"><strong>Ask the class</strong> Which files do you change if the API moves the path to <code>/v2/islands</code>? And if you want to show the app in a demo with no network? And if the map also needs the islands?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> All three answers are the same file, the screen. The path is in <code>_load</code>; the only way to show it without a network is to edit the screen; and a second screen that needs the islands copies <code>_load</code> and makes a second request. A file with many reasons to change is the warning sign: every small change means editing the screen, and that is where bugs creep in. Today each of these reasons gets its own file.</aside>
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${snapshot.error}'),
+                  TextButton(
+                    onPressed: () =&gt; setState(() =&gt; _islands = _load()),
+                    child: const Text('Tentar de novo'),
+                  ),
+                ],
+              ),
+            );
+          }</code></pre>
+  <div class="callout"><strong>Ask the class</strong> And here? What does this code decide, and what does it draw?</div>
+  <aside class="notes">You should hear: "decides whether it is loading" (the <code>connectionState</code>), "decides whether it failed" (the <code>hasError</code>), "draws the error and the button", and the button's <code>setState</code>, which asks the API again from the screen.</aside>
 </section>
 
 <section class="slide">
-  <h2>Why layers</h2>
-  <ul>
-    <li><strong>Swap the data source.</strong> The API moves to a new version, the data also starts coming from a cache on the phone: one file changes, and the screens stay the same.</li>
-    <li><strong>Show it without a network.</strong> A fake repository, with fixed data, lets you build and demo the screen with no API and no credentials. Later on, it is also what makes automated tests possible.</li>
-    <li><strong>Reuse.</strong> The list of islands appears in the list, in the favourites and, one day, on the map: only one place knows how to fetch it.</li>
-    <li><strong>Each person in their own file.</strong> In the group project, whoever builds the screen and whoever writes the requests do not edit the same file at the same time.</li>
-  </ul>
-  <p>In a large app (your bank's, Spotify) the screen asks for "the account" and does not know whether it came from the network, the cache or the disk.</p>
-  <p><strong>For the tests:</strong> layers exist to isolate change; the screen must not know about HTTP or JSON.</p>
+  <h2>What does this class do? (3 of 3)</h2>
+<pre data-title="lib/islands_screen.dart · end"><code class="language-dart">          final islands = snapshot.data!;
+          return ListView.builder(
+            itemCount: islands.length,
+            itemBuilder: (context, i) =&gt; ListTile(
+              leading: Image.network(islands[i].imageUrl, width: 56),
+              title: Text(islands[i].name),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}</code></pre>
+  <div class="callout"><strong>Ask the class</strong> Look at the board. Put what we wrote into groups: how many different jobs does this class do?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> Three groups. <strong>Data</strong>: receives the <code>ApiClient</code>, asks for <code>/v1/islands</code>, converts the JSON into <code>Island</code>. <strong>State</strong>: holds the <code>Future</code>, chooses between loading, error and data, asks again on "Tentar de novo" (try again). <strong>UI</strong>: draws the <code>AppBar</code>, the error, the button and the list. If they say four (network and JSON apart), that is right too: both go to the data layer. The next slide colours them in.</aside>
 </section>
 
-<section class="slide">
-  <h2>UI, notifier, repository and data source</h2>
+<section class="slide" data-part="Theory">
+  <h2>One class, three jobs</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 340" role="img" aria-label="Four stacked layers with dependencies pointing only downwards: IslandsScreen, ForecastNotifier, the ForecastRepository interface and, at the bottom, two implementations, HttpForecastRepository with the ApiClient and FakeForecastRepository; at the side, main.dart creates the pieces and hands each one to the layer above">
-    <rect x="40" y="20" width="500" height="56" rx="10" class="box"/>
-    <text x="56" y="43" class="t b">UI · IslandsScreen</text>
-    <text x="56" y="63" class="t s">shows the state and calls load(); knows only the notifier</text>
-    <path d="M290 76 L290 104" class="arrow"/>
-    <rect x="40" y="106" width="500" height="56" rx="10" class="box"/>
-    <text x="56" y="129" class="t b">State · ForecastNotifier</text>
-    <text x="56" y="149" class="t s">isLoading, error, islands; knows only the repository</text>
-    <path d="M290 162 L290 190" class="arrow"/>
-    <rect x="40" y="192" width="500" height="56" rx="10" class="box accent"/>
-    <text x="56" y="215" class="t b">Data · ForecastRepository (interface)</text>
-    <text x="56" y="235" class="t s">returns Island and Forecast, never JSON</text>
-    <path d="M165 248 L165 276" class="arrow"/>
-    <path d="M415 248 L415 276" class="arrow dashed"/>
-    <rect x="40" y="278" width="245" height="56" rx="10" class="box"/>
-    <text x="56" y="301" class="t b mono">HttpForecastRepository</text>
-    <text x="56" y="321" class="t s">ApiClient: HTTP, token, JSON</text>
-    <rect x="295" y="278" width="245" height="56" rx="10" class="box ok"/>
-    <text x="311" y="301" class="t b mono">FakeForecastRepository</text>
-    <text x="311" y="321" class="t s">fixed data, no API</text>
-    <rect x="600" y="106" width="270" height="142" rx="10" class="box muted"/>
-    <text x="616" y="131" class="t b mono">main.dart</text>
-    <text x="616" y="155" class="t s">creates the pieces, bottom up,</text>
-    <text x="616" y="175" class="t s">and hands each one to the layer</text>
-    <text x="616" y="195" class="t s">above through the constructor</text>
-    <text x="616" y="225" class="t s">whoever uses does not create</text>
-    <path d="M600 177 L544 177" class="arrow dashed"/>
+  <svg viewBox="0 0 1000 472" role="img" aria-label="The islands_screen.dart file seen from a distance, one bar per line, coloured by the job that line does: data in red (receives the ApiClient, asks the API and converts the JSON), state in yellow (holds the Future and decides whether it is loading, failed or has data) and UI in blue (draws the error and the list), all mixed up in the same file">
+    <rect x="20.0" y="24.0" width="163.8" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="35.2" width="105.0" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="20.0" y="40.8" width="88.2" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="52.0" width="310.8" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="57.6" width="294.0" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="63.2" width="214.2" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="68.8" width="184.8" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="28.4" y="74.4" width="218.4" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="28.4" y="85.6" width="84.0" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="28.4" y="96.8" width="37.8" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="28.4" y="102.4" width="252.0" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="108.0" width="5.0" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="119.2" width="235.2" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="28.4" y="124.8" width="147.0" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="28.4" y="136.0" width="37.8" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="28.4" y="141.6" width="75.6" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="36.8" y="147.2" width="75.6" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="36.8" y="152.8" width="79.8" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="28.4" y="158.4" width="5.0" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="28.4" y="169.6" width="151.2" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="36.8" y="175.2" width="277.2" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="36.8" y="180.8" width="46.2" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="53.6" y="186.4" width="256.2" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="53.6" y="192.0" width="42.0" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="28.4" y="197.6" width="5.0" height="3.6" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="28.4" y="208.8" width="37.8" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="28.4" y="214.4" width="151.2" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="36.8" y="220.0" width="67.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="45.2" y="225.6" width="210.0" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="45.2" y="231.2" width="142.8" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="53.6" y="236.8" width="71.4" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="53.6" y="242.4" width="126.0" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="62.0" y="248.0" width="231.0" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="70.4" y="253.6" width="235.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="62.0" y="259.2" width="5.0" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="62.0" y="264.8" width="100.8" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="70.4" y="270.4" width="58.8" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="78.8" y="276.0" width="58.8" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="87.2" y="281.6" width="130.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="87.2" y="287.2" width="46.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="95.6" y="292.8" width="109.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="95.6" y="298.4" width="46.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="104.0" y="304.0" width="218.4" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="104.0" y="309.6" width="151.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="95.6" y="315.2" width="8.4" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="87.2" y="320.8" width="8.4" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="78.8" y="326.4" width="8.4" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="70.4" y="332.0" width="8.4" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="62.0" y="337.6" width="5.0" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="62.0" y="343.2" width="130.2" height="3.6" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="62.0" y="348.8" width="100.8" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="70.4" y="354.4" width="109.2" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="70.4" y="360.0" width="159.6" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="78.8" y="365.6" width="231.0" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="78.8" y="371.2" width="121.8" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="70.4" y="376.8" width="8.4" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="62.0" y="382.4" width="8.4" height="3.6" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="53.6" y="388.0" width="8.4" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="45.2" y="393.6" width="8.4" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="36.8" y="399.2" width="8.4" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="28.4" y="404.8" width="5.0" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="410.4" width="5.0" height="3.6" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <path d="M342.40000000000003 74.4 h10 v14.8 h-10" fill="none" style="stroke:var(--danger)" stroke-width="3"/>
+    <text x="366.40000000000003" y="90.8" class="t" style="font-size:26px">receives the ApiClient</text>
+    <path d="M342.40000000000003 124.8 h10 v37.2 h-10" fill="none" style="stroke:var(--warn)" stroke-width="3"/>
+    <text x="366.40000000000003" y="152.4" class="t" style="font-size:26px">holds the Future</text>
+    <path d="M342.40000000000003 169.6 h10 v31.6 h-10" fill="none" style="stroke:var(--danger)" stroke-width="3"/>
+    <text x="366.40000000000003" y="194.4" class="t" style="font-size:26px">asks the API and converts the JSON</text>
+    <path d="M342.40000000000003 231.2 h10 v37.2 h-10" fill="none" style="stroke:var(--warn)" stroke-width="3"/>
+    <text x="366.40000000000003" y="258.8" class="t" style="font-size:26px">decides: loading, error or data?</text>
+    <path d="M342.40000000000003 270.4 h10 v115.6 h-10" fill="none" style="stroke:var(--accent)" stroke-width="3"/>
+    <text x="366.40000000000003" y="337.2" class="t" style="font-size:26px">draws the error and the list</text>
+    <rect x="20" y="442.0" width="34" height="18" rx="3" style="fill:var(--danger)"/>
+    <text x="66" y="460.0" class="t" style="font-size:24px">data</text>
+    <rect x="220" y="442.0" width="34" height="18" rx="3" style="fill:var(--warn)"/>
+    <text x="266" y="460.0" class="t" style="font-size:24px">state</text>
+    <rect x="420" y="442.0" width="34" height="18" rx="3" style="fill:var(--accent)"/>
+    <text x="466" y="460.0" class="t" style="font-size:24px">UI</text>
   </svg>
-  <figcaption>Each layer knows only the one below. Because the repository is an interface, the bottom can be the API or a fake, and the layers above do not change.</figcaption>
+  <figcaption>The class seen from a distance, like the VS Code minimap: one bar per line, coloured by the job that line does.</figcaption>
   </figure>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Layer</th><th>Today, in our code</th><th>Does</th><th>Knows only</th></tr></thead>
-  <tbody>
-  <tr><td><strong>UI</strong></td><td><code>IslandsScreen</code></td><td>Draws the state, triggers actions</td><td>The notifier</td></tr>
-  <tr><td><strong>State</strong> (notifier, ViewModel)</td><td><code>ForecastNotifier</code></td><td>Loading, error, data; tells the screen</td><td>The repository</td></tr>
-  <tr><td><strong>Repository</strong></td><td><code>ForecastRepository</code></td><td>Gives app objects (<code>Island</code>), wherever they come from</td><td>The data sources</td></tr>
-  <tr><td><strong>Data source</strong></td><td><code>ApiClient</code></td><td>HTTP, token, JSON (and later on, the local database)</td><td>The network, the disk</td></tr>
-  </tbody></table></div>
-  <div class="callout"><strong>Ask the class</strong> Can <code>IslandsScreen</code> call the <code>ApiClient</code>? Can <code>ForecastRepository</code> show a <code>SnackBar</code>?</div>
-  <p><strong>For the tests:</strong> dependencies point only downwards; the repository is the boundary between the app and the data.</p>
-  <aside class="notes"><strong>Answers to the questions.</strong> No and no. The screen only talks to the notifier; if it calls the <code>ApiClient</code>, we are back to the screen that does everything. The repository knows no widgets and no <code>BuildContext</code>: when something fails, it throws an exception; the notifier catches it and keeps it as state (<code>error</code>); and the screen decides how to show it, as text, a <code>SnackBar</code> or a button. The names vary (MVVM, Clean Architecture, "layers"), and the Flutter team's architecture guide calls ViewModel what we call a notifier here; the idea is the same.</aside>
+  <div class="callout"><strong>Ask the class</strong> If we split this class, how many files would you split it into? What would you call each one?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> Three, one per colour: one that fetches the data, one that holds the state, one that draws. The names they give are good if they say the job; ours are on the next slide. The message: this is not badly written code, it is code with too many jobs. Today it is 70 lines; in the project, this screen will have the forecast, the warnings and the favourites, and will go past 400.</aside>
 </section>
 
 <section class="slide">
-  <h2>Repository: one interface, several implementations</h2>
-<pre data-title="lib/forecast_repository.dart · the interface"><code class="language-dart">/// What the app can ask for. The screens only see this.
+  <h2>We split the class: the same lines, organised</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 1000 482" role="img" aria-label="On the left, islands_screen.dart from before, a single file with red, yellow and blue lines mixed up. On the right, the same lines split into three files of a single colour each: data only in red (data), state only in yellow (state) and screens only in blue (UI)">
+    <text x="20" y="30" class="t b" style="font-size:30px">Before</text>
+    <text x="20" y="62" class="t s" style="font-size:22px">1 file, 70 lines</text>
+    <rect x="20.0" y="86.0" width="132.6" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="96.0" width="85.0" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="20.0" y="101.0" width="71.4" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="111.0" width="251.6" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="116.0" width="238.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="121.0" width="173.4" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="126.0" width="149.6" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="26.8" y="131.0" width="176.8" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="26.8" y="141.0" width="68.0" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="26.8" y="151.0" width="30.6" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="26.8" y="156.0" width="204.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="161.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="171.0" width="190.4" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="26.8" y="176.0" width="119.0" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="26.8" y="186.0" width="30.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="26.8" y="191.0" width="61.2" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="33.6" y="196.0" width="61.2" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="33.6" y="201.0" width="64.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="26.8" y="206.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="26.8" y="216.0" width="122.4" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="33.6" y="221.0" width="224.4" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="33.6" y="226.0" width="37.4" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="47.2" y="231.0" width="207.4" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="47.2" y="236.0" width="34.0" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="26.8" y="241.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="26.8" y="251.0" width="30.6" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="26.8" y="256.0" width="122.4" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="33.6" y="261.0" width="54.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="40.4" y="266.0" width="170.0" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="40.4" y="271.0" width="115.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="47.2" y="276.0" width="57.8" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="47.2" y="281.0" width="102.0" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="54.0" y="286.0" width="187.0" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="60.8" y="291.0" width="190.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="54.0" y="296.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="54.0" y="301.0" width="81.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="60.8" y="306.0" width="47.6" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="67.6" y="311.0" width="47.6" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="74.4" y="316.0" width="105.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="74.4" y="321.0" width="37.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="81.2" y="326.0" width="88.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="81.2" y="331.0" width="37.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="88.0" y="336.0" width="176.8" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="88.0" y="341.0" width="122.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="81.2" y="346.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="74.4" y="351.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="67.6" y="356.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="60.8" y="361.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="54.0" y="366.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="54.0" y="371.0" width="105.4" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="54.0" y="376.0" width="81.6" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="60.8" y="381.0" width="88.4" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="60.8" y="386.0" width="129.2" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="67.6" y="391.0" width="187.0" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="67.6" y="396.0" width="98.6" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="60.8" y="401.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="54.0" y="406.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="47.2" y="411.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="40.4" y="416.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="33.6" y="421.0" width="6.8" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="26.8" y="426.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="20.0" y="431.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <path d="M290 260 L350 260" class="arrow accent" style="stroke-width:4"/>
+    <text x="380" y="30" class="t b" style="font-size:30px">After</text>
+    <text x="380" y="70" class="t b mono" style="font-size:26px;fill:var(--danger)">data/</text>
+    <text x="380" y="98" class="t s" style="font-size:20px">25 lines</text>
+    <rect x="380.0" y="116.0" width="84.1" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="380.0" y="121.0" width="79.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="380.0" y="126.0" width="63.7" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="380.0" y="131.0" width="86.7" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="380.0" y="141.0" width="140.2" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="380.0" y="146.0" width="153.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="385.1" y="151.0" width="163.2" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="385.1" y="161.0" width="53.5" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="385.1" y="171.0" width="22.9" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="385.1" y="176.0" width="109.6" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="390.2" y="181.0" width="153.0" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="390.2" y="186.0" width="28.0" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="400.4" y="191.0" width="155.5" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="400.4" y="196.0" width="25.5" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="385.1" y="201.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="385.1" y="211.0" width="22.9" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="385.1" y="216.0" width="140.2" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="390.2" y="221.0" width="158.1" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="390.2" y="226.0" width="140.2" height="3.2" rx="1.5" style="fill:var(--danger)"/>
+    <rect x="385.1" y="231.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="380.0" y="236.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <text x="585" y="70" class="t b mono" style="font-size:26px;fill:var(--warn)">state/</text>
+    <text x="585" y="98" class="t s" style="font-size:20px">29 lines</text>
+    <rect x="585.0" y="116.0" width="104.5" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="585.0" y="126.0" width="107.1" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="585.0" y="131.0" width="79.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="585.0" y="141.0" width="191.2" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="585.0" y="146.0" width="119.8" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="590.1" y="151.0" width="165.8" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="590.1" y="161.0" width="94.3" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="590.1" y="171.0" width="58.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="590.1" y="176.0" width="35.7" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="590.1" y="181.0" width="81.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="590.1" y="191.0" width="68.8" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="595.2" y="196.0" width="43.3" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="595.2" y="201.0" width="33.1" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="595.2" y="206.0" width="127.5" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="595.2" y="211.0" width="12.8" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="600.3" y="216.0" width="109.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="595.2" y="221.0" width="33.1" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="600.3" y="226.0" width="33.1" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="595.2" y="231.0" width="28.0" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="600.3" y="236.0" width="45.9" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="600.3" y="241.0" width="160.6" height="3.2" rx="1.5" style="fill:var(--warn)"/>
+    <rect x="595.2" y="246.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="590.1" y="251.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="585.0" y="256.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <text x="790" y="70" class="t b mono" style="font-size:26px;fill:var(--accent)">screens/</text>
+    <text x="790" y="98" class="t s" style="font-size:20px">45 lines</text>
+    <rect x="790.0" y="116.0" width="99.4" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="790.0" y="121.0" width="102.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="790.0" y="131.0" width="104.5" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="790.0" y="141.0" width="181.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="790.0" y="146.0" width="114.7" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="795.1" y="151.0" width="84.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="795.1" y="161.0" width="22.9" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="795.1" y="166.0" width="91.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="800.2" y="171.0" width="186.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="800.2" y="176.0" width="40.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="181.0" width="127.5" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="186.0" width="79.0" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="800.2" y="191.0" width="5.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="795.1" y="196.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="795.1" y="206.0" width="160.6" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="800.2" y="211.0" width="63.7" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="216.0" width="142.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="800.2" y="221.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="800.2" y="226.0" width="73.9" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="231.0" width="35.7" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="810.4" y="236.0" width="35.7" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="815.5" y="241.0" width="79.0" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="815.5" y="246.0" width="28.0" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="820.6" y="251.0" width="56.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="820.6" y="256.0" width="28.0" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="825.7" y="261.0" width="145.3" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="825.7" y="266.0" width="91.8" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="820.6" y="271.0" width="5.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="815.5" y="276.0" width="5.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="810.4" y="281.0" width="5.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="286.0" width="5.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="800.2" y="291.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="800.2" y="296.0" width="61.2" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="301.0" width="89.2" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="306.0" width="96.9" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="810.4" y="311.0" width="163.2" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="810.4" y="316.0" width="96.9" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="805.3" y="321.0" width="5.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="800.2" y="326.0" width="5.1" height="3.2" rx="1.5" style="fill:var(--accent)"/>
+    <rect x="795.1" y="331.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="790.0" y="336.0" width="5.0" height="3.2" rx="1.5" style="fill:var(--muted)" opacity=".35"/>
+    <rect x="380" y="452" width="34" height="18" rx="3" style="fill:var(--danger)"/>
+    <text x="426" y="470" class="t" style="font-size:24px">data</text>
+    <rect x="570" y="452" width="34" height="18" rx="3" style="fill:var(--warn)"/>
+    <text x="616" y="470" class="t" style="font-size:24px">state</text>
+    <rect x="760" y="452" width="34" height="18" rx="3" style="fill:var(--accent)"/>
+    <text x="806" y="470" class="t" style="font-size:24px">UI</text>
+  </svg>
+  </figure>
+  <p>Nothing new was written: the same lines moved, and each file ended up with a single colour.</p>
+  <aside class="notes">The <code>_load</code> lines went to <code>data/</code>, the <code>Future</code> and state lines to <code>state/</code>, and the screen kept only the drawing. Note that the total number of lines actually went up a little (more files, more imports): organising is not shortening. The gain is that each file has a single reason to change. In the repository: <code>git diff antes main</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Before and after: the folders</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 1000 470" role="img" aria-label="Two folder trees. Before: lib with four loose files, main.dart, models.dart, api_client.dart and islands_screen.dart, the last one with the three colours mixed up. After: lib with main.dart and four folders: models with island.dart and forecast.dart (the dishes); data with api_client.dart, forecast_repository.dart and http_forecast_repository.dart (the kitchen), in red; state with forecast_notifier.dart (the pass), in yellow; screens with islands_screen.dart (the dining room), in blue.">
+    <text x="10" y="34" class="t b" style="font-size:30px">Before</text>
+    <text x="10" y="84" class="t mono" style="font-size:24px">lib/</text>
+    <text x="40" y="124" class="t mono" style="font-size:24px">main.dart</text>
+    <text x="40" y="164" class="t mono" style="font-size:24px">models.dart</text>
+    <text x="40" y="204" class="t mono" style="font-size:24px">api_client.dart</text>
+    <text x="40" y="244" class="t mono" style="font-size:24px">islands_screen.dart</text>
+    <rect x="40" y="260" width="30" height="20" rx="3" style="fill:var(--danger)"/>
+    <rect x="76" y="260" width="30" height="20" rx="3" style="fill:var(--warn)"/>
+    <rect x="112" y="260" width="30" height="20" rx="3" style="fill:var(--accent)"/>
+    <text x="40" y="330" class="t s" style="font-size:22px">one file does</text>
+    <text x="40" y="358" class="t s" style="font-size:22px">almost everything</text>
+    <path d="M330 240 H380" class="arrow accent" style="stroke-width:4"/>
+    <text x="400" y="34" class="t b" style="font-size:30px">After</text>
+    <text x="400" y="84" class="t mono" style="font-size:24px">lib/</text>
+    <text x="430" y="122" class="t mono" style="font-size:24px">main.dart</text>
+    <text x="430" y="160" class="t mono b" style="font-size:24px">models/</text>
+    <text x="460" y="192" class="t mono" style="font-size:22px">island.dart · forecast.dart</text>
+    <text x="860" y="160" class="t s" style="font-size:22px">the dishes</text>
+    <rect x="414" y="210" width="8" height="104" rx="3" style="fill:var(--danger)"/>
+    <text x="430" y="234" class="t mono b" style="font-size:24px">data/</text>
+    <text x="460" y="264" class="t mono" style="font-size:22px">api_client.dart</text>
+    <text x="460" y="288" class="t mono" style="font-size:22px">forecast_repository.dart</text>
+    <text x="460" y="312" class="t mono" style="font-size:22px">http_forecast_repository.dart</text>
+    <text x="860" y="234" class="t s" style="font-size:22px">the kitchen</text>
+    <rect x="414" y="330" width="8" height="56" rx="3" style="fill:var(--warn)"/>
+    <text x="430" y="354" class="t mono b" style="font-size:24px">state/</text>
+    <text x="460" y="382" class="t mono" style="font-size:22px">forecast_notifier.dart</text>
+    <text x="860" y="354" class="t s" style="font-size:22px">the pass</text>
+    <rect x="414" y="402" width="8" height="56" rx="3" style="fill:var(--accent)"/>
+    <text x="430" y="426" class="t mono b" style="font-size:24px">screens/</text>
+    <text x="460" y="454" class="t mono" style="font-size:22px">islands_screen.dart</text>
+    <text x="860" y="426" class="t s" style="font-size:22px">dining room</text>
+  </svg>
+  <figcaption>The folder name already tells you where to look. The API changed? <code>data/</code>. The screen looks ugly? <code>screens/</code>.</figcaption>
+  </figure>
+  <aside class="notes">The three colours from the previous slide are three folders. <code>models/</code> is not a layer: it holds the classes that pass from hand to hand (<code>Island</code>, <code>Forecast</code>), used by all three. <code>main.dart</code> only starts the app. The Flutter team's guide uses slightly different names (<code>ui/</code> and <code>data/</code>); what matters is that each folder has one job.</aside>
+</section>
+
+<section class="slide">
+  <h2>The restaurant: three stations</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 1000 400" role="img" aria-label="A restaurant with three stations, from left to right: the dining room (screens, UI), which shows things and takes orders; the pass (state), which knows what is ready and rings the bell; the kitchen (data), which goes to the supplier and returns finished dishes. Each one only asks the next. At the bottom, the dish, Island, in models, goes from the kitchen to the dining room.">
+    <text x="160" y="30" text-anchor="middle" class="t b" style="font-size:24px;fill:var(--accent)">UI</text>
+    <rect x="10" y="44" width="300" height="250" rx="14" class="box accent"/>
+    <circle cx="160" cy="104" r="34" style="fill:none;stroke:var(--fg);stroke-width:3"/>
+    <circle cx="160" cy="104" r="21" style="fill:none;stroke:var(--fg);stroke-width:2"/>
+    <path d="M108 74 V136 M100 74 V92 Q108 100 116 92 V74 M212 74 Q224 98 212 110 V136" style="fill:none;stroke:var(--fg);stroke-width:3"/>
+    <text x="160" y="184" text-anchor="middle" class="t b" style="font-size:30px">The dining room</text>
+    <text x="160" y="218" text-anchor="middle" class="t mono" style="font-size:24px">screens/</text>
+    <text x="160" y="254" text-anchor="middle" class="t s" style="font-size:21px">shows and takes orders</text>
+    <path d="M312 170 H342" class="arrow accent" style="stroke-width:3"/>
+    <text x="500" y="30" text-anchor="middle" class="t b" style="font-size:24px;fill:var(--warn)">State</text>
+    <rect x="350" y="44" width="300" height="250" rx="14" class="box warn"/>
+    <path d="M460 124 A40 34 0 0 1 540 124 Z" style="fill:none;stroke:var(--fg);stroke-width:3"/>
+    <rect x="450" y="124" width="100" height="9" rx="2" style="fill:var(--fg)"/>
+    <circle cx="500" cy="84" r="5" style="fill:var(--fg)"/>
+    <text x="500" y="184" text-anchor="middle" class="t b" style="font-size:30px">The pass</text>
+    <text x="500" y="218" text-anchor="middle" class="t mono" style="font-size:24px">state/</text>
+    <text x="500" y="254" text-anchor="middle" class="t s" style="font-size:21px">knows what is ready</text>
+    <text x="500" y="280" text-anchor="middle" class="t s" style="font-size:21px">and rings the bell</text>
+    <path d="M652 170 H682" class="arrow accent" style="stroke-width:3"/>
+    <text x="840" y="30" text-anchor="middle" class="t b" style="font-size:24px;fill:var(--danger)">Data</text>
+    <rect x="690" y="44" width="300" height="250" rx="14" class="box danger"/>
+    <rect x="796" y="90" width="88" height="44" rx="7" style="fill:none;stroke:var(--fg);stroke-width:3"/>
+    <path d="M784 98 H796 M884 98 H896 M792 82 H888" style="stroke:var(--fg);stroke-width:3"/>
+    <path d="M818 72 q5 -8 0 -16 M840 72 q5 -8 0 -16 M862 72 q5 -8 0 -16" style="fill:none;stroke:var(--fg);stroke-width:2.5"/>
+    <text x="840" y="184" text-anchor="middle" class="t b" style="font-size:30px">The kitchen</text>
+    <text x="840" y="218" text-anchor="middle" class="t mono" style="font-size:24px">data/</text>
+    <text x="840" y="254" text-anchor="middle" class="t s" style="font-size:21px">goes to the supplier and</text>
+    <text x="840" y="280" text-anchor="middle" class="t s" style="font-size:21px">returns finished dishes</text>
+    <rect x="10" y="322" width="980" height="70" rx="14" class="box ok"/>
+    <text x="500" y="366" text-anchor="middle" class="t" style="font-size:24px"><tspan class="b">The dish</tspan> · <tspan class="mono">Island</tspan>, in <tspan class="mono">models/</tspan> · goes from the kitchen to the dining room</text>
+  </svg>
+  <figcaption>Each station does one job and only asks the next one. The waiter never goes into the kitchen.</figcaption>
+  </figure>
+  <aside class="notes">Tell it as a story, with a real order: the customer asks the waiter (the screen) for the islands; the waiter looks at the pass and sees "being prepared" (the notifier, <code>isLoading</code>); the kitchen (the repository) goes to the supplier (the API, through the <code>ApiClient</code>), gets the raw ingredients (the JSON) and prepares the dish (<code>Island</code>); the dish reaches the pass, the bell rings (<code>notifyListeners</code>) and the waiter serves it. If the supplier lets them down, the kitchen tells the pass, which shows "sold out" (<code>error</code>), and it is the waiter who decides how to tell the customer. Before, it was a one-person restaurant: the same person waited on the tables, cooked and went to the supplier.</aside>
+</section>
+
+<section class="slide">
+  <h2>Why it is worth it</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Will happen in the project</th><th>All in one file</th><th>Organised</th></tr></thead>
+  <tbody>
+  <tr><td>The API moves to <code>/v2/islands</code></td><td>You edit the screen, in the middle of the drawing code</td><td>Only <code>data/</code></td></tr>
+  <tr><td>A second screen needs the islands</td><td>You copy <code>_load</code>: two requests, two places to fix</td><td>Both read the same notifier</td></tr>
+  <tr><td>The API is down on presentation day</td><td>The screen does not open</td><td>You swap the kitchen for a pretend one</td></tr>
+  <tr><td>Four people in the group</td><td>Everyone in the same file: git conflicts</td><td>Each one in their own folder</td></tr>
+  </tbody></table></div>
+  <div class="callout"><strong>Ask the class</strong> Of these four, which will happen to you first in the group project?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> There is no right answer; the most likely is the last one, in the very first week of the project, which starts on Wednesday. Stress one idea: none of these problems is a bug in today's code. The app works. They are growth problems, and that is why you organise before you grow. In the restaurant: with two tables, one person is enough; with twenty, or on the day that person is off, the restaurant stops.</aside>
+</section>
+
+<section class="slide">
+  <h2>And with AI, even more so</h2>
+  <ul>
+    <li>An AI writes in seconds what used to take us an afternoon. The problem is no longer writing code: it is <strong>reading</strong> and <strong>checking</strong> code.</li>
+    <li>Without folders, the AI puts everything wherever it lands, and the screen that does everything appears by itself, with 400 lines nobody has read.</li>
+    <li>With folders, you say where: "create a new repository in <code>data/</code> and do not touch <code>screens/</code>". And when it finishes, you see straight away which folders changed.</li>
+    <li>The AI does not always give the same answer. Each layer on its own does: the pretend repository always returns the same three islands. You can see the result of each step and compare it with what you expected.</li>
+  </ul>
+  <div class="callout"><strong>Rule for the project</strong> If you use AI, you decide the folder and the file. It writes, you organise and check.</div>
+  <aside class="notes">The idea: AI is probabilistic, the same question gives different answers. An app split into layers, with the output of each one visible, makes the result of each step predictable and comparable. Ask them whether they have already used AI for the lesson code and where it put things. Link it to the group project: four people, each with their own AI, in the same file, is the worst of both worlds.</aside>
+</section>
+
+<section class="slide">
+  <h2>Each layer only talks to the one below</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 1000 400" role="img" aria-label="Three stacked layers with arrows pointing only downwards: at the top the UI, screens, IslandsScreen, which draws the state and knows only the notifier; in the middle the state, state, ForecastNotifier, with isLoading, error and islands, which knows only the repository; at the bottom the data, data, ForecastRepository and ApiClient, which returns Island and never JSON.">
+    <rect x="20" y="10" width="960" height="100" rx="14" class="box accent"/>
+    <text x="44" y="52" class="t b" style="font-size:28px">UI · <tspan class="mono">screens/IslandsScreen</tspan></text>
+    <text x="44" y="88" class="t s" style="font-size:22px">draws the state and calls load(); knows only the notifier</text>
+    <path d="M500 112 V146" class="arrow" style="stroke-width:3"/>
+    <rect x="20" y="150" width="960" height="100" rx="14" class="box warn"/>
+    <text x="44" y="192" class="t b" style="font-size:28px">State · <tspan class="mono">state/ForecastNotifier</tspan></text>
+    <text x="44" y="228" class="t s" style="font-size:22px">isLoading, error and islands; knows only the repository</text>
+    <path d="M500 252 V286" class="arrow" style="stroke-width:3"/>
+    <rect x="20" y="290" width="960" height="100" rx="14" class="box danger"/>
+    <text x="44" y="332" class="t b" style="font-size:28px">Data · <tspan class="mono">data/ForecastRepository</tspan></text>
+    <text x="44" y="368" class="t s" style="font-size:22px">asks the API through the ApiClient, returns Island, never JSON</text>
+  </svg>
+  <figcaption>The arrows only go down. Whoever is above asks; whoever is below does not know who is asking.</figcaption>
+  </figure>
+  <div class="callout"><strong>Ask the class</strong> Can the screen call the API directly? Can the repository show an error message on the screen?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> No and no. If the screen calls the API, we are back to the one-person restaurant: the waiter went to the supplier. The repository knows no widgets: when something fails, it throws an exception; the notifier keeps it as state (<code>error</code>); and it is the screen that decides how to show it. In the restaurant: the kitchen does not go to the table to apologise, it tells the pass. The names vary (MVVM, Clean Architecture, "layers"), and the Flutter guide calls ViewModel what we call a notifier here; the idea is the same.</aside>
+</section>
+
+<section class="slide">
+  <h2>Many architectures, the same jobs</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 1000 390" role="img" aria-label="A grid with five architectures in columns and the jobs in rows. MVC: View, Controller, Model. MVVM: View, ViewModel, Model. BLoC: Widget, Bloc, Repository. Clean Architecture: Presentation for the UI and the state, Domain for the business rules, Data for the data. Ours: screens, state and data. In all of them, the same jobs: UI, state and data; only Clean has an extra layer for rules.">
+    <text x="247" y="44" text-anchor="middle" class="t b" style="font-size:26px">MVC</text>
+    <text x="409" y="44" text-anchor="middle" class="t b" style="font-size:26px">MVVM</text>
+    <text x="571" y="44" text-anchor="middle" class="t b" style="font-size:26px">BLoC</text>
+    <text x="733" y="44" text-anchor="middle" class="t b" style="font-size:26px">Clean</text>
+    <text x="895" y="44" text-anchor="middle" class="t b" style="font-size:26px">Ours</text>
+    <text x="10" y="113" class="t b" style="font-size:24px">UI</text>
+    <rect x="170" y="70" width="154" height="70" rx="10" class="box accent"/>
+    <text x="247" y="113" text-anchor="middle" class="t" style="font-size:22px">View</text>
+    <rect x="332" y="70" width="154" height="70" rx="10" class="box accent"/>
+    <text x="409" y="113" text-anchor="middle" class="t" style="font-size:22px">View</text>
+    <rect x="494" y="70" width="154" height="70" rx="10" class="box accent"/>
+    <text x="571" y="113" text-anchor="middle" class="t" style="font-size:22px">Widget</text>
+    <rect x="656" y="70" width="154" height="70" rx="10" class="box accent"/>
+    <text x="733" y="113" text-anchor="middle" class="t" style="font-size:20px">Presentation</text>
+    <rect x="818" y="70" width="154" height="70" rx="10" class="box accent"/>
+    <text x="895" y="113" text-anchor="middle" class="t mono" style="font-size:22px">screens/</text>
+    <text x="10" y="191" class="t b" style="font-size:24px">State</text>
+    <rect x="170" y="148" width="154" height="70" rx="10" class="box warn"/>
+    <text x="247" y="191" text-anchor="middle" class="t" style="font-size:22px">Controller</text>
+    <rect x="332" y="148" width="154" height="70" rx="10" class="box warn"/>
+    <text x="409" y="191" text-anchor="middle" class="t" style="font-size:22px">ViewModel</text>
+    <rect x="494" y="148" width="154" height="70" rx="10" class="box warn"/>
+    <text x="571" y="191" text-anchor="middle" class="t" style="font-size:22px">Bloc</text>
+    <rect x="656" y="148" width="154" height="70" rx="10" class="box warn"/>
+    <text x="733" y="191" text-anchor="middle" class="t" style="font-size:20px">Presentation</text>
+    <rect x="818" y="148" width="154" height="70" rx="10" class="box warn"/>
+    <text x="895" y="191" text-anchor="middle" class="t mono" style="font-size:22px">state/</text>
+    <text x="10" y="269" class="t b" style="font-size:24px">Rules</text>
+    <text x="10" y="293" class="t s" style="font-size:17px">(optional)</text>
+    <rect x="170" y="226" width="154" height="70" rx="10" class="box muted"/>
+    <rect x="332" y="226" width="154" height="70" rx="10" class="box muted"/>
+    <rect x="494" y="226" width="154" height="70" rx="10" class="box muted"/>
+    <rect x="656" y="226" width="154" height="70" rx="10" class="box ok"/>
+    <text x="733" y="269" text-anchor="middle" class="t" style="font-size:22px">Domain</text>
+    <rect x="818" y="226" width="154" height="70" rx="10" class="box muted"/>
+    <text x="10" y="347" class="t b" style="font-size:24px">Data</text>
+    <rect x="170" y="304" width="154" height="70" rx="10" class="box danger"/>
+    <text x="247" y="347" text-anchor="middle" class="t" style="font-size:22px">Model</text>
+    <rect x="332" y="304" width="154" height="70" rx="10" class="box danger"/>
+    <text x="409" y="347" text-anchor="middle" class="t" style="font-size:22px">Model</text>
+    <rect x="494" y="304" width="154" height="70" rx="10" class="box danger"/>
+    <text x="571" y="347" text-anchor="middle" class="t" style="font-size:22px">Repository</text>
+    <rect x="656" y="304" width="154" height="70" rx="10" class="box danger"/>
+    <text x="733" y="347" text-anchor="middle" class="t" style="font-size:22px">Data</text>
+    <rect x="818" y="304" width="154" height="70" rx="10" class="box danger"/>
+    <text x="895" y="347" text-anchor="middle" class="t mono" style="font-size:22px">data/</text>
+    <rect x="812" y="14" width="166" height="376" rx="14" style="fill:none;stroke:var(--accent);stroke-width:3"/>
+  </svg>
+  <figcaption>The names and the boxes change from one architecture to another. The jobs stay: drawing, holding the state and fetching the data.</figcaption>
+  </figure>
+  <div class="callout"><strong>Ask the class</strong> In our app, which is the MVVM ViewModel? And the Model?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> The ViewModel is <code>ForecastNotifier</code>; the Model is the repository and the classes in <code>models/</code>. The idea to get across: there is no single right architecture, there are several ways of organising the same responsibilities. MVC is the oldest (it comes from the web and desktop); MVVM is the one the official Flutter guide recommends, and it is practically ours; BLoC is a package in which state changes through events; Clean Architecture adds a layer in the middle (Domain, with the "use cases") for business rules, useful in large apps. The Flutter guide also has that layer, as optional. Anyone who understands the three responsibilities can read any of them.</aside>
+</section>
+
+<section class="slide">
+  <h2>Data: the repository</h2>
+<pre data-title="lib/data/forecast_repository.dart"><code class="language-dart">/// What the app can ask for. The screens only see this.
 abstract class ForecastRepository {
   Future&lt;List&lt;Island&gt;&gt; fetchIslands();
   Future&lt;Forecast&gt; fetchForecast(String islandId);
 }</code></pre>
   <ul>
-    <li>The interface says <strong>what</strong>: the islands, the forecast of one island. An <code>abstract class</code> whose methods have no body.</li>
-    <li>Each implementation says <strong>how</strong>: <code>HttpForecastRepository</code> asks the API; <code>FakeForecastRepository</code> returns fixed data; later on, one with a cache on the phone.</li>
-    <li>Whoever uses it receives a <code>ForecastRepository</code> and does not know which of the three it is.</li>
-    <li>The JSON does not go above this layer. <code>fromJson</code> turns the API's shape (the DTO) into the app's shape (the model); if the API renames a field, <code>fromJson</code> changes and the rest of the app stays the same.</li>
+    <li>The interface says <strong>what</strong>: the islands, the forecast of one island. Like the menu: it lists the dishes, not the recipes.</li>
+    <li>Each implementation says <strong>how</strong>. <code>HttpForecastRepository</code> asks the API; tomorrow you write one that returns fixed data.</li>
+    <li>The JSON does not go above this point: it leaves here already as <code>Island</code>.</li>
   </ul>
-  <div class="callout"><strong>Analogy</strong> A shop counter. You ask the counter for "a forecast for Pico" and do not know whether it came from the stockroom (the cache) or the supplier (the API). The shop can change suppliers without you noticing; and in a training session, a pretend counter always gives the same answer.</div>
-  <p><strong>For the tests:</strong> repository = one interface with several implementations; the screen depends on the interface, never on the implementation.</p>
+  <div class="callout"><strong>Analogy</strong> You ask the kitchen for a dish and you get the finished dish. You do not know whether the fish came from the usual supplier, a new one or the freezer.</div>
 </section>
 
 <section class="slide">
-  <h2>Dependency injection: whoever uses does not create</h2>
-<pre data-title="lib/main.dart · on the passo-3 branch"><code class="language-dart">final ForecastRepository repository = useFake
-    ? FakeForecastRepository()
-    : HttpForecastRepository(
-        ApiClient(clientId: clientId, clientSecret: clientSecret),
-      );</code></pre>
-  <ul>
-    <li><code>HttpForecastRepository</code> receives the <code>ApiClient</code> in its constructor; <code>ForecastNotifier</code> receives the repository in its constructor. Neither creates what it needs.</li>
-    <li>The one that creates is <code>main</code>, in a single place. That is where you choose the API or the fake, and the credentials.</li>
-    <li>The opposite, an <code>ApiClient()</code> created inside the notifier or a global variable everyone uses, is a hidden dependency: you cannot swap it, and you cannot see who depends on whom.</li>
-    <li>To carry the objects down to the widgets we use Provider. There are other tools (<code>get_it</code>, Riverpod); the constructor rule is the same.</li>
-  </ul>
-  <div class="callout"><strong>Ask the class</strong> If <code>HttpForecastRepository</code> created its own <code>ApiClient</code> inside, what would no longer be possible?</div>
-  <p><strong>For the tests:</strong> dependency injection = receive through the constructor instead of creating; it lets you swap a piece without touching whoever uses it.</p>
-  <aside class="notes"><strong>Answers to the questions.</strong> Choosing the credentials (and the API address) from outside: they would have to be written inside the repository. Sharing a single <code>ApiClient</code>, and so a single token, between several repositories: each would ask for its own. And swapping the <code>ApiClient</code> for another one, for example one that answers without a network for a test. A quick analogy, if it helps: a coffee machine takes the capsule, it does not grow the coffee.</aside>
-</section>
-
-<section class="slide">
-  <h2>When Provider is the right tool</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Situation</th><th>Choice</th></tr></thead>
-  <tbody>
-  <tr><td>State of a single widget: an open card, a search field, a tab</td><td><code>setState</code></td></tr>
-  <tr><td>Data from the network, or state shared by several screens, in a small team</td><td><code>ChangeNotifier</code> + Provider (the project)</td></tr>
-  <tr><td>Many events, strong testing rules, large teams</td><td>BLoC or Riverpod</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>Provider is the right tool when state leaves a single widget: when two screens need it, when it must survive navigation, or when the logic should live outside the widgets.</li>
-    <li>The Flutter team's recommendation: start simple, with layers and constructor injection, and only switch tools later if needed. With the layers in place, swapping <code>ChangeNotifier</code> for BLoC means changing one layer; without them, it means rewriting screens.</li>
-  </ul>
-  <div class="callout"><strong>Ask the class</strong> Does the card that opens and closes need Provider? And the list of favourite islands, which appears in the list and on a favourites screen?</div>
-  <p><strong>For the tests:</strong> the right architecture is the simplest one that solves today's problem, with boundaries that let it grow.</p>
-  <aside class="notes"><strong>Answers to the questions.</strong> The card does not: only the card cares whether it is open, and <code>setState</code> is enough. The favourites do: two screens read and change the same list, and it has to still be there when you navigate from one to the other. That is today's step 4. The criterion is how many widgets need the state, not the size of the app.</aside>
-</section>
-
-<section class="slide">
-  <h2><code>ChangeNotifier</code> and Provider: the pieces</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Piece</th><th>What it does</th><th>Where it is used</th></tr></thead>
-  <tbody>
-  <tr><td><code>ChangeNotifier</code></td><td>Holds the state; <code>notifyListeners()</code> tells whoever is listening</td><td>The state class: <code>ForecastNotifier extends ChangeNotifier</code></td></tr>
-  <tr><td><code>ChangeNotifierProvider</code></td><td>Creates the notifier once, puts it in the tree, disposes of it at the end</td><td>Above every screen that reads it: today, above the <code>MaterialApp</code></td></tr>
-  <tr><td><code>context.watch&lt;T&gt;()</code></td><td>Reads and subscribes: the widget runs <code>build</code> again on every notification</td><td>Inside <code>build</code></td></tr>
-  <tr><td><code>context.read&lt;T&gt;()</code></td><td>Reads without subscribing</td><td>In callbacks: <code>onPressed</code>, <code>onTap</code></td></tr>
-  <tr><td><code>Consumer&lt;T&gt;</code></td><td>Like <code>watch</code>, but only rebuilds what is inside it</td><td>In a small part of a large screen</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>A rule to say out loud: <strong><code>watch</code> in <code>build</code>, <code>read</code> in callbacks</strong>.</li>
-    <li>Provider is an <code>InheritedWidget</code> with less ceremony, the same mechanism as <code>Theme.of(context)</code>: a value placed high in the tree, which any widget below finds through its <code>context</code>.</li>
-  </ul>
-  <p><strong>For the tests:</strong> <code>notifyListeners</code> notifies; <code>watch</code> rebuilds; <code>read</code> does not; the Provider must be above whoever reads it.</p>
-  <aside class="notes">Draw the tree on the board: <code>ChangeNotifierProvider</code>, below it the <code>MaterialApp</code>, below that the <code>Navigator</code>, and inside it the routes side by side (the list, and later the Favourites). Come back to this drawing in step 2 and step 4: it is what explains why the Provider goes above the <code>MaterialApp</code>.</aside>
-</section>
-
-<section class="slide" data-part="Practice">
-  <h2>Getting started: today's repository</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-13.git
-cd pdm-aula-13
-flutter pub get</code></pre>
-  <ol class="steps">
-    <li>Open the folder in VS Code. Your <code>clientId</code> and <code>clientSecret</code> are in issue #1 of your <code>pdm-miniprojeto</code> repository.</li>
-    <li>In the VS Code terminal, on a single line, with your values: <code>flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd --dart-define=CLIENT_SECRET=your-secret</code></li>
-    <li>You should see the list of islands, each with its photo. Hand up when it appears.</li>
-    <li>Open a second terminal (the <strong>+</strong> in the terminal panel) for the <code>git</code> commands. In the first one, where the app runs, <kbd>r</kbd> is hot reload, <kbd>R</kbd> is hot restart and <kbd>q</kbd> quits.</li>
-  </ol>
-  <div class="callout warn"><strong>Seeing <code>401: clientId ou clientSecret errados.</code>?</strong> The two <code>--dart-define</code> are missing or have a typo. F5 in VS Code does not pass them: run from the terminal. Credentials never go in the code or in git.</div>
-  <aside class="notes">Ten minutes, and only move on when everyone has the islands on screen. Most common problems: backslashes to split the line (they do not work in Windows PowerShell: everything on one line); swapping the <code>clientId</code> and the <code>clientSecret</code>; spaces around the <code>=</code>; pressing F5 (it runs without credentials and gives the 401); no issue #1 in the repository means the student did not get credentials. Anyone who cannot get it working follows along with the person next to them until step 3, which runs without credentials. <code>provider</code> is already in <code>pubspec.yaml</code>: nobody needs to add it.</aside>
-</section>
-
-<section class="slide">
-  <h2>1. The repository: the request leaves the screen</h2>
-<pre data-title="lib/forecast_repository.dart · on the passo-1 branch"><code class="language-dart">/// How: HTTP to the course API, through the ApiClient.
+  <h2>Data: <code>HttpForecastRepository</code></h2>
+<pre data-title="lib/data/http_forecast_repository.dart"><code class="language-dart">/// How: HTTP to the course API, through the ApiClient.
 class HttpForecastRepository implements ForecastRepository {
   HttpForecastRepository(this._api); // injected, not created here
 
@@ -244,38 +619,13 @@ class HttpForecastRepository implements ForecastRepository {
     return Forecast.fromJson(json as Map&lt;String, dynamic&gt;);
   }
 }</code></pre>
-  <ul>
-    <li><code>fetchIslands</code> is the screen's <code>_load</code>, moved: the path and the <code>fromJson</code> now live here.</li>
-    <li><code>implements ForecastRepository</code> forces you to write both methods of the interface, with <code>@override</code>. If one is missing, the code does not compile.</li>
-    <li><code>fetchForecast</code> is ready for later: nobody calls it today.</li>
-  </ul>
-  <aside class="notes">The interface (from the theory slide) goes in the same file, above this class, with the two imports: <code>api_client.dart</code> and <code>models.dart</code>. The underscore in <code>_api</code> makes it private: nothing outside the file can reach it, and the constructor <code>HttpForecastRepository(this._api)</code> still fills it in.</aside>
+  <div class="callout"><strong>Ask the class</strong> Where have we already seen <code>fetchIslands</code>?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> It is the <code>_load</code> from the old screen, line by line, moved to a new place: <code>widget.api.get</code> became <code>_api.get</code>. <code>implements</code> forces you to write both methods of the interface; if one is missing, it does not compile. <code>fetchForecast</code> is ready for later on.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 1: the screen receives the repository</h2>
-<pre data-title="lib/islands_screen.dart · where TODO 1 is"><code class="language-dart">import 'forecast_repository.dart';
-import 'models.dart';
-
-  const IslandsScreen({super.key, required this.repository});
-
-  final ForecastRepository repository;
-
-// in initState, and in the Tentar de novo button inside setState:
-    _islands = widget.repository.fetchIslands();</code></pre>
-<pre data-title="lib/main.dart"><code class="language-dart">  final api = ApiClient(clientId: clientId, clientSecret: clientSecret);
-  final repository = HttpForecastRepository(api);
-
-      home: IslandsScreen(repository: repository),</code></pre>
-  <div class="callout task"><strong>Do</strong> Create <code>lib/forecast_repository.dart</code> with the interface and <code>HttpForecastRepository</code>. In the screen, the <code>api</code> field becomes <code>repository</code>, <code>_load</code> goes, and both calls become <code>widget.repository.fetchIslands()</code>. In <code>main</code>, create the repository and pass it to the screen.</div>
-  <p><strong>In the app:</strong> the same list of islands, and that is the goal. The screen no longer knows paths or JSON.</p>
-  <aside class="notes">Hot restart (<kbd>R</kbd>), not hot reload: <code>main</code> changed. Typical mistakes: forgetting to import <code>forecast_repository.dart</code> in the screen and in <code>main</code>; writing <code>repository.fetchIslands()</code> without <code>widget.</code> inside the <code>State</code>; leaving the <code>api_client.dart</code> import in the screen (an unused import warning: a good sign, it means the screen no longer depends on it). The solution is on the <code>passo-1</code> branch.</aside>
-</section>
-
-<section class="slide">
-  <h2>2. <code>ForecastNotifier</code>: the state leaves the screen</h2>
-<pre data-title="lib/forecast_notifier.dart · on the passo-2 branch"><code class="language-dart">/// The state of the islands screen. Knows the repository, not the widgets.
-class ForecastNotifier extends ChangeNotifier {
+  <h2>State: <code>ForecastNotifier</code></h2>
+<pre data-title="lib/state/forecast_notifier.dart"><code class="language-dart">class ForecastNotifier extends ChangeNotifier {
   ForecastNotifier(this._repository); // injected, not created here
 
   final ForecastRepository _repository;
@@ -298,50 +648,18 @@ class ForecastNotifier extends ChangeNotifier {
     }
   }
 }</code></pre>
-  <ul>
-    <li>The three states of the <code>FutureBuilder</code> become three fields: <code>isLoading</code>, <code>error</code> and <code>islands</code>.</li>
-    <li>The notifier knows no widgets and no <code>BuildContext</code>. It imports <code>foundation.dart</code>, not <code>material.dart</code>.</li>
-  </ul>
-  <div class="callout"><strong>Ask the class</strong> Why are there two <code>notifyListeners()</code>? What does the user see after tapping "Tentar de novo" (try again) if you remove the first one?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> The first shows the spinner as soon as the request leaves; the second, in <code>finally</code>, shows the result, whether that is the islands or the error. Without the first, after "Tentar de novo" the error message stays on screen until the response arrives: it looks as if the button did nothing, so the user taps again and makes two requests. <code>'$e'</code> shows the API's message (<code>401: ...</code>) or Dart's (a timeout); error messages written for people are for tomorrow.</aside>
+  <div class="callout"><strong>Ask the class</strong> The three states of the <code>FutureBuilder</code> became three fields. Which ones? And what is the bell?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> <code>isLoading</code>, <code>error</code> and <code>islands</code>. The bell is <code>notifyListeners()</code>: it tells whoever is listening that something changed. It rings twice: when the request goes out (the screen shows the spinner) and when the response arrives (the islands or the error). It knows no widgets.</aside>
 </section>
 
 <section class="slide">
-  <h2>2. Provider goes above the <code>MaterialApp</code></h2>
-<pre data-title="lib/main.dart · on the passo-2 branch"><code class="language-dart">void main() {
-  final api = ApiClient(clientId: clientId, clientSecret: clientSecret);
-  final repository = HttpForecastRepository(api);
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) =&gt; ForecastNotifier(repository)..load(),
-      child: MaterialApp(
-        title: 'Tempo Açores',
-        theme: ThemeData(colorSchemeSeed: Colors.teal),
-        home: const IslandsScreen(),
-      ),
-    ),
-  );
-}</code></pre>
-  <ul>
-    <li><code>create</code> runs once: it creates the notifier with the repository, and <code>..load()</code> fires the first request straight away. The <code>..</code> calls <code>load()</code> and returns the notifier.</li>
-    <li><code>IslandsScreen</code> no longer takes parameters: it gets the notifier from the Provider.</li>
-    <li>Everything below the <code>ChangeNotifierProvider</code> finds it. Above the <code>MaterialApp</code>, that means every screen in the app.</li>
-  </ul>
-  <div class="callout"><strong>Ask the class</strong> What if the <code>ChangeNotifierProvider</code> were inside <code>home:</code>, around the <code>IslandsScreen</code>?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> Today it would work: <code>IslandsScreen</code> is below the Provider. It breaks in step 4, when the star button opens the Favourites with <code>Navigator.push</code>: the new route is not inside <code>home</code>, it sits next to it, inside the <code>MaterialApp</code>'s <code>Navigator</code>. The Favourites cannot find the notifier and the red screen appears with <code>ProviderNotFoundException</code> ("Could not find the correct Provider above this FavoritesScreen Widget"). Show it on the tree drawn on the board. Rule: state for several screens, above the <code>MaterialApp</code>; state for a single screen, around that screen.</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 2: the screen only knows the notifier</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-1
-flutter pub get</code></pre>
-<pre data-title="lib/islands_screen.dart · where TODO 2 is"><code class="language-dart">class IslandsScreen extends StatelessWidget {
+  <h2>UI: the screen only knows the notifier</h2>
+<pre data-title="lib/screens/islands_screen.dart"><code class="language-dart">class IslandsScreen extends StatelessWidget {
   const IslandsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final forecast = context.watch&lt;ForecastNotifier&gt;(); // rebuilds on notify
+    final forecast = context.watch&lt;ForecastNotifier&gt;();
     return Scaffold(
       appBar: AppBar(title: const Text('Tempo Açores')),
       body: _body(context, forecast),
@@ -352,194 +670,68 @@ flutter pub get</code></pre>
     if (forecast.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    // the error: the Center from before, with Text(forecast.error!) and
+    // the error: the Center from before, with the Tentar de novo button
     onPressed: () =&gt; context.read&lt;ForecastNotifier&gt;().load(),
     // the data: the ListView.builder from before, with forecast.islands
   }
 }</code></pre>
-  <div class="callout task"><strong>Do</strong> Create <code>lib/forecast_notifier.dart</code> and change <code>main</code> as on the previous slides. The screen becomes a <code>StatelessWidget</code>: delete the <code>State</code>, the <code>Future</code> and the <code>FutureBuilder</code>, and the three branches move into <code>_body</code>.</div>
-  <p><strong>In the app:</strong> the same list, again. The difference is in the code: the screen has no <code>State</code>, no <code>Future</code> and no <code>FutureBuilder</code>, and the state lives in the notifier.</p>
-  <div class="callout"><strong>Ask the class</strong> Where did you use <code>watch</code> and where did you use <code>read</code>? What would happen if you swapped them?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> <code>watch</code> in <code>build</code>, so the screen redraws on every <code>notifyListeners</code>; <code>read</code> in <code>onPressed</code>, which only calls <code>load()</code>. With <code>read</code> in <code>build</code>, the screen never updates: it stays on the spinner forever, because it never heard the second notification. With <code>watch</code> in <code>onPressed</code>, Provider throws an error in debug mode ("Tried to listen to a value exposed with provider, from outside of the widget tree"). Imports for the screen: <code>package:provider/provider.dart</code> and <code>forecast_notifier.dart</code>; <code>models.dart</code> and <code>forecast_repository.dart</code> go. Shortcut: cursor on the class name, <kbd>Ctrl</kbd>+<kbd>.</kbd>, "Convert to StatelessWidget". The solution is on the <code>passo-2</code> branch.</aside>
+  <div class="callout"><strong>Rule</strong> <code>context.watch</code> in <code>build</code>: the waiter keeps an eye on the pass. <code>context.read</code> in the button: a quick message to the pass, without staying to watch.</div>
+  <aside class="notes">It is no longer a <code>StatefulWidget</code>: no <code>State</code>, no <code>Future</code>, no <code>FutureBuilder</code>, no URL and no JSON. Ask: what would happen with <code>read</code> in <code>build</code>? The screen would stay on the spinner forever, because it never heard the second bell.</aside>
 </section>
 
-<section class="slide">
-  <h2>3. A fake repository</h2>
-<pre data-title="lib/fake_forecast_repository.dart · on the passo-3 branch"><code class="language-dart">/// Same interface, fixed data: no API and no credentials.
-class FakeForecastRepository implements ForecastRepository {
-  FakeForecastRepository({this.fail = false});
-
-  final bool fail; // true: shows the error screen
-
-  @override
-  Future&lt;List&lt;Island&gt;&gt; fetchIslands() async {
-    await Future.delayed(const Duration(seconds: 1)); // a slow network
-    if (fail) throw Exception('Sem rede (fake)');
-    return const [
-      Island(id: 'corvo', name: 'Corvo', imageUrl: '$_img/corvo.jpg'),
-      Island(id: 'faial', name: 'Faial', imageUrl: '$_img/faial.jpg'),
-      Island(id: 'pico', name: 'Pico', imageUrl: '$_img/pico.jpg'),
-    ];
-  }
-
-  @override
-  Future&lt;Forecast&gt; fetchForecast(String islandId) {
-    throw UnimplementedError(); // not used yet
-  }
-}
-
-const _img = 'https://api-pdm.sublimecipher.com/static/islands';</code></pre>
-  <ul>
-    <li>It implements the same interface. The notifier receives a <code>ForecastRepository</code> and does not know this one is pretend.</li>
-    <li>The one-second wait lets you see the spinner; <code>fail: true</code> lets you see the error screen without turning off the Wi-Fi.</li>
-    <li>It is useful for building the screen before the API exists, for demoing the app without a network and, later on, for automated tests.</li>
-  </ul>
+<section class="slide" data-part="Exercise">
+  <h2>Exercise: where do you change it?</h2>
+  <p>For each request, say the folder. Only one.</p>
+  <ol class="steps">
+    <li>The API now serves the islands at <code>/v2/islands</code>.</li>
+    <li>We want each island's name in bold.</li>
+    <li>When you tap "Tentar de novo" (try again), the list should empty while it loads.</li>
+    <li>The API now sends <code>nome</code> instead of <code>name</code>.</li>
+    <li>We want to run the app without internet, with three fixed islands.</li>
+  </ol>
+  <aside class="notes"><strong>Answers.</strong> 1: <code>data/</code> (<code>HttpForecastRepository</code>). 2: <code>screens/</code> (the <code>title</code> of the <code>ListTile</code>). 3: <code>state/</code> (<code>load()</code> sets <code>islands = const []</code>). 4: <code>models/</code> (the <code>fromJson</code> of <code>Island</code>). 5: <code>data/</code>, a new file, a pretend repository: that is tomorrow's practice. Ask for answers with hands up, one folder at a time; anyone who gets it wrong goes back to the restaurant.</aside>
 </section>
 
-<section class="slide">
-  <h2>Step 3: swap the API for the fake</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-2
-flutter pub get</code></pre>
-<pre data-title="lib/main.dart · where TODO 3 is"><code class="language-dart">const useFake = bool.fromEnvironment('FAKE'); // --dart-define=FAKE=true
-
-  final ForecastRepository repository = useFake
-      ? FakeForecastRepository()
-      : HttpForecastRepository(
-          ApiClient(clientId: clientId, clientSecret: clientSecret),
-        );</code></pre>
-  <div class="callout task"><strong>Do</strong> Create <code>lib/fake_forecast_repository.dart</code> with the code from the previous slide and the imports of <code>forecast_repository.dart</code> and <code>models.dart</code>. In <code>main</code>, the two lines for <code>api</code> and <code>repository</code> give way to this choice. Quit the app (<kbd>q</kbd>) and run: <code>flutter run -d chrome --dart-define=FAKE=true</code></div>
-  <p><strong>In the app:</strong> one second of loading and then three islands, with no credentials. Change it to <code>FakeForecastRepository(fail: true)</code>, <kbd>R</kbd>: <code>Exception: Sem rede (fake)</code> appears, and "Tentar de novo" shows the spinner before going back to the error.</p>
-  <div class="callout"><strong>Ask the class</strong> To swap the API for the fake, how many lines did you change in <code>ForecastNotifier</code> and in <code>IslandsScreen</code>?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> Zero. Only <code>main</code> changed, because it is the only one that creates the pieces. That is the proof that the layers and the injection are right: if you had to touch the screen to swap the data source, the screen still knew too much. The explicit type in <code>final ForecastRepository repository</code> is needed: without it, Dart does not know that both sides of the <code>?</code> are the same kind of thing. The photos still come from the internet; the fake only removes the need for the API and the credentials. Anyone who had no credentials at the start joins in here. The solution is on the <code>passo-3</code> branch.</aside>
-</section>
-
-<section class="slide">
-  <h2>4. Favourites: state shared by two screens</h2>
-<pre data-title="lib/favorites_notifier.dart · on the passo-4 branch"><code class="language-dart">/// Favourite islands, in memory. Shared by two screens.
-class FavoritesNotifier extends ChangeNotifier {
-  final Set&lt;String&gt; _ids = {};
-
-  int get count =&gt; _ids.length;
-  bool contains(String islandId) =&gt; _ids.contains(islandId);
-
-  void toggle(String islandId) {
-    if (!_ids.remove(islandId)) _ids.add(islandId);
-    notifyListeners();
-  }
-}</code></pre>
-<pre data-title="lib/main.dart · two notifiers"><code class="language-dart">    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) =&gt; ForecastNotifier(repository)..load(),
-        ),
-        ChangeNotifierProvider(create: (_) =&gt; FavoritesNotifier()),
-      ],</code></pre>
-  <ul>
-    <li>It keeps only the island <code>id</code>s, in a <code>Set</code>: an island is a favourite or not, with no duplicates. The <code>Set</code> is private; from outside you can only ask (<code>contains</code>, <code>count</code>) and request (<code>toggle</code>).</li>
-    <li><code>MultiProvider</code> is a list of providers instead of several nested inside each other. The <code>child</code> is still the <code>MaterialApp</code>.</li>
-  </ul>
-  <div class="callout"><strong>Ask the class</strong> Mark two favourites, close the app and open it again. Are they still there? And after a hot reload?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> Closing the app or doing a hot restart loses the favourites: they are only in memory and die with the app. With hot reload they stay, because Flutter keeps the objects alive. Saving them on the phone, so they survive the app closing, comes later; with the layers, it will be a new favourites repository, and the screen will not change.</aside>
-</section>
-
-<section class="slide">
-  <h2>4. The star and the counter</h2>
-<pre data-title="lib/favorites_screen.dart · FavoriteButton"><code class="language-dart">/// The star of one island. Used by both screens.
-class FavoriteButton extends StatelessWidget {
-  const FavoriteButton({super.key, required this.islandId});
-
-  final String islandId;
-
-  @override
-  Widget build(BuildContext context) {
-    final favorite = context.watch&lt;FavoritesNotifier&gt;().contains(islandId);
-    return IconButton(
-      icon: Icon(favorite ? Icons.star : Icons.star_border),
-      onPressed: () =&gt; context.read&lt;FavoritesNotifier&gt;().toggle(islandId),
-    );
-  }
-}</code></pre>
-<pre data-title="lib/islands_screen.dart · in the AppBar actions"><code class="language-dart">Consumer&lt;FavoritesNotifier&gt;(
-  builder: (context, favorites, child) =&gt; IconButton(
-    icon: Badge(
-      isLabelVisible: favorites.count &gt; 0,
-      label: Text('${favorites.count}'),
-      child: const Icon(Icons.star),
-    ),
-    onPressed: () =&gt; Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) =&gt; const FavoritesScreen()),
-    ),
-  ),
-),</code></pre>
-  <div class="callout"><strong>Ask the class</strong> Why is the counter in a <code>Consumer</code> and the star in a widget of its own, instead of a <code>context.watch&lt;FavoritesNotifier&gt;()</code> in the <code>build</code> of <code>IslandsScreen</code>?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> With <code>watch</code> in the screen's <code>build</code>, every star tapped would rebuild the whole screen: the <code>AppBar</code>, the list and the photos. With the <code>Consumer</code> only the counter button runs <code>build</code> again; with <code>FavoriteButton</code> only the stars. Both ways work; this one does less work, and <code>FavoriteButton</code> is also used on both screens. If there is time, show it in DevTools with "Highlight repaints": what flashes on each tap.</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 4: the favourites screen</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-3
-flutter pub get</code></pre>
-<pre data-title="lib/favorites_screen.dart · new file, with FavoriteButton"><code class="language-dart">class FavoritesScreen extends StatelessWidget {
-  const FavoritesScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final favorites = context.watch&lt;FavoritesNotifier&gt;();
-    final islands = context
-        .watch&lt;ForecastNotifier&gt;()
-        .islands
-        .where((island) =&gt; '...')
-        .toList();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Favoritas')),
-      // body: no favourites, 'Ainda não há ilhas favoritas.' in the centre;
-      // with favourites, a ListView with one ListTile per island:
-      // the name in title and trailing: FavoriteButton(islandId: island.id)
-    );
-  }
-}</code></pre>
-  <div class="callout task"><strong>Exercise</strong> Create <code>lib/favorites_notifier.dart</code> and register it in the <code>MultiProvider</code>, where <code>TODO 4</code> is in <code>main</code>. In <code>lib/favorites_screen.dart</code>, the <code>FavoriteButton</code> from the previous slide and this screen: write the <code>where</code> condition in place of <code>'...'</code>, and the <code>body</code>. In <code>IslandsScreen</code>, the <code>Consumer</code> in the <code>actions</code> and <code>trailing: FavoriteButton(islandId: forecast.islands[i].id)</code> on each island.</div>
-  <p><strong>In the app:</strong> you mark Pico and Corvo and the counter shows 2. The star at the top opens Favoritas with both; you remove Corvo there and go back: in the list Corvo no longer has a star and the counter shows 1.</p>
-  <aside class="notes">The condition: <code>favorites.contains(island.id)</code>. The <code>body</code>: <code>islands.isEmpty ? const Center(child: Text('Ainda não há ilhas favoritas.')) : ListView(children: [for (final island in islands) ListTile(title: Text(island.name), trailing: FavoriteButton(islandId: island.id))])</code>. This screen reads two notifiers: the islands come from <code>ForecastNotifier</code>, the choices from <code>FavoritesNotifier</code>. If someone put the Provider inside <code>home:</code>, this is where <code>ProviderNotFoundException</code> shows up: the question from step 2, live. Imports in <code>islands_screen.dart</code>: <code>favorites_notifier.dart</code> and <code>favorites_screen.dart</code>. It works with the fake or with the API. The solution is on the <code>passo-4</code> branch.</aside>
+<section class="slide" data-part="Theory">
+  <h2>When Provider comes in</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Situation</th><th>Choice</th></tr></thead>
+  <tbody>
+  <tr><td>State of a single widget: an open card, a search field</td><td><code>setState</code></td></tr>
+  <tr><td>Data from the network, or state shared by several screens</td><td><code>ChangeNotifier</code> + Provider (the project)</td></tr>
+  <tr><td>Many events, strict rules, large teams</td><td>BLoC or Riverpod</td></tr>
+  </tbody></table></div>
+  <div class="callout"><strong>Ask the class</strong> Does the card that opens and closes need Provider? And a list of favourite islands, which appears in the list and on a favourites screen?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> The card does not: only the card cares whether it is open, and <code>setState</code> is enough. The favourites do: two screens read and change the same list. That is tomorrow's practice. The criterion is how many widgets need the state, not the size of the app.</aside>
 </section>
 
 <section class="slide">
   <h2>Where we got to</h2>
   <ol class="steps">
-    <li><code>ForecastRepository</code> with the interface and <code>HttpForecastRepository</code>, which receives the <code>ApiClient</code>: the request and the JSON leave the screen (step 1).</li>
-    <li><code>ForecastNotifier</code> with <code>isLoading</code>, <code>error</code> and <code>islands</code>, in a <code>ChangeNotifierProvider</code> above the <code>MaterialApp</code>; the screen is a <code>StatelessWidget</code> with <code>watch</code> and <code>read</code> (step 2).</li>
-    <li><code>FakeForecastRepository</code>: the same interface, no API; <code>main</code> chooses which one to use and nothing else changes (step 3).</li>
-    <li><code>FavoritesNotifier</code> shared by the list and Favoritas, with <code>MultiProvider</code>, <code>Consumer</code> and a <code>FavoriteButton</code> (step 4).</li>
+    <li>A class that does everything works, but it does not grow: data, state and UI mixed up.</li>
+    <li>We split it into three layers, one folder each: <code>data/</code>, <code>state/</code> and <code>screens/</code>, plus <code>models/</code> for what passes between them.</li>
+    <li>Each layer only talks to the one below.</li>
+    <li>With AI, the folders say where each thing goes and let you check each step.</li>
   </ol>
-  <p>The <code>passo-4</code> branch is the final state: compare your code with it.</p>
-  <aside class="notes">Typical mistakes in these steps: in step 1, the missing <code>widget.</code> and the imports; in step 2, <code>read</code> in <code>build</code> (stuck on the spinner forever) and forgetting <code>..load()</code> (empty list, no error); in step 3, the missing type in <code>final ForecastRepository repository</code> and running without <code>--dart-define=FAKE=true</code>; in step 4, the Provider below the <code>MaterialApp</code>. Tomorrow's lesson is from 08:30 to 10:30.</aside>
+  <p><strong>Tomorrow, practice:</strong> in the <code>pdm-aula-13</code> repository, a pretend kitchen (the app without the API) and favourite islands shared by two screens.</p>
+  <aside class="notes">Go back to the restaurant one last time: everyone at their station, each one only asks the next. Tomorrow's lesson is from 08:30 to 10:30.</aside>
 </section>
 
 <section class="slide" data-part="End">
   <h2>See you tomorrow</h2>
   <div class="cols">
     <div>
-      <h3>To do</h3>
-      <ul class="checklist">
-        <li>On <code>passo-4</code>, tapping an island opens its 5-day forecast. Same layers: <code>fetchForecast</code> already exists; write an <code>IslandForecastNotifier</code> (<code>isLoading</code>, <code>error</code>, <code>forecast</code>, <code>load</code>) and a screen that only knows the notifier. Hint: this notifier belongs to a single island, so its <code>ChangeNotifierProvider</code> goes inside the route, around the new screen; and the repository goes into the <code>MultiProvider</code> with <code>Provider&lt;ForecastRepository&gt;.value(value: repository)</code>.</li>
-        <li>Read the <a href="https://docs.flutter.dev/app-architecture/guide" target="_blank" rel="noopener">Flutter architecture guide</a> and note down one difference from what we did today.</li>
-      </ul>
-      <h3>Next lesson</h3>
+      <h3>For tomorrow</h3>
       <ul>
-        <li>Tomorrow, Tuesday, 20 October 2026, 08:30 to 10:30: what to do when the network fails. Error, empty and loading states, trying again, and the API in chaos mode.</li>
+        <li>Tuesday, 20 October, 08:30 to 10:30.</li>
+        <li>If you want to get ahead: <code>git clone https://github.com/Tiago-Rocha/pdm-aula-13.git</code> and look at <code>git diff antes main</code>.</li>
       </ul>
     </div>
     <div>
       <h3>To read</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/app-architecture/guide" target="_blank" rel="noopener">Guide to app architecture</a>: layers, ViewModel and repositories, the Flutter team's recommendation.</li>
-        <li><a href="https://docs.flutter.dev/app-architecture/case-study" target="_blank" rel="noopener">Architecture case study</a>: a complete app organised in layers, file by file.</li>
-        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/simple" target="_blank" rel="noopener">Simple app state management</a>: <code>ChangeNotifier</code> and Provider step by step, with the shopping cart example.</li>
-        <li><a href="https://pub.dev/packages/provider" target="_blank" rel="noopener">provider package</a>: <code>watch</code>, <code>read</code>, <code>Consumer</code> and <code>MultiProvider</code>.</li>
-        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/options" target="_blank" rel="noopener">State management options</a>: Provider, Riverpod, BLoC and others, with a sentence on each.</li>
+        <li><a href="https://docs.flutter.dev/app-architecture/guide" target="_blank" rel="noopener">Guide to app architecture</a>: layers and repositories, the Flutter team's recommendation.</li>
+        <li><a href="https://docs.flutter.dev/data-and-backend/state-mgmt/simple" target="_blank" rel="noopener">Simple app state management</a>: <code>ChangeNotifier</code> and Provider step by step.</li>
       </ul>
     </div>
   </div>
