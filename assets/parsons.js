@@ -39,7 +39,7 @@
         still: "Still building, go and help:", built: function (t) { return "The app is built! " + t; }, ready: "ready",
         send: "Send", chosen: function (a, b) { return a + " of " + b + " chosen"; }, sorted: function (a, b) { return a + " of " + b + " like the brief"; },
         discuss: "Voted. Now discuss with the person next to you: why that one? Then vote again.", vote1: "1st", vote2: "2nd",
-        reveal: "Show answers", hide: "Hide answers", split: "split", answers: function (n) { return n + (n === 1 ? " answer" : " answers"); } }
+        of: function (a, b) { return a + " of " + b; }, right: "Right", common: "Most common wrong answer", where: "Where the class put it", split: "split", answers: function (n) { return n + (n === 1 ? " answer" : " answers"); } }
     : { check: "Verificar", shuffle: "Baralhar", tries: "tentativas", try1: "tentativa", time: "tempo",
         hint: "Arrasta as peças para a ordem certa. No teclado: Tab até uma peça, Alt + cima ou baixo para a mover.",
         ok: function (t, n) { return "Feito em " + t + ", à " + n + "ª tentativa."; },
@@ -58,7 +58,7 @@
         still: "Ainda a construir, vai ajudar:", built: function (t) { return "A app está construída! " + t; }, ready: "pronto",
         send: "Enviar", chosen: function (a, b) { return a + " de " + b + " escolhidos"; }, sorted: function (a, b) { return a + " de " + b + " como no enunciado"; },
         discuss: "Votaste. Agora discute com o colega do lado: porquê essa? Depois vota outra vez.", vote1: "1.ª", vote2: "2.ª",
-        reveal: "Mostrar respostas", hide: "Esconder respostas", split: "dividida", answers: function (n) { return n + (n === 1 ? " resposta" : " respostas"); } };
+        of: function (a, b) { return a + " de " + b; }, right: "Certas", common: "Erro mais comum", where: "Onde a turma pôs", split: "dividida", answers: function (n) { return n + (n === 1 ? " resposta" : " respostas"); } };
 
   // ----- utilidades -----
   function rng(seed) { var s = seed >>> 0 || 1; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
@@ -570,48 +570,62 @@
   // ----- painel das votações: o que a turma escolheu em cada pergunta e cartão -----
   //   <div class="pz-poll" data-track="a15-pronto" [data-item="p1"]></div>
   function initPoll(board) {
+    // resultados de uma sequência: uma linha por pergunta, quantos acertaram e o erro mais comum
     var track = document.querySelector('.pz-seq[data-id="' + board.getAttribute("data-track") + '"]');
     var only = board.getAttribute("data-item");
     var items = track ? Array.prototype.filter.call(track.querySelectorAll(".pz-mcq, .pz-sort"), function (b) {
       return !only || b.getAttribute("data-id") === only;
     }) : [];
-    var room = roomOf(), shown = false;
-    board.innerHTML = '<div class="pz-top"><div class="pz-sum"></div><button type="button" class="pz-reveal">' + T.reveal + '</button></div><div class="pz-polls"></div>';
-    var out = board.querySelector(".pz-polls"), sum = board.querySelector(".pz-sum"), btn = board.querySelector(".pz-reveal");
-    btn.onclick = function () { shown = !shown; btn.textContent = shown ? T.hide : T.reveal; board.classList.toggle("shown", shown); };
-    function bar(n, total, cls) {
+    var room = roomOf();
+    board.innerHTML = '<div class="pz-top"><div class="pz-sum"></div></div><div class="pz-polls"></div>';
+    var out = board.querySelector(".pz-polls"), sum = board.querySelector(".pz-sum");
+    function bar(n, total) {
       var pct = total ? Math.round(100 * n / total) : 0;
-      return '<span class="pz-pv ' + cls + '"><b>' + n + '</b><span class="pz-pbar"><i style="width:' + pct + '%"></i></span></span>';
+      return '<span class="pz-pv"><span class="pz-pbar"><i style="width:' + pct + '%"></i></span><b>' + T.of(n, total) + "</b></span>";
+    }
+    function common(ps, d, pick) { // a opção errada mais escolhida, se houver
+      var best = -1, n = 0;
+      (d.options || []).forEach(function (o, i) {
+        if (i === 0) return;
+        var k = ps.filter(function (p) { return pick(p) === i; }).length;
+        if (k > n) { n = k; best = i; }
+      });
+      return best < 0 ? "" : esc(d.options[best]) + " <small>(" + n + ")</small>";
     }
     function render(data) {
       var people = {};
-      out.innerHTML = items.map(function (b) {
-        var id = b.getAttribute("data-id"), d = b.pzData || {};
+      var got = function (id) {
         var ps = ((data.puzzles || {})[id] || []).filter(function (p) { return p.first && p.first.length; });
         ps.forEach(function (p) { people[p.id] = 1; });
-        var head = '<h3>' + esc(b.getAttribute("data-label") || d.q || id) + ' <small>' + T.answers(ps.length) + "</small></h3>";
-        if (b.classList.contains("pz-mcq")) {
-          var revote = b.hasAttribute("data-revote");
-          var order = shuffle((d.options || []).map(function (o, i) { return { text: o, id: i }; }), rng(seedOf("painel|" + id)));
-          var rows = order.map(function (x) {
-            var o = x.text, i = x.id;
-            var n1 = ps.filter(function (p) { return p.first[0] === i; }).length;
-            var n2 = ps.filter(function (p) { return (p.last || p.first)[0] === i; }).length;
-            return '<tr class="' + (i === 0 ? "key" : "") + '"><td class="o">' + esc(o) + "</td><td>" + bar(n1, ps.length, "v1") + "</td>" +
-              (revote ? "<td>" + bar(n2, ps.length, "v2") + "</td>" : "") + "</tr>";
-          }).join("");
-          var th = revote ? "<tr><th></th><th>" + T.vote1 + "</th><th>" + T.vote2 + "</th></tr>" : "";
-          return '<div class="pz-pollc">' + head + '<table class="pz-ptable">' + th + rows + "</table></div>";
-        }
-        var cards = (d.cards || []).map(function (c, i) {
+        return ps;
+      };
+      var sorts = items.filter(function (b) { return b.classList.contains("pz-sort"); });
+      var mcqs = items.filter(function (b) { return b.classList.contains("pz-mcq"); });
+      var html = "";
+      if (mcqs.length) {
+        var revote = mcqs.some(function (b) { return b.hasAttribute("data-revote"); });
+        html += '<table class="pz-ptable"><tr><th></th>' + (revote ? "<th>" + T.vote1 + "</th><th>" + T.vote2 + "</th>" : "<th>" + T.right + "</th>") +
+          "<th>" + T.common + "</th></tr>" + mcqs.map(function (b) {
+            var id = b.getAttribute("data-id"), d = b.pzData || {}, ps = got(id);
+            var first = function (p) { return p.first[0]; }, last = function (p) { return (p.last || p.first)[0]; };
+            var n1 = ps.filter(function (p) { return first(p) === 0; }).length, n2 = ps.filter(function (p) { return last(p) === 0; }).length;
+            var label = revote ? "<b>" + esc(b.getAttribute("data-label") || id) + "</b>" : esc(d.q || b.getAttribute("data-label") || id);
+            return '<tr class="pz-r"><td class="o">' + label + "</td><td>" + bar(n1, ps.length) + "</td>" + (revote ? "<td>" + bar(n2, ps.length) + "</td>" : "") +
+              '<td class="w">' + common(ps, d, first) + "</td></tr>";
+          }).join("") + "</table>";
+      }
+      sorts.forEach(function (b) {
+        var id = b.getAttribute("data-id"), d = b.pzData || {}, ps = got(id);
+        html += '<table class="pz-ptable"><tr><th></th><th>' + T.right + "</th><th>" + T.where + "</th></tr>" + (d.cards || []).map(function (c, i) {
           var counts = (d.cols || []).map(function (_, k) { return ps.filter(function (p) { return p.first[i] === k; }).length; });
           var max = Math.max.apply(null, counts.concat([0]));
           var split = ps.length >= 2 && max / ps.length < 0.7;
-          return '<tr class="' + (split ? "split" : "") + '"><td class="o">' + esc(c.t) + (split ? ' <span class="pz-flag">' + T.split + "</span>" : "") + "</td>" +
-            counts.map(function (n, k) { return '<td class="' + (k === c.a ? "key" : "") + '">' + bar(n, ps.length, "v1") + "</td>"; }).join("") + "</tr>";
-        }).join("");
-        return '<div class="pz-pollc wide">' + head + '<table class="pz-ptable"><tr><th></th>' + (d.cols || []).map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>" + cards + "</table></div>";
-      }).join("");
+          var where = (d.cols || []).map(function (col, k) { return counts[k] ? esc(col) + " " + counts[k] : ""; }).filter(Boolean).join(" · ");
+          return '<tr class="pz-r' + (split ? " split" : "") + '"><td class="o">' + esc(c.t) + (split ? ' <span class="pz-flag">' + T.split + "</span>" : "") + "</td><td>" +
+            bar(counts[c.a] || 0, ps.length) + '</td><td class="w">' + where + "</td></tr>";
+        }).join("") + "</table>";
+      });
+      out.innerHTML = html;
       sum.textContent = T.students(Object.keys(people).length);
     }
     function active() { var s = board.closest(".slide"); return !s || s.classList.contains("active") || document.querySelector(".deck.doc"); }

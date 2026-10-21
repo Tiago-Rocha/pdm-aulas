@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 15 · Kickoff do projeto Tempo Açores · PDM</title>
+<title>Aula 15 · Antes do projeto: jogos · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -44,17 +44,16 @@ figure.diagram figcaption { font-size: 1rem; }
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 15 · Semana 7 · Quarta, 21 de outubro de 2026 · 16:00 às 18:00</p>
-  <h1>Kickoff do projeto Tempo Açores</h1>
-  <p class="lead">Hoje arranca o projeto de grupo. Antes de escrever código, decidimos três coisas: o que é o mínimo, quando é que uma coisa está pronta, e como dois colegas trabalham ao mesmo tempo sem se atropelarem. Com jogos.</p>
-  <div class="meta"><span>Projeto: Tempo Açores</span></div>
-  <aside class="notes">Tempos de referência: entrar e memória até às 16:10; resultados da memória até às 16:15; o projeto até às 16:30; MVP e "corta o MVP" até às 16:55; definição de pronto e "está pronto?" até às 17:25; contrato primeiro até às 17:45; sprints e grupos até às 18:00. Os alunos entram uma vez (slide 3) e ficam dentro para os quatro jogos: a sala é a aula e o dia. Os painéis de resultados não mostram as respostas certas até carregares em "Mostrar respostas". Hoje não há repositórios nem backlog: isso fica para a próxima aula.</aside>
+  <h1>Antes do projeto: jogos</h1>
+  <p class="lead">Na segunda arranca o projeto de grupo. Hoje preparamo-lo a jogar: <strong>lembrar</strong> as camadas, ler <strong>JSON para um modelo</strong>, decidir <strong>quando é que uma coisa está feita</strong> e <strong>como dois colegas trabalham ao mesmo tempo</strong>.</p>
+    <aside class="notes">Tempos de referência: entrar e memória até às 16:15; JSON até às 16:45; definição de pronto e "está pronto?" até às 17:20; contrato primeiro até às 17:45; fecho até às 18:00. Os alunos entram uma vez (slide 3) e ficam dentro para os jogos todos: a sala é a aula e o dia. Os painéis de resultados têm uma linha por pergunta: quantos acertaram e o erro mais comum. O enunciado, os grupos e o MVP ficam para segunda.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
     <li>Lembrar as camadas e os Futures sem abrir os apontamentos.</li>
-    <li>Separar o mínimo do Tempo Açores dos extras, e explicar porque é que qualidade não se corta.</li>
+    <li>Passar um JSON da API para um modelo Dart, com o fromJson e a lista.</li>
     <li>Dizer se um pull request está pronto, com a definição de pronto do grupo.</li>
     <li>Combinar um contrato (uma interface) para dois colegas trabalharem ao mesmo tempo.</li>
   </ul>
@@ -76,44 +75,74 @@ figure.diagram figcaption { font-size: 1rem; }
 <section class="slide">
   <h2>Memória: a turma</h2>
   <div class="pz-poll" data-track="a15-mem"></div>
-  <aside class="notes">Olha para a pergunta com menos respostas certas e pergunta a quem acertou: "como pensaste?". Só depois carrega em "Mostrar respostas". Se a do notifyListeners correu mal, volta ao load() da aula de ontem durante dois minutos.</aside>
+  <aside class="notes">Olha para a pergunta com menos respostas certas e pergunta a quem acertou: "como pensaste?". Depois pergunta a quem escolheu o erro mais comum porque lhe pareceu certo. Se a do notifyListeners correu mal, volta ao load() da aula de ontem durante dois minutos.</aside>
 </section>
 
-<section class="slide" data-part="Projeto">
-  <h2>O projeto: Tempo Açores</h2>
-  <p>Uma app de meteorologia e trilhos para os Açores, feita em grupo sobre a API do curso: a previsão a 5 dias de cada ilha com dados do IPMA, trilhos pedestres, relatos da turma com fotografia, favoritos, e a funcionar sem rede.</p>
-  <table>
-    <tr><th>Grupos</th><td>2 a 3 pessoas, formados hoje</td></tr>
-    <tr><th>Sprints</th><td>Três, com review em aula a 02/11, 18/11 e 02/12</td></tr>
-    <tr><th>Testers</th><td>A app no telemóvel de outras pessoas a partir de 20/11</td></tr>
-    <tr><th>Freeze e defesas</th><td>Freeze a 09/12; defesas a 14 e 16/12</td></tr>
-  </table>
-  <p>O enunciado completo, com os requisitos mínimos e os extras, está na página <a href="../projeto.html">Projeto</a>.</p>
-  <aside class="notes">Não leias o enunciado todo agora: o jogo seguinte obriga-os a lê-lo com atenção. Responde às perguntas do costume: "podemos usar o package X?" (sim, se souberem explicar), "podemos mudar o design?" (sim, se respeitar os estados e a acessibilidade), "e se um membro não trabalhar?" (a defesa é individual e os PRs têm autor).</aside>
-</section>
-
-<section class="slide" data-part="MVP">
-  <h2>MVP: o mínimo que se instala e se usa</h2>
-  <ol class="steps">
-    <li>O produto mínimo viável é a versão mais pequena que alguém instala e usa com proveito. Não é um protótipo, nem uma demo.</li>
-    <li><strong>Cortar funcionalidades, não qualidade.</strong> Um ecrã com os estados de carregamento, erro, vazio e dados tratados vale mais do que três ecrãs meio feitos.</li>
-    <li>A pergunta para cada funcionalidade: "se isto não existir, a app é inútil?" Se não, vai para depois.</li>
-  </ol>
-  <div class="callout"><strong>Exemplo</strong> O Instagram começou só com fotografias, filtros e um feed. Cresceu depois.</div>
+<section class="slide" data-part="JSON">
+  <h2>Do JSON ao modelo</h2>
+  <p>O <code>GET /v1/trails</code> da API devolve uma lista de trilhos. Cada um chega assim (encurtado):</p>
+  <pre><code class="language-json">{
+  "id": "montanha-do-pico",
+  "name": "Montanha do Pico",
+  "islandId": "pico",
+  "distanceKm": 7.6,
+  "duration": "7 h"
+}</code></pre>
+  <p>Três peças para o pôr na app: o <strong>modelo</strong> <code>Trail</code>, o <strong>fromJson</strong> que lê um mapa, e o repository que lê a <strong>lista</strong>. É o mesmo caminho das ilhas, agora com trilhos.</p>
+  <aside class="notes">Antes do jogo, pergunta: "que campos do JSON a app precisa para mostrar uma lista de trilhos?". O distanceKm é a armadilha: 7.6 parece sempre double, mas a API pode mandar 7.</aside>
 </section>
 
 <section class="slide">
-  <h2>Jogo: corta o MVP</h2>
-  <div class="pz-seq" data-id="a15-mvp">
-  <div class="pz-sort" data-id="a15-mvp" data-label="Corta o MVP"><script type="application/json">{"q": "Para cada funcionalidade: é mínimo, extra ou fica fora do projeto?", "cols": ["Mínimo", "Extra", "Fora"], "why": "Cortar funcionalidades, não qualidade: funcionar sem rede, tratar erros, as camadas e o CI são mínimos, não luxos.", "cards": [{"t": "Lista das ilhas com pesquisa", "a": 0, "why": "Sem isto não há app."}, {"t": "Previsão a 5 dias de uma ilha", "a": 0, "why": "É a razão de a app existir."}, {"t": "Funcionar sem rede, com \"atualizado há 2 h\"", "a": 0, "why": "Qualidade, não funcionalidade: nos Açores a rede falha."}, {"t": "\"Tentar outra vez\" quando a rede falha, em todos os ecrãs", "a": 0, "why": "Um ecrã sem estado de erro está a meio."}, {"t": "Favoritos que ficam depois de fechar a app", "a": 0, "why": "Está nos mínimos do enunciado."}, {"t": "Nenhum ecrã faz pedidos HTTP (camadas)", "a": 0, "why": "Camadas desde o primeiro dia: depois é tarde."}, {"t": "CI no GitHub com analyze e testes", "a": 0, "why": "Mínimo: é o que apanha os erros antes do main."}, {"t": "Mapa das ilhas com o tempo de hoje", "a": 1, "why": "Extra valorizado, depois dos mínimos."}, {"t": "Notificação com a previsão de amanhã", "a": 1, "why": "Extra valorizado, depois dos mínimos."}, {"t": "Tema escuro e app em inglês", "a": 1, "why": "Extra valorizado, depois dos mínimos."}, {"t": "Entrar com a conta Google", "a": 2, "why": "Não está no enunciado: a app usa o token do grupo."}, {"t": "Chat entre utilizadores", "a": 2, "why": "Bonito, mas é outra app."}]}</script></div>
+  <h2>Jogo: do JSON ao modelo</h2>
+  <div class="pz-seq" data-id="a15-json">
+  <div class="parsons" data-id="a15-j1" data-label="O modelo" data-title="lib/models/trail.dart" data-seed="4" data-helper data-free="1,2,3,4;6,7,8,9">
+<script type="text/plain">
+class Trail {
+  final String id;
+  final String name;
+  final String islandId;
+  final double distanceKm;
+  const Trail({
+    required this.id,
+    required this.name,
+    required this.islandId,
+    required this.distanceKm,
+  });
+}
+</script><script type="application/json">{"q": "O JSON também traz \"duration\". Porque é que o Trail não tem esse campo?", "options": ["O modelo só guarda o que a app usa; o resto do JSON ignora-se", "Porque o fromJson dava erro com campos a mais", "Porque o Dart não aceita texto como \"7 h\"", "Porque a API vai deixar de mandar esse campo"], "why": "O modelo é a forma dos dados de que a app precisa. Campos que ninguém usa só dão trabalho a manter."}</script>
   </div>
-  <aside class="notes">Cinco minutos. Quem acabar pode abrir a página Projeto e confirmar. Os cartões que mais erram costumam ser "funcionar sem rede", "Tentar outra vez" e o CI: parecem extras e são mínimos. É a frase do slide anterior: corta-se funcionalidade, não qualidade.</aside>
+  <div class="parsons" data-id="a15-j2" data-label="O fromJson" data-title="lib/models/trail.dart" data-seed="6" data-free="2,3,4,5">
+<script type="text/plain">
+factory Trail.fromJson(Map<String, dynamic> json) {
+  return Trail(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    islandId: json['islandId'] as String,
+    distanceKm: (json['distanceKm'] as num).toDouble(),
+  );
+}
+</script><script type="application/json">{"q": "Porquê (json['distanceKm'] as num).toDouble() e não as double?", "options": ["Porque a API pode mandar 7 em vez de 7.0, e 7 é um int", "Porque o Dart não tem double", "Para arredondar os quilómetros", "Porque o JSON manda os números como texto"], "why": "No JSON, 7 e 7.0 são o mesmo número, mas em Dart 7 é um int e \"as double\" rebenta. num aceita os dois."}</script>
+  </div>
+  <div class="parsons" data-id="a15-j3" data-label="A lista" data-title="lib/data/http_trail_repository.dart" data-seed="9">
+<script type="text/plain">
+@override
+Future<List<Trail>> fetchTrails(String islandId) async {
+  final path = '/v1/trails?islandId=$islandId';
+  final list = await _api.get(path) as List<dynamic>;
+  return list
+      .map((item) => Trail.fromJson(item as Map<String, dynamic>))
+      .toList();
+}
+</script><script type="application/json">{"q": "O que faz o .map(...).toList() no fim?", "options": ["Passa cada mapa do JSON a Trail e junta tudo numa lista", "Ordena os trilhos pela distância", "Filtra os trilhos da ilha", "Guarda os trilhos no telemóvel"], "why": "A API devolve uma lista de mapas. O map transforma cada um com o fromJson; o toList junta o resultado numa List<Trail>."}</script>
+  </div>
+  </div>
+  <aside class="notes">Três exercícios de ordenar. No modelo, as linhas certas prendem-se; os campos podem vir por qualquer ordem, tal como os required. No fromJson, os quatro campos também. A lista é igual à das ilhas no HttpForecastRepository.</aside>
 </section>
 
 <section class="slide">
-  <h2>MVP: a turma</h2>
-  <div class="pz-poll" data-track="a15-mvp"></div>
-  <aside class="notes">Começa pelos cartões marcados como "dividida" e pede a duas pessoas que escolheram colunas diferentes para se explicarem. Só depois "Mostrar respostas".</aside>
+  <h2>Estado da turma</h2>
+  <div class="pz-room-board" data-track="a15-json"></div>
+  <aside class="notes">Quem acabar pode abrir a API em /docs e ver o JSON de um trilho a sério.</aside>
 </section>
 
 <section class="slide" data-part="Pronto">
@@ -149,13 +178,13 @@ figure.diagram figcaption { font-size: 1rem; }
 
 <section class="slide" data-part="Contrato">
   <h2>Contrato primeiro</h2>
-  <p>Num grupo, o maior atraso é esperar pelo colega. Por isso, antes de escrever código, o grupo combina o <strong>contrato</strong>: a interface do repository. Depois cada um trabalha do seu lado.</p>
+  <p>A API já está feita. O que falta é o código de cada um, e num grupo o maior atraso é esperar pelo colega. Por isso, antes de programar, o grupo combina o <strong>contrato</strong>: o modelo e a interface do repository. Depois cada um trabalha do seu lado.</p>
   <div class="lay">
     <div class="u"><b>A Ana</b>faz o ecrã dos trilhos contra o <code>FakeTrailRepository</code></div>
     <div class="s"><b>O contrato</b><code>TrailRepository</code>: o que se pode pedir, sem dizer como</div>
-    <div class="d"><b>O Rui</b>faz o <code>HttpTrailRepository</code>, que fala com a API</div>
+    <div class="d"><b>O Rui</b>faz o <code>HttpTrailRepository</code>, que chama a API</div>
   </div>
-  <p>É o que fizemos nas aulas de camadas, agora a dois: o fake de ontem passa a ser a forma de não esperar pelo colega.</p>
+  <p>É o que fizemos nas aulas de camadas, agora a dois: o fake passa a ser a forma de não esperar pelo colega.</p>
 </section>
 
 <section class="slide">
@@ -201,19 +230,21 @@ const _trails = [
     distanceKm: 7.6,
   ),
 ];
-</script><script type="application/json">{"q": "Para que serve o FakeTrailRepository no projeto?", "options": ["Fazer e testar o ecrã sem esperar pela API nem pelo colega", "Substituir a API na versão final da app", "Guardar os trilhos no telemóvel para funcionar sem rede", "Esconder o clientSecret do grupo"], "why": "O fake cumpre o contrato com dados fixos. Guardar dados para usar sem rede é outra coisa: a cache, mais à frente."}</script>
+</script><script type="application/json">{"q": "Para que serve o FakeTrailRepository no projeto?", "options": ["Fazer e testar o ecrã sem esperar pelo código do colega", "Substituir a API na versão final da app", "Guardar os trilhos no telemóvel para funcionar sem rede", "Esconder o clientSecret do grupo"], "why": "A API já existe, mas o HttpTrailRepository do Rui ainda não. O fake cumpre o contrato com dados fixos e a Ana não fica à espera. Guardar dados para usar sem rede é outra coisa: a cache, mais à frente."}</script>
   </div>
-  <div class="parsons" data-id="a15-c3" data-label="Quem faz o quê" data-title="Um grupo de dois: a Ana e o Rui" data-seed="3" data-lang="text" data-free="1,2">
+  <div class="parsons" data-id="a15-c3" data-label="Quem faz o quê" data-title="Um grupo de dois: a Ana e o Rui" data-seed="3" data-lang="text" data-free="2,3">
 <script type="text/plain">
-O grupo escreve a interface TrailRepository e faz merge dela num PR pequeno.
-A Ana escreve o FakeTrailRepository e o ecrã dos trilhos contra o fake.
-O Rui escreve o HttpTrailRepository, que fala com GET /v1/trails.
-No main.dart, troca-se o FakeTrailRepository pelo HttpTrailRepository.
+Os dois abrem a API em /docs e veem o JSON de GET /v1/trails.
+Juntos, escrevem o modelo Trail e a interface TrailRepository.
+A Ana faz o ecrã dos trilhos contra o FakeTrailRepository.
+O Rui faz o HttpTrailRepository, que chama GET /v1/trails.
+A Ana revê o pull request do Rui e aprova.
+No main.dart, troca-se o fake pelo HttpTrailRepository.
 O ecrã dos trilhos corre igual, sem mudar uma linha.
 </script><script type="application/json">{"q": "Quando trocam o fake pela API, que ficheiro muda?", "options": ["Só o main.dart", "O ecrã dos trilhos", "O TrailRepository", "Todos os que usam trilhos"], "why": "Quem cria escolhe: o main cria o repository e dá-o ao notifier. O resto só conhece o contrato."}</script>
   </div>
   </div>
-  <aside class="notes">Três exercícios de ordenar: a interface (as linhas certas prendem-se), o fake e a ordem do trabalho num grupo de dois. Os dois métodos da interface podem trocar entre si, tal como os dois métodos do fake e os passos da Ana e do Rui, que acontecem ao mesmo tempo. O painel do slide seguinte mostra quem já acabou.</aside>
+  <aside class="notes">Três exercícios de ordenar: a interface (as linhas certas prendem-se), o fake e a ordem do trabalho num grupo de dois. Os dois métodos da interface podem trocar entre si, tal como os dois métodos do fake e os passos da Ana e do Rui, que acontecem ao mesmo tempo. No terceiro, repara que a revisão do pull request é a definição de pronto de há bocado. O painel do slide seguinte mostra quem já acabou.</aside>
 </section>
 
 <section class="slide">
@@ -222,38 +253,14 @@ O ecrã dos trilhos corre igual, sem mudar uma linha.
   <aside class="notes">Uma linha por aluno, uma coluna por exercício. Verde com ✓: resolvido; o ponto diz se acertou na pergunta. "Sem verificar há X min": está parado, vai lá.</aside>
 </section>
 
-<section class="slide" data-part="Sprints">
-  <h2>Sprints e reviews</h2>
-  <table>
-    <tr><th>Sprint</th><th>Datas</th><th>Review em aula</th></tr>
-    <tr><td>Sprint 1</td><td>21/10 a 02/11</td><td>Segunda, 02/11</td></tr>
-    <tr><td>Sprint 2</td><td>02/11 a 18/11</td><td>Quarta, 18/11</td></tr>
-    <tr><td>Sprint 3</td><td>18/11 a 02/12</td><td>Quarta, 02/12</td></tr>
-    <tr><td>Freeze e defesas</td><td>Freeze a 09/12</td><td>14 e 16/12</td></tr>
-  </table>
-  <p>Numa review, cada grupo tem 5 minutos para mostrar a app no telemóvel e dizer o que ficou por fazer, e porquê. Sem slides. Conta o que estiver no <code>main</code> à hora da review.</p>
-  <aside class="notes">A sprint 2 tem o teste 1 pelo meio: espera-se menos trabalho nessa semana, não mais.</aside>
-</section>
-
-<section class="slide" data-part="Grupos">
-  <h2>Grupos</h2>
-  <ol class="steps">
-    <li>Grupos de 2 a 3. Sem grupos de 1 nem de 4.</li>
-    <li>Antes de sair, cada grupo diz ao professor os nomes dos membros.</li>
-    <li>Quem não veio hoje é colocado num grupo pelo professor.</li>
-  </ol>
-  <p><strong>Na próxima aula:</strong> o repositório do grupo, as credenciais da API, o backlog da sprint 1 em issues e a primeira pull request.</p>
-  <aside class="notes">Anota os grupos à saída. Os repositórios (GitHub Classroom ou repositório criado por um membro a partir de um template) e as credenciais da API ficam para a próxima aula.</aside>
-</section>
-
 <section class="slide" data-part="Fim">
   <h2>Onde ficámos</h2>
   <ol class="steps">
-    <li>O mínimo corta funcionalidades, nunca qualidade: sem rede, erros tratados, camadas e CI são mínimos.</li>
+    <li>Do JSON ao modelo: o modelo só guarda o que a app usa, o fromJson lê um mapa e o repository lê a lista.</li>
     <li>Pronto é uma lista: telemóvel, analyze sem avisos, estados tratados e revisão de um colega.</li>
     <li>O contrato primeiro deixa dois colegas trabalhar ao mesmo tempo: um contra o fake, outro contra a API.</li>
   </ol>
-  <p><strong>Até à próxima aula:</strong> o grupo formado e o enunciado lido, com as dúvidas escritas.</p>
+  <p><strong>Na segunda:</strong> o arranque do projeto de grupo. Pensa já com quem queres trabalhar: grupos de 2 a 3.</p>
   <nav class="pager" id="pager"></nav>
   <aside class="notes">Antes de fechar, olha para o painel da memória: a pergunta com menos acertos entra outra vez nos 5 minutos da próxima aula.</aside>
 </section>

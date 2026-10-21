@@ -24,158 +24,46 @@
 <aside class="toc" id="toc"></aside>
 <main class="content">
 
-<p class="kicker">Group project · brief</p>
+<p class="kicker">Group project · brief coming soon</p>
 <h1>Tempo Açores</h1>
-<p class="lead">A weather and trails app for the Azores, built in groups on the course API: 5-day forecast for each island with IPMA data, hiking trails, class reports with photos, favourites and working without a network.</p>
+<p class="lead">A weather app for the Azores, built on the course API, which in turn wraps IPMA's open data: 5-day forecast by location, weather warnings, earthquakes, synced favourites, map and notifications.</p>
 
-<div class="table-wrap"><table>
-<thead><tr><th colspan="2">In short</th></tr></thead>
-<tbody>
-<tr><td>Groups</td><td>2 to 3 people, formed in lesson 15 (Wed 21/10)</td></tr>
-<tr><td>Repository</td><td>One per group, created by GitHub Classroom in the lesson on Mon 26/10</td></tr>
-<tr><td>Sprints</td><td>Three, with a review in class on 02/11, 18/11 and 02/12</td></tr>
-<tr><td>Testers</td><td>Distribution from lesson 27 (Fri 20/11)</td></tr>
-<tr><td>Freeze</td><td>Wed 09/12 at 18:30</td></tr>
-<tr><td>Defences</td><td>Mon 14/12 and Wed 16/12</td></tr>
-<tr><td>Weight in the final mark</td><td>See <a href="avaliacao.html">Assessment</a></td></tr>
-</tbody></table></div>
+<div class="callout warn"><strong>Open proposal</strong> The project app connects to a public API. This is the main proposal, on the IPMA API; another open API can be considered until the kickoff. The full brief, with minimum requirements, extras, sprint calendar and criteria, is published before lesson 15 (21/10).</div>
 
 <h2>Why this app</h2>
-<p>Because it has everything a real mobile app has: lists and details, data that changes, a network that fails, data worth keeping for when there is no network, authentication, photos, notifications and location. And because the data is from here: the islands, the trails and the forecast are those of the Azores.</p>
+<p>Because it has everything a real mobile app has: lists and details, data that changes, a network that fails, data worth keeping for when there is no network, location, notifications, and an API with authentication. And because the data is from here: the islands, the locations and the warnings are those of the Azores.</p>
 
-<h2>The course API</h2>
-<p>The app does not talk to IPMA directly. It talks to the <a href="api.html">course API</a>, which gives the nine islands, the 5-day forecast for each one (from IPMA), the trails and the class reports feed. It is the same API as mini-project 2, with the same authentication: you exchange a <code>clientId</code> and a <code>clientSecret</code> for a token, and send the token with every request.</p>
+<h2>What the app does (minimum)</h2>
 <ul>
-  <li>Each group gets its own <code>clientId</code> and <code>clientSecret</code>, in a private issue in the group repository. The reports the app publishes appear to the class with the group's name.</li>
-  <li>The <code>clientSecret</code> never goes into the repository: it is passed at build time with <code>--dart-define</code>.</li>
-  <li>The interactive documentation is at <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">api-pdm.sublimecipher.com/docs</a>: try each request in the browser before you write it in Dart.</li>
-  <li>If the API gets a version 2 during the semester (lesson 28), the migration is part of the sprint 3 work.</li>
+  <li>List of islands and locations, with search.</li>
+  <li>5-day forecast for a location, with icons and minimum and maximum temperatures.</li>
+  <li>Active weather warnings for the Azores.</li>
+  <li>Favourites stored on the backend, tied to the group, synced across devices.</li>
+  <li>Works without a network using the last data fetched, and shows when the data is old.</li>
+  <li>Loading, error and empty states handled on every screen.</li>
 </ul>
-
-<h2>Minimum requirements</h2>
-<p>An app that meets all these points, running on the phone, gets the full functionality criterion. The right-hand column says in which lesson you learn each thing.</p>
-<div class="table-wrap"><table>
-<thead><tr><th>#</th><th>The app must</th><th>Lesson</th></tr></thead>
-<tbody>
-<tr><td>1</td><td>Request the token with the group's credentials, keep it in secure storage and request a new one when the API answers 401.</td><td>12, 17</td></tr>
-<tr><td>2</td><td>Show the nine islands, with a photo and search by name.</td><td>12, 13</td></tr>
-<tr><td>3</td><td>Show the 5-day forecast for an island: icon, description, minimum and maximum, chance of rain and wind.</td><td>12</td></tr>
-<tr><td>4</td><td>Show the trails, filtered by island, with a detail screen.</td><td>10</td></tr>
-<tr><td>5</td><td>Show the class reports feed and let you create a report with text and a photo from the gallery, and edit and delete the group's own.</td><td>12, 24</td></tr>
-<tr><td>6</td><td>Keep favourite islands and trails on the phone, still there after closing the app, and show them on the home screen.</td><td>16</td></tr>
-<tr><td>7</td><td>Work without a network using the last data fetched, and say how old it is ("updated 2 h ago").</td><td>14, 16</td></tr>
-<tr><td>8</td><td>Handle the loading, error (with "Try again"), empty and data states on every screen that depends on the network.</td><td>14</td></tr>
-<tr><td>9</td><td>Be organised in layers: screens talk to notifiers, notifiers to repositories, and no screen makes HTTP requests.</td><td>13</td></tr>
-<tr><td>10</td><td>Pass <code>flutter analyze</code> with no warnings and have CI on GitHub Actions with <code>analyze</code> and <code>test</code>, with at least five tests.</td><td>11, 25</td></tr>
-<tr><td>11</td><td>Have a signed release build, distributed to at least three testers from outside the group.</td><td>27, 31</td></tr>
-</tbody></table></div>
 
 <h2>Extras that earn credit</h2>
-<p>Extras count in the functionality criterion, but only once the minimum requirements are complete. One finished extra is worth more than three half-done.</p>
-<div class="table-wrap"><table>
-<thead><tr><th>Extra</th><th>Lesson</th></tr></thead>
-<tbody>
-<tr><td>Map with the nine islands and today's weather on each marker; tapping the marker opens the island.</td><td>21</td></tr>
-<tr><td>Nearest island from the phone's location, with permissions handled properly.</td><td>21</td></tr>
-<tr><td>Scheduled local notification with tomorrow's forecast for the favourite island.</td><td>22</td></tr>
-<tr><td><code>tempoacores://</code> deep link that opens the app directly on an island or a trail.</td><td>22</td></tr>
-<tr><td>Forecast cache refreshed in the background.</td><td>23</td></tr>
-<tr><td>Report photo taken with the camera, resized before sending.</td><td>24</td></tr>
-<tr><td>Crash reports with Sentry or Crashlytics.</td><td>26</td></tr>
-<tr><td>Light and dark theme; app in Portuguese and English.</td><td>27</td></tr>
-<tr><td>Custom icon and launch screen.</td><td>27</td></tr>
-<tr><td>Accessibility checked with TalkBack or VoiceOver and with text at 200%.</td><td>11</td></tr>
-<tr><td>iOS build distributed through TestFlight.</td><td>27, 31</td></tr>
-</tbody></table></div>
-<p>Another extra that is not on the list counts if it is agreed with the teacher in a review.</p>
-
-<h2>Groups and repository</h2>
-<ol class="steps">
-  <li><strong>Groups of 2 to 3.</strong> Formed in lesson 15 (21/10). Anyone not in the lesson is placed in a group by the teacher. Groups do not change after the sprint 1 review.</li>
-  <li><strong>Group repository.</strong> One member accepts the GitHub Classroom assignment and creates the team; the others join the same team. The repository starts from the template, with an app that already runs.</li>
-  <li><strong>API credentials.</strong> The group's <code>clientId</code> and <code>clientSecret</code> arrive in a private issue in the repository. You make the first request to the API in the lesson on Mon 26/10.</li>
-  <li><strong>First pull request.</strong> README with each member's name and student number, the initial split of the work and a screenshot of the template app running.</li>
-</ol>
+<ul>
+  <li>Map with the locations and the current weather.</li>
+  <li>Local notification when a warning comes in for a favourite location.</li>
+  <li>Deep link that opens the app directly on a location.</li>
+  <li>Recent earthquakes in the region.</li>
+  <li>Light and dark theme, Portuguese and English.</li>
+  <li>Widget tests and CI running in the repository.</li>
+</ul>
 
 <h2>How you work</h2>
-<ul>
-  <li><strong>Backlog in issues.</strong> Each feature is an issue with a short title (verb and object) and acceptance criteria. The sprint's issues sit on a GitHub Projects board.</li>
-  <li><strong>Everything by pull request.</strong> One issue, one branch, one small PR, reviewed by another member of the group before it goes into <code>main</code>. Nobody pushes straight to <code>main</code>.</li>
-  <li><strong>Definition of done.</strong> An issue only closes when it runs on the phone, has no <code>flutter analyze</code> warnings, handles the error states and the PR has been reviewed and approved.</li>
-  <li><strong>Everyone's work.</strong> Each member must have their own PRs and their own reviews in every sprint. The GitHub history is the evidence.</li>
-</ul>
+<ol class="steps">
+  <li><strong>Groups of 2 to 3.</strong> Formed in lesson 15. Each group gets a client-id for the course API and a repository through GitHub Classroom.</li>
+  <li><strong>Three sprints</strong> of about two weeks, with a review in class at the end of each one (02/11, 18/11, 02/12).</li>
+  <li><strong>Everything by pull request.</strong> Each feature is a PR reviewed by a colleague from the group before it goes into <code>main</code>.</li>
+  <li><strong>Distribution to testers</strong> from lesson 27 (20/11): the app installed on someone else's phone through Firebase App Distribution or TestFlight.</li>
+  <li><strong>Freeze</strong> on 09/12 and <strong>defences</strong> on 14 and 16/12, with a demo on the phone and questions to each member.</li>
+</ol>
 
-<h2>Sprints</h2>
-<p>Three sprints of about two weeks. Each one ends with a review in class: each group has 5 minutes to show the app on the phone and say what is still to do. What counts is what is on <code>main</code> at the time of the review.</p>
-
-<h3>Sprint 1 · 21/10 to 02/11</h3>
-<p><strong>Goal:</strong> an app installed on the phone with real data from the API. Review on Mon 02/11 at 16:00.</p>
-<ul class="checklist">
-  <li>Group token requested from the API and kept in secure storage, renewed on 401 (requirement 1).</li>
-  <li>List of islands with search and the 5-day forecast for each island (requirements 2 and 3).</li>
-  <li>Layers from day one: screens, notifiers and repositories (requirement 9).</li>
-  <li>Loading, error, empty and data states on those screens (requirement 8).</li>
-  <li>Sprint 2 backlog written in issues.</li>
-</ul>
-
-<h3>Sprint 2 · 02/11 to 18/11</h3>
-<p><strong>Goal:</strong> every screen of the app, working without a network. Review on Wed 18/11 at 16:00.</p>
-<ul class="checklist">
-  <li>Trails with a filter by island and a detail screen (requirement 4).</li>
-  <li>Reports feed, with create, edit and delete, and a photo from the gallery (requirement 5).</li>
-  <li>Favourites kept on the phone and shown on the home screen (requirement 6).</li>
-  <li>Local cache and "updated ago" without a network (requirement 7).</li>
-  <li>CI on GitHub Actions running on every PR, with the first tests (requirement 10).</li>
-  <li>A first extra started, for example the map or the notifications.</li>
-</ul>
-
-<h3>Sprint 3 · 18/11 to 02/12</h3>
-<p><strong>Goal:</strong> an app ready to deliver, in the hands of testers. Review on Wed 02/12 at 16:30.</p>
-<ul class="checklist">
-  <li>First distribution to testers in lesson 27 (20/11) and feedback received as issues (requirement 11).</li>
-  <li>Signed release build with the right version in <code>pubspec.yaml</code> (lesson 31, 30/11).</li>
-  <li>At least five tests and green CI on <code>main</code> (requirement 10).</li>
-  <li>Extras chosen by the group, finished.</li>
-  <li>Complete README and a list of what is left for the freeze.</li>
-</ul>
-
-<p>Between 02/12 and 09/12 no new features go in: only fixes, tests and the README.</p>
-
-<h2>Distribution to testers</h2>
-<p>From lesson 27 (20/11), the app must be installed on the phones of people from outside the group. On Android, through Firebase App Distribution; on iOS, through TestFlight, if the group has a Mac and a developer account. At least three testers from outside the group, for example colleagues from other groups. The feedback they give goes into the backlog as issues, and each new build gets a new version number.</p>
-
-<h2>Freeze and defences</h2>
-<ul>
-  <li><strong>Freeze: Wed 09/12 at 18:30.</strong> The group creates the <code>v1.0.0</code> tag on <code>main</code>. That is the version that is assessed. After the freeze only the README can change.</li>
-  <li><strong>Order of the defences</strong> drawn in lesson 35 (09/12), where each group also does a 5-minute rehearsal.</li>
-  <li><strong>Defences: Mon 14/12 (16:00 to 18:00) and Wed 16/12 (08:30 to 10:30).</strong> A 10-minute presentation by the group, with 3 slides at most and a live demo on the phone, then questions aimed at each member.</li>
-  <li>In the questions, each person answers alone for the code they wrote and for any part of the app. This is where the oral defence mark comes from, and it is individual.</li>
-  <li>Bring a plan B: a short video of the app working, in case the network or the phone fails.</li>
-</ul>
-
-<h2>What you deliver</h2>
-<p>Everything in the group repository, at the <code>v1.0.0</code> tag:</p>
-<ul class="checklist">
-  <li>The app code, with green CI on that commit.</li>
-  <li>A README with: the members' names and numbers, what the app does, screenshots, how to run the app (including the <code>--dart-define</code> for the credentials), the extras done and who did what.</li>
-  <li>The install link for testers (Firebase App Distribution or TestFlight) and the list of who tested.</li>
-  <li>The defence slides as a PDF, in the <code>docs/</code> folder.</li>
-  <li>The history of issues, branches and pull requests from the three sprints.</li>
-</ul>
-<div class="callout warn"><strong>Never in the repository</strong> The <code>clientSecret</code>, the signing keystore and <code>key.properties</code>. A secret that went into a commit counts as published, even if it is deleted in the next commit.</div>
-
-<h2>How it is assessed</h2>
-<p>The project mark comes from this rubric. The weight of the project and the oral defence in the final mark is on <a href="avaliacao.html">Assessment</a>.</p>
-<div class="table-wrap"><table>
-<thead><tr><th>Criterion</th><th>What is assessed</th><th>Weight in the project</th></tr></thead>
-<tbody>
-<tr><td>Functionality</td><td>Minimum requirements complete and working on the phone; extras earn credit.</td><td>35%</td></tr>
-<tr><td>Code quality and architecture</td><td>Clear layers, models, error handling, lints with no warnings, tests that exist and pass in CI.</td><td>25%</td></tr>
-<tr><td>User experience</td><td>Loading, error and empty states; working offline; basic accessibility; visual consistency.</td><td>15%</td></tr>
-<tr><td>Process</td><td>Deliveries per sprint, pull requests reviewed by colleagues, commits spread across the members, use of the course API over time.</td><td>15%</td></tr>
-<tr><td>Distribution and presentation</td><td>Signed build distributed to testers (Firebase App Distribution or TestFlight), demo and answers to the questions.</td><td>10%</td></tr>
-</tbody></table></div>
-<p>The project mark belongs to the group, with an individual adjustment. The full rules, the minimum mark and the use of AI are on the <a href="avaliacao.html">Assessment</a> page.</p>
+<h2>The course API</h2>
+<p>You will not call IPMA directly. The course API normalises the data, requires authentication with your group's token, stores the favourites, and from time to time is switched into <em>chaos mode</em> by the teacher (latency, 429 and 500 errors) so you can see whether your app copes. The documentation is at <a href="api.html">API</a> from lesson 12.</p>
 
 <nav class="pager" id="pager"></nav>
 </main>
