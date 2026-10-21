@@ -20,7 +20,7 @@
     { n: 12, d: "2026-10-14", h: "16:00-18:00", t: "Futures, HTTP e JSON", te: "Futures, HTTP and JSON", repo: null, kind: "" },
     { n: 13, d: "2026-10-19", h: "16:00-18:00", t: "Arquitetura por camadas e gestão de estado", te: "Layered architecture and state management", repo: "pdm-aula-13", kind: "" },
     { n: 14, d: "2026-10-20", h: "08:30-10:30", t: "Exercícios: as camadas na prática", te: "Exercises: the layers in practice", repo: "pdm-aula-13", kind: "" },
-    { n: 15, d: "2026-10-21", h: "16:00-18:00", t: "Kickoff do projeto Tempo Açores", te: "Tempo Açores project kickoff", repo: null, kind: "sprint" },
+    { n: 15, d: "2026-10-21", h: "16:00-18:00", t: "Antes do projeto: JSON, pronto e contrato", te: "Before the project: JSON, done and contract", repo: null, kind: "" },
     { n: 16, d: "2026-10-26", h: "16:00-18:00", t: "Persistência local e cache offline", te: "Local persistence and offline cache", repo: "pdm-aula-16", kind: "" },
     { n: 17, d: "2026-10-27", h: "08:30-10:30", t: "Autenticação com token e favoritos sincronizados", te: "Token authentication and synced favourites", repo: "pdm-aula-17", kind: "" },
     { n: 18, d: "2026-10-28", h: "16:00-18:00", t: "Segurança, performance e sprint 1", te: "Security, performance and sprint 1", repo: null, kind: "sprint" },
