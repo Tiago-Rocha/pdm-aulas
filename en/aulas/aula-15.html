@@ -7,6 +7,25 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* Aula para ler do fundo da sala: letra e diagramas maiores. */
+html.deck { --fs: 24px; }
+html.deck.proj { --fs: 28px; }
+.deck { max-width: 1400px; }
+.deck .slide h2 { font-size: 2.1rem; }
+.deck .slide pre { font-size: .95rem; line-height: 1.45; }
+.deck .slide table { font-size: 1rem; }
+figure.diagram svg { max-height: 74vh; }
+figure.diagram figcaption { font-size: 1rem; }
+.lay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+.lay div { border-radius: 12px; padding: .8rem 1rem; border-left: 10px solid; font-size: 1.05rem; }
+.lay b { display: block; font-size: 1.3rem; }
+.lay .d { background: var(--danger-soft); border-color: var(--danger); }
+.lay .s { background: var(--warn-soft); border-color: var(--warn); }
+.lay .u { background: var(--accent-soft); border-color: var(--accent); }
+.how { font-size: 1.05rem; }
+</style>
+<link rel="stylesheet" href="../../assets/parsons.css">
 </head>
 <body data-aula="15">
 <header class="site"><div class="wrap">
@@ -26,164 +45,217 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 15 · Week 7 · Wednesday, 21 October 2026 · 16:00 to 18:00</p>
   <h1>Tempo Açores project kickoff</h1>
-  <p class="lead">Theory (30 minutes): project method: MVP, backlog, definition of done and a pull request workflow. Practice: forming the groups, creating the repositories in GitHub Classroom, handing out the API client-id and planning sprint 1.</p>
+  <p class="lead">Today the group project starts. Before writing code, we decide three things: what the minimum is, when something is done, and how two teammates work at the same time without getting in each other's way. With games.</p>
   <div class="meta"><span>Project: Tempo Açores</span></div>
-  <aside class="notes">Bring the client-ids and secrets printed, one envelope per group. Confirm that the GitHub Classroom assignment is open and that the template compiles. Start by asking who already has a group: those who do not will form one in the first five minutes of the practical part, not now.</aside>
+  <aside class="notes">Reference times: joining and memory until 16:10; memory results until 16:15; the project until 16:30; MVP and "cut the MVP" until 16:55; definition of done and "is it done?" until 17:25; contract first until 17:45; sprints and groups until 18:00. Students join once (slide 3) and stay in for the four games: the room is the lesson and the day. The results boards do not show the right answers until you press "Show answers". No repositories or backlog today: that is for the next lesson.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
-    <li>Define the MVP of Tempo Açores and tell cutting features apart from cutting quality.</li>
-    <li>Write issues with a title, acceptance criteria and a rough estimate.</li>
-    <li>Apply the definition of done to every pull request of the group.</li>
-    <li>Follow the issue → branch → PR → review → merge flow with nobody pushing to <code>main</code>.</li>
-    <li>Leave the lesson with a group, a repository, an API client-id and the sprint 1 backlog.</li>
+    <li>Remember the layers and Futures without opening your notes.</li>
+    <li>Separate the minimum of Tempo Açores from the extras, and explain why quality is not cut.</li>
+    <li>Say whether a pull request is done, with the group's definition of done.</li>
+    <li>Agree on a contract (an interface) so two teammates can work at the same time.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Theory">
-  <h2>MVP: the minimum that gets installed and used</h2>
-  <ul>
-    <li>The <strong>minimum viable product</strong> is the smallest version that someone installs and gets value from. It is not a prototype, nor a demo.</li>
-    <li>In Tempo Açores: list of locations, forecast for a location, favourites, and carrying on working with no network using old data.</li>
-    <li><strong>Cut features, not quality.</strong> One screen with the four states handled is worth more than three half-done screens.</li>
-    <li>Ask for each feature: "if this does not exist, is the app useless?" If the answer is no, it goes on the "later" list.</li>
-    <li>Real examples: Instagram v1 only had photos with a filter and a feed; WhatsApp v1 was a status app. They grew later.</li>
-  </ul>
-  <p><strong>For the tests:</strong> the MVP cuts scope, never quality; every feature that stays, stays complete.</p>
-</section>
-
-<section class="slide">
-  <h2>Backlog in issues</h2>
-  <ul>
-    <li><strong>Title:</strong> verb + object. "Show the 5-day forecast for the location", not "Forecast".</li>
-    <li><strong>Body:</strong> context in one sentence and acceptance criteria as a checklist, in the format "given X, when Y, then Z".</li>
-    <li><strong>Rough estimate:</strong> S (half a day), M (one day), L (two or more). An L issue is split into two M issues before it enters the sprint.</li>
-    <li><strong>Labels and assignee:</strong> <code>sprint-1</code>, <code>ui</code>, <code>data</code>, <code>bug</code>; one person per issue; linked to the project board.</li>
-    <li>Example of a criterion: "With no network, the screen shows the last saved forecast and the time it was fetched."</li>
-  </ul>
-  <p><strong>For the tests:</strong> a good issue has a title with a verb, verifiable acceptance criteria and an estimate.</p>
-  <aside class="notes">Write a bad issue on the board ("Do the detail screen") and ask the class to fix it out loud. Two minutes. Then show a real issue from an open source Flutter project with acceptance criteria.</aside>
+<section class="slide" data-part="Memory">
+  <h2>5 minutes of memory</h2>
+  <ol class="steps how"><li>Open <code>tiago-rocha.github.io/pdm-aulas/en/aulas/aula-15.html</code> on your computer and come to this slide.</li><li>Type your first name and join. You stay in for the games of the whole lesson.</li><li>Five questions, no notes. <strong>Only the first answer counts.</strong></li></ol>
+  <div class="pz-seq" data-id="a15-mem" data-word="Question">
+  <div class="pz-mcq" data-id="a15-m13-json" data-label="Layers"><script type="application/json">{"q": "The API now sends \"nome\" instead of \"name\" for the islands. Which file do you open?", "options": ["models/island.dart, in fromJson", "screens/islands_screen.dart", "state/forecast_notifier.dart", "data/api_client.dart"], "why": "JSON only becomes an Island in the model's fromJson. The screen and the notifier receive an Island and never know there was JSON."}</script></div>
+  <div class="pz-mcq" data-id="a15-m13-notify" data-label="State"><script type="application/json">{"q": "The last notifyListeners() in load() is missing. What does the user see?", "code": "Future<void> load() async {\n  isLoading = true;\n  notifyListeners();\n  islands = await _repository.fetchIslands();\n  isLoading = false;\n}", "options": ["The spinner spinning forever", "The list, as usual", "A red error on the screen", "The app closing"], "why": "isLoading becomes false, but nobody tells the screen. Without notifyListeners the screen does not rebuild and stays on the spinner."}</script></div>
+  <div class="pz-mcq" data-id="a15-m13-inject" data-label="Layers"><script type="application/json">{"q": "Why does ForecastNotifier receive the repository in its constructor instead of creating it inside?", "options": ["So main can give it the API or the fake without touching the notifier", "Because Provider requires it", "To make the API request faster", "Because a ChangeNotifier cannot create objects"], "why": "Whoever creates, chooses. If the notifier created the HttpForecastRepository, swapping in the fake would mean editing the notifier."}</script></div>
+  <div class="pz-mcq" data-id="a15-m12-future" data-label="Futures"><script type="application/json">{"q": "What is a Future<List<Island>>?", "options": ["A list of islands that has not arrived yet", "A list that updates itself whenever the API changes", "A list saved for use without a network", "A list that blocks the screen until it arrives"], "why": "It is a value that arrives later. With await you wait for it without blocking the screen. A list that updates itself would be a Stream."}</script></div>
+  <div class="pz-mcq" data-id="a15-m8-read" data-label="State"><script type="application/json">{"q": "On the star button, why use context.read and not context.watch?", "code": "onPressed: () => context.read<FavoritesNotifier>().toggle(islandId),", "options": ["In onPressed we only want to call the method, not keep listening", "read is newer and watch is deprecated", "watch only works in a StatefulWidget", "read saves the favourites on the phone"], "why": "watch keeps listening and rebuilds the widget on every notifyListeners, so it lives in build. An onPressed uses the notifier only once: read."}</script></div>
+  </div>
+  <aside class="notes">Remembering takes effort, and that effort is what makes it stick. None of this counts for the mark: tell them before they start. Four questions are from the last lessons and one is from older material (context.read): every lesson will open like this, always with an old question, so it is not forgotten.</aside>
 </section>
 
 <section class="slide">
+  <h2>Memory: the class</h2>
+  <div class="pz-poll" data-track="a15-mem"></div>
+  <aside class="notes">Look at the question with the fewest right answers and ask someone who got it right: "how did you think?". Only then press "Show answers". If the notifyListeners one went badly, go back to yesterday's load() for two minutes.</aside>
+</section>
+
+<section class="slide" data-part="Project">
+  <h2>The project: Tempo Açores</h2>
+  <p>A weather and trails app for the Azores, built in groups on the course API: the 5-day forecast for each island with IPMA data, hiking trails, class reports with photos, favourites, and working offline.</p>
+  <table>
+    <tr><th>Groups</th><td>2 to 3 people, formed today</td></tr>
+    <tr><th>Sprints</th><td>Three, with a review in class on 02/11, 18/11 and 02/12</td></tr>
+    <tr><th>Testers</th><td>The app on other people's phones from 20/11</td></tr>
+    <tr><th>Freeze and defences</th><td>Freeze on 09/12; defences on 14 and 16/12</td></tr>
+  </table>
+  <p>The full brief, with the minimum requirements and the extras, is on the <a href="../projeto.html">Project</a> page.</p>
+  <aside class="notes">Do not read the whole brief now: the next game makes them read it carefully. Answer the usual questions: "can we use package X?" (yes, if you can explain it), "can we change the design?" (yes, if it respects the states and accessibility), "what if a member does not work?" (the defence is individual and PRs have an author).</aside>
+</section>
+
+<section class="slide" data-part="MVP">
+  <h2>MVP: the minimum you install and use</h2>
+  <ol class="steps">
+    <li>The minimum viable product is the smallest version someone installs and uses to good effect. It is not a prototype, nor a demo.</li>
+    <li><strong>Cut features, not quality.</strong> One screen with the loading, error, empty and data states handled is worth more than three half-built screens.</li>
+    <li>The question for each feature: "if this does not exist, is the app useless?" If not, it goes for later.</li>
+  </ol>
+  <div class="callout"><strong>Example</strong> Instagram started with only photos, filters and a feed. It grew later.</div>
+</section>
+
+<section class="slide">
+  <h2>Game: cut the MVP</h2>
+  <div class="pz-seq" data-id="a15-mvp">
+  <div class="pz-sort" data-id="a15-mvp" data-label="Cut the MVP"><script type="application/json">{"q": "For each feature: is it minimum, extra, or out of the project?", "cols": ["Minimum", "Extra", "Out"], "why": "Cut features, not quality: working offline, handling errors, the layers and CI are minimum, not luxuries.", "cards": [{"t": "List of the islands with search", "a": 0, "why": "Without this there is no app."}, {"t": "5-day forecast for an island", "a": 0, "why": "It is the reason the app exists."}, {"t": "Works offline, with \"updated 2 h ago\"", "a": 0, "why": "Quality, not a feature: in the Azores the network fails."}, {"t": "\"Try again\" when the network fails, on every screen", "a": 0, "why": "A screen without an error state is half done."}, {"t": "Favourites that stay after closing the app", "a": 0, "why": "It is in the minimum requirements of the brief."}, {"t": "No screen makes HTTP requests (layers)", "a": 0, "why": "Layers from day one: later is too late."}, {"t": "CI on GitHub with analyze and tests", "a": 0, "why": "Minimum: it catches the errors before main."}, {"t": "Map of the islands with today's weather", "a": 1, "why": "A valued extra, after the minimum."}, {"t": "Notification with tomorrow's forecast", "a": 1, "why": "A valued extra, after the minimum."}, {"t": "Dark theme and the app in English", "a": 1, "why": "A valued extra, after the minimum."}, {"t": "Sign in with a Google account", "a": 2, "why": "Not in the brief: the app uses the group token."}, {"t": "Chat between users", "a": 2, "why": "Nice, but it is another app."}]}</script></div>
+  </div>
+  <aside class="notes">Five minutes. Whoever finishes can open the Project page and check. The cards most often wrong are "works offline", "Try again" and CI: they look like extras and are minimum. It is the sentence from the previous slide: cut features, not quality.</aside>
+</section>
+
+<section class="slide">
+  <h2>MVP: the class</h2>
+  <div class="pz-poll" data-track="a15-mvp"></div>
+  <aside class="notes">Start with the cards marked "split" and ask two people who chose different columns to explain themselves. Only then "Show answers".</aside>
+</section>
+
+<section class="slide" data-part="Done">
   <h2>Definition of done</h2>
-  <p>An issue is done when the PR that closes it meets all of this. If one point fails, it is not done, however much "it works on my laptop".</p>
-  <ul class="checklist">
-    <li>It runs on the phone, not only on the emulator.</li>
-    <li><code>flutter analyze</code> with no warnings and <code>flutter test</code> green.</li>
-    <li>PR reviewed and approved by another member of the group.</li>
-    <li>Loading, error, empty and data states handled in every screen touched.</li>
-    <li>No secrets in the code (lesson 18) and the issue closed by the PR (<code>Closes #12</code>).</li>
-  </ul>
-  <p><strong>For the tests:</strong> "done" is an objective list, not an opinion.</p>
-</section>
-
-<section class="slide">
-  <h2>Flow: issue → branch → PR → review → merge</h2>
+  <p>An issue is only closed when the pull request meets <strong>all</strong> of this. If one point fails, it is not done, however much it "works on my laptop".</p>
   <ol class="steps">
-    <li><strong>Issue assigned</strong> to one person, in the "In progress" column of the board.</li>
-    <li><strong>Branch from an up-to-date <code>main</code>:</strong> <code>git switch -c feat/12-forecast-5-days</code>. The issue number in the name.</li>
-    <li><strong>Small commits</strong> with conventional commits: <code>feat(forecast): show 5 days</code>, <code>fix(api): handle 429</code>.</li>
-    <li><strong>Small PR</strong> (fewer than 300 lines), with a description, a screenshot from the phone and <code>Closes #12</code>.</li>
-    <li><strong>Review by a colleague:</strong> at least one useful comment; the author replies or fixes.</li>
-    <li><strong>Merge</strong> (squash) done by the reviewer; branch deleted. <code>main</code> is protected: nobody pushes directly.</li>
+    <li>It runs on a phone, not only in Chrome or the emulator.</li>
+    <li><code>flutter analyze</code> without warnings.</li>
+    <li>It handles the loading, error and empty states.</li>
+    <li>It was reviewed and approved by another member of the group.</li>
   </ol>
-  <p><strong>For the tests:</strong> protected <code>main</code>, small PR and review by a colleague is the minimum flow of a team.</p>
+  <div class="callout"><strong>For the tests</strong> "Done" is an objective list, not an opinion.</div>
 </section>
 
 <section class="slide">
+  <h2>Game: is it done?</h2>
+  <ol class="steps how"><li>Read the scenario and vote on your own.</li><li>Discuss with the person next to you: why that answer? Convince them, or let them convince you.</li><li>Vote again. Only then do you see the answer.</li></ol>
+  <div class="pz-seq" data-id="a15-pronto" data-word="Scenario">
+  <div class="pz-mcq" data-id="a15-p1" data-label="List of islands" data-revote><script type="application/json">{"q": "PR \"List of islands\". It runs on Ana's phone, analyze shows no warnings and Rui reviewed and approved it. Offline, it shows \"No connection\" and \"Try again\".", "options": ["It is done", "Not run on a phone", "Error not handled", "No review by a teammate", "Has analyze warnings"], "why": "It meets all four points. Done does not mean perfect: it means it meets the list."}</script></div>
+  <div class="pz-mcq" data-id="a15-p2" data-label="5-day forecast" data-revote><script type="application/json">{"q": "PR \"5-day forecast\". It runs on the phone, analyze shows no warnings and Rui approved it. Offline, the spinner keeps spinning forever.", "options": ["Error not handled", "It is done", "Not run on a phone", "No review by a teammate", "Has analyze warnings"], "why": "An endless spinner is an error state nobody handled. The user does not know whether to wait or give up."}</script></div>
+  <div class="pz-mcq" data-id="a15-p3" data-label="Search" data-revote><script type="application/json">{"q": "PR \"Island search\". It runs on the phone, handles the error and analyze is clean. Rui was ill and Ana merged her own PR.", "options": ["No review by a teammate", "It is done", "Not run on a phone", "Error not handled", "Has analyze warnings"], "why": "Without a review by someone else it is not done, however well made it is. The reviewer is the second person who understands that code."}</script></div>
+  <div class="pz-mcq" data-id="a15-p4" data-label="Favourites" data-revote><script type="application/json">{"q": "PR \"Favourites\". It runs on the phone, handles the error and Rui approved it. analyze shows 3 warnings about unused imports.", "options": ["Has analyze warnings", "It is done", "Not run on a phone", "Error not handled", "No review by a teammate"], "why": "\"They are only warnings\" is how a project with 200 warnings starts, where nobody sees what matters. Fixing them takes a minute."}</script></div>
+  <div class="pz-mcq" data-id="a15-p5" data-label="Trail detail" data-revote><script type="application/json">{"q": "PR \"Trail detail\". Tested with flutter run -d chrome. It handles the error, analyze is clean and Rui approved it.", "options": ["Not run on a phone", "It is done", "Error not handled", "No review by a teammate", "Has analyze warnings"], "why": "Chrome is not a phone: the keyboard, the small screen, the gestures and the mobile network only show up on the device."}</script></div>
+  </div>
+  <aside class="notes">Everyone goes at the same pace: say "scenario 1", let them vote, give the pairs a minute to discuss, second vote, and move to the board on the next slide. The first vote is the one that counts for the dot on the board; what matters is the change between the first and the second. If the first vote already has more than 70% right, there is no point discussing: move on.</aside>
+</section>
+
+<section class="slide">
+  <h2>Is it done? The class</h2>
+  <div class="pz-poll" data-track="a15-pronto"></div>
+  <aside class="notes">Compare the two bars of each scenario: if the second vote has more right answers, the discussion worked. The analyze warnings scenario usually splits the class: it is worth hearing those who say "they are only warnings".</aside>
+</section>
+
+<section class="slide" data-part="Contract">
+  <h2>Contract first</h2>
+  <p>In a group, the biggest delay is waiting for a teammate. So, before writing code, the group agrees on the <strong>contract</strong>: the repository interface. Then each one works on their own side.</p>
+  <div class="lay">
+    <div class="u"><b>Ana</b>builds the trails screen against the <code>FakeTrailRepository</code></div>
+    <div class="s"><b>The contract</b><code>TrailRepository</code>: what can be asked, without saying how</div>
+    <div class="d"><b>Rui</b>builds the <code>HttpTrailRepository</code>, which talks to the API</div>
+  </div>
+  <p>It is what we did in the layers lessons, now in pairs: yesterday's fake becomes the way not to wait for your teammate.</p>
+</section>
+
+<section class="slide">
+  <h2>Game: the contract</h2>
+  <div class="pz-seq" data-id="a15-contrato">
+  <div class="parsons" data-id="a15-c1" data-label="The interface" data-title="lib/data/trail_repository.dart" data-seed="5" data-helper data-free="3,4">
+<script type="text/plain">
+import '../models/trail.dart';
+/// The contract: what the screens can ask about trails.
+abstract class TrailRepository {
+  Future<List<Trail>> fetchTrails(String islandId);
+  Future<Trail> fetchTrail(String trailId);
+}
+</script><script type="application/json">{"q": "Why does the interface come first, in a PR of its own?", "options": ["So both can work at the same time against the same contract", "Because Dart has to compile the interface first", "So the teacher sees work sooner", "Because an interface cannot be changed later"], "why": "With the contract on main, Ana builds the screen and Rui builds the network at the same time, without one waiting for the other."}</script>
+  </div>
+  <div class="parsons" data-id="a15-c2" data-label="The fake" data-title="lib/data/fake_trail_repository.dart" data-seed="8" data-blocks data-free="2,3">
+<script type="text/plain">
+import '../models/trail.dart';
+import 'trail_repository.dart';
+
+/// Same contract, fixed data: the screen is built before the API code.
+class FakeTrailRepository implements TrailRepository {
+
+  @override
+  Future<List<Trail>> fetchTrails(String islandId) async {
+    await Future.delayed(const Duration(seconds: 1)); // a slow network
+    return _trails.where((t) => t.islandId == islandId).toList();
+  }
+
+  @override
+  Future<Trail> fetchTrail(String trailId) async {
+    await Future.delayed(const Duration(seconds: 1));
+    return _trails.firstWhere((t) => t.id == trailId);
+  }
+
+}
+
+const _trails = [
+  Trail(
+    id: 'montanha-do-pico',
+    name: 'Montanha do Pico',
+    islandId: 'pico',
+    distanceKm: 7.6,
+  ),
+];
+</script><script type="application/json">{"q": "What is the FakeTrailRepository for in the project?", "options": ["Building and testing the screen without waiting for the API or the teammate", "Replacing the API in the final version of the app", "Storing the trails on the phone to work offline", "Hiding the group's clientSecret"], "why": "The fake meets the contract with fixed data. Storing data for offline use is something else: the cache, later on."}</script>
+  </div>
+  <div class="parsons" data-id="a15-c3" data-label="Who does what" data-title="A group of two: Ana and Rui" data-seed="3" data-lang="text" data-free="1,2">
+<script type="text/plain">
+The group writes the TrailRepository interface and merges it in a small PR.
+Ana writes the FakeTrailRepository and the trails screen against the fake.
+Rui writes the HttpTrailRepository, which talks to GET /v1/trails.
+In main.dart, the FakeTrailRepository is swapped for the HttpTrailRepository.
+The trails screen runs the same, without changing a line.
+</script><script type="application/json">{"q": "When they swap the fake for the API, which file changes?", "options": ["Only main.dart", "The trails screen", "TrailRepository", "Every file that uses trails"], "why": "Whoever creates, chooses: main creates the repository and hands it to the notifier. The rest only knows the contract."}</script>
+  </div>
+  </div>
+  <aside class="notes">Three ordering exercises: the interface (the right lines lock in place), the fake and the order of the work in a group of two. The two methods of the interface can swap places, as can the two methods of the fake and the steps of Ana and Rui, which happen at the same time. The board on the next slide shows who has finished.</aside>
+</section>
+
+<section class="slide">
+  <h2>State of the class</h2>
+  <div class="pz-room-board" data-track="a15-contrato"></div>
+  <aside class="notes">One row per student, one column per exercise. Green with ✓: solved; the dot says whether they got the question right. "Not checked for X min": they are stuck, go over.</aside>
+</section>
+
+<section class="slide" data-part="Sprints">
   <h2>Sprints and reviews</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Sprint</th><th>Dates</th><th>Review in class</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Sprint 1</strong></td><td>21/10 to 02/11</td><td>Lesson 19, Monday 02/11</td></tr>
-  <tr><td><strong>Sprint 2</strong></td><td>02/11 to 18/11 (with test 1 in the middle)</td><td>Lesson 26, Wednesday 18/11</td></tr>
-  <tr><td><strong>Sprint 3</strong></td><td>18/11 to 02/12</td><td>Lesson 32, Wednesday 02/12</td></tr>
-  <tr><td><strong>Freeze and defences</strong></td><td>Tag <code>v1.0.0</code> on 09/12</td><td>Defences on 14 and 16/12</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li><strong>What is shown in a review:</strong> 5 minutes per group, the app on the projected phone, what was left undone and why. No slides.</li>
-    <li><strong>Retrospective</strong> of 15 minutes: start, stop, continue. The process is changed, nobody looks for someone to blame.</li>
-  </ul>
-  <p><strong>For the tests:</strong> the review shows working software on the device; the retro improves the process of the next sprint.</p>
-  <aside class="notes">Stress that sprint 2 is longer because of the test and the public holiday: less work is expected that week, not more. State the rules of the review now so there are no surprises in lesson 19: no slides, phone projected with scrcpy.</aside>
+  <table>
+    <tr><th>Sprint</th><th>Dates</th><th>Review in class</th></tr>
+    <tr><td>Sprint 1</td><td>21/10 to 02/11</td><td>Monday, 02/11</td></tr>
+    <tr><td>Sprint 2</td><td>02/11 to 18/11</td><td>Wednesday, 18/11</td></tr>
+    <tr><td>Sprint 3</td><td>18/11 to 02/12</td><td>Wednesday, 02/12</td></tr>
+    <tr><td>Freeze and defences</td><td>Freeze on 09/12</td><td>14 and 16/12</td></tr>
+  </table>
+  <p>In a review, each group has 5 minutes to show the app on a phone and say what was left to do, and why. No slides. What counts is what is on <code>main</code> at the time of the review.</p>
+  <aside class="notes">Sprint 2 has test 1 in the middle: expect less work that week, not more.</aside>
 </section>
 
-<section class="slide" data-part="Sprint">
-  <h2>Today: brief, groups, repositories, backlog</h2>
-  <ul>
-    <li><strong>Goal of the lesson:</strong> each group leaves with a repository created, the template app running on the phone with data from the API, and the sprint 1 backlog on the board.</li>
-    <li><strong>Brief and rubric</strong> (15 min): reading the <a href="../projeto.html">Project</a> page together. Minimum requirements, extras, what the rubric values in the app, in the process and in the defence. Questions at the end of each section.</li>
-    <li><strong>Sprint 1</strong> (until 02/11): list of locations from the API, detail with 5 days, navigation and theme, states handled in every screen, local favourites.</li>
-    <li>What does not go into sprint 1: disk cache (lesson 16), authentication with renewal (lesson 17), map and notifications (sprints 2 and 3).</li>
-  </ul>
-  <div class="callout tip"><strong>Golden rule</strong> The minimum requirements first, complete. An extra only enters the backlog when all the minimum requirements are in the "Done" column.</div>
-  <aside class="notes">Read the rubric out loud, section by section, and stop for questions. The usual ones: "can we use package X?" (yes, if you can explain it), "can we change the design?" (yes, if it respects the states and accessibility), "what if a member does not work?" (the defence is individual and PRs have an author).</aside>
-</section>
-
-<section class="slide">
-  <h2>Groups, GitHub Classroom and client-id</h2>
+<section class="slide" data-part="Groups">
+  <h2>Groups</h2>
   <ol class="steps">
-    <li><strong>Groups of 2 to 3.</strong> Group name and members in the Moodle form. No groups of 1 or of 4.</li>
-    <li><strong>Accept the assignment</strong> in GitHub Classroom (link on Moodle). The first member creates the team, the others join. The repository is created from the <code>tempo-acores-template</code> template.</li>
-    <li><strong>Clone and run.</strong> The template already has <code>ApiClient</code>, theme, navigation and the state widgets from lessons 12 to 14.
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/tempo-acores-group-07.git
-cd tempo-acores-group-07
-flutter pub get
-flutter run --dart-define=PDM_CLIENT_ID=group-07 --dart-define=PDM_SECRET=secret-from-the-envelope</code></pre></li>
-    <li><strong>Receive the group's client-id and secret</strong> in person. The secret never goes into the repository: it is passed through <code>--dart-define</code> or through a <code>.env.json</code> ignored by git.</li>
-    <li><strong>First request:</strong> the template app shows the list of locations from <code>GET /v1/locations</code> with the group's token. If a 401 appears, the secret is mistyped.</li>
+    <li>Groups of 2 to 3. No groups of 1 or of 4.</li>
+    <li>Before leaving, each group tells the teacher the names of its members.</li>
+    <li>Anyone not here today is placed in a group by the teacher.</li>
   </ol>
-</section>
-
-<section class="slide">
-  <h2>Sprint 1 backlog and board</h2>
-  <ul class="checklist">
-    <li>Project board with the columns Backlog, Sprint 1, In progress, In review, Done.</li>
-    <li>Between 6 and 10 issues in sprint 1, each with acceptance criteria and an S/M/L estimate. The minimum requirements first.</li>
-    <li>Suggested split: list of locations and search · detail with 5 days · navigation, theme and settings · local favourites · error states and messages · README and basic CI.</li>
-    <li>Each member responsible for 2 to 3 issues. Nobody is left with only "UI" or only "data": everyone touches both layers.</li>
-    <li>An empty "Security audit" issue, for lesson 18.</li>
-  </ul>
-  <div class="callout task"><strong>Exercise 1</strong> Sprint 1 backlog written and organised on the board by the end of the lesson. The teacher goes round each group and validates three things: titles with a verb, verifiable criteria, minimum requirements before extras.</div>
-</section>
-
-<section class="slide">
-  <h2>First PR and what the teacher does</h2>
-  <ul>
-    <li><strong>The group's first PR:</strong> <code>README.md</code> with names, the initial split of work and a screenshot of the template running on the phone. Opened by one member, reviewed and merged by another. It is there to test the flow before there is any code.</li>
-    <li><strong>Branch protection</strong> on <code>main</code>: the teacher enables it in every repository by tomorrow. From then on code only gets in through an approved PR.</li>
-    <li><strong>The teacher today:</strong> validates groups and repositories, hands out client-ids, goes round each group to see the backlog and the first request to the API on the phone.</li>
-    <li><strong>The teacher during the sprint:</strong> comments on PRs, follows the API telemetry per group, answers on the Moodle forum. Does not write code for the group.</li>
-  </ul>
-  <div class="callout task"><strong>Exercise 2</strong> First PR opened, reviewed and merged before leaving the room. Confirm that the reviewer left at least one comment, even if it is "LGTM, the screenshot is missing".</div>
-  <aside class="notes">Keep the last 15 minutes for walking around: each group shows the board and the app on the phone. Groups with no first request to the API get priority on Monday, before the new material. Note down who still has no group so it can be sorted out by email today.</aside>
+  <p><strong>In the next lesson:</strong> the group repository, the API credentials, the sprint 1 backlog in issues and the first pull request.</p>
+  <aside class="notes">Write down the groups as they leave. The repositories (GitHub Classroom or a repository created by a member from a template) and the API credentials are for the next lesson.</aside>
 </section>
 
 <section class="slide" data-part="End">
-  <h2>See you on Monday</h2>
-  <div class="cols">
-    <div>
-      <h3>To do</h3>
-      <ul class="checklist">
-        <li>Sprint 1 backlog closed by Friday: issues with criteria, estimates and assignees, on the board.</li>
-        <li>Each member with at least one PR open by Monday, linked to an issue.</li>
-        <li>The group's secret stored outside the repository; <code>.env.json</code> in <code>.gitignore</code>.</li>
-      </ul>
-    </div>
-    <div>
-      <h3>To read</h3>
-      <ul>
-        <li><a href="https://docs.flutter.dev/app-architecture/case-study" target="_blank" rel="noopener">Architecture case study</a>: a Flutter app organised like the project template, layer by layer.</li>
-        <li><a href="https://docs.github.com/en/get-started/using-github/hello-world" target="_blank" rel="noopener">GitHub Docs: Hello World</a>: branch, commit, pull request, review and merge in 10 minutes; it is the flow of this lesson.</li>
-        <li><a href="https://developer.android.com/quality" target="_blank" rel="noopener">Android app quality guidelines</a>: the list the stores use; it is a source of inspiration for acceptance criteria.</li>
-        <li><a href="https://developer.apple.com/design/human-interface-guidelines" target="_blank" rel="noopener">Human Interface Guidelines</a>: for those who are going to do iOS.</li>
-      </ul>
-    </div>
-  </div>
+  <h2>Where we got to</h2>
+  <ol class="steps">
+    <li>The minimum cuts features, never quality: offline, handled errors, layers and CI are minimum.</li>
+    <li>Done is a list: phone, analyze without warnings, states handled and a review by a teammate.</li>
+    <li>Contract first lets two teammates work at the same time: one against the fake, the other against the API.</li>
+  </ol>
+  <p><strong>Before the next lesson:</strong> the group formed and the brief read, with your questions written down.</p>
   <nav class="pager" id="pager"></nav>
+  <aside class="notes">Before closing, look at the memory board: the question with the fewest right answers goes back into the 5 minutes of the next lesson.</aside>
 </section>
 
 </div>
@@ -192,5 +264,6 @@ flutter run --dart-define=PDM_CLIENT_ID=group-07 --dart-define=PDM_SECRET=secret
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../../assets/app.js"></script>
+<script src="../../assets/parsons.js"></script>
 </body>
 </html>
