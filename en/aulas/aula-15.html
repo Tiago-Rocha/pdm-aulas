@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lesson 15 · Tempo Açores project kickoff · PDM</title>
+<title>Lesson 15 · Before the project: games · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -44,17 +44,16 @@ figure.diagram figcaption { font-size: 1rem; }
 
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 15 · Week 7 · Wednesday, 21 October 2026 · 16:00 to 18:00</p>
-  <h1>Tempo Açores project kickoff</h1>
-  <p class="lead">Today the group project starts. Before writing code, we decide three things: what the minimum is, when something is done, and how two teammates work at the same time without getting in each other's way. With games.</p>
-  <div class="meta"><span>Project: Tempo Açores</span></div>
-  <aside class="notes">Reference times: joining and memory until 16:10; memory results until 16:15; the project until 16:30; MVP and "cut the MVP" until 16:55; definition of done and "is it done?" until 17:25; contract first until 17:45; sprints and groups until 18:00. Students join once (slide 3) and stay in for the four games: the room is the lesson and the day. The results boards do not show the right answers until you press "Show answers". No repositories or backlog today: that is for the next lesson.</aside>
+  <h1>Before the project: games</h1>
+  <p class="lead">On Monday the group project starts. Today we prepare for it by playing: <strong>remembering</strong> the layers, reading <strong>JSON into a model</strong>, deciding <strong>when something is done</strong> and <strong>how two teammates work at the same time</strong>.</p>
+    <aside class="notes">Reference times: joining and memory until 16:15; JSON until 16:45; definition of done and "is it done?" until 17:20; contract first until 17:45; wrap-up until 18:00. Students join once (slide 3) and stay in for all the games: the room is the lesson and the day. The results boards have one row per question: how many got it right and the most common wrong answer. The brief, the groups and the MVP are for Monday.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
     <li>Remember the layers and Futures without opening your notes.</li>
-    <li>Separate the minimum of Tempo Açores from the extras, and explain why quality is not cut.</li>
+    <li>Turn JSON from the API into a Dart model, with fromJson and the list.</li>
     <li>Say whether a pull request is done, with the group's definition of done.</li>
     <li>Agree on a contract (an interface) so two teammates can work at the same time.</li>
   </ul>
@@ -76,44 +75,74 @@ figure.diagram figcaption { font-size: 1rem; }
 <section class="slide">
   <h2>Memory: the class</h2>
   <div class="pz-poll" data-track="a15-mem"></div>
-  <aside class="notes">Look at the question with the fewest right answers and ask someone who got it right: "how did you think?". Only then press "Show answers". If the notifyListeners one went badly, go back to yesterday's load() for two minutes.</aside>
+  <aside class="notes">Look at the question with the fewest right answers and ask someone who got it right: "how did you think?". Then ask someone who chose the most common wrong answer why it looked right. If the notifyListeners one went badly, go back to yesterday's load() for two minutes.</aside>
 </section>
 
-<section class="slide" data-part="Project">
-  <h2>The project: Tempo Açores</h2>
-  <p>A weather and trails app for the Azores, built in groups on the course API: the 5-day forecast for each island with IPMA data, hiking trails, class reports with photos, favourites, and working offline.</p>
-  <table>
-    <tr><th>Groups</th><td>2 to 3 people, formed today</td></tr>
-    <tr><th>Sprints</th><td>Three, with a review in class on 02/11, 18/11 and 02/12</td></tr>
-    <tr><th>Testers</th><td>The app on other people's phones from 20/11</td></tr>
-    <tr><th>Freeze and defences</th><td>Freeze on 09/12; defences on 14 and 16/12</td></tr>
-  </table>
-  <p>The full brief, with the minimum requirements and the extras, is on the <a href="../projeto.html">Project</a> page.</p>
-  <aside class="notes">Do not read the whole brief now: the next game makes them read it carefully. Answer the usual questions: "can we use package X?" (yes, if you can explain it), "can we change the design?" (yes, if it respects the states and accessibility), "what if a member does not work?" (the defence is individual and PRs have an author).</aside>
-</section>
-
-<section class="slide" data-part="MVP">
-  <h2>MVP: the minimum you install and use</h2>
-  <ol class="steps">
-    <li>The minimum viable product is the smallest version someone installs and uses to good effect. It is not a prototype, nor a demo.</li>
-    <li><strong>Cut features, not quality.</strong> One screen with the loading, error, empty and data states handled is worth more than three half-built screens.</li>
-    <li>The question for each feature: "if this does not exist, is the app useless?" If not, it goes for later.</li>
-  </ol>
-  <div class="callout"><strong>Example</strong> Instagram started with only photos, filters and a feed. It grew later.</div>
+<section class="slide" data-part="JSON">
+  <h2>From JSON to a model</h2>
+  <p>The API's <code>GET /v1/trails</code> returns a list of trails. Each one arrives like this (shortened):</p>
+  <pre><code class="language-json">{
+  "id": "montanha-do-pico",
+  "name": "Montanha do Pico",
+  "islandId": "pico",
+  "distanceKm": 7.6,
+  "duration": "7 h"
+}</code></pre>
+  <p>Three pieces to bring it into the app: the <strong>model</strong> <code>Trail</code>, the <strong>fromJson</strong> that reads one map, and the repository that reads the <strong>list</strong>. The same path as the islands, now with trails.</p>
+  <aside class="notes">Before the game, ask: "which JSON fields does the app need to show a list of trails?". distanceKm is the trap: 7.6 always looks like a double, but the API may send 7.</aside>
 </section>
 
 <section class="slide">
-  <h2>Game: cut the MVP</h2>
-  <div class="pz-seq" data-id="a15-mvp">
-  <div class="pz-sort" data-id="a15-mvp" data-label="Cut the MVP"><script type="application/json">{"q": "For each feature: is it minimum, extra, or out of the project?", "cols": ["Minimum", "Extra", "Out"], "why": "Cut features, not quality: working offline, handling errors, the layers and CI are minimum, not luxuries.", "cards": [{"t": "List of the islands with search", "a": 0, "why": "Without this there is no app."}, {"t": "5-day forecast for an island", "a": 0, "why": "It is the reason the app exists."}, {"t": "Works offline, with \"updated 2 h ago\"", "a": 0, "why": "Quality, not a feature: in the Azores the network fails."}, {"t": "\"Try again\" when the network fails, on every screen", "a": 0, "why": "A screen without an error state is half done."}, {"t": "Favourites that stay after closing the app", "a": 0, "why": "It is in the minimum requirements of the brief."}, {"t": "No screen makes HTTP requests (layers)", "a": 0, "why": "Layers from day one: later is too late."}, {"t": "CI on GitHub with analyze and tests", "a": 0, "why": "Minimum: it catches the errors before main."}, {"t": "Map of the islands with today's weather", "a": 1, "why": "A valued extra, after the minimum."}, {"t": "Notification with tomorrow's forecast", "a": 1, "why": "A valued extra, after the minimum."}, {"t": "Dark theme and the app in English", "a": 1, "why": "A valued extra, after the minimum."}, {"t": "Sign in with a Google account", "a": 2, "why": "Not in the brief: the app uses the group token."}, {"t": "Chat between users", "a": 2, "why": "Nice, but it is another app."}]}</script></div>
+  <h2>Game: from JSON to a model</h2>
+  <div class="pz-seq" data-id="a15-json">
+  <div class="parsons" data-id="a15-j1" data-label="The model" data-title="lib/models/trail.dart" data-seed="4" data-helper data-free="1,2,3,4;6,7,8,9">
+<script type="text/plain">
+class Trail {
+  final String id;
+  final String name;
+  final String islandId;
+  final double distanceKm;
+  const Trail({
+    required this.id,
+    required this.name,
+    required this.islandId,
+    required this.distanceKm,
+  });
+}
+</script><script type="application/json">{"q": "The JSON also has \"duration\". Why does Trail not have that field?", "options": ["The model only keeps what the app uses; the rest of the JSON is ignored", "Because fromJson would fail with extra fields", "Because Dart does not accept text like \"7 h\"", "Because the API will stop sending that field"], "why": "The model is the shape of the data the app needs. Fields nobody uses are just more to maintain."}</script>
   </div>
-  <aside class="notes">Five minutes. Whoever finishes can open the Project page and check. The cards most often wrong are "works offline", "Try again" and CI: they look like extras and are minimum. It is the sentence from the previous slide: cut features, not quality.</aside>
+  <div class="parsons" data-id="a15-j2" data-label="fromJson" data-title="lib/models/trail.dart" data-seed="6" data-free="2,3,4,5">
+<script type="text/plain">
+factory Trail.fromJson(Map<String, dynamic> json) {
+  return Trail(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    islandId: json['islandId'] as String,
+    distanceKm: (json['distanceKm'] as num).toDouble(),
+  );
+}
+</script><script type="application/json">{"q": "Why (json['distanceKm'] as num).toDouble() and not as double?", "options": ["Because the API may send 7 instead of 7.0, and 7 is an int", "Because Dart has no double", "To round the kilometres", "Because JSON sends numbers as text"], "why": "In JSON, 7 and 7.0 are the same number, but in Dart 7 is an int and \"as double\" throws. num accepts both."}</script>
+  </div>
+  <div class="parsons" data-id="a15-j3" data-label="The list" data-title="lib/data/http_trail_repository.dart" data-seed="9">
+<script type="text/plain">
+@override
+Future<List<Trail>> fetchTrails(String islandId) async {
+  final path = '/v1/trails?islandId=$islandId';
+  final list = await _api.get(path) as List<dynamic>;
+  return list
+      .map((item) => Trail.fromJson(item as Map<String, dynamic>))
+      .toList();
+}
+</script><script type="application/json">{"q": "What does the .map(...).toList() at the end do?", "options": ["Turns each JSON map into a Trail and puts them all in a list", "Sorts the trails by distance", "Filters the trails of the island", "Stores the trails on the phone"], "why": "The API returns a list of maps. map turns each one into a Trail with fromJson; toList gathers the result into a List<Trail>."}</script>
+  </div>
+  </div>
+  <aside class="notes">Three ordering exercises. In the model, the right lines lock in place; the fields can come in any order, as can the required lines. In fromJson, the four fields too. The list is the same as the islands one in HttpForecastRepository.</aside>
 </section>
 
 <section class="slide">
-  <h2>MVP: the class</h2>
-  <div class="pz-poll" data-track="a15-mvp"></div>
-  <aside class="notes">Start with the cards marked "split" and ask two people who chose different columns to explain themselves. Only then "Show answers".</aside>
+  <h2>State of the class</h2>
+  <div class="pz-room-board" data-track="a15-json"></div>
+  <aside class="notes">Whoever finishes can open the API at /docs and look at the JSON of a real trail.</aside>
 </section>
 
 <section class="slide" data-part="Done">
@@ -149,13 +178,13 @@ figure.diagram figcaption { font-size: 1rem; }
 
 <section class="slide" data-part="Contract">
   <h2>Contract first</h2>
-  <p>In a group, the biggest delay is waiting for a teammate. So, before writing code, the group agrees on the <strong>contract</strong>: the repository interface. Then each one works on their own side.</p>
+  <p>The API is already built. What is missing is each person's code, and in a group the biggest delay is waiting for a teammate. So, before coding, the group agrees on the <strong>contract</strong>: the model and the repository interface. Then each one works on their own side.</p>
   <div class="lay">
     <div class="u"><b>Ana</b>builds the trails screen against the <code>FakeTrailRepository</code></div>
     <div class="s"><b>The contract</b><code>TrailRepository</code>: what can be asked, without saying how</div>
-    <div class="d"><b>Rui</b>builds the <code>HttpTrailRepository</code>, which talks to the API</div>
+    <div class="d"><b>Rui</b>builds the <code>HttpTrailRepository</code>, which calls the API</div>
   </div>
-  <p>It is what we did in the layers lessons, now in pairs: yesterday's fake becomes the way not to wait for your teammate.</p>
+  <p>It is what we did in the layers lessons, now in pairs: the fake becomes the way not to wait for your teammate.</p>
 </section>
 
 <section class="slide">
@@ -201,19 +230,21 @@ const _trails = [
     distanceKm: 7.6,
   ),
 ];
-</script><script type="application/json">{"q": "What is the FakeTrailRepository for in the project?", "options": ["Building and testing the screen without waiting for the API or the teammate", "Replacing the API in the final version of the app", "Storing the trails on the phone to work offline", "Hiding the group's clientSecret"], "why": "The fake meets the contract with fixed data. Storing data for offline use is something else: the cache, later on."}</script>
+</script><script type="application/json">{"q": "What is the FakeTrailRepository for in the project?", "options": ["Building and testing the screen without waiting for the teammate's code", "Replacing the API in the final version of the app", "Storing the trails on the phone to work offline", "Hiding the group's clientSecret"], "why": "The API already exists, but Rui's HttpTrailRepository does not yet. The fake meets the contract with fixed data and Ana does not wait. Storing data for offline use is something else: the cache, later on."}</script>
   </div>
-  <div class="parsons" data-id="a15-c3" data-label="Who does what" data-title="A group of two: Ana and Rui" data-seed="3" data-lang="text" data-free="1,2">
+  <div class="parsons" data-id="a15-c3" data-label="Who does what" data-title="A group of two: Ana and Rui" data-seed="3" data-lang="text" data-free="2,3">
 <script type="text/plain">
-The group writes the TrailRepository interface and merges it in a small PR.
-Ana writes the FakeTrailRepository and the trails screen against the fake.
-Rui writes the HttpTrailRepository, which talks to GET /v1/trails.
-In main.dart, the FakeTrailRepository is swapped for the HttpTrailRepository.
+Both open the API at /docs and look at the JSON of GET /v1/trails.
+Together, they write the Trail model and the TrailRepository interface.
+Ana builds the trails screen against the FakeTrailRepository.
+Rui builds the HttpTrailRepository, which calls GET /v1/trails.
+Ana reviews Rui's pull request and approves it.
+In main.dart, the fake is swapped for the HttpTrailRepository.
 The trails screen runs the same, without changing a line.
 </script><script type="application/json">{"q": "When they swap the fake for the API, which file changes?", "options": ["Only main.dart", "The trails screen", "TrailRepository", "Every file that uses trails"], "why": "Whoever creates, chooses: main creates the repository and hands it to the notifier. The rest only knows the contract."}</script>
   </div>
   </div>
-  <aside class="notes">Three ordering exercises: the interface (the right lines lock in place), the fake and the order of the work in a group of two. The two methods of the interface can swap places, as can the two methods of the fake and the steps of Ana and Rui, which happen at the same time. The board on the next slide shows who has finished.</aside>
+  <aside class="notes">Three ordering exercises: the interface (the right lines lock in place), the fake and the order of the work in a group of two. The two methods of the interface can swap places, as can the two methods of the fake and the steps of Ana and Rui, which happen at the same time. In the third one, note that reviewing the pull request is the definition of done from earlier. The board on the next slide shows who has finished.</aside>
 </section>
 
 <section class="slide">
@@ -222,38 +253,14 @@ The trails screen runs the same, without changing a line.
   <aside class="notes">One row per student, one column per exercise. Green with ✓: solved; the dot says whether they got the question right. "Not checked for X min": they are stuck, go over.</aside>
 </section>
 
-<section class="slide" data-part="Sprints">
-  <h2>Sprints and reviews</h2>
-  <table>
-    <tr><th>Sprint</th><th>Dates</th><th>Review in class</th></tr>
-    <tr><td>Sprint 1</td><td>21/10 to 02/11</td><td>Monday, 02/11</td></tr>
-    <tr><td>Sprint 2</td><td>02/11 to 18/11</td><td>Wednesday, 18/11</td></tr>
-    <tr><td>Sprint 3</td><td>18/11 to 02/12</td><td>Wednesday, 02/12</td></tr>
-    <tr><td>Freeze and defences</td><td>Freeze on 09/12</td><td>14 and 16/12</td></tr>
-  </table>
-  <p>In a review, each group has 5 minutes to show the app on a phone and say what was left to do, and why. No slides. What counts is what is on <code>main</code> at the time of the review.</p>
-  <aside class="notes">Sprint 2 has test 1 in the middle: expect less work that week, not more.</aside>
-</section>
-
-<section class="slide" data-part="Groups">
-  <h2>Groups</h2>
-  <ol class="steps">
-    <li>Groups of 2 to 3. No groups of 1 or of 4.</li>
-    <li>Before leaving, each group tells the teacher the names of its members.</li>
-    <li>Anyone not here today is placed in a group by the teacher.</li>
-  </ol>
-  <p><strong>In the next lesson:</strong> the group repository, the API credentials, the sprint 1 backlog in issues and the first pull request.</p>
-  <aside class="notes">Write down the groups as they leave. The repositories (GitHub Classroom or a repository created by a member from a template) and the API credentials are for the next lesson.</aside>
-</section>
-
 <section class="slide" data-part="End">
   <h2>Where we got to</h2>
   <ol class="steps">
-    <li>The minimum cuts features, never quality: offline, handled errors, layers and CI are minimum.</li>
+    <li>From JSON to a model: the model only keeps what the app uses, fromJson reads one map and the repository reads the list.</li>
     <li>Done is a list: phone, analyze without warnings, states handled and a review by a teammate.</li>
     <li>Contract first lets two teammates work at the same time: one against the fake, the other against the API.</li>
   </ol>
-  <p><strong>Before the next lesson:</strong> the group formed and the brief read, with your questions written down.</p>
+  <p><strong>On Monday:</strong> the group project starts. Think now about who you want to work with: groups of 2 to 3.</p>
   <nav class="pager" id="pager"></nav>
   <aside class="notes">Before closing, look at the memory board: the question with the fewest right answers goes back into the 5 minutes of the next lesson.</aside>
 </section>
