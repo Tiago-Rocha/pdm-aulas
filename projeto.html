@@ -6,7 +6,6 @@
 <title>Projeto Tempo Açores · PDM · DAW 2 · 2026/27</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="assets/parsons.css">
 </head>
 <body>
 <header class="site"><div class="wrap">
@@ -25,30 +24,176 @@
 <aside class="toc" id="toc"></aside>
 <main class="content">
 
-<p class="kicker">Projeto de grupo · enunciado na segunda, 26/10</p>
+<p class="kicker">Projeto de grupo · enunciado</p>
 <h1>Tempo Açores</h1>
-<p class="lead">Uma app de meteorologia e trilhos para os Açores, feita em grupo sobre a API do curso: previsão a 5 dias de cada ilha com dados do IPMA, trilhos pedestres, relatos da turma com fotografia, favoritos e funcionamento sem rede.</p>
+<p class="lead">Uma app de meteorologia e trilhos para os Açores, feita em grupo sobre a API do curso: previsão a 5 dias e avisos do IPMA para cada ilha, trilhos pedestres, relatos da turma com fotografia, favoritos sincronizados e funcionamento sem rede.</p>
 
-<div class="callout warn"><strong>Enunciado na segunda</strong> O enunciado completo, com o que é obrigatório, os extras e a forma de avaliar, é apresentado na aula de segunda, 26/10. Até lá, cada grupo cria o seu repositório a partir do <a href="https://github.com/Tiago-Rocha/pdm-projeto-template">template</a>.</div>
+<div class="table-wrap"><table>
+<thead><tr><th colspan="2">Em resumo</th></tr></thead>
+<tbody>
+<tr><td>Grupos</td><td>2 a 3 pessoas, formados na aula 15 (qua 21/10)</td></tr>
+<tr><td>Repositório</td><td>Um por grupo, privado, criado a partir do <a href="https://github.com/Tiago-Rocha/pdm-projeto-template">template</a></td></tr>
+<tr><td>Sprints</td><td>Três, com review em aula a 02/11, 18/11 e 02/12</td></tr>
+<tr><td>Testers</td><td>Distribuição a partir da aula 27 (sex 20/11)</td></tr>
+<tr><td>Freeze</td><td>Qua 09/12 às 18:30</td></tr>
+<tr><td>Defesas</td><td>Seg 14/12 e qua 16/12</td></tr>
+<tr><td>Peso na nota final</td><td>Ver <a href="avaliacao.html">Avaliação</a></td></tr>
+</tbody></table></div>
 
-<h2>Datas</h2>
+<h2>Porquê esta app</h2>
+<p>Porque tem tudo o que uma app móvel real tem: listas e detalhes, dados que mudam, rede que falha, dados que convém guardar para quando não há rede, autenticação, fotografias, notificações e localização. E porque os dados são daqui: as ilhas, os trilhos e a previsão são os dos Açores.</p>
+
+<h2>A API do curso</h2>
+<p>A app não fala com o IPMA diretamente. Fala com a <a href="api.html">API do curso</a>, que vai buscar os dados ao IPMA, arruma-os e guarda-os em cache. É a mesma API do mini-projeto 2, com a mesma autenticação: trocas um <code>clientId</code> e um <code>clientSecret</code> por um token, e mandas o token em cada pedido.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Dados</th><th>Pedido</th></tr></thead>
+<tbody>
+<tr><td>As nove ilhas, com fotografia e coordenadas</td><td><code>GET /v1/islands</code></td></tr>
+<tr><td>Previsão a 5 dias de uma ilha (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>forecast</code></td></tr>
+<tr><td>Avisos meteorológicos amarelos, laranja e vermelhos (IPMA)</td><td><code>GET /v1/warnings</code></td></tr>
+<tr><td>Trilhos, de todas as ilhas ou de uma</td><td><code>GET /v1/trails</code></td></tr>
+<tr><td>Relatos da turma: ler, criar, editar e apagar</td><td><code>/v1/reports</code></td></tr>
+<tr><td>Favoritos do grupo: ler, marcar e tirar</td><td><code>/v1/me/favorites</code></td></tr>
+<tr><td>Estado do mar perto da ilha (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>sea</code></td></tr>
+<tr><td>Tempo agora nas estações da ilha (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>observations</code></td></tr>
+<tr><td>Sismos dos últimos 30 dias (IPMA)</td><td><code>GET /v1/earthquakes</code></td></tr>
+</tbody></table></div>
 <ul>
-  <li>Grupos de 2 a 3, formados a 21/10.</li>
-  <li>Três sprints, com review em aula a 02/11, 18/11 e 02/12.</li>
-  <li>Freeze a 09/12; defesas a 14 e 16/12.</li>
+  <li>Cada grupo recebe um <code>clientId</code> e um <code>clientSecret</code> próprios, numa issue no repositório do grupo, que é privado. Os relatos que a app publicar aparecem à turma com o nome do grupo, e os favoritos ficam na conta do grupo: todos os telemóveis do grupo veem os mesmos.</li>
+  <li>O <code>clientSecret</code> nunca vai para o repositório: passa-se na compilação com <code>--dart-define</code>.</li>
+  <li>A documentação interativa está em <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">api-pdm.sublimecipher.com/docs</a>: experimenta cada pedido no browser antes de o escrever em Dart.</li>
+  <li>Se a API ganhar uma versão 2 durante o semestre (aula 28), a migração faz parte do trabalho da sprint 3.</li>
 </ul>
 
-<h2>Jogo: obrigatório, extra ou não conta?</h2>
-<ul>
-  <li><strong>Obrigatório:</strong> tem de estar na app para o projeto contar como completo.</li>
-  <li><strong>Extra:</strong> vale pontos, mas só depois de tudo o que é obrigatório estar feito.</li>
-  <li><strong>Não conta:</strong> não faz parte do projeto. Pode ser giro, mas não vale nada.</li>
-</ul>
-<p>Põe cada cartão numa coluna e carrega em Enviar.</p>
-<div class="pz-seq" data-id="proj-mvp"><div class="pz-sort" data-id="proj-mvp-1" data-label="Obrigatório, extra ou não conta"><script type="application/json">{"q": "Para cada funcionalidade: é obrigatória, extra ou não conta para o projeto?", "cols": ["Obrigatório", "Extra", "Não conta"], "why": "Cortar funcionalidades, não qualidade: funcionar sem rede, tratar erros, as camadas e o CI são obrigatórios, não luxos.", "cards": [{"t": "Lista das ilhas com pesquisa", "a": 0, "why": "Sem isto não há app."}, {"t": "Previsão a 5 dias de uma ilha", "a": 0, "why": "É a razão de a app existir."}, {"t": "Funcionar sem rede, com \"atualizado há 2 h\"", "a": 0, "why": "Qualidade, não funcionalidade: nos Açores a rede falha."}, {"t": "\"Tentar outra vez\" quando a rede falha, em todos os ecrãs", "a": 0, "why": "Um ecrã sem estado de erro está a meio."}, {"t": "Favoritos que ficam depois de fechar a app", "a": 0, "why": "É o que torna a app útil no dia a dia."}, {"t": "Nenhum ecrã faz pedidos HTTP (camadas)", "a": 0, "why": "Camadas desde o primeiro dia: depois é tarde."}, {"t": "CI no GitHub com analyze e testes", "a": 0, "why": "Obrigatório: é o que apanha os erros antes do main. O template já o traz."}, {"t": "Mapa das ilhas com o tempo de hoje", "a": 1, "why": "Extra: vale pontos, depois do obrigatório."}, {"t": "Notificação com a previsão de amanhã", "a": 1, "why": "Extra: vale pontos, depois do obrigatório."}, {"t": "Tema escuro e app em inglês", "a": 1, "why": "Extra: vale pontos, depois do obrigatório."}, {"t": "Entrar com a conta Google", "a": 2, "why": "Não faz parte do projeto: a app usa o token do grupo."}, {"t": "Chat entre utilizadores", "a": 2, "why": "Bonito, mas é outra app."}]}</script></div></div>
+<h2>Requisitos mínimos</h2>
+<p>Uma app que cumpra todos estes pontos, a correr no telemóvel, tem o critério de funcionalidade completo. A coluna da direita diz em que aula se aprende cada coisa.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>A app tem de</th><th>Aula</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Pedir o token com as credenciais do grupo, guardá-lo em armazenamento seguro e pedir outro quando a API responder 401.</td><td>12, 17</td></tr>
+<tr><td>2</td><td>Mostrar as nove ilhas, com fotografia e pesquisa por nome.</td><td>12, 13</td></tr>
+<tr><td>3</td><td>Mostrar a previsão a 5 dias de uma ilha: ícone, descrição, mínima e máxima, probabilidade de chuva e vento.</td><td>12</td></tr>
+<tr><td>4</td><td>Mostrar os avisos do IPMA: no ecrã inicial, os que houver nos Açores; no ecrã de uma ilha, os da área dessa ilha. Sem avisos, dizer que não há.</td><td>12</td></tr>
+<tr><td>5</td><td>Mostrar os trilhos, filtrados por ilha, com um ecrã de detalhe.</td><td>10</td></tr>
+<tr><td>6</td><td>Mostrar o feed de relatos da turma e deixar criar um relato com texto e fotografia da galeria, e editar e apagar os do grupo.</td><td>12, 24</td></tr>
+<tr><td>7</td><td>Marcar e tirar ilhas e trilhos dos favoritos, guardados na API, e mostrá-los no ecrã inicial. Um favorito marcado num telemóvel aparece nos outros telemóveis do grupo.</td><td>16, 17</td></tr>
+<tr><td>8</td><td>Funcionar sem rede com os últimos dados obtidos, incluindo os favoritos, e dizer de quando são ("atualizado há 2 h").</td><td>16</td></tr>
+<tr><td>9</td><td>Tratar os estados de carregamento, erro (com "Tentar outra vez"), vazio e dados em todos os ecrãs que dependem da rede.</td><td>12, 13</td></tr>
+<tr><td>10</td><td>Estar organizada por camadas: os ecrãs falam com notifiers, os notifiers com repositories, e nenhum ecrã faz pedidos HTTP.</td><td>13</td></tr>
+<tr><td>11</td><td>Passar o <code>flutter analyze</code> sem avisos e ter CI no GitHub Actions com <code>analyze</code> e <code>test</code>, com pelo menos cinco testes.</td><td>11, 25</td></tr>
+<tr><td>12</td><td>Ter um build de release assinado, distribuído a pelo menos três testers de fora do grupo.</td><td>27, 31</td></tr>
+</tbody></table></div>
 
-<h2>A turma</h2>
-<div class="pz-poll" data-track="proj-mvp"></div>
+<h2>Extras valorizados</h2>
+<p>Os extras contam no critério de funcionalidade, mas só depois de os requisitos mínimos estarem completos. Um extra acabado vale mais do que três a meio.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Extra</th><th>Aula</th></tr></thead>
+<tbody>
+<tr><td>Estado do mar perto de cada ilha: altura e período da ondulação e temperatura da água, hoje e nos dois dias seguintes.</td><td>12</td></tr>
+<tr><td>Tempo agora: a última leitura das estações do IPMA na ilha, com a hora da leitura.</td><td>12</td></tr>
+<tr><td>Sismos dos últimos 30 dias, com a magnitude, a ilha mais próxima e se foram sentidos.</td><td>12</td></tr>
+<tr><td>Mapa com as nove ilhas e o estado do tempo de hoje em cada marcador; tocar no marcador abre a ilha.</td><td>21</td></tr>
+<tr><td>Ilha mais próxima a partir da localização do telemóvel, com as permissões bem tratadas.</td><td>21</td></tr>
+<tr><td>Notificação local agendada com a previsão de amanhã para a ilha favorita.</td><td>22</td></tr>
+<tr><td>Deep link <code>tempoacores://</code> que abre a app diretamente numa ilha ou num trilho.</td><td>22</td></tr>
+<tr><td>Atualização da cache de previsões em segundo plano.</td><td>23</td></tr>
+<tr><td>Fotografia do relato tirada com a câmara, reduzida antes de enviar.</td><td>24</td></tr>
+<tr><td>Relatórios de crashes com Sentry ou Crashlytics.</td><td>26</td></tr>
+<tr><td>Tema claro e escuro; app em português e inglês.</td><td>27</td></tr>
+<tr><td>Ícone e ecrã de arranque próprios.</td><td>27</td></tr>
+<tr><td>Acessibilidade verificada com TalkBack ou VoiceOver e com letra a 200%.</td><td>11</td></tr>
+<tr><td>Build iOS distribuído pelo TestFlight.</td><td>27, 31</td></tr>
+</tbody></table></div>
+<p>Outro extra que não esteja na lista conta se for combinado com o docente numa review.</p>
+
+<h2>Grupos e repositório</h2>
+<ol class="steps">
+  <li><strong>Grupos de 2 a 3.</strong> Formam-se na aula 15 (21/10). Quem não estiver na aula é colocado num grupo pelo docente. Os grupos não mudam depois da review da sprint 1.</li>
+  <li><strong>Repositório do grupo.</strong> Um membro abre o <a href="https://github.com/Tiago-Rocha/pdm-projeto-template">template</a>, carrega em <em>Use this template</em> e cria um repositório privado chamado <code>pdm-projeto-</code> e os apelidos (ex. <code>pdm-projeto-silva-costa</code>). Em <em>Settings, Collaborators</em> convida os colegas e o professor (<code>Tiago-Rocha</code>). O repositório nasce com uma app que já corre, as pastas das camadas, os lints e o CI.</li>
+  <li><strong>Credenciais da API.</strong> O <code>clientId</code> e o <code>clientSecret</code> do grupo chegam numa issue privada no repositório. Fazem o primeiro pedido à API na aula de seg 26/10.</li>
+  <li><strong>Primeiro pull request.</strong> README com o nome e o número de cada membro, a divisão inicial do trabalho e uma captura da app template a correr.</li>
+</ol>
+
+<h2>Como se trabalha</h2>
+<ul>
+  <li><strong>Backlog em issues.</strong> Cada funcionalidade é uma issue com um título curto (verbo e objeto) e critérios de aceitação. As issues da sprint ficam num board do GitHub Projects.</li>
+  <li><strong>Tudo por pull request.</strong> Uma issue, um branch, um PR pequeno, revisto por outro membro do grupo antes de entrar no <code>main</code>. Ninguém faz push direto para o <code>main</code>.</li>
+  <li><strong>Definição de pronto.</strong> Uma issue só fecha quando corre no telemóvel, não tem avisos do <code>flutter analyze</code>, trata os estados de erro e o PR foi revisto e aprovado.</li>
+  <li><strong>Trabalho de todos.</strong> Cada membro tem de ter PRs seus e revisões suas em todas as sprints. O histórico do GitHub é a prova.</li>
+</ul>
+
+<h2>Sprints</h2>
+<p>Três sprints de cerca de duas semanas. Cada uma acaba com uma review em aula: cada grupo tem 5 minutos para mostrar a app no telemóvel e dizer o que ficou por fazer. Conta o que estiver no <code>main</code> à hora da review.</p>
+
+<h3>Sprint 1 · 21/10 a 02/11</h3>
+<p><strong>Objetivo:</strong> uma app instalada no telemóvel com dados reais da API. Review na seg 02/11 às 16:00.</p>
+<ul class="checklist">
+  <li>Token do grupo pedido à API e guardado em armazenamento seguro, com renovação em 401 (requisito 1).</li>
+  <li>Lista das ilhas com pesquisa e previsão a 5 dias de cada ilha (requisitos 2 e 3).</li>
+  <li>Camadas desde o primeiro dia: ecrãs, notifiers e repositories (requisito 10).</li>
+  <li>Estados de carregamento, erro, vazio e dados nesses ecrãs (requisito 9).</li>
+  <li>Backlog da sprint 2 escrito em issues.</li>
+</ul>
+
+<h3>Sprint 2 · 02/11 a 18/11</h3>
+<p><strong>Objetivo:</strong> todos os ecrãs da app, a funcionar sem rede. Review na qua 18/11 às 16:00.</p>
+<ul class="checklist">
+  <li>Avisos no ecrã inicial e no ecrã da ilha (requisito 4).</li>
+  <li>Trilhos com filtro por ilha e detalhe (requisito 5).</li>
+  <li>Feed de relatos, com criar, editar e apagar, e fotografia da galeria (requisito 6).</li>
+  <li>Favoritos sincronizados com a API e mostrados no ecrã inicial (requisito 7).</li>
+  <li>Cache local e "atualizado há" sem rede (requisito 8).</li>
+  <li>CI no GitHub Actions a correr em cada PR, com os primeiros testes (requisito 11).</li>
+  <li>Um primeiro extra começado, por exemplo o mapa ou as notificações.</li>
+</ul>
+
+<h3>Sprint 3 · 18/11 a 02/12</h3>
+<p><strong>Objetivo:</strong> uma app pronta a entregar, nas mãos de testers. Review na qua 02/12 às 16:30.</p>
+<ul class="checklist">
+  <li>Primeira distribuição a testers na aula 27 (20/11) e feedback recebido em issues (requisito 12).</li>
+  <li>Build de release assinado com a versão certa no <code>pubspec.yaml</code> (aula 31, 30/11).</li>
+  <li>Pelo menos cinco testes e CI verde no <code>main</code> (requisito 11).</li>
+  <li>Extras escolhidos pelo grupo, acabados.</li>
+  <li>README completo e lista de pendentes para o freeze.</li>
+</ul>
+
+<p>Entre 02/12 e 09/12 já não entram funcionalidades novas: só correções, testes e README.</p>
+
+<h2>Distribuição a testers</h2>
+<p>A partir da aula 27 (20/11), a app tem de estar instalada no telemóvel de pessoas de fora do grupo. No Android, pelo Firebase App Distribution; no iOS, pelo TestFlight, se o grupo tiver Mac e conta de programador. Pelo menos três testers de fora do grupo, por exemplo colegas de outros grupos. O feedback que derem entra no backlog como issues, e cada build novo leva um número de versão novo.</p>
+
+<h2>Freeze e defesas</h2>
+<ul>
+  <li><strong>Freeze: qua 09/12 às 18:30.</strong> O grupo cria a tag <code>v1.0.0</code> no <code>main</code>. É essa versão que se avalia. Depois do freeze só se pode mudar o README.</li>
+  <li><strong>Ordem das defesas</strong> sorteada na aula 35 (09/12), onde cada grupo também faz um ensaio de 5 minutos.</li>
+  <li><strong>Defesas: seg 14/12 (16:00 às 18:00) e qua 16/12 (08:30 às 10:30).</strong> 10 minutos de apresentação do grupo, com 3 slides no máximo e demonstração ao vivo no telemóvel, e depois perguntas dirigidas a cada membro.</li>
+  <li>Nas perguntas, cada pessoa responde sozinha pelo código que fez e por qualquer parte da app. É daqui que sai a nota da defesa oral, que é individual.</li>
+  <li>Levem um plano B: um vídeo curto da app a funcionar, para o caso de a rede ou o telemóvel falharem.</li>
+</ul>
+
+<h2>O que se entrega</h2>
+<p>Tudo no repositório do grupo, na tag <code>v1.0.0</code>:</p>
+<ul class="checklist">
+  <li>O código da app, com o CI verde nesse commit.</li>
+  <li>Um README com: nomes e números dos membros, o que a app faz, capturas de ecrã, como correr a app (incluindo o <code>--dart-define</code> das credenciais), os extras feitos e quem fez o quê.</li>
+  <li>O link de instalação para testers (Firebase App Distribution ou TestFlight) e a lista de quem testou.</li>
+  <li>Os slides da defesa em PDF, na pasta <code>docs/</code>.</li>
+  <li>O histórico de issues, branches e pull requests das três sprints.</li>
+</ul>
+<div class="callout warn"><strong>Nunca no repositório</strong> O <code>clientSecret</code>, a keystore de assinatura e o <code>key.properties</code>. Um segredo que entrou num commit conta como publicado, mesmo que seja apagado no commit seguinte.</div>
+
+<h2>Como é avaliado</h2>
+<p>A nota do projeto sai desta rubrica. O peso do projeto e da defesa oral na nota final está em <a href="avaliacao.html">Avaliação</a>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Critério</th><th>O que se avalia</th><th>Peso no projeto</th></tr></thead>
+<tbody>
+<tr><td>Funcionalidade</td><td>Requisitos mínimos completos e a funcionar no telemóvel; extras valorizados.</td><td>35%</td></tr>
+<tr><td>Qualidade do código e arquitetura</td><td>Camadas claras, modelos, tratamento de erros, lints sem avisos, testes existentes e a passar no CI.</td><td>25%</td></tr>
+<tr><td>Experiência de utilização</td><td>Estados de loading, erro e vazio; funcionamento offline; acessibilidade básica; coerência visual.</td><td>15%</td></tr>
+<tr><td>Processo</td><td>Entregas por sprint, pull requests revistos por colegas, commits distribuídos pelos membros, uso da API do curso ao longo do tempo.</td><td>15%</td></tr>
+<tr><td>Distribuição e apresentação</td><td>Build assinado distribuído a testers (Firebase App Distribution ou TestFlight), demo e resposta às perguntas.</td><td>10%</td></tr>
+</tbody></table></div>
+<p>A nota do projeto é do grupo, com ajuste individual. As regras completas, a nota mínima e o uso de IA estão em <a href="avaliacao.html">Avaliação</a>.</p>
 
 <nav class="pager" id="pager"></nav>
 </main>
@@ -56,6 +201,5 @@
 
 <footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
 <script src="assets/app.js"></script>
-<script src="assets/parsons.js"></script>
 </body>
 </html>

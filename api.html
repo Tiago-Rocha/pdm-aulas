@@ -76,6 +76,13 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
 <tr><td><code>GET /v1/islands/{id}/forecast</code></td><td>Previsão a 5 dias da ilha (IPMA).</td></tr>
 <tr><td><code>GET /v1/trails</code></td><td>Os trilhos; <code>?islandId=faial</code> filtra por ilha.</td></tr>
 <tr><td><code>GET /v1/trails/{id}</code></td><td>Um trilho.</td></tr>
+<tr><td><code>GET /v1/islands/{id}/sea</code></td><td>Estado do mar perto da ilha, hoje e nos dois dias seguintes (IPMA).</td></tr>
+<tr><td><code>GET /v1/islands/{id}/observations</code></td><td>Tempo agora: a última leitura das estações do IPMA na ilha.</td></tr>
+<tr><td><code>GET /v1/warnings</code></td><td>Avisos amarelos, laranja e vermelhos nos Açores; <code>?islandId=</code> filtra pela área da ilha.</td></tr>
+<tr><td><code>GET /v1/earthquakes</code></td><td>Sismos dos últimos 30 dias; <code>?islandId=</code>, <code>?minMagnitude=</code>, <code>?felt=true</code> e <code>?limit=</code>.</td></tr>
+<tr><td><code>GET /v1/me/favorites</code></td><td>As ilhas e os trilhos favoritos do grupo.</td></tr>
+<tr><td><code>PUT /v1/me/favorites/{islands|trails}/{id}</code></td><td>Marca como favorito.</td></tr>
+<tr><td><code>DELETE /v1/me/favorites/{islands|trails}/{id}</code></td><td>Tira dos favoritos.</td></tr>
 <tr><td><code>GET /v1/reports</code></td><td>Feed de relatos da turma, mais recentes primeiro; <code>?islandId=</code> e <code>?limit=</code> (até 100).</td></tr>
 <tr><td><code>POST /v1/reports</code></td><td>Cria um relato: só texto (JSON) ou texto e fotografia (multipart).</td></tr>
 <tr><td><code>GET /v1/reports/{id}</code></td><td>Um relato.</td></tr>
@@ -89,7 +96,9 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
   &quot;id&quot;: &quot;sao-miguel&quot;,
   &quot;name&quot;: &quot;São Miguel&quot;,
   &quot;imageUrl&quot;: &quot;https://api-pdm.sublimecipher.com/static/islands/sao_miguel.jpg&quot;,
-  &quot;trailCount&quot;: 3
+  &quot;trailCount&quot;: 3,
+  &quot;latitude&quot;: 37.78,
+  &quot;longitude&quot;: -25.5
 }</code></pre>
 <pre data-title="GET /v1/trails?islandId=faial · um elemento da lista"><code class="language-json">{
   &quot;id&quot;: &quot;caldeira-faial&quot;,
@@ -137,6 +146,64 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
   <li><code>rainChance</code> vai de 0 a 100. O IPMA não dá a velocidade do vento em km/h, só a classe: 1 fraco, 2 moderado, 3 forte, 4 muito forte.</li>
   <li>A API pergunta ao IPMA no máximo de 30 em 30 minutos. Se o IPMA falhar, devolve a última previsão que tiver; se não tiver nenhuma, responde <code>502</code>.</li>
 </ul>
+
+<h2>Avisos</h2>
+<pre data-title="GET /v1/warnings · um elemento da lista"><code class="language-json">{
+  &quot;area&quot;: &quot;ACE&quot;,
+  &quot;areaName&quot;: &quot;Grupo Central&quot;,
+  &quot;islandIds&quot;: [
+    &quot;terceira&quot;,
+    &quot;graciosa&quot;,
+    &quot;sao-jorge&quot;,
+    &quot;pico&quot;,
+    &quot;faial&quot;
+  ],
+  &quot;type&quot;: &quot;wind&quot;,
+  &quot;typeLabel&quot;: &quot;Vento&quot;,
+  &quot;level&quot;: &quot;yellow&quot;,
+  &quot;levelLabel&quot;: &quot;Amarelo&quot;,
+  &quot;text&quot;: &quot;Vento de sudoeste com rajadas até 90 km/h.&quot;,
+  &quot;startTime&quot;: &quot;2026-10-26T06:00:00&quot;,
+  &quot;endTime&quot;: &quot;2026-10-26T18:00:00&quot;
+}</code></pre>
+<ul>
+  <li>Só vêm os avisos amarelos, laranja e vermelhos, dos mais graves para os menos graves. <strong>Uma lista vazia é o caso normal:</strong> quer dizer que não há avisos, e a app tem de o dizer.</li>
+  <li>O IPMA dá os avisos por grupo de ilhas: <code>AOR</code> Grupo Oriental, <code>ACE</code> Grupo Central e <code>AOC</code> Grupo Ocidental. <code>islandIds</code> diz a que ilhas se aplica cada aviso; <code>?islandId=pico</code> devolve só os da área do Pico.</li>
+  <li><code>type</code> é um de <code>wind</code>, <code>rain</code>, <code>seaState</code>, <code>thunderstorm</code>, <code>fog</code>, <code>snow</code>, <code>hot</code> ou <code>cold</code>. O <code>text</code> pode vir vazio.</li>
+</ul>
+
+<h2>Favoritos</h2>
+<p>Os favoritos ficam na conta, não no telemóvel: dois telemóveis com o mesmo <code>clientId</code> veem os mesmos. Marcar e tirar são idempotentes: repetir o pedido dá sempre <code>204</code>, por isso a app pode tentar outra vez sem medo.</p>
+<pre data-title="Marcar e tirar"><code class="language-http">PUT /v1/me/favorites/islands/pico
+Authorization: Bearer &lt;token&gt;
+
+DELETE /v1/me/favorites/trails/capelinhos
+Authorization: Bearer &lt;token&gt;</code></pre>
+<pre data-title="GET /v1/me/favorites"><code class="language-json">{
+  &quot;islands&quot;: [
+    {
+      &quot;id&quot;: &quot;pico&quot;,
+      &quot;name&quot;: &quot;Pico&quot;,
+      &quot;imageUrl&quot;: &quot;https://api-pdm.sublimecipher.com/static/islands/pico.jpg&quot;,
+      &quot;trailCount&quot;: 1,
+      &quot;latitude&quot;: 38.47,
+      &quot;longitude&quot;: -28.33,
+      &quot;addedAt&quot;: &quot;2026-10-27T09:12:44Z&quot;
+    }
+  ],
+  &quot;trails&quot;: [
+    &quot;...&quot;
+  ]
+}</code></pre>
+<p>Cada ilha e cada trilho vêm completos, como em <code>/v1/islands</code> e <code>/v1/trails</code>, com <code>addedAt</code>; os mais recentes primeiro. Uma ilha ou um trilho que não existe dá <code>404</code>.</p>
+
+<h2>Mais dados do IPMA</h2>
+<ul>
+  <li><strong><code>/v1/islands/{id}/sea</code></strong>: altura e período da ondulação, altura total do mar e temperatura da água para hoje e os dois dias seguintes. O IPMA só tem três pontos nos Açores (Ponta Delgada, Horta e Santa Cruz das Flores); <code>location</code> diz qual serve a ilha.</li>
+  <li><strong><code>/v1/islands/{id}/observations</code></strong>: as estações do IPMA na ilha, cada uma com a sua última leitura (temperatura, humidade, vento, pressão, chuva). As horas estão em UTC. Cada estação mede o que pode: o que falta vem a <code>null</code>.</li>
+  <li><strong><code>/v1/earthquakes</code></strong>: sismos dos últimos 30 dias na região, do mais recente para o mais antigo, com a magnitude, a profundidade, a ilha mais próxima e, se foi sentido, a intensidade e onde.</li>
+</ul>
+<p>Os campos todos, com exemplos, estão na <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">documentação interativa</a>.</p>
 
 <h2>Relatos</h2>
 <p>Um relato é um texto, e opcionalmente uma fotografia, sobre o tempo numa ilha. <strong>O feed é da turma toda:</strong> todos veem os relatos de todos, com o nome do autor, e cada um só altera e apaga os seus. O campo <code>mine</code> diz se o relato é teu.</p>

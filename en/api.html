@@ -76,6 +76,13 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
 <tr><td><code>GET /v1/islands/{id}/forecast</code></td><td>5-day forecast for the island (IPMA).</td></tr>
 <tr><td><code>GET /v1/trails</code></td><td>The trails; <code>?islandId=faial</code> filters by island.</td></tr>
 <tr><td><code>GET /v1/trails/{id}</code></td><td>One trail.</td></tr>
+<tr><td><code>GET /v1/islands/{id}/sea</code></td><td>Sea state near the island, today and the next two days (IPMA).</td></tr>
+<tr><td><code>GET /v1/islands/{id}/observations</code></td><td>Weather now: the latest reading from the IPMA stations on the island.</td></tr>
+<tr><td><code>GET /v1/warnings</code></td><td>Yellow, orange and red warnings in the Azores; <code>?islandId=</code> filters by the island's area.</td></tr>
+<tr><td><code>GET /v1/earthquakes</code></td><td>Earthquakes in the last 30 days; <code>?islandId=</code>, <code>?minMagnitude=</code>, <code>?felt=true</code> and <code>?limit=</code>.</td></tr>
+<tr><td><code>GET /v1/me/favorites</code></td><td>The group's favourite islands and trails.</td></tr>
+<tr><td><code>PUT /v1/me/favorites/{islands|trails}/{id}</code></td><td>Adds a favourite.</td></tr>
+<tr><td><code>DELETE /v1/me/favorites/{islands|trails}/{id}</code></td><td>Removes a favourite.</td></tr>
 <tr><td><code>GET /v1/reports</code></td><td>Class feed of reports, newest first; <code>?islandId=</code> and <code>?limit=</code> (up to 100).</td></tr>
 <tr><td><code>POST /v1/reports</code></td><td>Creates a report: text only (JSON) or text and photo (multipart).</td></tr>
 <tr><td><code>GET /v1/reports/{id}</code></td><td>One report.</td></tr>
@@ -89,7 +96,9 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
   &quot;id&quot;: &quot;sao-miguel&quot;,
   &quot;name&quot;: &quot;São Miguel&quot;,
   &quot;imageUrl&quot;: &quot;https://api-pdm.sublimecipher.com/static/islands/sao_miguel.jpg&quot;,
-  &quot;trailCount&quot;: 3
+  &quot;trailCount&quot;: 3,
+  &quot;latitude&quot;: 37.78,
+  &quot;longitude&quot;: -25.5
 }</code></pre>
 <pre data-title="GET /v1/trails?islandId=faial · one item of the list"><code class="language-json">{
   &quot;id&quot;: &quot;caldeira-faial&quot;,
@@ -137,6 +146,64 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
   <li><code>rainChance</code> goes from 0 to 100. IPMA does not give the wind speed in km/h, only the class: 1 weak, 2 moderate, 3 strong, 4 very strong.</li>
   <li>The API asks IPMA at most every 30 minutes. If IPMA fails, it returns the last forecast it has; if it has none, it answers <code>502</code>.</li>
 </ul>
+
+<h2>Warnings</h2>
+<pre data-title="GET /v1/warnings · one item of the list"><code class="language-json">{
+  &quot;area&quot;: &quot;ACE&quot;,
+  &quot;areaName&quot;: &quot;Grupo Central&quot;,
+  &quot;islandIds&quot;: [
+    &quot;terceira&quot;,
+    &quot;graciosa&quot;,
+    &quot;sao-jorge&quot;,
+    &quot;pico&quot;,
+    &quot;faial&quot;
+  ],
+  &quot;type&quot;: &quot;wind&quot;,
+  &quot;typeLabel&quot;: &quot;Vento&quot;,
+  &quot;level&quot;: &quot;yellow&quot;,
+  &quot;levelLabel&quot;: &quot;Amarelo&quot;,
+  &quot;text&quot;: &quot;Vento de sudoeste com rajadas até 90 km/h.&quot;,
+  &quot;startTime&quot;: &quot;2026-10-26T06:00:00&quot;,
+  &quot;endTime&quot;: &quot;2026-10-26T18:00:00&quot;
+}</code></pre>
+<ul>
+  <li>Only yellow, orange and red warnings come back, most serious first. <strong>An empty list is the normal case:</strong> it means there are no warnings, and the app has to say so.</li>
+  <li>IPMA issues warnings per island group: <code>AOR</code> Eastern Group, <code>ACE</code> Central Group and <code>AOC</code> Western Group. <code>islandIds</code> says which islands each warning applies to; <code>?islandId=pico</code> returns only the ones for Pico's area.</li>
+  <li><code>type</code> is one of <code>wind</code>, <code>rain</code>, <code>seaState</code>, <code>thunderstorm</code>, <code>fog</code>, <code>snow</code>, <code>hot</code> or <code>cold</code>. The <code>text</code> may be empty. The labels come in Portuguese, as IPMA writes them.</li>
+</ul>
+
+<h2>Favourites</h2>
+<p>Favourites live in the account, not on the phone: two phones with the same <code>clientId</code> see the same ones. Adding and removing are idempotent: repeating the request always gives <code>204</code>, so the app can safely try again.</p>
+<pre data-title="Add and remove"><code class="language-http">PUT /v1/me/favorites/islands/pico
+Authorization: Bearer &lt;token&gt;
+
+DELETE /v1/me/favorites/trails/capelinhos
+Authorization: Bearer &lt;token&gt;</code></pre>
+<pre data-title="GET /v1/me/favorites"><code class="language-json">{
+  &quot;islands&quot;: [
+    {
+      &quot;id&quot;: &quot;pico&quot;,
+      &quot;name&quot;: &quot;Pico&quot;,
+      &quot;imageUrl&quot;: &quot;https://api-pdm.sublimecipher.com/static/islands/pico.jpg&quot;,
+      &quot;trailCount&quot;: 1,
+      &quot;latitude&quot;: 38.47,
+      &quot;longitude&quot;: -28.33,
+      &quot;addedAt&quot;: &quot;2026-10-27T09:12:44Z&quot;
+    }
+  ],
+  &quot;trails&quot;: [
+    &quot;...&quot;
+  ]
+}</code></pre>
+<p>Each island and trail comes complete, as in <code>/v1/islands</code> and <code>/v1/trails</code>, with <code>addedAt</code>; newest first. An island or trail that does not exist gives <code>404</code>.</p>
+
+<h2>More IPMA data</h2>
+<ul>
+  <li><strong><code>/v1/islands/{id}/sea</code></strong>: wave height and period, total sea height and water temperature for today and the next two days. IPMA only has three points in the Azores (Ponta Delgada, Horta and Santa Cruz das Flores); <code>location</code> says which one serves the island.</li>
+  <li><strong><code>/v1/islands/{id}/observations</code></strong>: the IPMA stations on the island, each with its latest reading (temperature, humidity, wind, pressure, rain). Times are in UTC. Each station measures what it can: anything missing comes as <code>null</code>.</li>
+  <li><strong><code>/v1/earthquakes</code></strong>: earthquakes in the last 30 days in the region, newest first, with the magnitude, depth, nearest island and, if it was felt, the intensity and where.</li>
+</ul>
+<p>All the fields, with examples, are in the <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">interactive documentation</a>.</p>
 
 <h2>Reports</h2>
 <p>A report is a text, and optionally a photo, about the weather on an island. <strong>The feed belongs to the whole class:</strong> everyone sees everyone's reports, with the author's name, and each person only changes and deletes their own. The <code>mine</code> field says whether the report is yours.</p>
