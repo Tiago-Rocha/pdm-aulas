@@ -65,11 +65,53 @@ Content-Type: application/json
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
 <div class="callout"><strong>Security</strong> The token is a JWT: three base64 parts separated by dots, signed by the API. Anyone can read what is inside (paste it into <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a>), but nobody can change it without the server's key. That is why it holds no secrets, only who you are and when it expires. The <code>clientSecret</code>, on the other hand, must not go into the code you commit: keep it outside git, for example with <code>--dart-define</code>.</div>
 
+<h2>User accounts</h2>
+<p>The <code>clientId</code> identifies the <strong>app</strong>. Inside the app, each <strong>person</strong> has their own account: they create it with <code>POST /v1/auth/register</code> (with <code>email</code>, <code>password</code> and <code>name</code>) and log in with <code>POST /v1/auth/login</code>. Both requests also carry the app's <code>clientId</code> and <code>clientSecret</code>, and answer with the session.</p>
+<pre data-title="Login"><code class="language-http">POST /v1/auth/login
+Content-Type: application/json
+
+{
+  &quot;clientId&quot;: &quot;pdm-ab12cd&quot;,
+  &quot;clientSecret&quot;: &quot;the-app-secret&quot;,
+  &quot;email&quot;: &quot;ana@exemplo.pt&quot;,
+  &quot;password&quot;: &quot;segredo123&quot;
+}</code></pre>
+<pre data-title="Response 200"><code class="language-json">{
+  &quot;accessToken&quot;: &quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...&quot;,
+  &quot;tokenType&quot;: &quot;Bearer&quot;,
+  &quot;expiresIn&quot;: 900,
+  &quot;refreshToken&quot;: &quot;0b6f1f5e-8c1a-4f0e-9a51-2a8f3c7d9e10.k3m9q2x7...&quot;,
+  &quot;refreshExpiresIn&quot;: 2592000,
+  &quot;user&quot;: {
+    &quot;id&quot;: &quot;a5638212-5f42-44a8-a01b-478f9ce60b7d&quot;,
+    &quot;email&quot;: &quot;ana@exemplo.pt&quot;,
+    &quot;name&quot;: &quot;Ana&quot;
+  }
+}</code></pre>
+<ul>
+  <li>The <code>accessToken</code> lasts <strong>15 minutes</strong> and goes on every request, like the app token. When the API answers <code>401</code>, get another from <code>POST /v1/auth/refresh</code> and repeat the request once.</li>
+  <li>The <code>refreshToken</code> lasts <strong>30 days</strong> and only changes on login. Keep it with <code>flutter_secure_storage</code>, never in <code>shared_preferences</code>.</li>
+  <li>If the refresh also gives <code>401</code>, the session is over (logout, deleted account or 30 days): go back to the login screen.</li>
+  <li><code>POST /v1/auth/logout</code> with the refresh token ends the session. <code>DELETE /v1/me</code> deletes the account; the stores require this option when the app lets people create an account.</li>
+  <li>The email does not need to be real: the API sends no emails. The password is stored only as a hash. A repeated email in the same app gives <code>409</code>.</li>
+</ul>
+<pre data-title="Renew the session"><code class="language-http">POST /v1/auth/refresh
+Content-Type: application/json
+
+{
+  &quot;refreshToken&quot;: &quot;0b6f1f5e-8c1a-4f0e-9a51-2a8f3c7d9e10.k3m9q2x7...&quot;
+}</code></pre>
+
 <h2>Endpoints</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>Method and path</th><th>What it does</th></tr></thead>
 <tbody>
 <tr><td><code>POST /v1/auth/token</code></td><td>Exchanges the <code>clientId</code> and <code>clientSecret</code> for a token (no token needed).</td></tr>
+<tr><td><code>POST /v1/auth/register</code></td><td>Creates a person's account in the app and starts the session.</td></tr>
+<tr><td><code>POST /v1/auth/login</code></td><td>A person's login: returns the access token and the refresh token.</td></tr>
+<tr><td><code>POST /v1/auth/refresh</code></td><td>New access token from the refresh token.</td></tr>
+<tr><td><code>POST /v1/auth/logout</code></td><td>Ends the session: the refresh token stops working.</td></tr>
+<tr><td><code>DELETE /v1/me</code></td><td>Deletes the user's account, with their favourites and reports.</td></tr>
 <tr><td><code>GET /v1/me</code></td><td>Who you are, according to the token. Good for testing.</td></tr>
 <tr><td><code>GET /v1/islands</code></td><td>The nine islands.</td></tr>
 <tr><td><code>GET /v1/islands/{id}</code></td><td>One island.</td></tr>
@@ -173,7 +215,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
 </ul>
 
 <h2>Favourites</h2>
-<p>Favourites live in the account, not on the phone: two phones with the same <code>clientId</code> see the same ones. Adding and removing are idempotent: repeating the request always gives <code>204</code>, so the app can safely try again.</p>
+<p>Favourites belong to the user, not the phone: the same person sees the same ones on any phone where they log in. They need a user's token; with the app-only token, the API answers <code>403</code>. Adding and removing are idempotent: repeating the request always gives <code>204</code>, so the app can safely try again.</p>
 <pre data-title="Add and remove"><code class="language-http">PUT /v1/me/favorites/islands/pico
 Authorization: Bearer &lt;token&gt;
 

@@ -48,18 +48,20 @@
 <div class="table-wrap"><table>
 <thead><tr><th>Data</th><th>Request</th></tr></thead>
 <tbody>
+<tr><td>Accounts: sign up, log in, renew the session, log out and delete</td><td><code>/v1/auth/…</code> and <code>DELETE /v1/me</code></td></tr>
 <tr><td>The nine islands, with photo and coordinates</td><td><code>GET /v1/islands</code></td></tr>
 <tr><td>5-day forecast for an island (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>forecast</code></td></tr>
 <tr><td>Yellow, orange and red weather warnings (IPMA)</td><td><code>GET /v1/warnings</code></td></tr>
 <tr><td>Trails, for all islands or one</td><td><code>GET /v1/trails</code></td></tr>
 <tr><td>Class reports: read, create, edit and delete</td><td><code>/v1/reports</code></td></tr>
-<tr><td>The group's favourites: read, add and remove</td><td><code>/v1/me/favorites</code></td></tr>
+<tr><td>The user's favourites: read, add and remove</td><td><code>/v1/me/favorites</code></td></tr>
 <tr><td>Sea state near the island (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>sea</code></td></tr>
 <tr><td>Weather now at the island's stations (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>observations</code></td></tr>
 <tr><td>Earthquakes in the last 30 days (IPMA)</td><td><code>GET /v1/earthquakes</code></td></tr>
 </tbody></table></div>
 <ul>
-  <li>Each group gets its own <code>clientId</code> and <code>clientSecret</code>, in an issue in the group repository, which is private. The reports the app publishes appear to the class with the group's name, and the favourites belong to the group account: every phone in the group sees the same ones.</li>
+  <li>Each group gets its own <code>clientId</code> and <code>clientSecret</code>, in an issue in the group repository, which is private. They identify the group's app.</li>
+  <li>Inside the app, each person creates their own account (email, password and name) and logs in with it. Favourites and reports belong to each user; reports appear to the class with the group's name and the name of whoever wrote them. The API stores the email and name of each account, and the password only as a hash. The email does not need to be real: the API sends no emails.</li>
   <li>The <code>clientSecret</code> never goes into the repository: it is passed at build time with <code>--dart-define</code>.</li>
   <li>The interactive documentation is at <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">api-pdm.sublimecipher.com/docs</a>: try each request in the browser before you write it in Dart.</li>
   <li>If the API gets a version 2 during the semester (lesson 28), the migration is part of the sprint 3 work.</li>
@@ -70,13 +72,13 @@
 <div class="table-wrap"><table>
 <thead><tr><th>#</th><th>The app must</th><th>Lesson</th></tr></thead>
 <tbody>
-<tr><td>1</td><td>Request the token with the group's credentials, keep it in secure storage and request a new one when the API answers 401.</td><td>12, 17</td></tr>
+<tr><td>1</td><td>Have sign-up and login screens with each person's account. Keep the session in secure storage, get a new token with the refresh token when the API answers 401, and let the user log out and delete their account.</td><td>16, 17</td></tr>
 <tr><td>2</td><td>Show the nine islands, with a photo and search by name.</td><td>12, 13</td></tr>
 <tr><td>3</td><td>Show the 5-day forecast for an island: icon, description, minimum and maximum, chance of rain and wind.</td><td>12</td></tr>
 <tr><td>4</td><td>Show the IPMA warnings: on the home screen, any there are in the Azores; on an island's screen, the ones for that island's area. With no warnings, say there are none.</td><td>12</td></tr>
 <tr><td>5</td><td>Show the trails, filtered by island, with a detail screen.</td><td>10</td></tr>
 <tr><td>6</td><td>Show the class reports feed and let you create a report with text and a photo from the gallery, and edit and delete the group's own.</td><td>12, 24</td></tr>
-<tr><td>7</td><td>Add and remove islands and trails from the favourites, stored in the API, and show them on the home screen. A favourite added on one phone shows up on the group's other phones.</td><td>16, 17</td></tr>
+<tr><td>7</td><td>Add and remove islands and trails from the user's favourites, stored in the API, and show them on the home screen. A favourite added on one phone shows up on another phone where the same person logs in.</td><td>16, 17</td></tr>
 <tr><td>8</td><td>Work without a network using the last data fetched, favourites included, and say how old it is ("updated 2 h ago").</td><td>16</td></tr>
 <tr><td>9</td><td>Handle the loading, error (with "Try again"), empty and data states on every screen that depends on the network.</td><td>12, 13</td></tr>
 <tr><td>10</td><td>Be organised in layers: screens talk to notifiers, notifiers to repositories, and no screen makes HTTP requests.</td><td>13</td></tr>
@@ -128,7 +130,7 @@
 <h3>Sprint 1 · 21/10 to 02/11</h3>
 <p><strong>Goal:</strong> an app installed on the phone with real data from the API. Review on Mon 02/11 at 16:00.</p>
 <ul class="checklist">
-  <li>Group token requested from the API and kept in secure storage, renewed on 401 (requirement 1).</li>
+  <li>Sign-up and login, with the session kept in secure storage and renewed on 401 (requirement 1).</li>
   <li>List of islands with search and the 5-day forecast for each island (requirements 2 and 3).</li>
   <li>Layers from day one: screens, notifiers and repositories (requirement 10).</li>
   <li>Loading, error, empty and data states on those screens (requirement 9).</li>
@@ -141,7 +143,8 @@
   <li>Warnings on the home screen and the island screen (requirement 4).</li>
   <li>Trails with a filter by island and a detail screen (requirement 5).</li>
   <li>Reports feed, with create, edit and delete, and a photo from the gallery (requirement 6).</li>
-  <li>Favourites synced with the API and shown on the home screen (requirement 7).</li>
+  <li>The user's favourites synced with the API and shown on the home screen (requirement 7).</li>
+  <li>Log out and delete account (requirement 1).</li>
   <li>Local cache and "updated ago" without a network (requirement 8).</li>
   <li>CI on GitHub Actions running on every PR, with the first tests (requirement 11).</li>
   <li>A first extra started, for example the map or the notifications.</li>

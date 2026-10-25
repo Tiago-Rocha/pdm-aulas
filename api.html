@@ -65,11 +65,53 @@ Content-Type: application/json
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
 <div class="callout"><strong>Segurança</strong> O token é um JWT: três partes em base64 separadas por pontos, assinado pela API. Qualquer pessoa pode ler o que está lá dentro (cola-o em <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a>), mas ninguém o consegue alterar sem a chave do servidor. Por isso não tem segredos dentro, só quem és e quando expira. O <code>clientSecret</code>, esse sim, não pode ir para o código que fazes commit: guarda-o fora do git, por exemplo com <code>--dart-define</code>.</div>
 
+<h2>Contas de utilizador</h2>
+<p>O <code>clientId</code> identifica a <strong>app</strong>. Dentro da app, cada <strong>pessoa</strong> tem a sua conta: cria-a em <code>POST /v1/auth/register</code> (com <code>email</code>, <code>password</code> e <code>name</code>) e entra em <code>POST /v1/auth/login</code>. Os dois pedidos levam também o <code>clientId</code> e o <code>clientSecret</code> da app, e respondem com a sessão.</p>
+<pre data-title="Login"><code class="language-http">POST /v1/auth/login
+Content-Type: application/json
+
+{
+  &quot;clientId&quot;: &quot;pdm-ab12cd&quot;,
+  &quot;clientSecret&quot;: &quot;o-segredo-da-app&quot;,
+  &quot;email&quot;: &quot;ana@exemplo.pt&quot;,
+  &quot;password&quot;: &quot;segredo123&quot;
+}</code></pre>
+<pre data-title="Resposta 200"><code class="language-json">{
+  &quot;accessToken&quot;: &quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...&quot;,
+  &quot;tokenType&quot;: &quot;Bearer&quot;,
+  &quot;expiresIn&quot;: 900,
+  &quot;refreshToken&quot;: &quot;0b6f1f5e-8c1a-4f0e-9a51-2a8f3c7d9e10.k3m9q2x7...&quot;,
+  &quot;refreshExpiresIn&quot;: 2592000,
+  &quot;user&quot;: {
+    &quot;id&quot;: &quot;a5638212-5f42-44a8-a01b-478f9ce60b7d&quot;,
+    &quot;email&quot;: &quot;ana@exemplo.pt&quot;,
+    &quot;name&quot;: &quot;Ana&quot;
+  }
+}</code></pre>
+<ul>
+  <li>O <code>accessToken</code> dura <strong>15 minutos</strong> e vai em cada pedido, como o token da app. Quando a API responder <code>401</code>, pede outro em <code>POST /v1/auth/refresh</code> e repete o pedido uma vez.</li>
+  <li>O <code>refreshToken</code> dura <strong>30 dias</strong> e só muda no login. Guarda-o com <code>flutter_secure_storage</code>, nunca em <code>shared_preferences</code>.</li>
+  <li>Se o refresh também der <code>401</code>, a sessão acabou (logout, conta apagada ou 30 dias): volta ao ecrã de login.</li>
+  <li><code>POST /v1/auth/logout</code> com o refresh token termina a sessão. <code>DELETE /v1/me</code> apaga a conta; as lojas obrigam a ter esta opção quando a app deixa criar conta.</li>
+  <li>O email não precisa de ser real: a API não envia emails. A password fica guardada só em hash. Um email repetido na mesma app dá <code>409</code>.</li>
+</ul>
+<pre data-title="Renovar a sessão"><code class="language-http">POST /v1/auth/refresh
+Content-Type: application/json
+
+{
+  &quot;refreshToken&quot;: &quot;0b6f1f5e-8c1a-4f0e-9a51-2a8f3c7d9e10.k3m9q2x7...&quot;
+}</code></pre>
+
 <h2>Endpoints</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>Método e caminho</th><th>O que faz</th></tr></thead>
 <tbody>
 <tr><td><code>POST /v1/auth/token</code></td><td>Troca o <code>clientId</code> e o <code>clientSecret</code> por um token (sem token).</td></tr>
+<tr><td><code>POST /v1/auth/register</code></td><td>Cria a conta de uma pessoa na app e inicia a sessão.</td></tr>
+<tr><td><code>POST /v1/auth/login</code></td><td>Login de uma pessoa: devolve o access token e o refresh token.</td></tr>
+<tr><td><code>POST /v1/auth/refresh</code></td><td>Access token novo a partir do refresh token.</td></tr>
+<tr><td><code>POST /v1/auth/logout</code></td><td>Termina a sessão: o refresh token deixa de valer.</td></tr>
+<tr><td><code>DELETE /v1/me</code></td><td>Apaga a conta do utilizador, com os favoritos e os relatos.</td></tr>
 <tr><td><code>GET /v1/me</code></td><td>Quem és, segundo o token. Bom para testar.</td></tr>
 <tr><td><code>GET /v1/islands</code></td><td>As nove ilhas.</td></tr>
 <tr><td><code>GET /v1/islands/{id}</code></td><td>Uma ilha.</td></tr>
@@ -173,7 +215,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code></pre>
 </ul>
 
 <h2>Favoritos</h2>
-<p>Os favoritos ficam na conta, não no telemóvel: dois telemóveis com o mesmo <code>clientId</code> veem os mesmos. Marcar e tirar são idempotentes: repetir o pedido dá sempre <code>204</code>, por isso a app pode tentar outra vez sem medo.</p>
+<p>Os favoritos são do utilizador, não do telemóvel: a mesma pessoa vê os mesmos em qualquer telemóvel onde entre. Precisam do token de um utilizador; com o token só da app, a API responde <code>403</code>. Marcar e tirar são idempotentes: repetir o pedido dá sempre <code>204</code>, por isso a app pode tentar outra vez sem medo.</p>
 <pre data-title="Marcar e tirar"><code class="language-http">PUT /v1/me/favorites/islands/pico
 Authorization: Bearer &lt;token&gt;
 

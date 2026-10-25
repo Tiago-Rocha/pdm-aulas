@@ -48,18 +48,20 @@
 <div class="table-wrap"><table>
 <thead><tr><th>Dados</th><th>Pedido</th></tr></thead>
 <tbody>
+<tr><td>Contas: criar, entrar, renovar a sessão, sair e apagar</td><td><code>/v1/auth/…</code> e <code>DELETE /v1/me</code></td></tr>
 <tr><td>As nove ilhas, com fotografia e coordenadas</td><td><code>GET /v1/islands</code></td></tr>
 <tr><td>Previsão a 5 dias de uma ilha (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>forecast</code></td></tr>
 <tr><td>Avisos meteorológicos amarelos, laranja e vermelhos (IPMA)</td><td><code>GET /v1/warnings</code></td></tr>
 <tr><td>Trilhos, de todas as ilhas ou de uma</td><td><code>GET /v1/trails</code></td></tr>
 <tr><td>Relatos da turma: ler, criar, editar e apagar</td><td><code>/v1/reports</code></td></tr>
-<tr><td>Favoritos do grupo: ler, marcar e tirar</td><td><code>/v1/me/favorites</code></td></tr>
+<tr><td>Favoritos do utilizador: ler, marcar e tirar</td><td><code>/v1/me/favorites</code></td></tr>
 <tr><td>Estado do mar perto da ilha (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>sea</code></td></tr>
 <tr><td>Tempo agora nas estações da ilha (IPMA)</td><td><code>GET /v1/islands/{id}/<wbr>observations</code></td></tr>
 <tr><td>Sismos dos últimos 30 dias (IPMA)</td><td><code>GET /v1/earthquakes</code></td></tr>
 </tbody></table></div>
 <ul>
-  <li>Cada grupo recebe um <code>clientId</code> e um <code>clientSecret</code> próprios, numa issue no repositório do grupo, que é privado. Os relatos que a app publicar aparecem à turma com o nome do grupo, e os favoritos ficam na conta do grupo: todos os telemóveis do grupo veem os mesmos.</li>
+  <li>Cada grupo recebe um <code>clientId</code> e um <code>clientSecret</code> próprios, numa issue no repositório do grupo, que é privado. Identificam a app do grupo.</li>
+  <li>Dentro da app, cada pessoa cria a sua conta (email, password e nome) e entra com ela. Os favoritos e os relatos são de cada utilizador; os relatos aparecem à turma com o nome do grupo e de quem os escreveu. A API guarda o email e o nome de cada conta, e a password só em hash. O email não precisa de ser real: a API não envia emails.</li>
   <li>O <code>clientSecret</code> nunca vai para o repositório: passa-se na compilação com <code>--dart-define</code>.</li>
   <li>A documentação interativa está em <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">api-pdm.sublimecipher.com/docs</a>: experimenta cada pedido no browser antes de o escrever em Dart.</li>
   <li>Se a API ganhar uma versão 2 durante o semestre (aula 28), a migração faz parte do trabalho da sprint 3.</li>
@@ -70,13 +72,13 @@
 <div class="table-wrap"><table>
 <thead><tr><th>#</th><th>A app tem de</th><th>Aula</th></tr></thead>
 <tbody>
-<tr><td>1</td><td>Pedir o token com as credenciais do grupo, guardá-lo em armazenamento seguro e pedir outro quando a API responder 401.</td><td>12, 17</td></tr>
+<tr><td>1</td><td>Ter ecrãs de registo e de login com a conta de cada pessoa. Guardar a sessão em armazenamento seguro, pedir um token novo com o refresh token quando a API responder 401, e deixar sair (logout) e apagar a conta.</td><td>16, 17</td></tr>
 <tr><td>2</td><td>Mostrar as nove ilhas, com fotografia e pesquisa por nome.</td><td>12, 13</td></tr>
 <tr><td>3</td><td>Mostrar a previsão a 5 dias de uma ilha: ícone, descrição, mínima e máxima, probabilidade de chuva e vento.</td><td>12</td></tr>
 <tr><td>4</td><td>Mostrar os avisos do IPMA: no ecrã inicial, os que houver nos Açores; no ecrã de uma ilha, os da área dessa ilha. Sem avisos, dizer que não há.</td><td>12</td></tr>
 <tr><td>5</td><td>Mostrar os trilhos, filtrados por ilha, com um ecrã de detalhe.</td><td>10</td></tr>
 <tr><td>6</td><td>Mostrar o feed de relatos da turma e deixar criar um relato com texto e fotografia da galeria, e editar e apagar os do grupo.</td><td>12, 24</td></tr>
-<tr><td>7</td><td>Marcar e tirar ilhas e trilhos dos favoritos, guardados na API, e mostrá-los no ecrã inicial. Um favorito marcado num telemóvel aparece nos outros telemóveis do grupo.</td><td>16, 17</td></tr>
+<tr><td>7</td><td>Marcar e tirar ilhas e trilhos dos favoritos do utilizador, guardados na API, e mostrá-los no ecrã inicial. Um favorito marcado num telemóvel aparece noutro telemóvel onde a mesma pessoa entre.</td><td>16, 17</td></tr>
 <tr><td>8</td><td>Funcionar sem rede com os últimos dados obtidos, incluindo os favoritos, e dizer de quando são ("atualizado há 2 h").</td><td>16</td></tr>
 <tr><td>9</td><td>Tratar os estados de carregamento, erro (com "Tentar outra vez"), vazio e dados em todos os ecrãs que dependem da rede.</td><td>12, 13</td></tr>
 <tr><td>10</td><td>Estar organizada por camadas: os ecrãs falam com notifiers, os notifiers com repositories, e nenhum ecrã faz pedidos HTTP.</td><td>13</td></tr>
@@ -128,7 +130,7 @@
 <h3>Sprint 1 · 21/10 a 02/11</h3>
 <p><strong>Objetivo:</strong> uma app instalada no telemóvel com dados reais da API. Review na seg 02/11 às 16:00.</p>
 <ul class="checklist">
-  <li>Token do grupo pedido à API e guardado em armazenamento seguro, com renovação em 401 (requisito 1).</li>
+  <li>Registo e login, com a sessão guardada em armazenamento seguro e renovada em 401 (requisito 1).</li>
   <li>Lista das ilhas com pesquisa e previsão a 5 dias de cada ilha (requisitos 2 e 3).</li>
   <li>Camadas desde o primeiro dia: ecrãs, notifiers e repositories (requisito 10).</li>
   <li>Estados de carregamento, erro, vazio e dados nesses ecrãs (requisito 9).</li>
@@ -141,7 +143,8 @@
   <li>Avisos no ecrã inicial e no ecrã da ilha (requisito 4).</li>
   <li>Trilhos com filtro por ilha e detalhe (requisito 5).</li>
   <li>Feed de relatos, com criar, editar e apagar, e fotografia da galeria (requisito 6).</li>
-  <li>Favoritos sincronizados com a API e mostrados no ecrã inicial (requisito 7).</li>
+  <li>Favoritos do utilizador sincronizados com a API e mostrados no ecrã inicial (requisito 7).</li>
+  <li>Logout e apagar conta (requisito 1).</li>
   <li>Cache local e "atualizado há" sem rede (requisito 8).</li>
   <li>CI no GitHub Actions a correr em cada PR, com os primeiros testes (requisito 11).</li>
   <li>Um primeiro extra começado, por exemplo o mapa ou as notificações.</li>
