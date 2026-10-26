@@ -70,8 +70,8 @@
     <rect x="636" y="20" width="230" height="160" rx="10" class="box danger"/>
     <text x="650" y="46" class="t b">Seguro</text>
     <text x="650" y="70" class="t mono">flutter_secure_storage</text>
-    <text x="650" y="98" class="t s">token de acesso</text>
-    <text x="650" y="118" class="t s">refresh token</text>
+    <text x="650" y="98" class="t s">refresh token</text>
+    <text x="650" y="118" class="t s">chaves do utilizador</text>
     <text x="650" y="138" class="t s">Keychain / Keystore</text>
     <text x="650" y="164" class="t s b">nunca em shared_preferences</text>
   </svg>
@@ -84,7 +84,7 @@
   <tr><td><strong>Dados estruturados com consultas</strong></td><td>Cache de previsões e avisos, histórico</td><td>SQLite: <code>sqflite</code> (SQL à mão) ou <code>drift</code> (tipado, reativo)</td></tr>
   <tr><td><strong>NoSQL local (documentos)</strong></td><td>Rascunho de um relato, últimas pesquisas</td><td><code>hive_ce</code> ou <code>sembast</code>: guardam mapas e objetos sem tabelas nem SQL. O <code>hive</code> e o <code>isar</code> originais foram abandonados pelo autor; usa-se o fork da comunidade.</td></tr>
   <tr><td><strong>Ficheiros</strong></td><td>Imagens, exportações, logs</td><td><code>path_provider</code> + <code>dart:io</code></td></tr>
-  <tr><td><strong>Segredos</strong></td><td>Token de acesso, refresh token</td><td><code>flutter_secure_storage</code> (Keychain no iOS, Keystore no Android)</td></tr>
+  <tr><td><strong>Segredos</strong></td><td>Refresh token (o access token fica só em memória)</td><td><code>flutter_secure_storage</code> (Keychain no iOS, Keystore no Android)</td></tr>
   </tbody></table></div>
   <p><strong>Para os testes:</strong> preferências para valores pequenos, SQLite para dados que se consultam, secure storage para segredos.</p>
   <div class="callout"><strong>Analogia</strong> Três sítios numa casa. A gaveta da cozinha (<code>shared_preferences</code>) guarda coisas pequenas e pouco importantes, à mão. O arquivo com pastas (SQLite) guarda muitos registos que se procuram por nome ou data. O cofre (Keychain e Keystore) guarda o token. Deixar o token na gaveta é deixar a chave de casa debaixo do tapete.</div>
@@ -221,18 +221,6 @@
   </ul>
   <p><strong>Para os testes:</strong> cache-first mostra rápido e atualiza depois; network-first garante dados frescos; a invalidação por tempo decide quando a cache expira.</p>
   <div class="callout"><strong>Analogia</strong> O frigorífico. Mostra-se já o que há no frigorífico, com a data no rótulo (<code>obtidoEm</code>), e entretanto vai-se às compras (o pedido à rede em fundo); quando se volta, substitui-se o que lá estava. Sem rede, come-se o que há, e o rótulo diz de quando é. A validade no rótulo é a invalidação por tempo: dentro do prazo não se vai às compras.</div>
-</section>
-
-<section class="slide">
-  <h2>Tamanho, limpeza e o botão "Limpar dados"</h2>
-  <ul>
-    <li>Não há limite fixo, mas o sistema mostra "Armazenamento: 480 MB" nas definições e o utilizador limpa. No iOS, <code>tmp/</code> é apagado sob pressão de espaço.</li>
-    <li>Ordem de grandeza: preferências em KB, base de dados em MB, imagens em cache com limite (<code>cached_network_image</code>: 200 itens ou 7 dias).</li>
-    <li>Limpeza própria: apagar previsões com mais de 7 dias, opção "Limpar cache" nas definições.</li>
-    <li>"Limpar dados" no Android apaga tudo, incluindo o secure storage. No iOS só desinstalando, e o Keychain fica.</li>
-    <li>A app tem de arrancar bem com tudo vazio: é o primeiro arranque outra vez. Se falha sem cache, o erro é da app.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> a app tem de funcionar depois de o utilizador limpar os dados, exatamente como no primeiro arranque.</p>
 </section>
 
 <section class="slide">

@@ -70,8 +70,8 @@
     <rect x="636" y="20" width="230" height="160" rx="10" class="box danger"/>
     <text x="650" y="46" class="t b">Secure</text>
     <text x="650" y="70" class="t mono">flutter_secure_storage</text>
-    <text x="650" y="98" class="t s">access token</text>
-    <text x="650" y="118" class="t s">refresh token</text>
+    <text x="650" y="98" class="t s">refresh token</text>
+    <text x="650" y="118" class="t s">user keys</text>
     <text x="650" y="138" class="t s">Keychain / Keystore</text>
     <text x="650" y="164" class="t s b">never in shared_preferences</text>
   </svg>
@@ -84,7 +84,7 @@
   <tr><td><strong>Structured data with queries</strong></td><td>Cache of forecasts and warnings, history</td><td>SQLite: <code>sqflite</code> (SQL by hand) or <code>drift</code> (typed, reactive)</td></tr>
   <tr><td><strong>Local NoSQL (documents)</strong></td><td>Draft of a report, recent searches</td><td><code>hive_ce</code> or <code>sembast</code>: they store maps and objects with no tables and no SQL. The original <code>hive</code> and <code>isar</code> were abandoned by their author; use the community fork.</td></tr>
   <tr><td><strong>Files</strong></td><td>Images, exports, logs</td><td><code>path_provider</code> + <code>dart:io</code></td></tr>
-  <tr><td><strong>Secrets</strong></td><td>Access token, refresh token</td><td><code>flutter_secure_storage</code> (Keychain on iOS, Keystore on Android)</td></tr>
+  <tr><td><strong>Secrets</strong></td><td>Refresh token (the access token stays in memory only)</td><td><code>flutter_secure_storage</code> (Keychain on iOS, Keystore on Android)</td></tr>
   </tbody></table></div>
   <p><strong>For the tests:</strong> preferences for small values, SQLite for data you query, secure storage for secrets.</p>
   <div class="callout"><strong>Analogy</strong> Three places in a house. The kitchen drawer (<code>shared_preferences</code>) holds small, unimportant things, close at hand. The filing cabinet with folders (SQLite) holds many records that you look up by name or date. The safe (Keychain and Keystore) holds the token. Leaving the token in the drawer is leaving the house key under the doormat.</div>
@@ -221,18 +221,6 @@
   </ul>
   <p><strong>For the tests:</strong> cache-first shows quickly and updates afterwards; network-first guarantees fresh data; time-based invalidation decides when the cache expires.</p>
   <div class="callout"><strong>Analogy</strong> The fridge. You show what is in the fridge right away, with the date on the label (<code>fetchedAt</code>), and in the meantime you go shopping (the network request in the background); when you come back, you replace what was there. With no network, you eat what there is, and the label says how old it is. The use-by date on the label is time-based invalidation: while it is in date you do not go shopping.</div>
-</section>
-
-<section class="slide">
-  <h2>Size, clean-up and the "Clear data" button</h2>
-  <ul>
-    <li>There is no fixed limit, but the system shows "Storage: 480 MB" in the settings and the user clears it. On iOS, <code>tmp/</code> is deleted when space runs low.</li>
-    <li>Order of magnitude: preferences in KB, database in MB, cached images with a limit (<code>cached_network_image</code>: 200 items or 7 days).</li>
-    <li>Your own clean-up: delete forecasts older than 7 days, a "Clear cache" option in the settings.</li>
-    <li>"Clear data" on Android deletes everything, including secure storage. On iOS only by uninstalling, and the Keychain stays.</li>
-    <li>The app has to start properly with everything empty: it is the first launch all over again. If it fails with no cache, the fault is in the app.</li>
-  </ul>
-  <p><strong>For the tests:</strong> the app has to work after the user clears the data, exactly as on the first launch.</p>
 </section>
 
 <section class="slide">
