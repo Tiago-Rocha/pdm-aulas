@@ -26,19 +26,19 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 16 · Semana 8 · Segunda, 26 de outubro de 2026 · 16:00 às 18:00</p>
   <h1>Persistência local e cache offline</h1>
-  <p class="lead">Teoria: opções de persistência em mobile: chave-valor, SQLite, NoSQL local, ficheiros e armazenamento seguro; critérios de escolha. Prática: preferências com shared_preferences, cache de previsões numa base de dados local com estratégia cache-first, e token em armazenamento seguro.</p>
+  <p class="lead">Teoria: opções de persistência em mobile: chave-valor, SQLite, NoSQL local, ficheiros e armazenamento seguro; como os packages falam com cada plataforma; critérios de escolha. Prática: o login em camadas, a sessão no armazenamento seguro e preferências com shared_preferences. Arranque do projeto Tempo Açores.</p>
   <div class="meta"><span>Repositório: pdm-aula-16</span></div>
-  <aside class="notes">Cinco minutos para grupos que na quarta não conseguiram o primeiro pedido à API: resolve antes da matéria. Depois abre com uma pergunta: "onde é que a app do Spotify guarda as músicas descarregadas, e porque não as vês no explorador de ficheiros?" É a sandbox, slide 4.</aside>
+  <aside class="notes">Abre com uma pergunta: "onde é que o Spotify guarda as músicas descarregadas, e porque não as vês no explorador de ficheiros?" É a sandbox. Teoria até às 16:40, prática dos três passos até às 17:20, projeto até ao fim.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
     <li>Escolher onde guardar cada tipo de dado: preferências, base de dados, ficheiros ou armazenamento seguro.</li>
-    <li>Explicar a sandbox da app, o que sobrevive a atualizações e o que vai para o backup.</li>
+    <li>Explicar o que um package como o <code>flutter_secure_storage</code> faz em cada plataforma.</li>
     <li>Justificar porque um token nunca vai para <code>shared_preferences</code>.</li>
-    <li>Implementar um repository cache-first com <code>drift</code> e mostrar a idade dos dados.</li>
-    <li>Deixar a app a funcionar em modo avião com os dados que já tinha.</li>
+    <li>Fazer login na API e manter a sessão depois de fechar a app.</li>
+    <li>Arrancar o projeto do grupo com o primeiro pull request: o ecrã de login.</li>
   </ul>
 </section>
 
@@ -116,6 +116,61 @@
 </section>
 
 <section class="slide">
+  <h2>Por baixo do capô: um package, uma implementação por plataforma</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 300" role="img" aria-label="O teu código Dart chama sempre a mesma API do package. Por baixo, uma interface comum e uma implementação por plataforma: Android, iOS e macOS, web, Windows e Linux, cada uma com o sistema de armazenamento nativo">
+    <rect x="270" y="14" width="360" height="44" rx="10" class="box accent"/>
+    <text x="450" y="34" class="t b" text-anchor="middle">O teu código Dart</text>
+    <text x="450" y="50" class="t mono s" text-anchor="middle">prefs.setString(...) · storage.write(...)</text>
+    <rect x="300" y="86" width="300" height="40" rx="10" class="box"/>
+    <text x="450" y="111" class="t b" text-anchor="middle">Interface da plataforma (Dart)</text>
+    <path d="M450 58 L450 84" class="arrow"/>
+    <text x="612" y="104" class="t s">canal de plataforma:</text>
+    <text x="612" y="120" class="t s">MethodChannel ou Pigeon</text>
+    <path d="M450 126 L120 186" class="arrow"/>
+    <path d="M450 126 L285 186" class="arrow"/>
+    <path d="M450 126 L450 186" class="arrow"/>
+    <path d="M450 126 L615 186" class="arrow"/>
+    <path d="M450 126 L780 186" class="arrow"/>
+    <rect x="40" y="188" width="160" height="96" rx="10" class="box"/>
+    <text x="52" y="210" class="t b">Android</text>
+    <text x="52" y="234" class="t s">Kotlin</text>
+    <text x="52" y="254" class="t s">DataStore / XML</text>
+    <text x="52" y="274" class="t s">Keystore + AES</text>
+    <rect x="205" y="188" width="160" height="96" rx="10" class="box"/>
+    <text x="217" y="210" class="t b">iOS e macOS</text>
+    <text x="217" y="234" class="t s">Swift</text>
+    <text x="217" y="254" class="t s">NSUserDefaults</text>
+    <text x="217" y="274" class="t s">Keychain</text>
+    <rect x="370" y="188" width="160" height="96" rx="10" class="box"/>
+    <text x="382" y="210" class="t b">Web</text>
+    <text x="382" y="234" class="t s">Dart + JS</text>
+    <text x="382" y="254" class="t s">localStorage</text>
+    <text x="382" y="274" class="t s">WebCrypto, no browser</text>
+    <rect x="535" y="188" width="160" height="96" rx="10" class="box"/>
+    <text x="547" y="210" class="t b">Windows</text>
+    <text x="547" y="234" class="t s">C++ / Dart FFI</text>
+    <text x="547" y="254" class="t s">ficheiro JSON</text>
+    <text x="547" y="274" class="t s">cifrado pelo sistema</text>
+    <rect x="700" y="188" width="160" height="96" rx="10" class="box"/>
+    <text x="712" y="210" class="t b">Linux</text>
+    <text x="712" y="234" class="t s">C / Dart FFI</text>
+    <text x="712" y="254" class="t s">ficheiro JSON</text>
+    <text x="712" y="274" class="t s">libsecret</text>
+  </svg>
+  <figcaption>Uma API em Dart, uma implementação por plataforma. Em cada caixa: a linguagem, onde fica o <code>shared_preferences</code> e onde fica o <code>flutter_secure_storage</code>.</figcaption>
+  </figure>
+  <ul>
+    <li>Os dois são <strong>plugins federados</strong>: o package que pões no <code>pubspec.yaml</code> só tem a API em Dart. Puxa sozinho um package por plataforma (<code>shared_preferences_android</code>, <code>shared_preferences_foundation</code>, <code>shared_preferences_web</code>...).</li>
+    <li>O Dart não fala com o Keychain nem com o Keystore. Manda uma mensagem pelo <strong>canal de plataforma</strong> e o código nativo (Kotlin, Swift) responde. Por isso tudo é <code>Future</code>, e por isso o <code>main</code> chama <code>WidgetsFlutterBinding.ensureInitialized()</code> antes do primeiro plugin.</li>
+    <li>O mesmo <code>write</code> faz coisas muito diferentes: no Android cifra com uma chave guardada no Keystore; no iOS entrega ao Keychain; na web cifra com WebCrypto e guarda no browser, o que é bem menos seguro.</li>
+    <li>Um plugin novo ou mudado exige parar e voltar a correr a app. O hot reload não recompila Kotlin nem Swift.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> o package dá uma só API; quem guarda de facto é o sistema de cada plataforma, através do canal de plataforma.</p>
+  <aside class="notes">Se perguntarem porque o Chrome serve para a aula: serve para ver o fluxo, mas a segurança real só se vê no telemóvel ou no emulador. MissingPluginException quase sempre quer dizer que adicionaram o package com a app a correr: q e flutter run outra vez.</aside>
+</section>
+
+<section class="slide">
   <h2>Cache-first, network-first, invalidação e migrações</h2>
   <figure class="diagram">
   <svg viewBox="0 0 900 385" role="img" aria-label="Sequência cache-first: o ecrã pede dados, o repository lê a cache local e mostra já com a idade dos dados, pede à rede em fundo, grava na cache e notifica o ecrã; sem rede, fica com a cache marcada como antiga">
@@ -180,235 +235,323 @@
   <p><strong>Para os testes:</strong> a app tem de funcionar depois de o utilizador limpar os dados, exatamente como no primeiro arranque.</p>
 </section>
 
+<section class="slide">
+  <h2>Do ecrã ao cofre: o login em camadas</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 290" role="img" aria-label="O login em camadas: o LoginScreen chama login no SessionNotifier; este pede ao AuthRepository, que faz POST /v1/auth/login pelo ApiClient; a sessão volta, o SessionNotifier guarda o refresh token no SessionStore, que usa o Keychain ou o Keystore, e chama notifyListeners; o ecrã redesenha e mostra as ilhas">
+    <text x="20" y="26" class="t s b">UI</text>
+    <text x="230" y="26" class="t s b">Estado</text>
+    <text x="440" y="26" class="t s b">Dados</text>
+    <text x="680" y="26" class="t s b">Fora da app</text>
+    <rect x="20" y="40" width="170" height="54" rx="10" class="box accent"/>
+    <text x="105" y="64" class="t b mono" text-anchor="middle">LoginScreen</text>
+    <text x="105" y="83" class="t s" text-anchor="middle">email e password</text>
+    <rect x="230" y="40" width="180" height="54" rx="10" class="box"/>
+    <text x="320" y="64" class="t b mono" text-anchor="middle">SessionNotifier</text>
+    <text x="320" y="83" class="t s" text-anchor="middle">quem está com sessão</text>
+    <rect x="440" y="40" width="180" height="54" rx="10" class="box"/>
+    <text x="530" y="64" class="t b mono" text-anchor="middle">AuthRepository</text>
+    <text x="530" y="83" class="t s" text-anchor="middle">+ ApiClient</text>
+    <rect x="680" y="40" width="190" height="54" rx="10" class="box"/>
+    <text x="775" y="64" class="t b" text-anchor="middle">API do curso</text>
+    <text x="775" y="83" class="t s mono" text-anchor="middle">POST /v1/auth/login</text>
+    <rect x="440" y="170" width="180" height="54" rx="10" class="box"/>
+    <text x="530" y="194" class="t b mono" text-anchor="middle">SessionStore</text>
+    <text x="530" y="213" class="t s" text-anchor="middle">refresh token</text>
+    <rect x="680" y="170" width="190" height="54" rx="10" class="box danger"/>
+    <text x="775" y="194" class="t b" text-anchor="middle">Keychain / Keystore</text>
+    <text x="775" y="213" class="t s" text-anchor="middle">o cofre do sistema</text>
+    <path d="M190 58 L228 58" class="arrow"/>
+    <text x="209" y="52" class="t s" text-anchor="middle">1</text>
+    <path d="M410 58 L438 58" class="arrow"/>
+    <text x="424" y="52" class="t s" text-anchor="middle">2</text>
+    <path d="M620 58 L678 58" class="arrow"/>
+    <text x="649" y="52" class="t s" text-anchor="middle">3</text>
+    <path d="M678 82 L622 82" class="arrow dashed"/>
+    <path d="M438 82 L412 82" class="arrow dashed"/>
+    <text x="649" y="104" class="t s" text-anchor="middle">4 · sessão</text>
+    <path d="M320 94 L320 197 L438 197" class="arrow"/>
+    <text x="330" y="150" class="t s">5 · save(refreshToken)</text>
+    <path d="M620 197 L678 197" class="arrow"/>
+    <path d="M300 94 L300 255 L105 255 L105 96" class="arrow accent"/>
+    <text x="200" y="275" class="t s" text-anchor="middle">6 · notifyListeners: o ecrã mostra as ilhas</text>
+  </svg>
+  <figcaption>Cada camada só fala com a do lado. O ecrã não sabe URLs nem onde fica o token; o repository não sabe que há ecrãs.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><strong>O ecrã</strong> valida o formulário e chama <code>login(email, password)</code>. Não espera pela resposta: desenha o que o notifier disser.</li>
+    <li><strong>O notifier</strong> liga o <code>isLoading</code> e pede ao <code>AuthRepository</code>.</li>
+    <li><strong>O repository</strong> faz o pedido pelo <code>ApiClient</code>.</li>
+    <li><strong>A resposta</strong> volta em JSON e o repository transforma-a numa <code>Session</code>.</li>
+    <li><strong>O notifier</strong> guarda o refresh token no <code>SessionStore</code>, que o entrega ao Keychain ou ao Keystore.</li>
+    <li><strong>Só depois</strong> põe a sessão no estado e chama <code>notifyListeners</code>. O <code>main</code> vê a sessão e troca o login pelas ilhas.</li>
+  </ol>
+  <div class="callout"><strong>E com BLoC?</strong> O <code>SessionNotifier</code> passava a ser um <code>Cubit&lt;SessionState&gt;</code>: os mesmos passos, com <code>emit(...)</code> em vez de <code>notifyListeners()</code> e um estado imutável em vez de campos soltos. Repository e store ficam iguais. É isso que as camadas compram: muda-se a gestão de estado sem tocar nos dados.</div>
+  <aside class="notes">Desenha isto no quadro antes de abrir o código: é o mapa para os três passos. A pergunta que vale a pena fazer: se amanhã o token passar para outro sítio, que ficheiros mudam? Resposta: só o SessionStore.</aside>
+</section>
+
 <section class="slide" data-part="Prática">
   <h2>Repositório da aula</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-16.git
-cd pdm-aula-16/starter
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-16.git
+cd pdm-aula-16
 flutter pub get
-flutter run</code></pre>
+flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
+  --dart-define=CLIENT_SECRET=o-teu-segredo</code></pre>
   <ul>
-    <li><code>starter/</code> é a app resiliente da aula 14 com <code>shared_preferences</code>, <code>drift</code>, <code>drift_flutter</code> e <code>flutter_secure_storage</code> já no <code>pubspec.yaml</code>, TODOs de 1 a 5 e testes a falhar.</li>
-    <li><code>solucao/</code> é o estado final: a app funciona em modo avião e diz há quanto tempo os dados foram obtidos.</li>
-    <li>O <code>drift</code> gera código: <code>dart run build_runner build</code> depois de mexer nas tabelas. O starter já traz o ficheiro gerado.</li>
+    <li><code>main</code> é a app das ilhas em camadas, com <code>shared_preferences</code> e <code>flutter_secure_storage</code> já no <code>pubspec.yaml</code> e os <code>TODO 1</code> a <code>3</code> no <code>main.dart</code>.</li>
+    <li>Um branch por passo: <code>passo-1</code> login, <code>passo-2</code> sessão guardada, <code>passo-3</code> preferências. O último é a solução.</li>
+    <li>As credenciais são as tuas (issue #1 do <code>pdm-miniprojeto</code>). As contas que criares hoje pertencem a essa app.</li>
   </ul>
-  <div class="callout task"><strong>Antes de começar</strong> Nas definições do telemóvel, vê quanto espaço a app do starter ocupa. Volta a ver no fim da aula.</div>
+  <aside class="notes">Quem não tiver as credenciais à mão: issue #1 do pdm-miniprojeto. O F5 do VS Code não passa os --dart-define.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. <code>shared_preferences</code>: unidade, tema, última localidade</h2>
-<pre data-title="lib/definicoes/definicoes.dart"><code class="language-dart">class Definicoes {
-  Definicoes(this._prefs);
-  final SharedPreferences _prefs;
+  <h2>1. <code>AuthRepository</code>: o pedido de login</h2>
+<pre data-title="lib/data/auth_repository.dart"><code class="language-dart">class AuthRepository {
+  AuthRepository(this._api); // injected, not created here
 
-  static Future&lt;Definicoes&gt; carregar() async =&gt;
-      Definicoes(await SharedPreferences.getInstance());
+  final ApiClient _api;
 
-  bool get usaFahrenheit =&gt; _prefs.getBool('usaFahrenheit') ?? false;
-  ThemeMode get tema =&gt; ThemeMode.values.byName(_prefs.getString('tema') ?? 'system');
-  int? get ultimaLocalidadeId =&gt; _prefs.getInt('ultimaLocalidadeId');
-
-  Future&lt;void&gt; guardarUnidade({required bool fahrenheit}) =&gt;
-      _prefs.setBool('usaFahrenheit', fahrenheit);
-  Future&lt;void&gt; guardarTema(ThemeMode modo) =&gt; _prefs.setString('tema', modo.name);
-  Future&lt;void&gt; guardarUltimaLocalidade(int id) =&gt; _prefs.setInt('ultimaLocalidadeId', id);
-}
-
-// main.dart: carregar antes do runApp, para o tema estar certo no primeiro frame
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final definicoes = await Definicoes.carregar();
-  runApp(Provider.value(value: definicoes, child: const TempoApp()));
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. Preferências: o que interessa</h2>
+  Future&lt;Session&gt; login(String email, String password) async {
+    final json = await _api.post('/v1/auth/login', {
+      'clientId': _api.clientId,
+      'clientSecret': _api.clientSecret,
+      'email': email,
+      'password': password,
+    });
+    return Session.fromJson(json as Map&lt;String, dynamic&gt;);
+  }</code></pre>
   <ul>
-    <li>Chave-valor com tipos simples: <code>bool</code>, <code>int</code>, <code>double</code>, <code>String</code>, <code>List&lt;String&gt;</code>. Nada de JSON grande aqui.</li>
-    <li>Leitura síncrona depois do <code>getInstance()</code>; escrita assíncrona. Por isso carregamos antes do <code>runApp</code>: o tema tem de estar certo no primeiro frame.</li>
-    <li><code>WidgetsFlutterBinding.ensureInitialized()</code> é obrigatório antes de qualquer plugin no <code>main</code>.</li>
-    <li>Enums guardam-se pelo <code>name</code> e lêem-se com <code>values.byName</code>. Nunca pelo índice: reordenar o enum partia as preferências guardadas.</li>
-    <li>No starter, <code>DefinicoesNotifier</code> envolve esta classe e chama <code>notifyListeners</code> para a UI reagir. A versão 2.3+ do package tem também <code>SharedPreferencesWithCache</code>; a API antiga continua a funcionar.</li>
+    <li>A app identifica-se com <code>clientId</code> e <code>clientSecret</code>; a pessoa com email e password. O <code>register</code> é igual, com mais o <code>name</code>.</li>
+    <li>A resposta traz o <code>accessToken</code> (15 min), o <code>refreshToken</code> (30 dias) e o <code>user</code>. <code>Session.fromJson</code> lê os três, em <code>lib/models/user.dart</code>.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Liga o switch °C/°F e o seletor de tema do ecrã de definições às preferências. Fecha a app (swipe, não só home) e abre: têm de estar como ficaram. Depois guarda a última localidade aberta e abre a app diretamente nela.</div>
 </section>
 
 <section class="slide">
-  <h2>2. <code>drift</code>: a tabela de previsões</h2>
-<pre data-title="lib/core/base_dados.dart"><code class="language-dart">import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
+  <h2>1. <code>SessionNotifier</code>: quem está com sessão</h2>
+<pre data-title="lib/state/session_notifier.dart"><code class="language-dart">  Future&lt;void&gt; login(String email, String password) =&gt;
+      _start(() =&gt; _auth.login(email, password));
 
-part 'base_dados.g.dart';
+  Future&lt;void&gt; register(String name, String email, String password) =&gt;
+      _start(() =&gt; _auth.register(name, email, password));
 
-class Previsoes extends Table {
-  IntColumn get localidadeId =&gt; integer()();
-  TextColumn get json =&gt; text()();
-  DateTimeColumn get obtidoEm =&gt; dateTime()();
-
-  @override
-  Set&lt;Column&gt; get primaryKey =&gt; {localidadeId};
-}
-
-@DriftDatabase(tables: [Previsoes])
-class BaseDados extends _$BaseDados {
-  BaseDados() : super(driftDatabase(name: 'tempo_acores'));
-
-  @override
-  int get schemaVersion =&gt; 1;
-}</code></pre>
-<pre class="term"><code class="language-bash">dart run build_runner build --delete-conflicting-outputs</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. <code>drift</code>: inserir, ler, apagar</h2>
-<pre data-title="lib/core/previsoes_cache.dart"><code class="language-dart">extension PrevisoesCache on BaseDados {
-  Future&lt;Previsao?&gt; lerPrevisao(int localidadeId) async {
-    final linha = await (select(previsoes)
-          ..where((p) =&gt; p.localidadeId.equals(localidadeId)))
-        .getSingleOrNull();
-    if (linha == null) return null;
-    return Previsao.fromJson(jsonDecode(linha.json) as Map&lt;String, dynamic&gt;)
-        .copyWith(obtidoEm: linha.obtidoEm);
-  }
-
-  Future&lt;void&gt; guardarPrevisao(Previsao p) =&gt;
-      into(previsoes).insertOnConflictUpdate(PrevisoesCompanion.insert(
-        localidadeId: p.localidadeId,
-        json: jsonEncode(p.toJson()),
-        obtidoEm: DateTime.now(),
-      ));
-
-  Future&lt;int&gt; apagarAntigas({Duration maxIdade = const Duration(days: 7)}) =&gt;
-      (delete(previsoes)
-            ..where((p) =&gt; p.obtidoEm.isSmallerThanValue(DateTime.now().subtract(maxIdade))))
-          .go();
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. Base de dados: o que interessa</h2>
-  <ul>
-    <li>Uma tabela por tipo de cache, com a chave natural (<code>localidadeId</code>) como chave primária e <code>insertOnConflictUpdate</code> para "guardar ou substituir".</li>
-    <li>Guardar o JSON inteiro numa coluna é pragmático para cache: a estrutura da previsão não interessa ao SQL, só a chave e a data.</li>
-    <li>O <code>drift</code> gera <code>previsoes</code>, <code>PrevisoesCompanion</code> e os tipos das colunas. Um erro de nome de coluna é erro de compilação, não de runtime como no <code>sqflite</code>.</li>
-    <li><code>obtidoEm</code> é o que permite dizer "de há 12 min" e invalidar: sem ele a cache é eterna.</li>
-    <li>Quando mudares a tabela: <code>schemaVersion: 2</code> e uma <code>MigrationStrategy</code> com <code>onUpgrade</code>. Nunca apagar a base para "resolver".</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Cria a tabela <code>Avisos</code> (<code>id</code>, <code>json</code>, <code>obtidoEm</code>) e a extensão <code>AvisosCache</code> com <code>lerTodos</code>, <code>substituirTodos(List&lt;Aviso&gt;)</code> e <code>apagarAntigos</code>. Volta a correr o <code>build_runner</code>. O teste <code>test/avisos_cache_test.dart</code> usa uma base em memória (<code>NativeDatabase.memory()</code>).</div>
-  <aside class="notes">Se o build_runner falhar em alguém, é quase sempre o `part` com o nome errado ou o ficheiro gerado antigo. `--delete-conflicting-outputs` resolve o segundo. Dá 20 minutos a este bloco.</aside>
-</section>
-
-<section class="slide">
-  <h2>3. Repository cache-first</h2>
-<pre data-title="lib/previsao/previsao_repository_cache.dart"><code class="language-dart">class PrevisaoRepositoryCache implements PrevisaoRepository {
-  PrevisaoRepositoryCache(this._api, this._db);
-  final PrevisaoApiDataSource _api;   // Future&lt;Previsao&gt; previsao(int id), da aula 12
-  final BaseDados _db;
-  static const validade = Duration(minutes: 30);
-
-  @override
-  Stream&lt;Previsao&gt; previsao(int localidadeId) async* {
-    final emCache = await _db.lerPrevisao(localidadeId);
-    if (emCache != null) yield emCache;                       // 1. mostra já o que há
-
-    final valida = emCache != null &amp;&amp;
-        DateTime.now().difference(emCache.obtidoEm) &lt; validade;
-    if (valida) return;                                       // 2. ainda fresca: fica
-
+  Future&lt;void&gt; _start(Future&lt;Session&gt; Function() request) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
     try {
-      final fresca = await _api.previsao(localidadeId);       // 3. vai à rede
-      await _db.guardarPrevisao(fresca);
-      yield fresca.copyWith(obtidoEm: DateTime.now());
+      session = await request();
+    } on ApiException catch (e) {
+      error = e.message; // the API already writes it in Portuguese
     } catch (_) {
-      if (emCache == null) rethrow;                           // sem cache e sem rede: erro
-    }
-  }
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>3. Cache-first: o que interessa</h2>
-  <ul>
-    <li>O repository devolve um <code>Stream</code> porque pode emitir <strong>duas vezes</strong>: a cache logo, os dados frescos depois. Com <code>Future</code> só havia uma resposta.</li>
-    <li><code>async*</code> e <code>yield</code> tornam isto legível: é código sequencial que emite valores pelo caminho.</li>
-    <li>Se a cache é recente, não há pedido de rede. É aqui que a invalidação por tempo vive, não na UI.</li>
-    <li>Falha de rede com cache: engole-se e o utilizador fica com dados antigos e a hora. Falha de rede sem cache: erro, como na aula 14.</li>
-    <li>O notifier consome o stream com <code>await for</code> e notifica a cada emissão:</li>
-  </ul>
-<pre data-title="lib/previsao/detalhe_notifier.dart"><code class="language-dart">Future&lt;void&gt; carregar(int id) async {
-  try {
-    await for (final p in _repo.previsao(id)) {
-      estado = Dados(p, obtidoEm: p.obtidoEm);
+      error = 'Sem ligação. Tenta de novo.';
+    } finally {
+      isLoading = false;
       notifyListeners();
     }
-  } catch (e) {
-    if (estado is! Dados) estado = Erro(mensagemPara(e));
-    notifyListeners();
   }
 }</code></pre>
-  <div class="callout task"><strong>Exercício 3</strong> Regista <code>PrevisaoRepositoryCache</code> no <code>main</code> em vez do <code>…Api</code>, sem tocar no ecrã. Mostra "Atualizado há X min" no detalhe com a cor de aviso quando passa de 30 min.</div>
+  <ul>
+    <li>Login e registo partilham o <code>_start</code>: liga o spinner, faz o pedido, guarda a sessão ou o erro, desliga o spinner.</li>
+    <li>As mensagens de erro da API já vêm em português ("Email ou password errados."). Sem rede, a nossa.</li>
+  </ul>
 </section>
 
 <section class="slide">
-  <h2>4. Modo avião ligado: a app continua a mostrar dados</h2>
-  <ol class="steps">
-    <li><strong>Com rede,</strong> abre a previsão de duas localidades. Confirma no log que foram guardadas (<code>guardarPrevisao</code> chamado duas vezes).</li>
-    <li><strong>Liga o modo avião.</strong> Fecha a app com swipe (não só o botão home) e abre de novo.</li>
-    <li><strong>As duas localidades</strong> mostram os dados com "de há X min". Uma terceira, nunca aberta, mostra o erro humano "Sem ligação", não um crash.</li>
-    <li><strong>Desliga o modo avião</strong> e puxa para atualizar: "Atualizado agora". Passados 30 minutos, o próximo <code>carregar</code> vai sozinho à rede.</li>
-  </ol>
-  <div class="callout task"><strong>Exercício 4</strong> Faz os quatro passos e grava um vídeo de 30 segundos do telemóvel (é o tipo de prova que vai no PR do projeto). Depois: chama <code>apagarAntigas()</code> no arranque da app e confirma que uma previsão de há 8 dias desaparece (muda a data no <code>sqlite</code> pelo DevTools ou por um teste).</div>
-  <aside class="notes">Este é o momento "uau" da aula: dá-lhe 15 minutos e deixa-os ver a app do colega do lado. Erro comum: fechar só com home e achar que testaram o arranque a frio. Explica a diferença entre background e processo morto (aula 4).</aside>
+  <h2>1. O ecrã e o <code>main</code></h2>
+<pre data-title="lib/screens/login_screen.dart"><code class="language-dart">void _submit() {
+  if (!_form.currentState!.validate()) return;
+  final session = context.read&lt;SessionNotifier&gt;();
+  final email = _email.text.trim();
+  if (_creating) {
+    session.register(_name.text.trim(), email, _password.text);
+  } else {</code></pre><pre data-title="lib/main.dart"><code class="language-dart">// Without a session, the login. With one, the islands.
+home: Consumer&lt;SessionNotifier&gt;(
+  builder: (context, session, _) =&gt;
+      session.isLoggedIn ? const IslandsScreen() : const LoginScreen(),
+),</code></pre>
+  <div class="callout task"><strong>Passo 1</strong> Cria uma conta no ecrã "Criar conta". Tens de ver as ilhas com "Olá, o teu nome" em cima. Termina a sessão e entra outra vez; experimenta uma password errada.</div>
+  <aside class="notes">Ninguém precisa de copiar o ecrã inteiro: está no branch. O que interessa é o _submit, que só chama o notifier, e o Consumer no main, que escolhe o ecrã pela sessão.</aside>
 </section>
 
 <section class="slide">
-  <h2>5. <code>flutter_secure_storage</code> para o token</h2>
-<pre data-title="lib/auth/token_storage.dart"><code class="language-dart">class TokenStorage {
-  TokenStorage([FlutterSecureStorage? storage])
-      : _storage = storage ??
-            const FlutterSecureStorage(
-              iOptions: IOSOptions(
-                accessibility: KeychainAccessibility.first_unlock_this_device,
-              ),
-            );
+  <h2>1. Fecha a app e abre outra vez</h2>
+  <p>Com o login feito, para a app com <code>q</code> e corre outra vez. Volta ao login: a sessão vivia só na memória do processo.</p>
+  <p>É isso que o passo 2 resolve. Para ficares com o código do passo 1:</p>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-1
+flutter pub get</code></pre>
+  <aside class="notes">Deixa-os sentir o problema antes da solução: é a razão de existir o secure storage.</aside>
+</section>
+
+<section class="slide">
+  <h2>2. <code>SessionStore</code>: o refresh token no cofre</h2>
+<pre data-title="lib/data/session_store.dart"><code class="language-dart">import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// The refresh token, in the Keychain (iOS) or the Keystore (Android).
+/// Never in shared_preferences: it is a password that lasts 30 days.
+class SessionStore {
+  const SessionStore([this._storage = const FlutterSecureStorage()]);
+
   final FlutterSecureStorage _storage;
-  static const _chave = 'access_token';
+  static const _key = 'refreshToken';
 
-  Future&lt;String?&gt; ler() =&gt; _storage.read(key: _chave);
-  Future&lt;void&gt; guardar(String token) =&gt; _storage.write(key: _chave, value: token);
-  Future&lt;void&gt; apagar() =&gt; _storage.delete(key: _chave);
+  Future&lt;String?&gt; read() =&gt; _storage.read(key: _key);
+
+  Future&lt;void&gt; save(String refreshToken) =&gt;
+      _storage.write(key: _key, value: refreshToken);
+
+  Future&lt;void&gt; clear() =&gt; _storage.delete(key: _key);
 }</code></pre>
   <ul>
-    <li>API igual a um mapa assíncrono: <code>read</code>, <code>write</code>, <code>delete</code>. Por baixo, Keychain no iOS e Keystore + AES no Android.</li>
-    <li><code>first_unlock_this_device</code>: acessível depois do primeiro desbloqueio e não migra para outro telemóvel via backup. É o que queres para um token.</li>
-    <li>Amanhã, o <code>AuthClient</code> lê daqui, renova em 401 e volta a guardar. Hoje só fica o token do arranque.</li>
+    <li>Guarda-se o <strong>refresh token</strong>, não o access token: este dura 15 minutos e um novo sai do refresh.</li>
+    <li>A classe esconde o package: se amanhã o token mudar de sítio, só este ficheiro muda.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 5</strong> Guarda o token obtido no arranque com <code>TokenStorage</code> e, no arranque seguinte, usa-o sem pedir outro. Confirma com <code>adb shell run-as</code> que não há nenhum ficheiro com o token em claro na pasta da app.</div>
+</section>
+
+<section class="slide">
+  <h2>2. Ao arrancar: <code>restore()</code></h2>
+<pre data-title="lib/state/session_notifier.dart"><code class="language-dart">  Future&lt;void&gt; restore() async {
+    try {
+      final saved = await _store.read();
+      if (saved != null) session = await _auth.refresh(saved);
+    } on ApiException {
+      await _store.clear(); // expired, logged out or account deleted
+    } catch (_) {
+      // offline: show the login, keep the token for the next start
+    } finally {
+      isRestoring = false;
+      notifyListeners();
+    }
+  }</code></pre>
+  <ul>
+    <li>Com um token guardado, pede uma sessão nova a <code>POST /v1/auth/refresh</code>. Se a API recusar (expirou, logout, conta apagada), apaga-o.</li>
+    <li>Sem rede, guarda o token para a próxima vez. Enquanto <code>isRestoring</code>, o <code>main</code> mostra um spinner em vez do login.</li>
+    <li>No <code>_start</code>, a sessão vai para o <code>SessionStore</code> antes de chegar à UI; no logout, sai de lá e a API revoga-a.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>2. Confirmar na app</h2>
+  <div class="callout task"><strong>Passo 2</strong> Entra, para a app com <code>q</code> e corre outra vez: tens de cair nas ilhas, depois de um spinner curto. Termina a sessão, para e corre: tens de ver o login.</div>
+  <p>No Chrome, as DevTools mostram em <strong>Application, Local Storage</strong> o valor cifrado. Num telemóvel Android, com <code>adb shell run-as</code>, o ficheiro das preferências lê-se em claro e o do secure storage não.</p>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-2
+flutter pub get</code></pre>
+  <aside class="notes">Hot restart (R) não serve para provar: o processo continua o mesmo em parte. Tem de ser q e flutter run.</aside>
+</section>
+
+<section class="slide">
+  <h2>3. <code>Settings</code>: o último email e o tema</h2>
+<pre data-title="lib/state/settings.dart"><code class="language-dart">class Settings extends ChangeNotifier {
+  Settings(this._prefs);
+
+  final SharedPreferences _prefs;
+
+  static Future&lt;Settings&gt; load() async =&gt;
+      Settings(await SharedPreferences.getInstance());
+
+  String get lastEmail =&gt; _prefs.getString('lastEmail') ?? '';
+
+  // Enums are saved by name, never by index.
+  ThemeMode get theme =&gt;
+      ThemeMode.values.byName(_prefs.getString('theme') ?? 'system');
+
+  Future&lt;void&gt; saveLastEmail(String email) =&gt;
+      _prefs.setString('lastEmail', email);
+
+  Future&lt;void&gt; saveTheme(ThemeMode mode) async {
+    await _prefs.setString('theme', mode.name);
+    notifyListeners(); // MaterialApp rebuilds with the new theme
+  }
+}</code></pre>
+  <ul>
+    <li>Leitura síncrona depois do <code>getInstance()</code>, escrita assíncrona. Por isso carrega-se antes do <code>runApp</code>: o tema tem de estar certo no primeiro frame.</li>
+    <li>Enums guardam-se pelo <code>name</code> e lêem-se com <code>values.byName</code>. Pelo índice, reordenar o enum estragava o que estava guardado.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>3. Carregar antes do <code>runApp</code></h2>
+<pre data-title="lib/main.dart"><code class="language-dart">void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // before any plugin
+  final settings = await Settings.load();</code></pre>
+  <ul>
+    <li><code>ensureInitialized()</code> liga o motor do Flutter ao canal de plataforma. Sem ele, o primeiro plugin falha no <code>main</code>.</li>
+    <li>O email não é segredo, mas a password é: essa nunca se guarda, nem aqui nem no cofre.</li>
+  </ul>
+  <div class="callout task"><strong>Passo 3</strong> Entra, muda o tema, termina a sessão: o login já traz o teu email. Para e corre a app: o tema ficou como deixaste.</div>
+</section>
+
+<section class="slide">
+  <h2>3. Sincronizar</h2>
+<pre class="term"><code class="language-bash">git stash -u
+git checkout passo-3
+flutter pub get</code></pre>
+  <p>Este é o estado final. <code>git diff main passo-3</code> mostra tudo o que mudou hoje.</p>
+  <div class="callout"><strong>E a base de dados?</strong> No projeto, a cache das previsões para usar sem rede vai para uma base local (<code>drift</code> ou <code>sqflite</code>), com a estratégia cache-first da teoria. Fica para quando houver previsões a guardar.</div>
+</section>
+
+<section class="slide" data-part="Projeto">
+  <h2>Projeto: Tempo Açores</h2>
+  <p>O enunciado completo está em <a href="../projeto.html">Projeto</a> e a API em <a href="../api.html">API</a>. O essencial:</p>
+  <ul>
+    <li>Uma app de tempo para os Açores, por grupo, até ao fim do semestre. Todos os dados passam pela API do curso, incluindo os do IPMA.</li>
+    <li>Cada grupo tem uma app na API (<code>clientId</code> e <code>clientSecret</code> do grupo). Cada pessoa tem a sua conta dentro dessa app: registo, login, sessão, favoritos e relatos.</li>
+    <li>Sprints de duas semanas. A primeira acaba na segunda, 2 de novembro, às 16:00: registo e login com a sessão guardada, ilhas com pesquisa e previsão, camadas e estados.</li>
+    <li>Trabalho por pull request: um branch por tarefa, revisão de um colega, merge no <code>main</code>.</li>
+  </ul>
+  <aside class="notes">Percorre o enunciado no ecrã: requisitos mínimos, extras, sprints e avaliação. Não leias tudo; mostra onde está.</aside>
+</section>
+
+<section class="slide">
+  <h2>O design é o do Figma</h2>
+  <ul>
+    <li>Os ecrãs, o mapa da app, os fluxos e o design system estão no <a href="https://www.figma.com/design/nEKJZqAoacXEfYoW94t58G" target="_blank" rel="noopener">ficheiro do Figma</a>: cores, tipografia, espaços e 25 componentes, cada um com medidas, estados e o código Flutter de referência.</li>
+    <li>A app segue esse design. Faz parte da avaliação: cores e tipos certos, componentes iguais, estados (carregamento, erro, vazio) como estão desenhados.</li>
+    <li>O login de hoje é o ecrã "Entrar" e o "Criar conta". Abre-os no Figma antes de escrever o widget.</li>
+  </ul>
+  <aside class="notes">O link do Figma tem de estar partilhado como 'qualquer pessoa com o link pode ver'. Mostra a página Ecrãs e depois um componente, por exemplo o Botão, com a ficha completa.</aside>
+</section>
+
+<section class="slide">
+  <h2>Credenciais do grupo</h2>
+  <ul>
+    <li>Chegam numa issue no repositório do grupo. São do grupo, não de uma pessoa.</li>
+    <li>Vão na linha de comandos, como as tuas. Nunca no código, nunca no git:</li>
+  </ul>
+<pre class="term"><code class="language-bash">flutter run -d chrome --dart-define=CLIENT_ID=pdm-grupo \
+  --dart-define=CLIENT_SECRET=o-segredo-do-grupo</code></pre>
+  <p>As contas criadas com as tuas credenciais não existem na app do grupo. No projeto, cada membro cria a sua conta outra vez, já na app do grupo.</p>
+</section>
+
+<section class="slide">
+  <h2>Primeiro commit na app do grupo: o ecrã de login</h2>
+  <ol class="steps">
+    <li>Um membro cria o branch e traz as camadas do login: <code>models/user.dart</code>, <code>data/auth_repository.dart</code>, <code>data/session_store.dart</code>, <code>state/session_notifier.dart</code> e <code>screens/login_screen.dart</code>.</li>
+    <li>O ecrã segue o Figma, não o do repositório da aula.</li>
+    <li>Pull request com uma captura do ecrã; outro membro revê e faz merge.</li>
+  </ol>
+<pre class="term"><code class="language-bash">git checkout -b login
+# ... os ficheiros do login ...
+git add lib
+git commit -m "Login: ecrã de entrar e criar conta"
+git push -u origin login</code></pre>
+  <div class="callout task"><strong>Até ao fim da aula</strong> O PR do login aberto no repositório do grupo, com a app a entrar com uma conta criada na app do grupo.</div>
+  <aside class="notes">Os outros membros, em paralelo: um começa a lista das ilhas com pesquisa noutro branch, outro escreve o backlog da sprint 1 em issues. Ninguém faz commit direto no main.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
-  <h2>Até amanhã</h2>
-  <div class="cols">
-    <div>
-      <h3>Para fazer</h3>
-      <ul class="checklist">
-        <li>Cache de avisos com o mesmo padrão: tabela, extensão, <code>AvisosRepositoryCache</code> com validade de 5 minutos, e "Atualizado há X min" no ecrã.</li>
-        <li>Lê a comparação <a href="https://pub.dev/packages/drift" target="_blank" rel="noopener">drift</a> vs <a href="https://pub.dev/packages/sqflite" target="_blank" rel="noopener">sqflite</a> vs <a href="https://pub.dev/packages/hive_ce" target="_blank" rel="noopener">hive</a> e anota qual escolherias para o projeto e porquê.</li>
-        <li>Na quarta falamos de segurança e de segredos no repositório do grupo: confirma hoje que o <code>.env.json</code> está no <code>.gitignore</code>.</li>
-      </ul>
-    </div>
-    <div>
-      <h3>Para ler</h3>
-      <ul>
-        <li><a href="https://docs.flutter.dev/cookbook/persistence" target="_blank" rel="noopener">Persistence cookbook</a>: as receitas oficiais para chave-valor, SQLite (com <code>sqflite</code>, para comparar com o <code>drift</code>) e ficheiros.</li>
-        <li><a href="https://drift.simonbinder.eu" target="_blank" rel="noopener">drift</a>: a documentação do package, com tabelas, consultas tipadas, streams reativos e migrações.</li>
-        <li><a href="https://pub.dev/packages/flutter_secure_storage" target="_blank" rel="noopener">flutter_secure_storage</a>: a API, as opções de acessibilidade do Keychain e o que é feito em cada plataforma.</li>
-        <li><a href="https://developer.android.com/privacy-and-security/keystore" target="_blank" rel="noopener">Android Keystore</a> e <a href="https://developer.apple.com/documentation/security/keychain-services" target="_blank" rel="noopener">Keychain Services</a>: o que cada sistema faz por baixo do <code>flutter_secure_storage</code>.</li>
-        <li><a href="https://developer.android.com/training/data-storage" target="_blank" rel="noopener">Data and file storage overview</a>: a sandbox do Android, backup e o que é apagado quando.</li>
-      </ul>
-    </div>
-  </div>
+  <h2>Onde ficámos</h2>
+  <ol class="steps">
+    <li>Valores pequenos em preferências, dados que se consultam numa base local, segredos no Keychain ou no Keystore.</li>
+    <li>Os packages têm uma API em Dart e uma implementação nativa por plataforma, ligadas pelo canal de plataforma.</li>
+    <li>O login em camadas: ecrã, notifier, repository e store. O refresh token vai para o cofre antes de a UI saber.</li>
+    <li>O projeto arrancou: enunciado, Figma, credenciais do grupo e o primeiro PR.</li>
+  </ol>
+  <p><strong>Amanhã:</strong> o access token nos pedidos (<code>Authorization: Bearer</code>), a renovação automática quando a API responde 401 e os favoritos guardados na conta.</p>
   <nav class="pager" id="pager"></nav>
+  <aside class="notes">Amanhã a aula é das 08:30 às 10:30.</aside>
 </section>
 
 </div>
