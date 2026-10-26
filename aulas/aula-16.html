@@ -26,9 +26,9 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 16 · Semana 8 · Segunda, 26 de outubro de 2026 · 16:00 às 18:00</p>
   <h1>Persistência local e cache offline</h1>
-  <p class="lead">Teoria: opções de persistência em mobile: chave-valor, SQLite, NoSQL local, ficheiros e armazenamento seguro; como os packages falam com cada plataforma; critérios de escolha. Prática: o login em camadas, a sessão no armazenamento seguro e preferências com shared_preferences. Arranque do projeto Tempo Açores.</p>
+  <p class="lead">Teoria: opções de persistência em mobile: chave-valor, SQLite, NoSQL local, ficheiros e armazenamento seguro; como os packages falam com cada plataforma; critérios de escolha. No repositório da aula: o login em camadas, a sessão no armazenamento seguro e preferências com shared_preferences. Arranque do projeto Tempo Açores.</p>
   <div class="meta"><span>Repositório: pdm-aula-16</span></div>
-  <aside class="notes">Abre com uma pergunta: "onde é que o Spotify guarda as músicas descarregadas, e porque não as vês no explorador de ficheiros?" É a sandbox. Teoria até às 16:40, prática dos três passos até às 17:20, projeto até ao fim.</aside>
+  <aside class="notes">Abre com uma pergunta: "onde é que o Spotify guarda as músicas descarregadas, e porque não as vês no explorador de ficheiros?" É a sandbox. Teoria e repositório até às 17:00, projeto até ao fim.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -37,8 +37,8 @@
     <li>Escolher onde guardar cada tipo de dado: preferências, base de dados, ficheiros ou armazenamento seguro.</li>
     <li>Explicar o que um package como o <code>flutter_secure_storage</code> faz em cada plataforma.</li>
     <li>Justificar porque um token nunca vai para <code>shared_preferences</code>.</li>
-    <li>Fazer login na API e manter a sessão depois de fechar a app.</li>
-    <li>Arrancar o projeto do grupo com o primeiro pull request: o ecrã de login.</li>
+    <li>Explicar o login em camadas e como a sessão sobrevive a fechar a app.</li>
+    <li>Saber o que pede o projeto do grupo, onde está o design e por onde começar.</li>
   </ul>
 </section>
 
@@ -290,23 +290,23 @@
   <aside class="notes">Desenha isto no quadro antes de abrir o código: é o mapa para os três passos. A pergunta que vale a pena fazer: se amanhã o token passar para outro sítio, que ficheiros mudam? Resposta: só o SessionStore.</aside>
 </section>
 
-<section class="slide" data-part="Prática">
-  <h2>Repositório da aula</h2>
+<section class="slide" data-part="O repositório">
+  <h2>O repositório da aula</h2>
 <pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-16.git
 cd pdm-aula-16
 flutter pub get
 flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
-  --dart-define=CLIENT_SECRET=o-teu-segredo</code></pre>
+  --dart-define=CLIENT_SECRET=your-secret</code></pre>
   <ul>
-    <li><code>main</code> é a app das ilhas em camadas, com <code>shared_preferences</code> e <code>flutter_secure_storage</code> já no <code>pubspec.yaml</code> e os <code>TODO 1</code> a <code>3</code> no <code>main.dart</code>.</li>
-    <li>Um branch por passo: <code>passo-1</code> login, <code>passo-2</code> sessão guardada, <code>passo-3</code> preferências. O último é a solução.</li>
-    <li>As credenciais são as tuas (issue #1 do <code>pdm-miniprojeto</code>). As contas que criares hoje pertencem a essa app.</li>
+    <li>Um só branch, <code>main</code>, com tudo: a app das ilhas em camadas, agora com contas, sessão guardada e preferências. Não há exercícios: percorremos o código juntos.</li>
+    <li>Novo em <code>lib/</code>: <code>models/user.dart</code>, <code>data/auth_repository.dart</code>, <code>data/session_store.dart</code>, <code>state/session_notifier.dart</code>, <code>state/settings.dart</code> e <code>screens/login_screen.dart</code>.</li>
+    <li>As credenciais são as tuas (issue #1 do <code>pdm-miniprojeto</code>). As contas que criares pertencem a essa app.</li>
   </ul>
-  <aside class="notes">Quem não tiver as credenciais à mão: issue #1 do pdm-miniprojeto. O F5 do VS Code não passa os --dart-define.</aside>
+  <aside class="notes">Corre a app no projetor antes de abrir o código: cria uma conta, mostra as ilhas, fecha com q e volta a correr. Depois o código, pela ordem do diagrama.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. <code>AuthRepository</code>: o pedido de login</h2>
+  <h2><code>AuthRepository</code>: o pedido de login</h2>
 <pre data-title="lib/data/auth_repository.dart"><code class="language-dart">class AuthRepository {
   AuthRepository(this._api); // injected, not created here
 
@@ -328,7 +328,7 @@ flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
 </section>
 
 <section class="slide">
-  <h2>1. <code>SessionNotifier</code>: quem está com sessão</h2>
+  <h2><code>SessionNotifier</code>: quem está com sessão</h2>
 <pre data-title="lib/state/session_notifier.dart"><code class="language-dart">  Future&lt;void&gt; login(String email, String password) =&gt;
       _start(() =&gt; _auth.login(email, password));
 
@@ -340,7 +340,9 @@ flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
     error = null;
     notifyListeners();
     try {
-      session = await request();
+      final s = await request();
+      await _store.save(s.refreshToken); // before the UI knows
+      session = s;
     } on ApiException catch (e) {
       error = e.message; // the API already writes it in Portuguese
     } catch (_) {
@@ -353,39 +355,41 @@ flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
 }</code></pre>
   <ul>
     <li>Login e registo partilham o <code>_start</code>: liga o spinner, faz o pedido, guarda a sessão ou o erro, desliga o spinner.</li>
+    <li>O refresh token vai para o cofre <strong>antes</strong> de a UI saber que há sessão.</li>
     <li>As mensagens de erro da API já vêm em português ("Email ou password errados."). Sem rede, a nossa.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>1. O ecrã e o <code>main</code></h2>
+  <h2>O ecrã e o <code>main</code></h2>
 <pre data-title="lib/screens/login_screen.dart"><code class="language-dart">void _submit() {
   if (!_form.currentState!.validate()) return;
   final session = context.read&lt;SessionNotifier&gt;();
   final email = _email.text.trim();
+  context.read&lt;Settings&gt;().saveLastEmail(email);
   if (_creating) {
     session.register(_name.text.trim(), email, _password.text);
-  } else {</code></pre><pre data-title="lib/main.dart"><code class="language-dart">// Without a session, the login. With one, the islands.
-home: Consumer&lt;SessionNotifier&gt;(
-  builder: (context, session, _) =&gt;
-      session.isLoggedIn ? const IslandsScreen() : const LoginScreen(),
-),</code></pre>
-  <div class="callout task"><strong>Passo 1</strong> Cria uma conta no ecrã "Criar conta". Tens de ver as ilhas com "Olá, o teu nome" em cima. Termina a sessão e entra outra vez; experimenta uma password errada.</div>
-  <aside class="notes">Ninguém precisa de copiar o ecrã inteiro: está no branch. O que interessa é o _submit, que só chama o notifier, e o Consumer no main, que escolhe o ecrã pela sessão.</aside>
+  } else {</code></pre><pre data-title="lib/main.dart"><code class="language-dart">class _Home extends StatelessWidget {
+  const _Home();
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch&lt;SessionNotifier&gt;();
+    if (session.isRestoring) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return session.isLoggedIn ? const IslandsScreen() : const LoginScreen();
+  }
+}</code></pre>
+  <ul>
+    <li>O ecrã só chama o notifier. Não sabe URLs nem onde fica o token.</li>
+    <li>O <code>_Home</code> escolhe o ecrã pela sessão: spinner enquanto restaura, login sem sessão, ilhas com ela.</li>
+  </ul>
+  <aside class="notes">Pergunta à turma: onde é que o ecrã sabe que o login correu bem? Não sabe: o notifier muda, o _Home redesenha e mostra as ilhas.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Fecha a app e abre outra vez</h2>
-  <p>Com o login feito, para a app com <code>q</code> e corre outra vez. Volta ao login: a sessão vivia só na memória do processo.</p>
-  <p>É isso que o passo 2 resolve. Para ficares com o código do passo 1:</p>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-1
-flutter pub get</code></pre>
-  <aside class="notes">Deixa-os sentir o problema antes da solução: é a razão de existir o secure storage.</aside>
-</section>
-
-<section class="slide">
-  <h2>2. <code>SessionStore</code>: o refresh token no cofre</h2>
+  <h2><code>SessionStore</code>: o refresh token no cofre</h2>
 <pre data-title="lib/data/session_store.dart"><code class="language-dart">import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// The refresh token, in the Keychain (iOS) or the Keystore (Android).
@@ -410,7 +414,7 @@ class SessionStore {
 </section>
 
 <section class="slide">
-  <h2>2. Ao arrancar: <code>restore()</code></h2>
+  <h2>Ao arrancar: <code>restore()</code></h2>
 <pre data-title="lib/state/session_notifier.dart"><code class="language-dart">  Future&lt;void&gt; restore() async {
     try {
       final saved = await _store.read();
@@ -426,23 +430,13 @@ class SessionStore {
   }</code></pre>
   <ul>
     <li>Com um token guardado, pede uma sessão nova a <code>POST /v1/auth/refresh</code>. Se a API recusar (expirou, logout, conta apagada), apaga-o.</li>
-    <li>Sem rede, guarda o token para a próxima vez. Enquanto <code>isRestoring</code>, o <code>main</code> mostra um spinner em vez do login.</li>
-    <li>No <code>_start</code>, a sessão vai para o <code>SessionStore</code> antes de chegar à UI; no logout, sai de lá e a API revoga-a.</li>
+    <li>Sem rede, guarda o token para a próxima vez. Enquanto <code>isRestoring</code>, o <code>_Home</code> mostra um spinner em vez do login.</li>
+    <li>No logout, o token sai do cofre e a API revoga-o.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>2. Confirmar na app</h2>
-  <div class="callout task"><strong>Passo 2</strong> Entra, para a app com <code>q</code> e corre outra vez: tens de cair nas ilhas, depois de um spinner curto. Termina a sessão, para e corre: tens de ver o login.</div>
-  <p>No Chrome, as DevTools mostram em <strong>Application, Local Storage</strong> o valor cifrado. Num telemóvel Android, com <code>adb shell run-as</code>, o ficheiro das preferências lê-se em claro e o do secure storage não.</p>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-2
-flutter pub get</code></pre>
-  <aside class="notes">Hot restart (R) não serve para provar: o processo continua o mesmo em parte. Tem de ser q e flutter run.</aside>
-</section>
-
-<section class="slide">
-  <h2>3. <code>Settings</code>: o último email e o tema</h2>
+  <h2><code>Settings</code>: o último email e o tema</h2>
 <pre data-title="lib/state/settings.dart"><code class="language-dart">class Settings extends ChangeNotifier {
   Settings(this._prefs);
 
@@ -466,37 +460,39 @@ flutter pub get</code></pre>
   }
 }</code></pre>
   <ul>
-    <li>Leitura síncrona depois do <code>getInstance()</code>, escrita assíncrona. Por isso carrega-se antes do <code>runApp</code>: o tema tem de estar certo no primeiro frame.</li>
+    <li>Leitura síncrona depois do <code>getInstance()</code>, escrita assíncrona.</li>
     <li>Enums guardam-se pelo <code>name</code> e lêem-se com <code>values.byName</code>. Pelo índice, reordenar o enum estragava o que estava guardado.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>3. Carregar antes do <code>runApp</code></h2>
+  <h2>Carregar antes do <code>runApp</code></h2>
 <pre data-title="lib/main.dart"><code class="language-dart">void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // before any plugin
   final settings = await Settings.load();</code></pre>
   <ul>
     <li><code>ensureInitialized()</code> liga o motor do Flutter ao canal de plataforma. Sem ele, o primeiro plugin falha no <code>main</code>.</li>
+    <li>Carrega-se antes do <code>runApp</code> porque o tema tem de estar certo no primeiro frame.</li>
     <li>O email não é segredo, mas a password é: essa nunca se guarda, nem aqui nem no cofre.</li>
   </ul>
-  <div class="callout task"><strong>Passo 3</strong> Entra, muda o tema, termina a sessão: o login já traz o teu email. Para e corre a app: o tema ficou como deixaste.</div>
 </section>
 
 <section class="slide">
-  <h2>3. Sincronizar</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-3
-flutter pub get</code></pre>
-  <p>Este é o estado final. <code>git diff main passo-3</code> mostra tudo o que mudou hoje.</p>
-  <div class="callout"><strong>E a base de dados?</strong> No projeto, a cache das previsões para usar sem rede vai para uma base local (<code>drift</code> ou <code>sqflite</code>), com a estratégia cache-first da teoria. Fica para quando houver previsões a guardar.</div>
+  <h2>Ver na app</h2>
+  <ol class="steps">
+    <li><strong>Cria uma conta:</strong> aparecem as ilhas com "Olá, nome" em cima.</li>
+    <li><strong>Para a app com <code>q</code> e corre outra vez:</strong> um spinner curto e as ilhas. A sessão veio do cofre. O hot restart (<code>R</code>) não prova isto.</li>
+    <li><strong>Muda o tema e termina a sessão:</strong> o login já traz o email e o tema ficou como estava.</li>
+    <li><strong>No Chrome, DevTools, Application, Local Storage:</strong> as preferências em claro e o token cifrado.</li>
+  </ol>
+  <aside class="notes">Num emulador Android, adb shell run-as com o package da app e cat shared_prefs/FlutterSharedPreferences.xml mostra o email em claro; o ficheiro do secure storage é lixo cifrado.</aside>
 </section>
 
 <section class="slide" data-part="Projeto">
   <h2>Projeto: Tempo Açores</h2>
   <p>O enunciado completo está em <a href="../projeto.html">Projeto</a> e a API em <a href="../api.html">API</a>. O essencial:</p>
   <ul>
-    <li>Uma app de tempo para os Açores, por grupo, até ao fim do semestre. Todos os dados passam pela API do curso, incluindo os do IPMA.</li>
+    <li>Uma app de tempo e trilhos para os Açores, por grupo, até ao fim do semestre. Todos os dados passam pela API do curso, incluindo os do IPMA.</li>
     <li>Cada grupo tem uma app na API (<code>clientId</code> e <code>clientSecret</code> do grupo). Cada pessoa tem a sua conta dentro dessa app: registo, login, sessão, favoritos e relatos.</li>
     <li>Sprints de duas semanas. A primeira acaba na segunda, 2 de novembro, às 16:00: registo e login com a sessão guardada, ilhas com pesquisa e previsão, camadas e estados.</li>
     <li>Trabalho por pull request: um branch por tarefa, revisão de um colega, merge no <code>main</code>.</li>
@@ -508,37 +504,32 @@ flutter pub get</code></pre>
   <h2>O design é o do Figma</h2>
   <ul>
     <li>Os ecrãs, o mapa da app, os fluxos e o design system estão no <a href="https://www.figma.com/design/nEKJZqAoacXEfYoW94t58G" target="_blank" rel="noopener">ficheiro do Figma</a>: cores, tipografia, espaços e 25 componentes, cada um com medidas, estados e o código Flutter de referência.</li>
-    <li>A app segue esse design. Faz parte da avaliação: cores e tipos certos, componentes iguais, estados (carregamento, erro, vazio) como estão desenhados.</li>
-    <li>O login de hoje é o ecrã "Entrar" e o "Criar conta". Abre-os no Figma antes de escrever o widget.</li>
+    <li>Na página <strong>Mapa e fluxos</strong>, cada requisito do enunciado (R1, R2...) aponta para os ecrãs e os endpoints que o cumprem.</li>
+    <li>A app segue esse design, e isso faz parte da avaliação: cores e tipos certos, componentes iguais, estados (carregamento, erro, vazio) como estão desenhados.</li>
   </ul>
-  <aside class="notes">O link do Figma tem de estar partilhado como 'qualquer pessoa com o link pode ver'. Mostra a página Ecrãs e depois um componente, por exemplo o Botão, com a ficha completa.</aside>
+  <aside class="notes">Mostra a página Ecrãs, depois o Mapa e fluxos com a tabela dos requisitos, e por fim um componente, por exemplo o Botão, com a ficha completa.</aside>
 </section>
 
 <section class="slide">
   <h2>Credenciais do grupo</h2>
   <ul>
-    <li>Chegam numa issue no repositório do grupo. São do grupo, não de uma pessoa.</li>
+    <li>Estão na issue #1 do repositório do grupo. São do grupo, não de uma pessoa.</li>
     <li>Vão na linha de comandos, como as tuas. Nunca no código, nunca no git:</li>
   </ul>
-<pre class="term"><code class="language-bash">flutter run -d chrome --dart-define=CLIENT_ID=pdm-grupo \
-  --dart-define=CLIENT_SECRET=o-segredo-do-grupo</code></pre>
+<pre class="term"><code class="language-bash">flutter run -d chrome --dart-define=CLIENT_ID=pdm-group \
+  --dart-define=CLIENT_SECRET=group-secret</code></pre>
   <p>As contas criadas com as tuas credenciais não existem na app do grupo. No projeto, cada membro cria a sua conta outra vez, já na app do grupo.</p>
 </section>
 
 <section class="slide">
-  <h2>Primeiro commit na app do grupo: o ecrã de login</h2>
+  <h2>Por onde começar</h2>
   <ol class="steps">
-    <li>Um membro cria o branch e traz as camadas do login: <code>models/user.dart</code>, <code>data/auth_repository.dart</code>, <code>data/session_store.dart</code>, <code>state/session_notifier.dart</code> e <code>screens/login_screen.dart</code>.</li>
-    <li>O ecrã segue o Figma, não o do repositório da aula.</li>
-    <li>Pull request com uma captura do ecrã; outro membro revê e faz merge.</li>
+    <li><strong>Ler o enunciado e o Figma</strong> em grupo e dividir a sprint 1 em issues no repositório.</li>
+    <li><strong>O login primeiro:</strong> as camadas que vimos hoje, com o ecrã "Entrar" e o "Criar conta" do Figma.</li>
+    <li><strong>Em paralelo:</strong> a lista das ilhas com pesquisa e a previsão, noutro branch.</li>
+    <li><strong>Cada tarefa num branch</strong> e num pull request com uma captura do ecrã; outro membro revê e faz merge.</li>
   </ol>
-<pre class="term"><code class="language-bash">git checkout -b login
-# ... os ficheiros do login ...
-git add lib
-git commit -m "Login: ecrã de entrar e criar conta"
-git push -u origin login</code></pre>
-  <div class="callout task"><strong>Até ao fim da aula</strong> O PR do login aberto no repositório do grupo, com a app a entrar com uma conta criada na app do grupo.</div>
-  <aside class="notes">Os outros membros, em paralelo: um começa a lista das ilhas com pesquisa noutro branch, outro escreve o backlog da sprint 1 em issues. Ninguém faz commit direto no main.</aside>
+  <aside class="notes">Ninguém faz commit direto no main. O código do repositório da aula pode ir para o projeto, mas o ecrã tem de seguir o Figma.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -547,7 +538,7 @@ git push -u origin login</code></pre>
     <li>Valores pequenos em preferências, dados que se consultam numa base local, segredos no Keychain ou no Keystore.</li>
     <li>Os packages têm uma API em Dart e uma implementação nativa por plataforma, ligadas pelo canal de plataforma.</li>
     <li>O login em camadas: ecrã, notifier, repository e store. O refresh token vai para o cofre antes de a UI saber.</li>
-    <li>O projeto arrancou: enunciado, Figma, credenciais do grupo e o primeiro PR.</li>
+    <li>O projeto arrancou: enunciado, Figma e credenciais do grupo.</li>
   </ol>
   <p><strong>Amanhã:</strong> o access token nos pedidos (<code>Authorization: Bearer</code>), a renovação automática quando a API responde 401 e os favoritos guardados na conta.</p>
   <nav class="pager" id="pager"></nav>

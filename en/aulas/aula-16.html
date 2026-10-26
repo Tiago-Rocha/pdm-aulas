@@ -26,9 +26,9 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 16 · Week 8 · Monday, 26 October 2026 · 16:00 to 18:00</p>
   <h1>Local persistence and offline cache</h1>
-  <p class="lead">Theory: persistence options on mobile: key-value, SQLite, local NoSQL, files and secure storage; how packages talk to each platform; criteria for choosing. Practice: the layered login, the session in secure storage and preferences with shared_preferences. Tempo Açores project kickoff.</p>
+  <p class="lead">Theory: persistence options on mobile: key-value, SQLite, local NoSQL, files and secure storage; how packages talk to each platform; criteria for choosing. In the lesson repository: the layered login, the session in secure storage and preferences with shared_preferences. Tempo Açores project kickoff.</p>
   <div class="meta"><span>Repository: pdm-aula-16</span></div>
-  <aside class="notes">Open with a question: "where does Spotify keep the downloaded songs, and why can't you see them in the file explorer?" It is the sandbox. Theory until 16:40, practice with the three steps until 17:20, project until the end.</aside>
+  <aside class="notes">Open with a question: "where does Spotify keep the downloaded songs, and why can't you see them in the file explorer?" It is the sandbox. Theory and the repository until 17:00, project until the end.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
@@ -37,8 +37,8 @@
     <li>Choose where to store each kind of data: preferences, database, files or secure storage.</li>
     <li>Explain what a package like <code>flutter_secure_storage</code> does on each platform.</li>
     <li>Justify why a token never goes into <code>shared_preferences</code>.</li>
-    <li>Log in to the API and keep the session after closing the app.</li>
-    <li>Start the group project with the first pull request: the login screen.</li>
+    <li>Explain the layered login and how the session survives closing the app.</li>
+    <li>Know what the group project asks for, where the design is and where to start.</li>
   </ul>
 </section>
 
@@ -290,23 +290,23 @@
   <aside class="notes">Draw this on the board before opening the code: it is the map for the three steps. The question worth asking: if tomorrow the token moves somewhere else, which files change? Answer: only the SessionStore.</aside>
 </section>
 
-<section class="slide" data-part="Practice">
-  <h2>Lesson repository</h2>
+<section class="slide" data-part="The repository">
+  <h2>The lesson repository</h2>
 <pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-16.git
 cd pdm-aula-16
 flutter pub get
 flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
   --dart-define=CLIENT_SECRET=your-secret</code></pre>
   <ul>
-    <li><code>main</code> is the layered islands app, with <code>shared_preferences</code> and <code>flutter_secure_storage</code> already in <code>pubspec.yaml</code> and <code>TODO 1</code> to <code>3</code> in <code>main.dart</code>.</li>
-    <li>One branch per step: <code>passo-1</code> login, <code>passo-2</code> saved session, <code>passo-3</code> preferences. The last one is the solution.</li>
-    <li>The credentials are your own (issue #1 of <code>pdm-miniprojeto</code>). The accounts you create today belong to that app.</li>
+    <li>A single branch, <code>main</code>, with everything: the layered islands app, now with accounts, a saved session and preferences. No exercises: we walk through the code together.</li>
+    <li>New in <code>lib/</code>: <code>models/user.dart</code>, <code>data/auth_repository.dart</code>, <code>data/session_store.dart</code>, <code>state/session_notifier.dart</code>, <code>state/settings.dart</code> and <code>screens/login_screen.dart</code>.</li>
+    <li>The credentials are your own (issue #1 of <code>pdm-miniprojeto</code>). The accounts you create belong to that app.</li>
   </ul>
-  <aside class="notes">Anyone without their credentials to hand: issue #1 of pdm-miniprojeto. F5 in VS Code does not pass the --dart-define.</aside>
+  <aside class="notes">Run the app on the projector before opening the code: sign up, show the islands, stop with q and run again. Then the code, in the order of the diagram.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. <code>AuthRepository</code>: the login request</h2>
+  <h2><code>AuthRepository</code>: the login request</h2>
 <pre data-title="lib/data/auth_repository.dart"><code class="language-dart">class AuthRepository {
   AuthRepository(this._api); // injected, not created here
 
@@ -323,12 +323,12 @@ flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
   }</code></pre>
   <ul>
     <li>The app identifies itself with <code>clientId</code> and <code>clientSecret</code>; the person with email and password. <code>register</code> is the same, plus <code>name</code>.</li>
-    <li>The answer brings the <code>accessToken</code> (15 min), the <code>refreshToken</code> (30 days) and the <code>user</code>. <code>Session.fromJson</code> reads all three, in <code>lib/models/user.dart</code>.</li>
+    <li>The answer has the <code>accessToken</code> (15 min), the <code>refreshToken</code> (30 days) and the <code>user</code>. <code>Session.fromJson</code> reads all three, in <code>lib/models/user.dart</code>.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>1. <code>SessionNotifier</code>: who is logged in</h2>
+  <h2><code>SessionNotifier</code>: who is logged in</h2>
 <pre data-title="lib/state/session_notifier.dart"><code class="language-dart">  Future&lt;void&gt; login(String email, String password) =&gt;
       _start(() =&gt; _auth.login(email, password));
 
@@ -340,7 +340,9 @@ flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
     error = null;
     notifyListeners();
     try {
-      session = await request();
+      final s = await request();
+      await _store.save(s.refreshToken); // before the UI knows
+      session = s;
     } on ApiException catch (e) {
       error = e.message; // the API already writes it in Portuguese
     } catch (_) {
@@ -352,40 +354,42 @@ flutter run -d chrome --dart-define=CLIENT_ID=pdm-ab12cd \
   }
 }</code></pre>
   <ul>
-    <li>Login and register share <code>_start</code>: turn on the spinner, send the request, keep the session or the error, turn off the spinner.</li>
-    <li>The API error messages come in Portuguese ("Email ou password errados.", wrong email or password). With no network, ours.</li>
+    <li>Login and sign-up share <code>_start</code>: spinner on, request, keep the session or the error, spinner off.</li>
+    <li>The refresh token goes into the safe <strong>before</strong> the UI knows there is a session.</li>
+    <li>The API's error messages already come in Portuguese ("Email ou password errados."). Without a network, ours.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>1. The screen and <code>main</code></h2>
+  <h2>The screen and <code>main</code></h2>
 <pre data-title="lib/screens/login_screen.dart"><code class="language-dart">void _submit() {
   if (!_form.currentState!.validate()) return;
   final session = context.read&lt;SessionNotifier&gt;();
   final email = _email.text.trim();
+  context.read&lt;Settings&gt;().saveLastEmail(email);
   if (_creating) {
     session.register(_name.text.trim(), email, _password.text);
-  } else {</code></pre><pre data-title="lib/main.dart"><code class="language-dart">// Without a session, the login. With one, the islands.
-home: Consumer&lt;SessionNotifier&gt;(
-  builder: (context, session, _) =&gt;
-      session.isLoggedIn ? const IslandsScreen() : const LoginScreen(),
-),</code></pre>
-  <div class="callout task"><strong>Step 1</strong> Create an account on the "Criar conta" (create account) screen. You should see the islands with "Olá, your name" at the top. Log out and log in again; try a wrong password.</div>
-  <aside class="notes">Nobody needs to copy the whole screen: it is in the branch. What matters is _submit, which only calls the notifier, and the Consumer in main, which picks the screen from the session.</aside>
+  } else {</code></pre><pre data-title="lib/main.dart"><code class="language-dart">class _Home extends StatelessWidget {
+  const _Home();
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch&lt;SessionNotifier&gt;();
+    if (session.isRestoring) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return session.isLoggedIn ? const IslandsScreen() : const LoginScreen();
+  }
+}</code></pre>
+  <ul>
+    <li>The screen only calls the notifier. It knows no URLs and not where the token is.</li>
+    <li><code>_Home</code> picks the screen from the session: a spinner while restoring, the login without a session, the islands with one.</li>
+  </ul>
+  <aside class="notes">Question for the class: where does the screen learn that the login worked? It does not: the notifier changes, _Home rebuilds and shows the islands.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Close the app and open it again</h2>
-  <p>Once logged in, stop the app with <code>q</code> and run it again. You are back at the login: the session only lived in the process memory.</p>
-  <p>That is what step 2 fixes. To get the code of step 1:</p>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-1
-flutter pub get</code></pre>
-  <aside class="notes">Let them feel the problem before the solution: it is the reason secure storage exists.</aside>
-</section>
-
-<section class="slide">
-  <h2>2. <code>SessionStore</code>: the refresh token in the safe</h2>
+  <h2><code>SessionStore</code>: the refresh token in the safe</h2>
 <pre data-title="lib/data/session_store.dart"><code class="language-dart">import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// The refresh token, in the Keychain (iOS) or the Keystore (Android).
@@ -404,13 +408,13 @@ class SessionStore {
   Future&lt;void&gt; clear() =&gt; _storage.delete(key: _key);
 }</code></pre>
   <ul>
-    <li>You keep the <strong>refresh token</strong>, not the access token: that one lasts 15 minutes and a new one comes from the refresh.</li>
-    <li>The class hides the package: if tomorrow the token moves somewhere else, only this file changes.</li>
+    <li>We keep the <strong>refresh token</strong>, not the access token: that one lasts 15 minutes and a new one comes from the refresh.</li>
+    <li>The class hides the package: if the token moves somewhere else tomorrow, only this file changes.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>2. On start: <code>restore()</code></h2>
+  <h2>On start: <code>restore()</code></h2>
 <pre data-title="lib/state/session_notifier.dart"><code class="language-dart">  Future&lt;void&gt; restore() async {
     try {
       final saved = await _store.read();
@@ -425,24 +429,14 @@ class SessionStore {
     }
   }</code></pre>
   <ul>
-    <li>With a saved token, it asks <code>POST /v1/auth/refresh</code> for a new session. If the API refuses (expired, logged out, account deleted), it deletes the token.</li>
-    <li>With no network, it keeps the token for next time. While <code>isRestoring</code>, <code>main</code> shows a spinner instead of the login.</li>
-    <li>In <code>_start</code>, the session goes to the <code>SessionStore</code> before it reaches the UI; on logout, it leaves the store and the API revokes it.</li>
+    <li>With a saved token, it asks <code>POST /v1/auth/refresh</code> for a new session. If the API refuses (expired, logged out, account deleted), it deletes it.</li>
+    <li>Without a network, it keeps the token for next time. While <code>isRestoring</code>, <code>_Home</code> shows a spinner instead of the login.</li>
+    <li>On logout, the token leaves the safe and the API revokes it.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>2. Check it in the app</h2>
-  <div class="callout task"><strong>Step 2</strong> Log in, stop the app with <code>q</code> and run it again: you should land on the islands, after a short spinner. Log out, stop and run: you should see the login.</div>
-  <p>In Chrome, DevTools show the encrypted value under <strong>Application, Local Storage</strong>. On an Android phone, with <code>adb shell run-as</code>, the preferences file reads in plain text and the secure storage one does not.</p>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-2
-flutter pub get</code></pre>
-  <aside class="notes">Hot restart (R) does not prove it: part of the process stays the same. It has to be q and flutter run.</aside>
-</section>
-
-<section class="slide">
-  <h2>3. <code>Settings</code>: the last email and the theme</h2>
+  <h2><code>Settings</code>: the last email and the theme</h2>
 <pre data-title="lib/state/settings.dart"><code class="language-dart">class Settings extends ChangeNotifier {
   Settings(this._prefs);
 
@@ -466,37 +460,39 @@ flutter pub get</code></pre>
   }
 }</code></pre>
   <ul>
-    <li>Reads are synchronous after <code>getInstance()</code>, writes are asynchronous. That is why it loads before <code>runApp</code>: the theme has to be right on the first frame.</li>
+    <li>Reads are synchronous after <code>getInstance()</code>, writes are asynchronous.</li>
     <li>Enums are saved by <code>name</code> and read with <code>values.byName</code>. By index, reordering the enum would break what was saved.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>3. Load before <code>runApp</code></h2>
+  <h2>Load before <code>runApp</code></h2>
 <pre data-title="lib/main.dart"><code class="language-dart">void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // before any plugin
   final settings = await Settings.load();</code></pre>
   <ul>
     <li><code>ensureInitialized()</code> connects the Flutter engine to the platform channel. Without it, the first plugin fails in <code>main</code>.</li>
-    <li>The email is not a secret, but the password is: that one is never saved, not here and not in the safe.</li>
+    <li>It loads before <code>runApp</code> because the theme has to be right on the first frame.</li>
+    <li>The email is not a secret, but the password is: that one is never stored, not here and not in the safe.</li>
   </ul>
-  <div class="callout task"><strong>Step 3</strong> Log in, change the theme, log out: the login already has your email. Stop and run the app: the theme stayed as you left it.</div>
 </section>
 
 <section class="slide">
-  <h2>3. Sync</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-3
-flutter pub get</code></pre>
-  <p>This is the final state. <code>git diff main passo-3</code> shows everything that changed today.</p>
-  <div class="callout"><strong>And the database?</strong> In the project, the forecast cache for offline use goes into a local database (<code>drift</code> or <code>sqflite</code>), with the cache-first strategy from the theory. It comes when there are forecasts to keep.</div>
+  <h2>See it in the app</h2>
+  <ol class="steps">
+    <li><strong>Sign up:</strong> the islands appear with "Olá, name" at the top.</li>
+    <li><strong>Stop the app with <code>q</code> and run it again:</strong> a short spinner and the islands. The session came from the safe. A hot restart (<code>R</code>) does not prove this.</li>
+    <li><strong>Change the theme and log out:</strong> the login already has the email and the theme stayed as it was.</li>
+    <li><strong>In Chrome, DevTools, Application, Local Storage:</strong> the preferences in plain text and the token encrypted.</li>
+  </ol>
+  <aside class="notes">On an Android emulator, adb shell run-as with the app package and cat shared_prefs/FlutterSharedPreferences.xml shows the email in plain text; the secure storage file is encrypted noise.</aside>
 </section>
 
 <section class="slide" data-part="Project">
   <h2>Project: Tempo Açores</h2>
   <p>The full brief is in <a href="../projeto.html">Project</a> and the API in <a href="../api.html">API</a>. The essentials:</p>
   <ul>
-    <li>A weather app for the Azores, per group, until the end of the semester. All data goes through the course API, including the IPMA data.</li>
+    <li>A weather and trails app for the Azores, per group, until the end of the semester. All data goes through the course API, including the IPMA data.</li>
     <li>Each group has an app in the API (the group's <code>clientId</code> and <code>clientSecret</code>). Each person has their own account inside that app: register, login, session, favourites and reports.</li>
     <li>Two-week sprints. The first one ends on Monday, 2 November, at 16:00: register and login with the saved session, islands with search and forecast, layers and states.</li>
     <li>Work by pull request: one branch per task, review by a colleague, merge into <code>main</code>.</li>
@@ -508,50 +504,45 @@ flutter pub get</code></pre>
   <h2>The design is the one in Figma</h2>
   <ul>
     <li>The screens, the app map, the flows and the design system are in the <a href="https://www.figma.com/design/nEKJZqAoacXEfYoW94t58G" target="_blank" rel="noopener">Figma file</a>: colours, typography, spacing and 25 components, each with measurements, states and the reference Flutter code.</li>
-    <li>The app follows that design. It is part of the assessment: the right colours and type, matching components, states (loading, error, empty) as they are drawn.</li>
-    <li>Today's login is the "Entrar" (log in) and "Criar conta" (create account) screens. Open them in Figma before writing the widget.</li>
+    <li>On the <strong>Mapa e fluxos</strong> page, each requirement in the brief (R1, R2...) points to the screens and endpoints that meet it.</li>
+    <li>The app follows that design, and that is part of the assessment: the right colours and type, matching components, states (loading, error, empty) as they are drawn.</li>
   </ul>
-  <aside class="notes">The Figma link has to be shared as 'anyone with the link can view'. Show the Ecrãs (screens) page and then one component, for example the Botão (button), with its full spec.</aside>
+  <aside class="notes">Show the Ecrãs page, then Mapa e fluxos with the requirements table, and finally one component, for example the button, with its full sheet.</aside>
 </section>
 
 <section class="slide">
   <h2>Group credentials</h2>
   <ul>
-    <li>They arrive in an issue in the group's repository. They belong to the group, not to one person.</li>
+    <li>They are in issue #1 of the group's repository. They belong to the group, not to one person.</li>
     <li>They go on the command line, like yours. Never in the code, never in git:</li>
   </ul>
 <pre class="term"><code class="language-bash">flutter run -d chrome --dart-define=CLIENT_ID=pdm-group \
-  --dart-define=CLIENT_SECRET=the-group-secret</code></pre>
-  <p>Accounts created with your own credentials do not exist in the group's app. In the project, each member creates their account again, in the group's app.</p>
+  --dart-define=CLIENT_SECRET=group-secret</code></pre>
+  <p>Accounts created with your own credentials do not exist in the group's app. In the project, each member signs up again, in the group's app.</p>
 </section>
 
 <section class="slide">
-  <h2>First commit in the group app: the login screen</h2>
+  <h2>Where to start</h2>
   <ol class="steps">
-    <li>One member creates the branch and brings in the login layers: <code>models/user.dart</code>, <code>data/auth_repository.dart</code>, <code>data/session_store.dart</code>, <code>state/session_notifier.dart</code> and <code>screens/login_screen.dart</code>.</li>
-    <li>The screen follows Figma, not the one in the lesson repository.</li>
-    <li>Pull request with a screenshot of the screen; another member reviews and merges.</li>
+    <li><strong>Read the brief and the Figma</strong> as a group and split sprint 1 into issues in the repository.</li>
+    <li><strong>The login first:</strong> the layers we saw today, with the "Entrar" and "Criar conta" screens from Figma.</li>
+    <li><strong>In parallel:</strong> the list of islands with search and the forecast, on another branch.</li>
+    <li><strong>Each task on a branch</strong> and in a pull request with a screenshot; another member reviews and merges.</li>
   </ol>
-<pre class="term"><code class="language-bash">git checkout -b login
-# ... the login files ...
-git add lib
-git commit -m "Login: log in and create account screens"
-git push -u origin login</code></pre>
-  <div class="callout task"><strong>By the end of the lesson</strong> The login PR open in the group's repository, with the app logging in with an account created in the group's app.</div>
-  <aside class="notes">The other members, in parallel: one starts the island list with search on another branch, another writes the sprint 1 backlog as issues. Nobody commits straight to main.</aside>
+  <aside class="notes">Nobody commits straight to main. The code from the lesson repository can go into the project, but the screen has to follow Figma.</aside>
 </section>
 
 <section class="slide" data-part="End">
   <h2>Where we got to</h2>
   <ol class="steps">
     <li>Small values in preferences, data you query in a local database, secrets in the Keychain or the Keystore.</li>
-    <li>Packages have a Dart API and one native implementation per platform, connected by the platform channel.</li>
+    <li>Packages have one API in Dart and a native implementation per platform, joined by the platform channel.</li>
     <li>The layered login: screen, notifier, repository and store. The refresh token goes into the safe before the UI knows.</li>
-    <li>The project has started: brief, Figma, group credentials and the first PR.</li>
+    <li>The project has started: brief, Figma and group credentials.</li>
   </ol>
   <p><strong>Tomorrow:</strong> the access token in requests (<code>Authorization: Bearer</code>), automatic renewal when the API answers 401, and favourites saved in the account.</p>
   <nav class="pager" id="pager"></nav>
-  <aside class="notes">Tomorrow the lesson is from 08:30 to 10:30.</aside>
+  <aside class="notes">Tomorrow the lesson runs from 08:30 to 10:30.</aside>
 </section>
 
 </div>
