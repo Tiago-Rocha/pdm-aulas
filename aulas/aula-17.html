@@ -6,6 +6,7 @@
 <title>Aula 17 · Autenticação com token e favoritos sincronizados · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/parsons.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body data-aula="17">
@@ -26,23 +27,62 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 17 · Semana 8 · Terça, 27 de outubro de 2026 · 08:30 às 10:30</p>
   <h1>Autenticação com token e favoritos sincronizados</h1>
-  <p class="lead">Teoria: autenticação em mobile: OAuth2 e OpenID Connect, JWT, tokens de acesso e refresh, biometria. Prática: favoritos guardados na conta de cada pessoa, com o token do utilizador, a renovação em 401 e a UI otimista.</p>
+  <p class="lead">Teoria: autenticação em mobile contada como um festival: a pulseira (access token), o talão de troca (refresh token) e o porteiro (401 e 403), o JWT, OAuth2 e biometria. Jogos sobre isso. Prática: favoritos guardados na conta de cada pessoa, com a pulseira certa e a troca da pulseira em 401.</p>
   <div class="meta"><span>Repositório: pdm-aula-17</span></div>
-  <aside class="notes">Abre o jwt.io no projetor com um token de utilizador da API do curso colado (faz login no repositório da aula e copia-o do DevTools, separador Network, cabeçalho <code>Authorization</code> de um pedido aos favoritos): o payload aparece em claro, com o teu nome. É o gancho para os slides do JWT. O access token dura 15 minutos; na prática há um botão que o estraga, para o 401 aparecer sem esperar.</aside>
+  <aside class="notes">Tempos de referência: teoria até às 09:05, jogos até às 09:50, passos 1 e 2 até às 10:25. Se faltar tempo, o passo 2 mostra-se no projetor com <code>git checkout passo-2</code>.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
+    <li>Explicar o access token e o refresh token com a pulseira e o talão de troca.</li>
     <li>Distinguir autenticação de autorização, e um 401 de um 403.</li>
-    <li>Ler um JWT e explicar cabeçalho, payload, assinatura e expiração.</li>
-    <li>Descrever o fluxo authorization code com PKCE e o papel do refresh token.</li>
-    <li>Enviar o token certo em cada pedido e renovar a sessão em 401, repetindo o pedido uma vez.</li>
-    <li>Guardar favoritos na conta, com UI otimista e rollback em caso de erro.</li>
+    <li>Ler um JWT e explicar o que qualquer um lê e o que ninguém consegue falsificar.</li>
+    <li>Mostrar a pulseira certa em cada pedido e trocá-la em 401, repetindo o pedido uma vez.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Teoria">
+  <h2>A história de hoje: a app vai a um festival</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 250" role="img" aria-label="Na bilheteira entregas email e password e recebes uma pulseira de 15 minutos e um talão de 30 dias. A pulseira mostra-se nas portas; o talão fica no bolso de dentro.">
+    <rect x="10" y="20" width="200" height="110" rx="14" class="box accent"/>
+    <text x="110" y="62" text-anchor="middle" class="t big">🎟️</text>
+    <text x="110" y="92" text-anchor="middle" class="t b">Bilheteira</text>
+    <text x="110" y="114" text-anchor="middle" class="t s">email e password</text>
+    <path d="M214 60 L318 60" class="arrow accent"/>
+    <path d="M214 100 L318 170" class="arrow accent"/>
+    <rect x="322" y="28" width="230" height="64" rx="32" class="box ok"/>
+    <text x="437" y="56" text-anchor="middle" class="t b">Pulseira</text>
+    <text x="437" y="77" text-anchor="middle" class="t s">access token · 15 min</text>
+    <rect x="322" y="142" width="230" height="64" rx="10" class="box warn"/>
+    <text x="437" y="170" text-anchor="middle" class="t b">Talão de troca</text>
+    <text x="437" y="191" text-anchor="middle" class="t s">refresh token · 30 dias</text>
+    <path d="M556 60 L650 60" class="arrow"/>
+    <rect x="654" y="20" width="196" height="80" rx="12" class="box"/>
+    <text x="752" y="52" text-anchor="middle" class="t b">Portas do recinto</text>
+    <text x="752" y="74" text-anchor="middle" class="t s">cada pedido à API</text>
+    <path d="M556 174 L650 174" class="arrow"/>
+    <rect x="654" y="140" width="196" height="70" rx="12" class="box"/>
+    <text x="752" y="168" text-anchor="middle" class="t b">🔒 Bolso de dentro</text>
+    <text x="752" y="190" text-anchor="middle" class="t s">secure storage</text>
+    <text x="430" y="240" text-anchor="middle" class="t s">A password nunca mais se usa. A pulseira mostra-se sempre; o talão quase nunca.</text>
+  </svg>
+  <figcaption>A app vai a um festival. A API é o recinto, com um porteiro em cada porta.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>No festival</th><th>Na app</th></tr></thead>
+  <tbody>
+  <tr><td>Bilheteira</td><td><code>POST /v1/auth/login</code>, com email e password</td></tr>
+  <tr><td>Pulseira</td><td>Access token: vai em cada pedido, dura 15 minutos</td></tr>
+  <tr><td>Talão de troca</td><td>Refresh token: dura 30 dias, só serve para pedir uma pulseira nova</td></tr>
+  <tr><td>Porteiro</td><td>A API: em cada pedido olha para a pulseira e deixa entrar ou não</td></tr>
+  <tr><td>Bolso de dentro</td><td><code>flutter_secure_storage</code>, onde fica o talão</td></tr>
+  </tbody></table></div>
+  <aside class="notes">Conta isto como uma história antes de qualquer termo técnico. Todos os slides seguintes voltam a esta imagem: quando aparecer "access token", diz "a pulseira"; quando aparecer "refresh token", diz "o talão". A bilheteira já a conhecem: é o ecrã de login que já está na app.</aside>
+</section>
+
+<section class="slide">
   <h2>Autenticação vs autorização; cookies vs tokens</h2>
   <ul>
     <li><strong>Autenticação:</strong> quem és (login, biometria, chave). <strong>Autorização:</strong> o que podes fazer (ler os teus favoritos, não os dos outros).</li>
@@ -55,20 +95,61 @@
 </section>
 
 <section class="slide">
+  <h2>401 e 403: o que diz o porteiro</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 180" role="img" aria-label="401: pulseira caducada ou estragada, o porteiro não sabe quem és. 403: pulseira válida de visitante à porta do cacifo da Ana, o porteiro sabe quem és mas não entras.">
+    <rect x="10" y="10" width="410" height="160" rx="14" class="box danger"/>
+    <text x="215" y="48" text-anchor="middle" class="t b big">401</text>
+    <rect x="85" y="66" width="260" height="40" rx="20" class="box"/>
+    <text x="215" y="92" text-anchor="middle" class="t s">pulseira caducada ou estragada</text>
+    <text x="215" y="140" text-anchor="middle" class="t b">"Não sei quem és."</text>
+    <text x="215" y="160" text-anchor="middle" class="t s">Resolve-se com uma pulseira nova</text>
+    <rect x="440" y="10" width="410" height="160" rx="14" class="box warn"/>
+    <text x="645" y="48" text-anchor="middle" class="t b big">403</text>
+    <rect x="515" y="66" width="260" height="40" rx="20" class="box"/>
+    <text x="645" y="92" text-anchor="middle" class="t s">visitante, à porta do cacifo da Ana</text>
+    <text x="645" y="140" text-anchor="middle" class="t b">"Sei quem és, mas não podes."</text>
+    <text x="645" y="160" text-anchor="middle" class="t s">Uma pulseira nova igual não ajuda</text>
+  </svg>
+  <figcaption>401 é autenticação (quem és); 403 é autorização (o que podes).</figcaption>
+  </figure>
+  <ul>
+    <li>Um <strong>401</strong> resolve-se com uma pulseira nova (o talão, ou outra vez a bilheteira).</li>
+    <li>Um <strong>403</strong> não se resolve com pulseira nova do mesmo tipo: é preciso outra pulseira, com outros direitos.</li>
+  </ul>
+  <div class="callout"><strong>Pergunta à turma</strong> Entras com a pulseira de visitante no camarim dos artistas. 401 ou 403?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> 403: a pulseira é válida, o porteiro sabe quem és (um visitante), mas o camarim não é para visitantes. Vão jogar com isto daqui a pouco, com pedidos a sério à API.</aside>
+</section>
+
+<section class="slide">
   <h2>JWT (1 de 2): o que tem dentro</h2>
   <ul>
     <li>Três partes em base64url separadas por pontos: <code>header.payload.signature</code>.</li>
     <li><strong>Header:</strong> <code>{"alg":"HS256","typ":"JWT"}</code>. <strong>Payload:</strong> as <em>claims</em>: <code>sub</code> (quem), <code>iss</code> (quem emitiu), <code>iat</code> e <code>exp</code> (quando), e claims próprias de cada API.</li>
     <li><strong>Signature:</strong> HMAC (chave partilhada) ou RSA/ECDSA (par de chaves) sobre o header e o payload.</li>
   </ul>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 160" role="img" aria-label="Um JWT tem três partes: cabeçalho, o que está escrito (nome Ana, app, válida até 09:45) e o selo. O meio lê-se sem chave; o selo só o servidor sabe fazer.">
+    <rect x="10" y="20" width="840" height="80" rx="40" class="box ok"/>
+    <line x1="170" y1="20" x2="170" y2="100" class="box muted"/>
+    <line x1="660" y1="20" x2="660" y2="100" class="box muted"/>
+    <text x="90" y="66" text-anchor="middle" class="t s">cabeçalho</text>
+    <text x="415" y="56" text-anchor="middle" class="t b">Ana · app pdm-ab12cd · válida até 09:45</text>
+    <text x="415" y="80" text-anchor="middle" class="t mono">uid · user_name · client_id · exp</text>
+    <text x="755" y="70" text-anchor="middle" class="t big">🔏</text>
+    <text x="90" y="130" text-anchor="middle" class="t s">parte 1</text>
+    <text x="415" y="130" text-anchor="middle" class="t s">parte 2: lê-se sem chave (é base64, não é segredo)</text>
+    <text x="755" y="130" text-anchor="middle" class="t s">parte 3: o selo</text>
+    <text x="755" y="148" text-anchor="middle" class="t s">só o servidor o faz</text>
+  </svg>
+  <figcaption>Escrito na pulseira, à vista de todos: quem, que app, até quando. Quem mudar a hora estraga o selo.</figcaption>
+  </figure>
   <div class="table-wrap"><table>
   <thead><tr><th>Claim</th><th>Exemplo, num token da API do curso</th><th>O que diz</th></tr></thead>
   <tbody>
-  <tr><td><code>sub</code></td><td><code>8b0e6c2a-5d1f-...</code></td><td>Quem é o dono da app (o teu registo na API)</td></tr>
-  <tr><td><code>client_id</code></td><td><code>pdm-ab12cd</code></td><td>Que app está a pedir</td></tr>
+  <tr><td><code>sub</code>, <code>client_id</code></td><td><code>8b0e6c2a-...</code>, <code>pdm-ab12cd</code></td><td>Que app está a pedir, e de quem é</td></tr>
   <tr><td><code>uid</code>, <code>user_name</code></td><td><code>c3a9f1d4-...</code>, <code>Ana</code></td><td>Que pessoa fez login. Só nos tokens de login</td></tr>
-  <tr><td><code>iat</code></td><td><code>1793094300</code></td><td>Quando foi emitido, em segundos desde 1970</td></tr>
-  <tr><td><code>exp</code></td><td><code>1793095200</code></td><td>Quando expira: 900 segundos depois, 15 minutos</td></tr>
+  <tr><td><code>iat</code>, <code>exp</code></td><td><code>1793094300</code>, <code>1793095200</code></td><td>Quando foi emitido e quando expira, em segundos: 900 segundos, 15 minutos</td></tr>
   </tbody></table></div>
   <ul>
     <li>Base64 não é cifra: qualquer pessoa lê o payload. A app pode ler <code>exp</code> para saber que vai expirar sem fazer um pedido.</li>
@@ -173,22 +254,124 @@
 </section>
 
 <section class="slide">
-  <h2>Na API do curso: dois tokens</h2>
+  <h2>Na API do curso: duas pulseiras</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 215" role="img" aria-label="A pulseira de visitante abre ilhas, previsões e avisos mas não os favoritos da Ana: 403. A pulseira da Ana abre tudo, incluindo os favoritos dela.">
+    <rect x="10" y="30" width="220" height="56" rx="28" class="box"/>
+    <text x="120" y="55" text-anchor="middle" class="t b">Pulseira de visitante</text>
+    <text x="120" y="75" text-anchor="middle" class="t s">token da app</text>
+    <rect x="10" y="140" width="220" height="56" rx="28" class="box ok"/>
+    <text x="120" y="165" text-anchor="middle" class="t b">Pulseira da Ana</text>
+    <text x="120" y="185" text-anchor="middle" class="t s">token do utilizador</text>
+    <rect x="460" y="20" width="390" height="76" rx="12" class="box"/>
+    <text x="480" y="52" class="t b">🏝️ Ilhas, previsões, avisos</text>
+    <text x="480" y="76" class="t s">iguais para toda a gente</text>
+    <rect x="460" y="130" width="390" height="76" rx="12" class="box"/>
+    <text x="480" y="162" class="t b">❤️ Os favoritos da Ana</text>
+    <text x="480" y="186" class="t s">só dela, guardados no servidor</text>
+    <path d="M234 58 L454 58" class="arrow ok"/><text x="340" y="50" text-anchor="middle" class="t ok b">entra</text>
+    <path d="M234 70 L454 160" class="arrow danger dashed"/><text x="440" y="138" text-anchor="end" class="t danger b">403</text>
+    <path d="M234 160 L454 74" class="arrow ok"/>
+    <path d="M234 168 L454 168" class="arrow ok"/><text x="340" y="194" text-anchor="middle" class="t ok b">entra</text>
+  </svg>
+  <figcaption>A app tem uma pulseira dela, sem nome. Depois do login há uma segunda, com o nome da pessoa.</figcaption>
+  </figure>
   <div class="table-wrap"><table>
-  <thead><tr><th></th><th>Token da app</th><th>Token do utilizador</th></tr></thead>
+  <thead><tr><th></th><th>Pulseira de visitante (token da app)</th><th>Pulseira da Ana (token do utilizador)</th></tr></thead>
   <tbody>
-  <tr><td>Como se obtém</td><td><code>POST /v1/auth/token</code> com <code>clientId</code> e <code>clientSecret</code></td><td><code>POST /v1/auth/login</code> ou <code>/v1/auth/register</code></td></tr>
-  <tr><td>Dura</td><td>1 hora</td><td>15 minutos, renova-se com o refresh token</td></tr>
-  <tr><td>Abre</td><td>Ilhas, previsões, avisos: dados iguais para todos</td><td>Tudo isso, mais <code>/v1/me</code> e <code>/v1/me/favorites</code>: dados de uma pessoa</td></tr>
-  <tr><td>No JWT</td><td><code>sub</code>, <code>client_id</code></td><td>Os mesmos, mais <code>uid</code> e <code>user_name</code></td></tr>
+  <tr><td>Onde se recebe</td><td><code>POST /v1/auth/token</code> com <code>clientId</code> e <code>clientSecret</code></td><td><code>POST /v1/auth/login</code> ou <code>/v1/auth/register</code></td></tr>
+  <tr><td>Dura</td><td>1 hora</td><td>15 minutos, troca-se com o talão</td></tr>
+  <tr><td>Abre</td><td>Ilhas, previsões, avisos</td><td>Isso tudo, mais <code>/v1/me</code> e <code>/v1/me/favorites</code></td></tr>
   </tbody></table></div>
-  <ul>
-    <li>Os dois vão no mesmo cabeçalho: <code>Authorization: Bearer ...</code>. O servidor lê o payload e decide.</li>
-    <li><code>GET /v1/me/favorites</code> com o token da app responde <strong>403</strong>: a API sabe que app está a pedir, mas não sabe que pessoa.</li>
-    <li>Os favoritos ficam na conta, no servidor. A Ana faz login noutro telemóvel e encontra lá os mesmos.</li>
-  </ul>
-  <div class="callout"><strong>Pergunta à turma</strong> Com o token da app, a lista das ilhas aparece e os favoritos dão 403. Porque não dá 401?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> 401 seria "não sei quem és". Aqui o token é válido e a API sabe quem pede: a app. Só que os favoritos são de uma pessoa, e o token da app não diz que pessoa. Sei quem és, mas não podes: 403. É o slide da autenticação e da autorização, com um caso que vão ver no ecrã daqui a pouco.</aside>
+  <aside class="notes">Os favoritos ficam na conta, no servidor: a Ana entra noutro telemóvel e encontra lá os mesmos. É isto que a app de hoje vai fazer.</aside>
+</section>
+
+<section class="slide" data-part="Jogos">
+  <h2>5 minutos de memória</h2>
+<ol class="steps how"><li>Abre <code>tiago-rocha.github.io/pdm-aulas/aulas/aula-17.html</code> no teu computador e vem a este slide.</li><li>Escreve o primeiro nome e entra. Ficas dentro para os jogos da aula toda.</li><li>Cinco perguntas, sem apontamentos. <strong>Só vale a primeira resposta.</strong></li></ol>
+  <div class="pz-seq" data-id="a17-mem" data-word="Pergunta">
+  <div class="pz-mcq" data-id="a17-m16-refresh" data-label="Persistência"><script type="application/json">{"q": "Onde guarda a app o refresh token, que dura 30 dias?", "options": ["No flutter_secure_storage (Keychain no iOS, Keystore no Android)", "No shared_preferences", "Numa variável, só em memória", "Num ficheiro JSON na pasta da app"], "why": "É uma password que dura 30 dias: vai para o armazenamento seguro do sistema. Em memória perdia-se ao fechar a app; o shared_preferences e os ficheiros não são cifrados."}</script></div>
+  <div class="pz-mcq" data-id="a17-m16-prefs" data-label="Persistência"><script type="application/json">{"q": "O utilizador escolheu o tema escuro. Onde se guarda isso?", "options": ["No shared_preferences", "No flutter_secure_storage", "Numa base de dados SQLite", "No servidor, na conta"], "why": "É pequeno, não é secreto e é preciso logo no primeiro ecrã: shared_preferences. Uma base de dados é para listas que se pesquisam."}</script></div>
+  <div class="pz-mcq" data-id="a17-m15-pronto" data-label="Projeto"><script type="application/json">{"q": "O PR foi testado com flutter run -d chrome, trata os erros, o analyze está limpo e o colega aprovou. Está pronto?", "options": ["Não: falta correr no telemóvel", "Sim, cumpre tudo", "Não: falta a revisão de um colega", "Não: tem avisos do analyze"], "why": "O Chrome não é um telemóvel. A definição de pronto pede que corra no telemóvel."}</script></div>
+  <div class="pz-mcq" data-id="a17-m13-json" data-label="Camadas"><script type="application/json">{"q": "A API passou a mandar \"nome\" em vez de \"name\" nas ilhas. Que ficheiro abres?", "options": ["models/island.dart, no fromJson", "screens/islands_screen.dart", "state/forecast_notifier.dart", "data/api_client.dart"], "why": "O JSON só passa a Island no fromJson do modelo. O ecrã e o notifier recebem uma Island e nem sabem que houve JSON."}</script></div>
+  <div class="pz-mcq" data-id="a17-m13-notify" data-label="Estado"><script type="application/json">{"q": "Falta o último notifyListeners() no load(). O que vê o utilizador?", "code": "Future<void> load() async {\n  isLoading = true;\n  notifyListeners();\n  islands = await _repository.fetchIslands();\n  isLoading = false;\n}", "options": ["O spinner a rodar para sempre", "A lista, como sempre", "Um erro vermelho no ecrã", "A app a fechar"], "why": "O isLoading passa a false, mas ninguém avisa o ecrã. Sem notifyListeners, o ecrã não se reconstrói e continua no spinner."}</script></div>
+  </div>
+  <aside class="notes">Nada disto conta para a nota: diz-lhes isso antes de começarem. Três perguntas são das duas últimas aulas (onde guardar o refresh token, onde guardar o tema, a definição de pronto) e duas das camadas.</aside>
+</section>
+
+<section class="slide">
+  <h2>Memória: a turma</h2>
+  <div class="pz-poll" data-track="a17-mem"></div>
+  <aside class="notes">Olha para a pergunta com menos respostas certas e pergunta a quem acertou: "como pensaste?". A do refresh token liga diretamente à aula de hoje: é o talão.</aside>
+</section>
+
+<section class="slide">
+  <h2>Jogo: o que diz o porteiro?</h2>
+  <p class="how"><strong>Um pedido de cada vez, todos ao mesmo tempo.</strong> Esperem por todos: revemos cada resposta juntos.</p>
+  <ol class="steps how"><li>Lê o pedido e vota sozinho: 200, 401 ou 403.</li><li>Discute com o colega do lado: porquê essa resposta?</li><li>Vota outra vez. Só depois vês a resposta.</li></ol>
+  <div class="pz-seq" data-id="a17-porta" data-word="Pedido">
+  <div class="pz-mcq" data-id="a17-p1" data-label="Ilhas, visitante" data-revote><script type="application/json">{"q": "GET /v1/islands com a pulseira de visitante (o token da app).", "options": ["200: entra", "401: não sei quem és", "403: sei quem és, mas não podes"], "why": "As ilhas são iguais para toda a gente: a pulseira de visitante chega."}</script></div>
+  <div class="pz-mcq" data-id="a17-p2" data-label="Favoritos, visitante" data-revote><script type="application/json">{"q": "GET /v1/me/favorites com a pulseira de visitante.", "options": ["403: sei quem és, mas não podes", "200: entra", "401: não sei quem és"], "why": "A pulseira é válida e a API sabe que app pede. Mas os favoritos são de uma pessoa, e esta pulseira não diz qual."}</script></div>
+  <div class="pz-mcq" data-id="a17-p3" data-label="Pulseira de há 20 min" data-revote><script type="application/json">{"q": "GET /v1/me/favorites com a pulseira da Ana, recebida há 20 minutos.", "options": ["401: não sei quem és", "200: entra", "403: sei quem és, mas não podes"], "why": "A pulseira da Ana dura 15 minutos. Caducou: o porteiro já não a aceita. Resolve-se com o talão."}</script></div>
+  <div class="pz-mcq" data-id="a17-p4" data-label="Sem pulseira" data-revote><script type="application/json">{"q": "GET /v1/islands sem cabeçalho Authorization nenhum.", "options": ["401: não sei quem és", "200: entra", "403: sei quem és, mas não podes"], "why": "Sem pulseira, o porteiro não sabe quem és. Não é \"não podes\": é \"não sei quem és\"."}</script></div>
+  <div class="pz-mcq" data-id="a17-p5" data-label="Hora mudada" data-revote><script type="application/json">{"q": "A Ana muda o exp da pulseira para daqui a um ano e faz GET /v1/me/favorites.", "options": ["401: não sei quem és", "200: entra", "403: sei quem és, mas não podes"], "why": "O selo deixou de bater com o que está escrito. Para o porteiro, é uma pulseira falsa: não sabe quem és."}</script></div>
+  </div>
+  <aside class="notes">Diz "pedido 1", deixa votar, um minuto de discussão aos pares, segunda votação, e passa ao seguinte. O da hora mudada costuma dividir a turma: quem diz 403 está a pensar "não podes fazer isso"; mas para o porteiro a pulseira é falsa, logo não sabe quem és.</aside>
+</section>
+
+<section class="slide">
+  <h2>O que diz o porteiro? A turma</h2>
+  <div class="pz-poll" data-track="a17-porta"></div>
+  <aside class="notes">Compara as duas barras de cada pedido: se a segunda votação tem mais respostas certas, a discussão funcionou.</aside>
+</section>
+
+<section class="slide">
+  <h2>Jogo: lê a pulseira</h2>
+  <p>Uma pulseira a sério da API do curso, já descodificada (o meio do JWT). Quatro perguntas.</p>
+  <div class="pz-seq" data-id="a17-jwt" data-word="Pergunta">
+  <div class="pz-mcq" data-id="a17-j1" data-label="Quem entrou"><script type="application/json">{"q": "Quem fez login com esta pulseira?", "code": "{\n  \"sub\": \"8b0e6c2a-5d1f-4b7e-9a3c-2f6d1e8a4b70\",\n  \"client_id\": \"pdm-ab12cd\",\n  \"name\": \"Grupo 1\",\n  \"iat\": 1793094300,\n  \"exp\": 1793095200,\n  \"uid\": \"c3a9f1d4-7e2b-4a61-8d05-9b3e6f1a2c88\",\n  \"user_name\": \"Ana\"\n}", "options": ["A Ana", "O Grupo 1", "Ninguém: é a pulseira de visitante", "A app pdm-ab12cd"], "why": "uid e user_name só aparecem nas pulseiras de login: é a pulseira da Ana. O name é do dono da app."}</script></div>
+  <div class="pz-mcq" data-id="a17-j2" data-label="Quanto dura"><script type="application/json">{"q": "Quanto tempo vale esta pulseira?", "code": "{\n  \"sub\": \"8b0e6c2a-5d1f-4b7e-9a3c-2f6d1e8a4b70\",\n  \"client_id\": \"pdm-ab12cd\",\n  \"name\": \"Grupo 1\",\n  \"iat\": 1793094300,\n  \"exp\": 1793095200,\n  \"uid\": \"c3a9f1d4-7e2b-4a61-8d05-9b3e6f1a2c88\",\n  \"user_name\": \"Ana\"\n}", "options": ["15 minutos", "1 hora", "30 dias", "Para sempre"], "why": "exp menos iat: 1793095200 menos 1793094300 são 900 segundos, 15 minutos."}</script></div>
+  <div class="pz-mcq" data-id="a17-j3" data-label="Ler sem chave"><script type="application/json">{"q": "A app consegue ler isto sem nenhuma chave?", "options": ["Sim: o meio do JWT é base64, qualquer um lê", "Não: só o servidor tem a chave para ler", "Só depois do login", "Só no telemóvel, não no Chrome"], "why": "Base64 não é cifra. Por isso nunca se escreve nada secreto num JWT."}</script></div>
+  <div class="pz-mcq" data-id="a17-j4" data-label="Selo"><script type="application/json">{"q": "Se qualquer um lê a pulseira, porque é que ninguém a consegue falsificar?", "options": ["Por causa do selo: só o servidor o sabe fazer", "Porque está cifrada", "Porque a app a guarda no Keychain", "Porque muda a cada pedido"], "why": "A assinatura (o selo) é feita com uma chave que só o servidor tem. Mudar uma letra do meio estraga o selo."}</script></div>
+  </div>
+  <aside class="notes">As três primeiras leem-se no próprio texto. A quarta é a pergunta do slide do JWT: qualquer um lê, ninguém falsifica.</aside>
+</section>
+
+<section class="slide">
+  <h2>Jogo: a troca da pulseira</h2>
+  <p class="how"><strong>A pares.</strong> Primeiro a história por ordem, depois o mesmo no código: é o que vão escrever no passo 2.</p>
+  <div class="pz-seq" data-id="a17-troca">
+  <div class="parsons" data-id="a17-t1" data-label="A troca, na história" data-title="A pulseira caducou a meio" data-seed="4" data-lang="text">
+<script type="text/plain">
+A Ana toca no coração; a app pede com a pulseira que tem.
+O porteiro responde 401: a pulseira caducou.
+A app mostra o talão no balcão de troca: POST /v1/auth/refresh.
+O balcão dá uma pulseira nova.
+A app repete o mesmo pedido, uma vez, com a pulseira nova.
+O coração fica vermelho.
+</script><script type="application/json">{"q": "E se no balcão o talão também não valer (fez logout noutro telemóvel)?", "options": ["A Ana volta ao login", "A app tenta outra vez até dar", "A app usa a pulseira de visitante", "A app fecha"], "why": "Só se tenta uma vez. Se o talão também não vale, repetir dava 401 para sempre: a Ana volta à bilheteira."}</script>
+  </div>
+  <div class="parsons" data-id="a17-t2" data-label="A troca, no código" data-title="lib/data/api_client.dart" data-seed="7">
+<script type="text/plain">
+Future<dynamic> _send(String method, String path) async {
+  var response = await _request(method, path);
+  // 401: the token expired. Renew the session and repeat, only once.
+  if (response.statusCode == 401 && await renewSession()) {
+    response = await _request(method, path);
+  }
+  _check(response);
+  return response.body.isEmpty ? null : jsonDecode(response.body);
+}
+</script><script type="application/json">{"q": "Porque é que a response é var e não final?", "options": ["Porque muda quando se repete o pedido", "Porque o Dart não deixa final em async", "Para poder ser null", "Por causa do _check"], "why": "Depois do 401 e da troca, a response passa a ser a do segundo pedido. Uma variável final não pode mudar."}</script>
+  </div>
+  </div>
+  <aside class="notes">O segundo exercício é o <code>_send</code> do passo 2, linha a linha. Quem o ordenar já escreveu metade do passo 2 de cabeça.</aside>
+</section>
+
+<section class="slide">
+  <h2>Estado da turma</h2>
+  <div class="pz-room-board" data-track="a17-troca"></div>
+  <aside class="notes">Uma linha por aluno, uma coluna por exercício. "Sem verificar há X min": está parado, vai lá.</aside>
 </section>
 
 <section class="slide" data-part="Prática">
@@ -196,20 +379,18 @@
   <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem;max-width:720px;margin:0 auto">
     <figure style="margin:0">
       <img src="../assets/img/aula-17/inicio.webp" alt="A lista das ilhas com um coração vazio em cada uma e, por cima, um aviso: 403, este pedido é de um utilizador." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>Ponto de partida.</strong> Um coração em cada ilha, mas a API responde 403.</figcaption>
+      <figcaption><strong>Ponto de partida.</strong> Um coração em cada ilha, mas o porteiro diz 403.</figcaption>
     </figure>
     <figure style="margin:0">
-      <img src="../assets/img/aula-17/final.webp" alt="A mesma lista com São Miguel e o Pico marcados a vermelho e, por baixo do nome, a hora a que a sessão expira." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>Depois do passo 4.</strong> Os favoritos ficam na conta e a sessão renova-se sozinha.</figcaption>
+      <img src="../assets/img/aula-17/final.webp" alt="A mesma lista com São Miguel e o Pico marcados a vermelho." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>Depois do passo 2.</strong> Os favoritos ficam na conta e a pulseira troca-se sozinha.</figcaption>
     </figure>
   </div>
   <ol class="steps">
-    <li>O token do utilizador nos pedidos: os favoritos passam a funcionar.</li>
-    <li>A hora a que a sessão expira, lida de dentro do JWT.</li>
-    <li>Em 401, um access token novo com o refresh token, e o pedido repete-se uma vez.</li>
-    <li>O coração muda logo, sem esperar pela API, e volta atrás se ela falhar.</li>
+    <li>Mostrar a pulseira certa: a da Ana, se ela entrou.</li>
+    <li>Quando a pulseira caduca, trocá-la com o talão e repetir o pedido uma vez.</li>
   </ol>
-  <aside class="notes">Quatro passos pequenos, cada um com uma mudança que se vê no ecrã. Se faltar tempo, o passo 2 é o que se corta: os outros não dependem dele. O passo 1 é uma linha e resolve o 403: é a vitória rápida do início.</aside>
+  <aside class="notes">Dois passos. O passo 1 é uma linha e resolve o 403: é a vitória rápida. O passo 2 é o que o projeto do grupo precisa para a app não deixar de funcionar 15 minutos depois do login.</aside>
 </section>
 
 <section class="slide">
@@ -220,28 +401,37 @@ flutter pub get</code></pre>
   <ol class="steps">
     <li>Corre a app, tudo numa linha (o PowerShell não aceita a <code>\</code> para partir linhas): <code>flutter run -d chrome --dart-define=CLIENT_ID=... --dart-define=CLIENT_SECRET=...</code></li>
     <li>O <code>clientId</code> e o <code>clientSecret</code> são os do issue #1 do teu <code>pdm-miniprojeto</code>, ou os do teu grupo. Vão na linha de comando, nunca no código.</li>
-    <li>Cria uma conta ou entra. É a app que já conheces, com o login e as ilhas, mais um coração em cada ilha.</li>
-    <li>Confirma o que vês: por cima da lista, o aviso <code>403: Este pedido é de um utilizador...</code>. Tocar num coração dá o mesmo erro.</li>
+    <li>Cria uma conta ou entra. Confirma o que vês: por cima da lista, o aviso <code>403: Este pedido é de um utilizador...</code>.</li>
   </ol>
-  <p>Trabalhas nos comentários <code>TODO 1</code> a <code>TODO 4</code>. Abre um segundo terminal para os comandos <code>git</code>.</p>
-  <aside class="notes">Dá 5 minutos ao clone e ao arranque. As contas são por app: quem criou conta com as credenciais individuais não a encontra com as do grupo, e ao contrário. O F5 do VS Code não passa os <code>--dart-define</code>: sem eles aparece <code>401: clientId ou clientSecret errados.</code>. Enquanto compilam, abre o <code>favorites_repository.dart</code> no projetor: <code>GET</code>, <code>PUT</code> e <code>DELETE</code>, e o comentário sobre repetir não fazer mal.</aside>
+  <p>Trabalhas nos comentários <code>TODO 1</code> e <code>TODO 2</code>. Abre um segundo terminal para os comandos <code>git</code>.</p>
+  <aside class="notes">Dá 5 minutos ao clone e ao arranque. As contas são por app: quem criou conta com as credenciais individuais não a encontra com as do grupo, e ao contrário. O F5 do VS Code não passa os <code>--dart-define</code>: sem eles aparece <code>401: clientId ou clientSecret errados.</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Que token vai em cada pedido</h2>
-<pre data-title="lib/data/api_client.dart · os dois tokens, já lá estão"><code class="language-dart">String? _token; // the app's token, from clientId and clientSecret
+  <h2>1. A pulseira certa</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 165" role="img" aria-label="Antes: em todos os pedidos vai a pulseira de visitante e os favoritos dão 403. Depois: com sessão, vai a pulseira da Ana e os favoritos funcionam.">
+    <text x="10" y="40" class="t b">Antes</text>
+    <rect x="90" y="16" width="220" height="40" rx="20" class="box"/><text x="200" y="42" text-anchor="middle" class="t s">sempre a de visitante</text>
+    <path d="M314 36 L520 36" class="arrow danger dashed"/>
+    <rect x="524" y="14" width="326" height="44" rx="10" class="box danger"/><text x="687" y="42" text-anchor="middle" class="t">❤️ favoritos: 403</text>
+    <text x="10" y="134" class="t b">Depois</text>
+    <rect x="90" y="110" width="220" height="40" rx="20" class="box ok"/><text x="200" y="136" text-anchor="middle" class="t s">a da Ana, se entrou</text>
+    <path d="M314 130 L520 130" class="arrow ok"/>
+    <rect x="524" y="108" width="326" height="44" rx="10" class="box ok"/><text x="687" y="136" text-anchor="middle" class="t">❤️ favoritos: guardados</text>
+  </svg>
+  <figcaption>Uma regra: "a pulseira da Ana; se não houver, a de visitante".</figcaption>
+  </figure>
+<pre data-title="lib/data/api_client.dart · as duas pulseiras, já lá estão"><code class="language-dart">String? _token; // the app's token, from clientId and clientSecret
 String? userToken; // the logged-in user's token, set by AuthRepository</code></pre>
-<pre data-title="lib/data/api_client.dart · _request, no ponto de partida"><code class="language-dart">final token = _token ??= await _fetchToken(); // TODO 1</code></pre>
   <ul>
-    <li>O <code>AuthRepository</code> já guarda o token do utilizador em <code>userToken</code> a cada login, registo e refresh. Só que ninguém o usa.</li>
-    <li>O <code>_request</code> manda sempre o token da app. Para as ilhas chega; para os favoritos, não.</li>
-    <li><code>??=</code>: se <code>_token</code> for <code>null</code>, pede um e guarda-o; se não, usa o que tem.</li>
+    <li>O <code>AuthRepository</code> já guarda a pulseira da Ana em <code>userToken</code> a cada login. Só que ninguém a usa: o <code>_request</code> mostra sempre a de visitante.</li>
   </ul>
-  <aside class="notes">Mostra no VS Code o método <code>_keep</code> do <code>auth_repository.dart</code>: é aí que o <code>userToken</code> é preenchido. Pergunta: quando se faz logout, que token volta a ir nos pedidos? Resposta: o da app, porque o <code>logout</code> do <code>AuthRepository</code> põe <code>userToken</code> a <code>null</code>.</aside>
+  <aside class="notes">Mostra no VS Code o método <code>_keep</code> do <code>auth_repository.dart</code>: é aí que o <code>userToken</code> é preenchido. Depois do logout, volta a ir a pulseira de visitante, porque o <code>logout</code> põe <code>userToken</code> a <code>null</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 1: o token do utilizador</h2>
+  <h2>Passo 1: mostrar a pulseira certa</h2>
 <pre data-title="lib/data/api_client.dart · _request, no sítio do TODO 1"><code class="language-dart">Future&lt;http.Response&gt; _request(String method, String path) async {
   // the user's token when someone is logged in; otherwise, the app's
   final token = userToken ?? (_token ??= await _fetchToken());
@@ -250,77 +440,44 @@ String? userToken; // the logged-in user's token, set by AuthRepository</code></
   final streamed = await request.send().timeout(const Duration(seconds: 10));
   return http.Response.fromStream(streamed);
 }</code></pre>
-  <div class="callout task"><strong>Faz</strong> Troca a linha do <code>TODO 1</code> pelas duas linhas novas: o comentário e o <code>final token</code>.</div>
+  <div class="callout task"><strong>Faz</strong> Troca a linha do <code>TODO 1</code> pelas duas linhas novas: o comentário e o <code>final token</code>. Lê-se: "a pulseira da Ana; se não houver, a de visitante".</div>
   <p><strong>Na app:</strong> o aviso 403 desaparece. Toca num coração, para a app com <code>q</code> e volta a correr: o coração continua vermelho, porque está no servidor.</p>
   <div class="callout"><strong>Pergunta à turma</strong> Entra com a mesma conta noutro browser ou no telemóvel do colega. Que corações aparecem?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> Os mesmos: os favoritos são da conta, não do telemóvel. Se o colega tiver as credenciais dele, a conta não existe lá: as contas são por app. Mostra os dois ao mesmo tempo no projetor se houver um telemóvel à mão. Se alguém continuar com 403: falta o <code>userToken ??</code> ou fez hot reload numa sessão antiga; um hot restart (<code>R</code>) resolve. A solução está no branch <code>passo-1</code>.</aside>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Os mesmos: os favoritos são da conta, não do telemóvel. Se alguém continuar com 403: falta o <code>userToken ??</code>, ou fez hot reload numa sessão antiga; um hot restart (<code>R</code>) resolve. A solução está no branch <code>passo-1</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 2 (1 de 2): ler o <code>exp</code> de dentro do JWT</h2>
+  <h2>2. A pulseira caducou a meio do concerto</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 330" role="img" aria-label="Três colunas: app, balcão de troca e porta dos favoritos. A app pede com a pulseira caducada e recebe 401. Mostra o talão no balcão e recebe pulseira nova. Repete o pedido uma vez e entra. Se o talão também falhar, a Ana volta ao login.">
+    <rect x="30" y="10" width="160" height="50" rx="12" class="box accent"/><text x="110" y="41" text-anchor="middle" class="t b">App</text>
+    <rect x="350" y="10" width="160" height="50" rx="12" class="box warn"/><text x="430" y="32" text-anchor="middle" class="t b">Balcão de troca</text><text x="430" y="50" text-anchor="middle" class="t mono">/v1/auth/refresh</text>
+    <rect x="670" y="10" width="160" height="50" rx="12" class="box"/><text x="750" y="32" text-anchor="middle" class="t b">Porta</text><text x="750" y="50" text-anchor="middle" class="t s">os favoritos</text>
+    <line x1="110" y1="60" x2="110" y2="290" class="box muted"/><line x1="430" y1="60" x2="430" y2="150" class="box muted"/><line x1="430" y1="230" x2="430" y2="290" class="box muted"/><line x1="750" y1="60" x2="750" y2="290" class="box muted"/>
+    <path d="M114 95 L744 95" class="arrow"/><text x="270" y="87" text-anchor="middle" class="t s">① pedido com a pulseira caducada</text>
+    <path d="M746 130 L116 130" class="arrow danger"/><text x="590" y="122" text-anchor="middle" class="t danger b">② 401</text>
+    <path d="M114 175 L424 175" class="arrow"/><text x="270" y="167" text-anchor="middle" class="t s">③ mostra o talão</text>
+    <path d="M426 210 L116 210" class="arrow ok"/><text x="270" y="202" text-anchor="middle" class="t ok">④ pulseira nova</text>
+    <path d="M114 255 L744 255" class="arrow ok"/><text x="590" y="247" text-anchor="middle" class="t ok b">⑤ o mesmo pedido, outra vez, uma só: entra</text>
+    <text x="430" y="318" text-anchor="middle" class="t s">Se em ③ o talão também não valer: volta ao login. Nada de repetir.</text>
+  </svg>
+  <figcaption>Aos 15 minutos a pulseira caduca. A app troca-a no balcão com o talão e a Ana nem dá por isso.</figcaption>
+  </figure>
+  <ul>
+    <li>O <code>ApiClient</code> não conhece a <code>SessionNotifier</code>: recebe uma função, <code>renewSession</code>, que vai ao balcão. Quem a liga é o <code>main.dart</code>.</li>
+    <li>O botão do inseto ("Estragar o token") estraga a pulseira de propósito, para não esperarmos 15 minutos. Só existe em debug.</li>
+  </ul>
+  <aside class="notes">É o jogo da troca, agora com o código. Se alguém perguntar porque não tenta até dar: se o talão também já não vale, cada repetição dá 401 outra vez, para sempre.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2 (1 de 2): o <code>ApiClient</code> pede uma pulseira nova</h2>
 <pre class="term"><code class="language-bash">git stash -u
 git checkout passo-1
 flutter pub get</code></pre>
-<pre data-title="lib/models/user.dart · em Session, no sítio do TODO 2"><code class="language-dart">/// When the access token expires. The payload is the middle part of
-/// the JWT, in base64: anyone can read it, no key needed.
-DateTime get expiresAt {
-  final payload = accessToken.split('.')[1];
-  final text = utf8.decode(base64Url.decode(base64Url.normalize(payload)));
-  final exp = (jsonDecode(text) as Map&lt;String, dynamic&gt;)['exp'] as int;
-  return DateTime.fromMillisecondsSinceEpoch(exp * 1000); // seconds
-}</code></pre>
-  <ul>
-    <li><code>split('.')[1]</code>: o payload é a parte do meio de <code>header.payload.signature</code>.</li>
-    <li><code>base64Url.normalize</code> repõe os <code>=</code> que o JWT tira do fim; <code>utf8.decode</code> e <code>jsonDecode</code> dão o mapa das claims.</li>
-    <li><code>exp</code> vem em segundos; o <code>DateTime</code> quer milissegundos.</li>
-  </ul>
-  <div class="callout task"><strong>Faz</strong> Cola o getter em <code>Session</code> e acrescenta <code>import 'dart:convert';</code> no topo do ficheiro.</div>
-  <aside class="notes">Nenhuma chave foi precisa para ler o payload: é o slide do JWT a acontecer no código. A app lê o <code>exp</code> para mostrar; quem decide se o token vale é sempre o servidor, pela assinatura. Erro típico: esquecer o import do <code>dart:convert</code> (o <code>base64Url</code> fica a vermelho).</aside>
-</section>
-
-<section class="slide">
-  <h2>Passo 2 (2 de 2): mostrar a hora por baixo do nome</h2>
-<pre data-title="lib/state/session_notifier.dart · ao lado do getter user"><code class="language-dart">DateTime? get expiresAt =&gt; session?.expiresAt;</code></pre>
-<pre data-title="lib/screens/islands_screen.dart · o title da AppBar"><code class="language-dart">title: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Text('Olá, ${session.user?.name ?? ''}'),
-    if (expiresAt != null)
-      Text(
-        'Sessão até ${_clock(expiresAt)}',
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-  ],
-),</code></pre>
-  <p>No <code>build</code>, troca a linha do <code>user</code> por <code>final session = context.watch&lt;SessionNotifier&gt;();</code> e <code>final expiresAt = session.expiresAt;</code>. O <code>_clock</code> já está no ficheiro, por baixo do <code>build</code>.</p>
-  <p><strong>Na app:</strong> "Sessão até 09:12:47" por baixo do nome, 15 minutos depois do login.</p>
-  <aside class="notes">O <code>_clock</code> não está no ponto de partida: está no branch <code>passo-2</code>. Quem estiver a escrever à mão copia-o do branch ou usa <code>'$expiresAt'</code> sem formatar. Se faltar tempo, este passo salta-se todo: <code>git checkout passo-2</code> e seguir para o 3.</aside>
-</section>
-
-<section class="slide">
-  <h2>3. Em 401, renovar e repetir uma vez</h2>
-  <ol class="steps">
-    <li>Um pedido sai com o access token. A resposta é <strong>401</strong>: o token expirou.</li>
-    <li>O <code>ApiClient</code> pede à sessão um access token novo: <code>POST /v1/auth/refresh</code> com o refresh token guardado.</li>
-    <li>Se correu bem, repete o mesmo pedido, com o token novo. O utilizador não deu por nada.</li>
-    <li>Se o refresh também falhar, o pedido falha com o 401 que já tinha. Nada de tentar outra vez.</li>
-  </ol>
-  <ul>
-    <li>O <code>ApiClient</code> não conhece a <code>SessionNotifier</code>: recebe uma função, <code>renewSession</code>, e quem a liga é o <code>main.dart</code>. As camadas continuam a só conhecer a de baixo.</li>
-    <li>Cada pedido é um <code>http.Request</code> novo: um pedido só pode ser enviado uma vez. Por isso o <code>_request</code> é chamado duas vezes.</li>
-  </ul>
-  <div class="callout"><strong>Pergunta à turma</strong> Porque é que se repete só uma vez, e não até dar certo?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> Se o refresh token também já não vale (logout noutro telemóvel, conta apagada, 30 dias passados), cada repetição volta a dar 401: a app ficava presa num ciclo de pedidos. Uma vez chega para o caso normal, que é o access token ter expirado. É o mesmo interceptor que o <code>dio</code> tem pronto; aqui fica à mão para se ver.</aside>
-</section>
-
-<section class="slide">
-  <h2>Passo 3 (1 de 2): o <code>ApiClient</code> pede um token novo</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-2
-flutter pub get</code></pre>
 <pre data-title="lib/data/api_client.dart · um campo novo, por baixo do userToken"><code class="language-dart">// asks for a new user token; main.dart sets it, until then it says no
 Future&lt;bool&gt; Function() renewSession = () async =&gt; false;</code></pre>
-<pre data-title="lib/data/api_client.dart · _send, no sítio do TODO 3"><code class="language-dart">Future&lt;dynamic&gt; _send(String method, String path) async {
+<pre data-title="lib/data/api_client.dart · _send, no sítio do TODO 2"><code class="language-dart">Future&lt;dynamic&gt; _send(String method, String path) async {
   var response = await _request(method, path);
   // 401: the token expired. Renew the session and repeat, only once.
   if (response.statusCode == 401 &amp;&amp; await renewSession()) {
@@ -329,86 +486,51 @@ Future&lt;bool&gt; Function() renewSession = () async =&gt; false;</code></pre>
   _check(response);
   return response.body.isEmpty ? null : jsonDecode(response.body);
 }</code></pre>
-  <div class="callout task"><strong>Faz</strong> Acrescenta o campo <code>renewSession</code> e troca o corpo do <code>_send</code>. Repara no <code>var</code>: a <code>response</code> pode mudar.</div>
-  <aside class="notes">Até o <code>main.dart</code> a ligar, a <code>renewSession</code> responde <code>false</code>: o 401 segue como antes. É por isso que o passo compila e corre a meio. O <code>&amp;&amp;</code> só chama a <code>renewSession</code> quando o estado é 401.</aside>
+  <div class="callout task"><strong>Faz</strong> Acrescenta o campo <code>renewSession</code> e troca o corpo do <code>_send</code>: é o que ordenaste no jogo.</div>
+  <aside class="notes">Até o <code>main.dart</code> a ligar, a <code>renewSession</code> responde <code>false</code>: o 401 segue como antes. Por isso o passo compila e corre a meio. O <code>&amp;&amp;</code> só chama a <code>renewSession</code> quando o estado é 401.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 3 (2 de 2): a sessão renova</h2>
+  <h2>Passo 2 (2 de 2): a sessão vai ao balcão</h2>
 <pre data-title="lib/state/session_notifier.dart · depois do restore"><code class="language-dart">/// After a 401: a new access token, from the refresh token.
 Future&lt;bool&gt; renew() async {
   final current = session;
   if (current == null) return false;
   try {
     session = await _auth.refresh(current.refreshToken);
-    notifyListeners(); // "Sessão até" moves on
+    notifyListeners(); // the session has a new access token
     return true;
   } catch (_) {
     return false; // the request fails with the 401 it got
   }
 }</code></pre>
-<pre data-title="lib/main.dart · no sítio do TODO 3"><code class="language-dart">api.renewSession = session.renew; // on a 401, the ApiClient asks here</code></pre>
-  <p><strong>Na app:</strong> toca no botão do inseto ("Estragar o token") e depois num coração. Funciona, e a hora da sessão avança. Sem o passo 3, o mesmo toque dava <code>401: Token inválido.</code></p>
-  <aside class="notes">O botão do inseto só existe em debug (<code>kDebugMode</code>): troca o access token por um texto qualquer, para o 401 acontecer sem esperar 15 minutos. Numa release não aparece. O <code>refresh</code> do <code>AuthRepository</code> já põe o token novo no <code>ApiClient</code> (pelo <code>_keep</code>), por isso a repetição sai com ele. O refresh token da API do curso fica o mesmo até ao logout: não é preciso voltar a guardá-lo. Erro típico: <code>api.renewSession = session.renew()</code>, com parênteses, que chama a função em vez de a passar.</aside>
-</section>
-
-<section class="slide">
-  <h2>4. UI otimista</h2>
-  <ul>
-    <li><strong>Pessimista</strong> (o ponto de partida): toca, espera pela API, só depois muda o coração. Numa rede lenta, um segundo sem resposta: o utilizador toca outra vez.</li>
-    <li><strong>Otimista:</strong> muda o coração já, envia o pedido e, se falhar, volta atrás e diz porquê.</li>
-    <li>Funciona porque quase todos os pedidos correm bem, e porque o <code>PUT</code> e o <code>DELETE</code> dos favoritos podem repetir-se sem estragar nada.</li>
-    <li>Não serve para tudo: um pagamento ou um envio de um relato esperam pela resposta.</li>
-  </ul>
-  <div class="callout"><strong>Pergunta à turma</strong> O coração ficou vermelho e a API respondeu 500. O que vê o utilizador, e o que tem de acontecer ao estado?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> Vê o coração voltar a vazio e o aviso com o erro. O estado tem de voltar a ser o que era antes do toque: senão a app mostra uma coisa e o servidor tem outra. É o rollback. Exemplos de apps que conhecem: o gosto do Instagram, a mensagem do WhatsApp com o relógio antes do visto.</aside>
-</section>
-
-<section class="slide">
-  <h2>Passo 4: o coração muda logo</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-3
-flutter pub get</code></pre>
-<pre data-title="lib/state/favorites_notifier.dart · toggle, no sítio do TODO 4"><code class="language-dart">/// The heart changes at once. If the API fails, it goes back.
-Future&lt;void&gt; toggle(String islandId) async {
-  final adding = !isFavorite(islandId);
-  _mark(islandId, adding);
-  error = null;
-  notifyListeners(); // the heart changes now, before the API answers
-  try {
-    if (adding) {
-      await _repository.add(islandId);
-    } else {
-      await _repository.remove(islandId);
-    }
-  } catch (e) {
-    _mark(islandId, !adding); // undo
-    error = _message(e);
-    notifyListeners();
-  }
-}
-
-void _mark(String islandId, bool favorite) {
-  if (favorite) {
-    ids.add(islandId);
-  } else {
-    ids.remove(islandId);
-  }
-}</code></pre>
-  <p><strong>Na app:</strong> no DevTools do Chrome (<kbd>F12</kbd>), separador Network, escolhe <em>Slow 4G</em>: o coração já não espera. Com <em>Offline</em>, fica como estava e o aviso diz "Sem ligação".</p>
-  <aside class="notes">O <code>notifyListeners()</code> antes do <code>try</code> é o que faz o coração mudar logo. O segundo, no <code>catch</code>, é o do rollback. Sem rede, o pedido falha em milissegundos: o coração muda e volta antes de se ver, por isso mostra primeiro com <em>Slow 4G</em> e só depois com <em>Offline</em>. Num telemóvel, o modo de avião faz o mesmo. Se faltar tempo, este passo mostra-se no projetor com <code>git checkout passo-4</code>.</aside>
+<pre data-title="lib/main.dart · no sítio do TODO 2"><code class="language-dart">api.renewSession = session.renew; // on a 401, the ApiClient asks here</code></pre>
+  <p><strong>Na app:</strong> toca no botão do inseto e depois num coração. Funciona. No passo 1, o mesmo toque dava <code>401: Token inválido.</code></p>
+  <aside class="notes">O <code>refresh</code> do <code>AuthRepository</code> já põe a pulseira nova no <code>ApiClient</code> (pelo <code>_keep</code>), por isso a repetição sai com ela. O talão da API do curso fica o mesmo até ao logout: não é preciso voltar a guardá-lo. Erro típico: <code>api.renewSession = session.renew()</code>, com parênteses, que chama a função em vez de a passar.</aside>
 </section>
 
 <section class="slide">
   <h2>Onde ficámos</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 215" role="img" aria-label="O ecrã com o coração chama o FavoritesNotifier, que chama o FavoritesRepository, que chama o ApiClient, que escolhe a pulseira e fala com a API. A SessionNotifier guarda quem entrou e vai ao balcão de troca.">
+    <rect x="10" y="20" width="150" height="70" rx="12" class="box"/><text x="85" y="50" text-anchor="middle" class="t b">Ecrã</text><text x="85" y="72" text-anchor="middle" class="t s">o coração</text>
+    <rect x="190" y="20" width="160" height="70" rx="12" class="box"/><text x="270" y="50" text-anchor="middle" class="t b mono">Favorites</text><text x="270" y="72" text-anchor="middle" class="t s">Notifier · já feito</text>
+    <rect x="380" y="20" width="160" height="70" rx="12" class="box"/><text x="460" y="50" text-anchor="middle" class="t b mono">Favorites</text><text x="460" y="72" text-anchor="middle" class="t s">Repository · já feito</text>
+    <rect x="570" y="20" width="150" height="70" rx="12" class="box accent"/><text x="645" y="50" text-anchor="middle" class="t b mono">ApiClient</text><text x="645" y="72" text-anchor="middle" class="t s">passos 1 e 2</text>
+    <rect x="750" y="20" width="100" height="70" rx="12" class="box"/><text x="800" y="60" text-anchor="middle" class="t b">API</text>
+    <path d="M164 55 L186 55" class="arrow"/><path d="M354 55 L376 55" class="arrow"/>
+    <path d="M544 55 L566 55" class="arrow"/><path d="M724 55 L746 55" class="arrow"/>
+    <rect x="510" y="140" width="270" height="64" rx="12" class="box warn"/><text x="645" y="168" text-anchor="middle" class="t b mono">SessionNotifier</text><text x="645" y="190" text-anchor="middle" class="t s">quem entrou · o balcão de troca · passo 2</text>
+    <path d="M645 136 L645 94" class="arrow dashed"/><text x="655" y="122" class="t s">pulseira nova</text>
+  </svg>
+  <figcaption>Onde está cada peça da história no código.</figcaption>
+  </figure>
   <ol class="steps">
-    <li>O <code>_request</code> manda o token do utilizador quando há sessão, e o da app quando não há (passo 1).</li>
-    <li>O <code>exp</code> lê-se do payload do JWT sem chave nenhuma: base64, não cifra (passo 2).</li>
-    <li>Em 401, o <code>ApiClient</code> pede à sessão um access token novo com o refresh token e repete o pedido uma vez (passo 3).</li>
-    <li>O coração muda antes da resposta e volta atrás se a API falhar (passo 4).</li>
+    <li>O <code>_request</code> mostra a pulseira da Ana quando há sessão, e a de visitante quando não há (passo 1).</li>
+    <li>Em 401, a sessão troca a pulseira com o talão e o pedido repete-se uma vez (passo 2).</li>
   </ol>
-  <p>O branch <code>passo-4</code> é o estado final. O <code>FavoritesRepository</code>, o <code>FavoritesNotifier</code> e o <code>ApiClient</code> passam para o projeto do grupo como estão: os favoritos das ilhas e dos trilhos são o mesmo padrão.</p>
-  <aside class="notes">Para o projeto: <code>/v1/me/favorites/trails/{id}</code> funciona igual ao das ilhas. O <code>GET /v1/me/favorites</code> devolve <code>islands</code> e <code>trails</code> na mesma resposta. Amanhã é a primeira sessão de acompanhamento da sprint 1.</aside>
+  <p>O branch <code>passo-2</code> é o estado final. O <code>ApiClient</code>, o <code>FavoritesRepository</code> e o <code>FavoritesNotifier</code> passam para o projeto do grupo como estão.</p>
+  <aside class="notes">Para o projeto: <code>/v1/me/favorites/trails/{id}</code> funciona igual ao das ilhas. O <code>GET /v1/me/favorites</code> devolve <code>islands</code> e <code>trails</code> na mesma resposta.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -418,8 +540,8 @@ void _mark(String islandId, bool favorite) {
       <h3>Amanhã</h3>
       <ul>
         <li>Quarta, 28 de outubro, das 16:00 às 18:00: segurança, performance e o ponto de situação da sprint 1.</li>
-        <li>Tragam a app do grupo a correr: vamos olhar para ela em modo profile.</li>
-        <li>O estado final de hoje fica no branch <code>passo-4</code>: <code>git stash -u</code> e depois <code>git checkout passo-4</code>.</li>
+        <li>Tragam a app do grupo a correr.</li>
+        <li>O estado final de hoje fica no branch <code>passo-2</code>: <code>git stash -u</code> e depois <code>git checkout passo-2</code>.</li>
       </ul>
     </div>
     <div>
@@ -427,7 +549,6 @@ void _mark(String islandId, bool favorite) {
       <ul>
         <li><a href="https://jwt.io/introduction" target="_blank" rel="noopener">Introduction to JSON Web Tokens</a>: as três partes e as claims, com um descodificador.</li>
         <li><a href="https://oauth.net/2/pkce/" target="_blank" rel="noopener">PKCE</a>: porque as apps móveis não guardam client secrets.</li>
-        <li><a href="https://docs.flutter.dev/cookbook/networking/authenticated-requests" target="_blank" rel="noopener">Make authenticated requests</a>: o cabeçalho <code>Authorization</code> na receita oficial.</li>
         <li><a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">Documentação da API</a>: login, refresh, logout e favoritos.</li>
       </ul>
     </div>
@@ -441,5 +562,6 @@ void _mark(String islandId, bool favorite) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../assets/app.js"></script>
+<script src="../assets/parsons.js"></script>
 </body>
 </html>

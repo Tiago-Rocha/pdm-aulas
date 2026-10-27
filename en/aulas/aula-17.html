@@ -6,6 +6,7 @@
 <title>Lesson 17 · Token authentication and synced favourites · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="../../assets/parsons.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body data-aula="17">
@@ -26,23 +27,62 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 17 · Week 8 · Tuesday, 27 October 2026 · 08:30 to 10:30</p>
   <h1>Token authentication and synced favourites</h1>
-  <p class="lead">Theory: authentication on mobile: OAuth2 and OpenID Connect, JWT, access and refresh tokens, biometrics. Practice: favourites kept in each person's account, with the user's token, renewal on 401 and optimistic UI.</p>
+  <p class="lead">Theory: authentication on mobile told as a festival: the wristband (access token), the exchange ticket (refresh token) and the doorman (401 and 403), JWT, OAuth2 and biometrics. Games about it. Practice: favourites kept in each person's account, with the right wristband and the wristband swap on a 401.</p>
   <div class="meta"><span>Repository: pdm-aula-17</span></div>
-  <aside class="notes">Open jwt.io on the projector with a user token from the course API pasted in (log in with the lesson repository and copy it from DevTools, Network tab, the <code>Authorization</code> header of a favourites request): the payload shows up in plain text, with your name. It is the hook for the JWT slides. The access token lasts 15 minutes; in the practice there is a button that breaks it, so the 401 shows up without waiting.</aside>
+  <aside class="notes">Reference times: theory until 09:05, games until 09:50, steps 1 and 2 until 10:25. If time runs short, show step 2 on the projector with <code>git checkout passo-2</code>.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
+    <li>Explain the access token and the refresh token with the wristband and the exchange ticket.</li>
     <li>Tell authentication apart from authorisation, and a 401 from a 403.</li>
-    <li>Read a JWT and explain header, payload, signature and expiry.</li>
-    <li>Describe the authorization code flow with PKCE and the role of the refresh token.</li>
-    <li>Send the right token with each request and renew the session on a 401, repeating the request once.</li>
-    <li>Keep favourites in the account, with optimistic UI and rollback in case of error.</li>
+    <li>Read a JWT and explain what anyone can read and what nobody can fake.</li>
+    <li>Show the right wristband on every request and swap it on a 401, repeating the request once.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Theory">
+  <h2>Today's story: the app goes to a festival</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 250" role="img" aria-label="At the ticket office you give email and password and get a 15-minute wristband and a 30-day exchange ticket. The wristband is shown at the doors; the ticket stays in the inside pocket.">
+    <rect x="10" y="20" width="200" height="110" rx="14" class="box accent"/>
+    <text x="110" y="62" text-anchor="middle" class="t big">🎟️</text>
+    <text x="110" y="92" text-anchor="middle" class="t b">Ticket office</text>
+    <text x="110" y="114" text-anchor="middle" class="t s">email and password</text>
+    <path d="M214 60 L318 60" class="arrow accent"/>
+    <path d="M214 100 L318 170" class="arrow accent"/>
+    <rect x="322" y="28" width="230" height="64" rx="32" class="box ok"/>
+    <text x="437" y="56" text-anchor="middle" class="t b">Wristband</text>
+    <text x="437" y="77" text-anchor="middle" class="t s">access token · 15 min</text>
+    <rect x="322" y="142" width="230" height="64" rx="10" class="box warn"/>
+    <text x="437" y="170" text-anchor="middle" class="t b">Exchange ticket</text>
+    <text x="437" y="191" text-anchor="middle" class="t s">refresh token · 30 days</text>
+    <path d="M556 60 L650 60" class="arrow"/>
+    <rect x="654" y="20" width="196" height="80" rx="12" class="box"/>
+    <text x="752" y="52" text-anchor="middle" class="t b">The doors</text>
+    <text x="752" y="74" text-anchor="middle" class="t s">every request to the API</text>
+    <path d="M556 174 L650 174" class="arrow"/>
+    <rect x="654" y="140" width="196" height="70" rx="12" class="box"/>
+    <text x="752" y="168" text-anchor="middle" class="t b">🔒 Inside pocket</text>
+    <text x="752" y="190" text-anchor="middle" class="t s">secure storage</text>
+    <text x="430" y="240" text-anchor="middle" class="t s">The password is never used again. The wristband is shown all the time; the ticket almost never.</text>
+  </svg>
+  <figcaption>The app goes to a festival. The API is the venue, with a doorman at every door.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+  <thead><tr><th>At the festival</th><th>In the app</th></tr></thead>
+  <tbody>
+  <tr><td>Ticket office</td><td><code>POST /v1/auth/login</code>, with email and password</td></tr>
+  <tr><td>Wristband</td><td>Access token: goes with every request, lasts 15 minutes</td></tr>
+  <tr><td>Exchange ticket</td><td>Refresh token: lasts 30 days, only used to get a new wristband</td></tr>
+  <tr><td>Doorman</td><td>The API: on every request it looks at the wristband and lets you in or not</td></tr>
+  <tr><td>Inside pocket</td><td><code>flutter_secure_storage</code>, where the ticket is kept</td></tr>
+  </tbody></table></div>
+  <aside class="notes">Tell it as a story before any technical term. Every slide after this goes back to this picture: when "access token" shows up, say "the wristband"; when "refresh token" shows up, say "the ticket". They already know the ticket office: it is the login screen already in the app.</aside>
+</section>
+
+<section class="slide">
   <h2>Authentication vs authorisation; cookies vs tokens</h2>
   <ul>
     <li><strong>Authentication:</strong> who you are (login, biometrics, key). <strong>Authorisation:</strong> what you can do (read your favourites, not other people's).</li>
@@ -55,20 +95,61 @@
 </section>
 
 <section class="slide">
+  <h2>401 and 403: what the doorman says</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 180" role="img" aria-label="401: expired or broken wristband, the doorman does not know who you are. 403: valid visitor wristband at the door of Ana&#x27;s locker, the doorman knows who you are but you cannot go in.">
+    <rect x="10" y="10" width="410" height="160" rx="14" class="box danger"/>
+    <text x="215" y="48" text-anchor="middle" class="t b big">401</text>
+    <rect x="85" y="66" width="260" height="40" rx="20" class="box"/>
+    <text x="215" y="92" text-anchor="middle" class="t s">wristband expired or broken</text>
+    <text x="215" y="140" text-anchor="middle" class="t b">"I don't know who you are."</text>
+    <text x="215" y="160" text-anchor="middle" class="t s">Fixed with a new wristband</text>
+    <rect x="440" y="10" width="410" height="160" rx="14" class="box warn"/>
+    <text x="645" y="48" text-anchor="middle" class="t b big">403</text>
+    <rect x="515" y="66" width="260" height="40" rx="20" class="box"/>
+    <text x="645" y="92" text-anchor="middle" class="t s">visitor, at Ana's locker</text>
+    <text x="645" y="140" text-anchor="middle" class="t b">"I know who you are, but you can't."</text>
+    <text x="645" y="160" text-anchor="middle" class="t s">A new wristband of the same kind does not help</text>
+  </svg>
+  <figcaption>401 is authentication (who you are); 403 is authorisation (what you may do).</figcaption>
+  </figure>
+  <ul>
+    <li>A <strong>401</strong> is fixed with a new wristband (the ticket, or the ticket office again).</li>
+    <li>A <strong>403</strong> is not fixed with a new wristband of the same kind: you need another wristband, with other rights.</li>
+  </ul>
+  <div class="callout"><strong>Question for the class</strong> You walk into the artists' backstage with a visitor wristband. 401 or 403?</div>
+  <aside class="notes"><strong>Answers to the questions.</strong> 403: the wristband is valid, the doorman knows who you are (a visitor), but backstage is not for visitors. They will play with this in a moment, with real requests to the API.</aside>
+</section>
+
+<section class="slide">
   <h2>JWT (1 of 2): what is inside</h2>
   <ul>
     <li>Three parts in base64url separated by dots: <code>header.payload.signature</code>.</li>
     <li><strong>Header:</strong> <code>{"alg":"HS256","typ":"JWT"}</code>. <strong>Payload:</strong> the <em>claims</em>: <code>sub</code> (who), <code>iss</code> (who issued it), <code>iat</code> and <code>exp</code> (when), and each API's own claims.</li>
     <li><strong>Signature:</strong> HMAC (shared key) or RSA/ECDSA (key pair) over the header and the payload.</li>
   </ul>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 160" role="img" aria-label="A JWT has three parts: header, what is written (name Ana, app, valid until 09:45) and the seal. The middle is read without a key; only the server can make the seal.">
+    <rect x="10" y="20" width="840" height="80" rx="40" class="box ok"/>
+    <line x1="170" y1="20" x2="170" y2="100" class="box muted"/>
+    <line x1="660" y1="20" x2="660" y2="100" class="box muted"/>
+    <text x="90" y="66" text-anchor="middle" class="t s">header</text>
+    <text x="415" y="56" text-anchor="middle" class="t b">Ana · app pdm-ab12cd · valid until 09:45</text>
+    <text x="415" y="80" text-anchor="middle" class="t mono">uid · user_name · client_id · exp</text>
+    <text x="755" y="70" text-anchor="middle" class="t big">🔏</text>
+    <text x="90" y="130" text-anchor="middle" class="t s">part 1</text>
+    <text x="415" y="130" text-anchor="middle" class="t s">part 2: read without a key (base64, not a secret)</text>
+    <text x="755" y="130" text-anchor="middle" class="t s">part 3: the seal</text>
+    <text x="755" y="148" text-anchor="middle" class="t s">only the server makes it</text>
+  </svg>
+  <figcaption>Written on the wristband for everyone to see: who, which app, until when. Change the time and the seal breaks.</figcaption>
+  </figure>
   <div class="table-wrap"><table>
   <thead><tr><th>Claim</th><th>Example, in a course API token</th><th>What it says</th></tr></thead>
   <tbody>
-  <tr><td><code>sub</code></td><td><code>8b0e6c2a-5d1f-...</code></td><td>Who owns the app (your record in the API)</td></tr>
-  <tr><td><code>client_id</code></td><td><code>pdm-ab12cd</code></td><td>Which app is asking</td></tr>
+  <tr><td><code>sub</code>, <code>client_id</code></td><td><code>8b0e6c2a-...</code>, <code>pdm-ab12cd</code></td><td>Which app is asking, and whose it is</td></tr>
   <tr><td><code>uid</code>, <code>user_name</code></td><td><code>c3a9f1d4-...</code>, <code>Ana</code></td><td>Which person logged in. Only in login tokens</td></tr>
-  <tr><td><code>iat</code></td><td><code>1793094300</code></td><td>When it was issued, in seconds since 1970</td></tr>
-  <tr><td><code>exp</code></td><td><code>1793095200</code></td><td>When it expires: 900 seconds later, 15 minutes</td></tr>
+  <tr><td><code>iat</code>, <code>exp</code></td><td><code>1793094300</code>, <code>1793095200</code></td><td>When it was issued and when it expires, in seconds: 900 seconds, 15 minutes</td></tr>
   </tbody></table></div>
   <ul>
     <li>Base64 is not encryption: anyone can read the payload. The app can read <code>exp</code> to know it is about to expire without making a request.</li>
@@ -173,22 +254,124 @@
 </section>
 
 <section class="slide">
-  <h2>In the course API: two tokens</h2>
+  <h2>In the course API: two wristbands</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 215" role="img" aria-label="The visitor wristband opens islands, forecasts and warnings but not Ana&#x27;s favourites: 403. Ana&#x27;s wristband opens everything, her favourites included.">
+    <rect x="10" y="30" width="220" height="56" rx="28" class="box"/>
+    <text x="120" y="55" text-anchor="middle" class="t b">Visitor wristband</text>
+    <text x="120" y="75" text-anchor="middle" class="t s">the app's token</text>
+    <rect x="10" y="140" width="220" height="56" rx="28" class="box ok"/>
+    <text x="120" y="165" text-anchor="middle" class="t b">Ana's wristband</text>
+    <text x="120" y="185" text-anchor="middle" class="t s">the user's token</text>
+    <rect x="460" y="20" width="390" height="76" rx="12" class="box"/>
+    <text x="480" y="52" class="t b">🏝️ Islands, forecasts, warnings</text>
+    <text x="480" y="76" class="t s">the same for everyone</text>
+    <rect x="460" y="130" width="390" height="76" rx="12" class="box"/>
+    <text x="480" y="162" class="t b">❤️ Ana's favourites</text>
+    <text x="480" y="186" class="t s">only hers, kept on the server</text>
+    <path d="M234 58 L454 58" class="arrow ok"/><text x="340" y="50" text-anchor="middle" class="t ok b">in</text>
+    <path d="M234 70 L454 160" class="arrow danger dashed"/><text x="440" y="138" text-anchor="end" class="t danger b">403</text>
+    <path d="M234 160 L454 74" class="arrow ok"/>
+    <path d="M234 168 L454 168" class="arrow ok"/><text x="340" y="194" text-anchor="middle" class="t ok b">in</text>
+  </svg>
+  <figcaption>The app has a wristband of its own, with no name. After the login there is a second one, with the person's name.</figcaption>
+  </figure>
   <div class="table-wrap"><table>
-  <thead><tr><th></th><th>The app's token</th><th>The user's token</th></tr></thead>
+  <thead><tr><th></th><th>Visitor wristband (the app's token)</th><th>Ana's wristband (the user's token)</th></tr></thead>
   <tbody>
-  <tr><td>How you get it</td><td><code>POST /v1/auth/token</code> with <code>clientId</code> and <code>clientSecret</code></td><td><code>POST /v1/auth/login</code> or <code>/v1/auth/register</code></td></tr>
-  <tr><td>Lasts</td><td>1 hour</td><td>15 minutes, renewed with the refresh token</td></tr>
-  <tr><td>Opens</td><td>Islands, forecasts, warnings: data that is the same for everyone</td><td>All of that, plus <code>/v1/me</code> and <code>/v1/me/favorites</code>: data of one person</td></tr>
-  <tr><td>In the JWT</td><td><code>sub</code>, <code>client_id</code></td><td>The same, plus <code>uid</code> and <code>user_name</code></td></tr>
+  <tr><td>Where you get it</td><td><code>POST /v1/auth/token</code> with <code>clientId</code> and <code>clientSecret</code></td><td><code>POST /v1/auth/login</code> or <code>/v1/auth/register</code></td></tr>
+  <tr><td>Lasts</td><td>1 hour</td><td>15 minutes, swapped with the ticket</td></tr>
+  <tr><td>Opens</td><td>Islands, forecasts, warnings</td><td>All of that, plus <code>/v1/me</code> and <code>/v1/me/favorites</code></td></tr>
   </tbody></table></div>
-  <ul>
-    <li>Both go in the same header: <code>Authorization: Bearer ...</code>. The server reads the payload and decides.</li>
-    <li><code>GET /v1/me/favorites</code> with the app's token answers <strong>403</strong>: the API knows which app is asking, but not which person.</li>
-    <li>The favourites are kept in the account, on the server. Ana logs in on another phone and finds the same ones there.</li>
-  </ul>
-  <div class="callout"><strong>Question for the class</strong> With the app's token, the list of islands shows up and the favourites give 403. Why not 401?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> 401 would be "I don't know who you are". Here the token is valid and the API knows who is asking: the app. But favourites belong to a person, and the app's token does not say which person. I know who you are, but you can't: 403. It is the authentication and authorisation slide, with a case they will see on screen in a few minutes.</aside>
+  <aside class="notes">The favourites are kept in the account, on the server: Ana logs in on another phone and finds the same ones there. That is what today's app will do.</aside>
+</section>
+
+<section class="slide" data-part="Games">
+  <h2>5 minutes of memory</h2>
+<ol class="steps how"><li>Open <code>tiago-rocha.github.io/pdm-aulas/en/aulas/aula-17.html</code> on your computer and come to this slide.</li><li>Type your first name and join. You stay in for all the games in the lesson.</li><li>Five questions, no notes. <strong>Only the first answer counts.</strong></li></ol>
+  <div class="pz-seq" data-id="a17-mem" data-word="Question">
+  <div class="pz-mcq" data-id="a17-m16-refresh" data-label="Persistence"><script type="application/json">{"q": "Where does the app keep the refresh token, which lasts 30 days?", "options": ["In flutter_secure_storage (Keychain on iOS, Keystore on Android)", "In shared_preferences", "In a variable, only in memory", "In a JSON file in the app folder"], "why": "It is a password that lasts 30 days: it goes into the system's secure storage. In memory it would be lost when the app closes; shared_preferences and files are not encrypted."}</script></div>
+  <div class="pz-mcq" data-id="a17-m16-prefs" data-label="Persistence"><script type="application/json">{"q": "The user picked the dark theme. Where is that kept?", "options": ["In shared_preferences", "In flutter_secure_storage", "In a SQLite database", "On the server, in the account"], "why": "It is small, not secret and needed on the very first screen: shared_preferences. A database is for lists you search."}</script></div>
+  <div class="pz-mcq" data-id="a17-m15-pronto" data-label="Project"><script type="application/json">{"q": "The PR was tested with flutter run -d chrome, handles errors, analyze is clean and a teammate approved it. Is it done?", "options": ["No: it still has to run on a phone", "Yes, it meets everything", "No: it needs a teammate's review", "No: analyze has warnings"], "why": "Chrome is not a phone. The definition of done asks for it to run on a phone."}</script></div>
+  <div class="pz-mcq" data-id="a17-m13-json" data-label="Layers"><script type="application/json">{"q": "The API now sends \"nome\" instead of \"name\" for the islands. Which file do you open?", "options": ["models/island.dart, in fromJson", "screens/islands_screen.dart", "state/forecast_notifier.dart", "data/api_client.dart"], "why": "JSON only becomes an Island in the model's fromJson. The screen and the notifier receive an Island and never know there was JSON."}</script></div>
+  <div class="pz-mcq" data-id="a17-m13-notify" data-label="State"><script type="application/json">{"q": "The last notifyListeners() in load() is missing. What does the user see?", "code": "Future<void> load() async {\n  isLoading = true;\n  notifyListeners();\n  islands = await _repository.fetchIslands();\n  isLoading = false;\n}", "options": ["The spinner spinning forever", "The list, as usual", "A red error on the screen", "The app closing"], "why": "isLoading becomes false, but nobody tells the screen. Without notifyListeners the screen does not rebuild and stays on the spinner."}</script></div>
+  </div>
+  <aside class="notes">None of this counts for the grade: tell them before they start. Three questions are from the last two lessons (where to keep the refresh token, where to keep the theme, the definition of done) and two are about layers.</aside>
+</section>
+
+<section class="slide">
+  <h2>Memory: the class</h2>
+  <div class="pz-poll" data-track="a17-mem"></div>
+  <aside class="notes">Look at the question with the fewest right answers and ask someone who got it right: "how did you think?". The refresh token one links straight to today: it is the ticket.</aside>
+</section>
+
+<section class="slide">
+  <h2>Game: what does the doorman say?</h2>
+  <p class="how"><strong>One request at a time, everyone together.</strong> Wait for everyone: we go over each answer together.</p>
+  <ol class="steps how"><li>Read the request and vote on your own: 200, 401 or 403.</li><li>Discuss with the person next to you: why that answer?</li><li>Vote again. Only then you see the answer.</li></ol>
+  <div class="pz-seq" data-id="a17-porta" data-word="Request">
+  <div class="pz-mcq" data-id="a17-p1" data-label="Islands, visitor" data-revote><script type="application/json">{"q": "GET /v1/islands with the visitor wristband (the app's token).", "options": ["200: in", "401: I don't know who you are", "403: I know who you are, but you can't"], "why": "Islands are the same for everyone: the visitor wristband is enough."}</script></div>
+  <div class="pz-mcq" data-id="a17-p2" data-label="Favourites, visitor" data-revote><script type="application/json">{"q": "GET /v1/me/favorites with the visitor wristband.", "options": ["403: I know who you are, but you can't", "200: in", "401: I don't know who you are"], "why": "The wristband is valid and the API knows which app is asking. But favourites belong to a person, and this wristband does not say which."}</script></div>
+  <div class="pz-mcq" data-id="a17-p3" data-label="20-minute-old wristband" data-revote><script type="application/json">{"q": "GET /v1/me/favorites with Ana's wristband, received 20 minutes ago.", "options": ["401: I don't know who you are", "200: in", "403: I know who you are, but you can't"], "why": "Ana's wristband lasts 15 minutes. It expired: the doorman no longer accepts it. The ticket fixes it."}</script></div>
+  <div class="pz-mcq" data-id="a17-p4" data-label="No wristband" data-revote><script type="application/json">{"q": "GET /v1/islands with no Authorization header at all.", "options": ["401: I don't know who you are", "200: in", "403: I know who you are, but you can't"], "why": "With no wristband, the doorman does not know who you are. It is not \"you can't\": it is \"I don't know who you are\"."}</script></div>
+  <div class="pz-mcq" data-id="a17-p5" data-label="Changed time" data-revote><script type="application/json">{"q": "Ana changes the wristband's exp to a year from now and calls GET /v1/me/favorites.", "options": ["401: I don't know who you are", "200: in", "403: I know who you are, but you can't"], "why": "The seal no longer matches what is written. For the doorman it is a fake wristband: he does not know who you are."}</script></div>
+  </div>
+  <aside class="notes">Say "request 1", let them vote, one minute of pair discussion, second vote, and move on. The changed-time one usually splits the class: whoever says 403 is thinking "you can't do that"; but for the doorman the wristband is fake, so he does not know who you are.</aside>
+</section>
+
+<section class="slide">
+  <h2>What does the doorman say? The class</h2>
+  <div class="pz-poll" data-track="a17-porta"></div>
+  <aside class="notes">Compare the two bars of each request: if the second vote has more right answers, the discussion worked.</aside>
+</section>
+
+<section class="slide">
+  <h2>Game: read the wristband</h2>
+  <p>A real wristband from the course API, already decoded (the middle of the JWT). Four questions.</p>
+  <div class="pz-seq" data-id="a17-jwt" data-word="Question">
+  <div class="pz-mcq" data-id="a17-j1" data-label="Who logged in"><script type="application/json">{"q": "Who logged in with this wristband?", "code": "{\n  \"sub\": \"8b0e6c2a-5d1f-4b7e-9a3c-2f6d1e8a4b70\",\n  \"client_id\": \"pdm-ab12cd\",\n  \"name\": \"Grupo 1\",\n  \"iat\": 1793094300,\n  \"exp\": 1793095200,\n  \"uid\": \"c3a9f1d4-7e2b-4a61-8d05-9b3e6f1a2c88\",\n  \"user_name\": \"Ana\"\n}", "options": ["Ana", "Grupo 1", "Nobody: it is the visitor wristband", "The app pdm-ab12cd"], "why": "uid and user_name only show up in login wristbands: it is Ana's. name belongs to the app's owner."}</script></div>
+  <div class="pz-mcq" data-id="a17-j2" data-label="How long"><script type="application/json">{"q": "How long is this wristband valid?", "code": "{\n  \"sub\": \"8b0e6c2a-5d1f-4b7e-9a3c-2f6d1e8a4b70\",\n  \"client_id\": \"pdm-ab12cd\",\n  \"name\": \"Grupo 1\",\n  \"iat\": 1793094300,\n  \"exp\": 1793095200,\n  \"uid\": \"c3a9f1d4-7e2b-4a61-8d05-9b3e6f1a2c88\",\n  \"user_name\": \"Ana\"\n}", "options": ["15 minutes", "1 hour", "30 days", "Forever"], "why": "exp minus iat: 1793095200 minus 1793094300 is 900 seconds, 15 minutes."}</script></div>
+  <div class="pz-mcq" data-id="a17-j3" data-label="No key"><script type="application/json">{"q": "Can the app read this without any key?", "options": ["Yes: the middle of the JWT is base64, anyone can read it", "No: only the server has the key to read it", "Only after the login", "Only on the phone, not in Chrome"], "why": "Base64 is not encryption. That is why nothing secret ever goes in a JWT."}</script></div>
+  <div class="pz-mcq" data-id="a17-j4" data-label="Seal"><script type="application/json">{"q": "If anyone can read the wristband, why can nobody fake it?", "options": ["Because of the seal: only the server can make it", "Because it is encrypted", "Because the app keeps it in the Keychain", "Because it changes on every request"], "why": "The signature (the seal) is made with a key only the server has. Changing one letter in the middle breaks the seal."}</script></div>
+  </div>
+  <aside class="notes">The first three are read straight from the text. The fourth is the question from the JWT slide: anyone reads it, nobody fakes it.</aside>
+</section>
+
+<section class="slide">
+  <h2>Game: swapping the wristband</h2>
+  <p class="how"><strong>In pairs.</strong> First the story in order, then the same in code: it is what you will write in step 2.</p>
+  <div class="pz-seq" data-id="a17-troca">
+  <div class="parsons" data-id="a17-t1" data-label="The swap, in the story" data-title="The wristband expired halfway" data-seed="4" data-lang="text">
+<script type="text/plain">
+Ana taps the heart; the app asks with the wristband it has.
+The doorman answers 401: the wristband expired.
+The app shows the ticket at the exchange desk: POST /v1/auth/refresh.
+The desk gives a new wristband.
+The app repeats the same request, once, with the new wristband.
+The heart turns red.
+</script><script type="application/json">{"q": "And if at the desk the ticket is not valid either (she logged out on another phone)?", "options": ["Ana goes back to the login", "The app tries again until it works", "The app uses the visitor wristband", "The app closes"], "why": "You only try once. If the ticket is not valid either, repeating would give 401 forever: Ana goes back to the ticket office."}</script>
+  </div>
+  <div class="parsons" data-id="a17-t2" data-label="The swap, in the code" data-title="lib/data/api_client.dart" data-seed="7">
+<script type="text/plain">
+Future<dynamic> _send(String method, String path) async {
+  var response = await _request(method, path);
+  // 401: the token expired. Renew the session and repeat, only once.
+  if (response.statusCode == 401 && await renewSession()) {
+    response = await _request(method, path);
+  }
+  _check(response);
+  return response.body.isEmpty ? null : jsonDecode(response.body);
+}
+</script><script type="application/json">{"q": "Why is response a var and not final?", "options": ["Because it changes when the request is repeated", "Because Dart does not allow final in async", "So that it can be null", "Because of _check"], "why": "After the 401 and the swap, response becomes the second request's. A final variable cannot change."}</script>
+  </div>
+  </div>
+  <aside class="notes">The second exercise is the <code>_send</code> from step 2, line by line. Whoever orders it has already written half of step 2 in their head.</aside>
+</section>
+
+<section class="slide">
+  <h2>Class status</h2>
+  <div class="pz-room-board" data-track="a17-troca"></div>
+  <aside class="notes">One row per student, one column per exercise. "Not checked for X min": they are stuck, go there.</aside>
 </section>
 
 <section class="slide" data-part="Practice">
@@ -196,20 +379,18 @@
   <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem;max-width:720px;margin:0 auto">
     <figure style="margin:0">
       <img src="../../assets/img/aula-17/inicio.webp" alt="The list of islands with an empty heart on each one and, above it, a warning: 403, this request belongs to a user." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>Starting point.</strong> A heart on each island, but the API answers 403.</figcaption>
+      <figcaption><strong>Starting point.</strong> A heart on each island, but the doorman says 403.</figcaption>
     </figure>
     <figure style="margin:0">
-      <img src="../../assets/img/aula-17/final.webp" alt="The same list with São Miguel and Pico marked in red and, under the name, the time the session expires." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>After step 4.</strong> The favourites stay in the account and the session renews itself.</figcaption>
+      <img src="../../assets/img/aula-17/final.webp" alt="The same list with São Miguel and Pico marked in red." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>After step 2.</strong> Favourites stay in the account and the wristband swaps itself.</figcaption>
     </figure>
   </div>
   <ol class="steps">
-    <li>The user's token in the requests: favourites start working.</li>
-    <li>The time the session expires, read from inside the JWT.</li>
-    <li>On a 401, a new access token from the refresh token, and the request is repeated once.</li>
-    <li>The heart changes at once, without waiting for the API, and goes back if it fails.</li>
+    <li>Show the right wristband: Ana's, if she logged in.</li>
+    <li>When the wristband expires, swap it with the ticket and repeat the request once.</li>
   </ol>
-  <aside class="notes">Four small steps, each with a change you can see on screen. If time runs short, step 2 is the one to cut: the others do not depend on it. Step 1 is one line and fixes the 403: it is the quick win at the start.</aside>
+  <aside class="notes">Two steps. Step 1 is one line and fixes the 403: the quick win. Step 2 is what the group project needs so the app does not stop working 15 minutes after the login.</aside>
 </section>
 
 <section class="slide">
@@ -220,28 +401,37 @@ flutter pub get</code></pre>
   <ol class="steps">
     <li>Run the app, all on one line (PowerShell does not accept <code>\</code> to split lines): <code>flutter run -d chrome --dart-define=CLIENT_ID=... --dart-define=CLIENT_SECRET=...</code></li>
     <li>The <code>clientId</code> and <code>clientSecret</code> are the ones in issue #1 of your <code>pdm-miniprojeto</code>, or your group's. They go on the command line, never in the code.</li>
-    <li>Create an account or log in. It is the app you already know, with the login and the islands, plus a heart on each island.</li>
-    <li>Check what you see: above the list, the warning <code>403: Este pedido é de um utilizador...</code>. Tapping a heart gives the same error.</li>
+    <li>Create an account or log in. Check what you see: above the list, the warning <code>403: Este pedido é de um utilizador...</code>.</li>
   </ol>
-  <p>You work on the comments <code>TODO 1</code> to <code>TODO 4</code>. Open a second terminal for the <code>git</code> commands.</p>
-  <aside class="notes">Give 5 minutes to the clone and the start. Accounts belong to an app: whoever created an account with their individual credentials will not find it with the group's, and the other way round. F5 in VS Code does not pass the <code>--dart-define</code>: without them you get <code>401: clientId ou clientSecret errados.</code>. While it compiles, open <code>favorites_repository.dart</code> on the projector: <code>GET</code>, <code>PUT</code> and <code>DELETE</code>, and the comment about repeating doing no harm.</aside>
+  <p>You work on the comments <code>TODO 1</code> and <code>TODO 2</code>. Open a second terminal for the <code>git</code> commands.</p>
+  <aside class="notes">Give 5 minutes to the clone and the start. Accounts belong to an app: whoever created an account with their individual credentials will not find it with the group's, and the other way round. F5 in VS Code does not pass the <code>--dart-define</code>: without them you get <code>401: clientId ou clientSecret errados.</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. Which token goes with each request</h2>
-<pre data-title="lib/data/api_client.dart · the two tokens, already there"><code class="language-dart">String? _token; // the app's token, from clientId and clientSecret
+  <h2>1. The right wristband</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 165" role="img" aria-label="Before: every request goes with the visitor wristband and the favourites give 403. After: with a session, Ana&#x27;s wristband goes and the favourites work.">
+    <text x="10" y="40" class="t b">Before</text>
+    <rect x="90" y="16" width="220" height="40" rx="20" class="box"/><text x="200" y="42" text-anchor="middle" class="t s">always the visitor's</text>
+    <path d="M314 36 L520 36" class="arrow danger dashed"/>
+    <rect x="524" y="14" width="326" height="44" rx="10" class="box danger"/><text x="687" y="42" text-anchor="middle" class="t">❤️ favourites: 403</text>
+    <text x="10" y="134" class="t b">After</text>
+    <rect x="90" y="110" width="220" height="40" rx="20" class="box ok"/><text x="200" y="136" text-anchor="middle" class="t s">Ana's, if she logged in</text>
+    <path d="M314 130 L520 130" class="arrow ok"/>
+    <rect x="524" y="108" width="326" height="44" rx="10" class="box ok"/><text x="687" y="136" text-anchor="middle" class="t">❤️ favourites: kept</text>
+  </svg>
+  <figcaption>One rule: "Ana's wristband; if there is none, the visitor's".</figcaption>
+  </figure>
+<pre data-title="lib/data/api_client.dart · the two wristbands, already there"><code class="language-dart">String? _token; // the app's token, from clientId and clientSecret
 String? userToken; // the logged-in user's token, set by AuthRepository</code></pre>
-<pre data-title="lib/data/api_client.dart · _request, at the starting point"><code class="language-dart">final token = _token ??= await _fetchToken(); // TODO 1</code></pre>
   <ul>
-    <li>The <code>AuthRepository</code> already keeps the user's token in <code>userToken</code> on every login, sign-up and refresh. But nobody uses it.</li>
-    <li><code>_request</code> always sends the app's token. That is enough for the islands; not for the favourites.</li>
-    <li><code>??=</code>: if <code>_token</code> is <code>null</code>, ask for one and keep it; otherwise, use the one you have.</li>
+    <li><code>AuthRepository</code> already keeps Ana's wristband in <code>userToken</code> on every login. But nobody uses it: <code>_request</code> always shows the visitor's.</li>
   </ul>
-  <aside class="notes">Show the <code>_keep</code> method of <code>auth_repository.dart</code> in VS Code: that is where <code>userToken</code> is set. Question: after logout, which token goes with the requests again? Answer: the app's, because <code>AuthRepository.logout</code> sets <code>userToken</code> to <code>null</code>.</aside>
+  <aside class="notes">Show the <code>_keep</code> method of <code>auth_repository.dart</code> in VS Code: that is where <code>userToken</code> is set. After logout the visitor wristband goes again, because <code>logout</code> sets <code>userToken</code> to <code>null</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 1: the user's token</h2>
+  <h2>Step 1: show the right wristband</h2>
 <pre data-title="lib/data/api_client.dart · _request, where TODO 1 is"><code class="language-dart">Future&lt;http.Response&gt; _request(String method, String path) async {
   // the user's token when someone is logged in; otherwise, the app's
   final token = userToken ?? (_token ??= await _fetchToken());
@@ -250,77 +440,44 @@ String? userToken; // the logged-in user's token, set by AuthRepository</code></
   final streamed = await request.send().timeout(const Duration(seconds: 10));
   return http.Response.fromStream(streamed);
 }</code></pre>
-  <div class="callout task"><strong>Do</strong> Replace the <code>TODO 1</code> line with the two new lines: the comment and the <code>final token</code>.</div>
+  <div class="callout task"><strong>Do</strong> Replace the <code>TODO 1</code> line with the two new lines: the comment and the <code>final token</code>. It reads: "Ana's wristband; if there is none, the visitor's".</div>
   <p><strong>In the app:</strong> the 403 warning goes away. Tap a heart, stop the app with <code>q</code> and run it again: the heart is still red, because it is on the server.</p>
   <div class="callout"><strong>Question for the class</strong> Log in with the same account in another browser or on a classmate's phone. Which hearts show up?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> The same ones: favourites belong to the account, not to the phone. If the classmate runs it with their own credentials, the account does not exist there: accounts belong to an app. Show both at once on the projector if there is a phone at hand. If someone still gets 403: the <code>userToken ??</code> is missing, or they hot reloaded an old session; a hot restart (<code>R</code>) fixes it. The solution is in branch <code>passo-1</code>.</aside>
+  <aside class="notes"><strong>Answers to the questions.</strong> The same ones: favourites belong to the account, not to the phone. If someone still gets 403: the <code>userToken ??</code> is missing, or they hot reloaded an old session; a hot restart (<code>R</code>) fixes it. The solution is in branch <code>passo-1</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 2 (1 of 2): reading <code>exp</code> from inside the JWT</h2>
+  <h2>2. The wristband expired halfway through the concert</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 330" role="img" aria-label="Three columns: app, exchange desk and the favourites door. The app asks with the expired wristband and gets 401. It shows the ticket at the desk and gets a new wristband. It repeats the request once and gets in. If the ticket also fails, Ana goes back to the login.">
+    <rect x="30" y="10" width="160" height="50" rx="12" class="box accent"/><text x="110" y="41" text-anchor="middle" class="t b">App</text>
+    <rect x="350" y="10" width="160" height="50" rx="12" class="box warn"/><text x="430" y="32" text-anchor="middle" class="t b">Exchange desk</text><text x="430" y="50" text-anchor="middle" class="t mono">/v1/auth/refresh</text>
+    <rect x="670" y="10" width="160" height="50" rx="12" class="box"/><text x="750" y="32" text-anchor="middle" class="t b">Door</text><text x="750" y="50" text-anchor="middle" class="t s">the favourites</text>
+    <line x1="110" y1="60" x2="110" y2="290" class="box muted"/><line x1="430" y1="60" x2="430" y2="150" class="box muted"/><line x1="430" y1="230" x2="430" y2="290" class="box muted"/><line x1="750" y1="60" x2="750" y2="290" class="box muted"/>
+    <path d="M114 95 L744 95" class="arrow"/><text x="270" y="87" text-anchor="middle" class="t s">① request with the expired wristband</text>
+    <path d="M746 130 L116 130" class="arrow danger"/><text x="590" y="122" text-anchor="middle" class="t danger b">② 401</text>
+    <path d="M114 175 L424 175" class="arrow"/><text x="270" y="167" text-anchor="middle" class="t s">③ shows the ticket</text>
+    <path d="M426 210 L116 210" class="arrow ok"/><text x="270" y="202" text-anchor="middle" class="t ok">④ new wristband</text>
+    <path d="M114 255 L744 255" class="arrow ok"/><text x="590" y="247" text-anchor="middle" class="t ok b">⑤ the same request, again, only once: in</text>
+    <text x="430" y="318" text-anchor="middle" class="t s">If at ③ the ticket is not valid either: back to the login. No more retries.</text>
+  </svg>
+  <figcaption>After 15 minutes the wristband expires. The app swaps it at the desk with the ticket and Ana notices nothing.</figcaption>
+  </figure>
+  <ul>
+    <li>The <code>ApiClient</code> does not know the <code>SessionNotifier</code>: it gets a function, <code>renewSession</code>, that goes to the desk. <code>main.dart</code> connects it.</li>
+    <li>The bug button ("Estragar o token") breaks the wristband on purpose, so we don't wait 15 minutes. It only exists in debug.</li>
+  </ul>
+  <aside class="notes">It is the swap game, now with the code. If someone asks why not try until it works: if the ticket is not valid either, every repetition gives 401 again, forever.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 2 (1 of 2): the <code>ApiClient</code> asks for a new wristband</h2>
 <pre class="term"><code class="language-bash">git stash -u
 git checkout passo-1
 flutter pub get</code></pre>
-<pre data-title="lib/models/user.dart · in Session, where TODO 2 is"><code class="language-dart">/// When the access token expires. The payload is the middle part of
-/// the JWT, in base64: anyone can read it, no key needed.
-DateTime get expiresAt {
-  final payload = accessToken.split('.')[1];
-  final text = utf8.decode(base64Url.decode(base64Url.normalize(payload)));
-  final exp = (jsonDecode(text) as Map&lt;String, dynamic&gt;)['exp'] as int;
-  return DateTime.fromMillisecondsSinceEpoch(exp * 1000); // seconds
-}</code></pre>
-  <ul>
-    <li><code>split('.')[1]</code>: the payload is the middle part of <code>header.payload.signature</code>.</li>
-    <li><code>base64Url.normalize</code> puts back the <code>=</code> that JWT strips from the end; <code>utf8.decode</code> and <code>jsonDecode</code> give the map of claims.</li>
-    <li><code>exp</code> is in seconds; <code>DateTime</code> wants milliseconds.</li>
-  </ul>
-  <div class="callout task"><strong>Do</strong> Paste the getter into <code>Session</code> and add <code>import 'dart:convert';</code> at the top of the file.</div>
-  <aside class="notes">No key was needed to read the payload: it is the JWT slide happening in code. The app reads <code>exp</code> to show it; whether the token is valid is always decided by the server, through the signature. Typical mistake: forgetting the <code>dart:convert</code> import (<code>base64Url</code> turns red).</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 2 (2 of 2): showing the time under the name</h2>
-<pre data-title="lib/state/session_notifier.dart · next to the user getter"><code class="language-dart">DateTime? get expiresAt =&gt; session?.expiresAt;</code></pre>
-<pre data-title="lib/screens/islands_screen.dart · the AppBar title"><code class="language-dart">title: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Text('Olá, ${session.user?.name ?? ''}'),
-    if (expiresAt != null)
-      Text(
-        'Sessão até ${_clock(expiresAt)}',
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-  ],
-),</code></pre>
-  <p>In <code>build</code>, replace the <code>user</code> line with <code>final session = context.watch&lt;SessionNotifier&gt;();</code> and <code>final expiresAt = session.expiresAt;</code>. <code>_clock</code> is already in the file, below <code>build</code>.</p>
-  <p><strong>In the app:</strong> "Sessão até 09:12:47" under the name, 15 minutes after the login.</p>
-  <aside class="notes"><code>_clock</code> is not in the starting point: it is in branch <code>passo-2</code>. Whoever is typing by hand copies it from the branch or uses <code>'$expiresAt'</code> without formatting. If time runs short, skip this whole step: <code>git checkout passo-2</code> and go on to 3.</aside>
-</section>
-
-<section class="slide">
-  <h2>3. On a 401, renew and repeat once</h2>
-  <ol class="steps">
-    <li>A request goes out with the access token. The answer is <strong>401</strong>: the token expired.</li>
-    <li>The <code>ApiClient</code> asks the session for a new access token: <code>POST /v1/auth/refresh</code> with the stored refresh token.</li>
-    <li>If that worked, it repeats the same request with the new token. The user noticed nothing.</li>
-    <li>If the refresh also fails, the request fails with the 401 it already had. No trying again.</li>
-  </ol>
-  <ul>
-    <li>The <code>ApiClient</code> does not know the <code>SessionNotifier</code>: it gets a function, <code>renewSession</code>, and <code>main.dart</code> connects it. Each layer still only knows the one below.</li>
-    <li>Each request is a new <code>http.Request</code>: a request can only be sent once. That is why <code>_request</code> is called twice.</li>
-  </ul>
-  <div class="callout"><strong>Question for the class</strong> Why repeat only once, and not until it works?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> If the refresh token is no longer valid either (logout on another phone, account deleted, 30 days gone), every repetition gives 401 again: the app would be stuck in a loop of requests. Once is enough for the normal case, which is the access token having expired. It is the same interceptor that <code>dio</code> has ready-made; here it is written by hand so you can see it.</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 3 (1 of 2): the <code>ApiClient</code> asks for a new token</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-2
-flutter pub get</code></pre>
 <pre data-title="lib/data/api_client.dart · a new field, below userToken"><code class="language-dart">// asks for a new user token; main.dart sets it, until then it says no
 Future&lt;bool&gt; Function() renewSession = () async =&gt; false;</code></pre>
-<pre data-title="lib/data/api_client.dart · _send, where TODO 3 is"><code class="language-dart">Future&lt;dynamic&gt; _send(String method, String path) async {
+<pre data-title="lib/data/api_client.dart · _send, where TODO 2 is"><code class="language-dart">Future&lt;dynamic&gt; _send(String method, String path) async {
   var response = await _request(method, path);
   // 401: the token expired. Renew the session and repeat, only once.
   if (response.statusCode == 401 &amp;&amp; await renewSession()) {
@@ -329,86 +486,51 @@ Future&lt;bool&gt; Function() renewSession = () async =&gt; false;</code></pre>
   _check(response);
   return response.body.isEmpty ? null : jsonDecode(response.body);
 }</code></pre>
-  <div class="callout task"><strong>Do</strong> Add the <code>renewSession</code> field and replace the body of <code>_send</code>. Note the <code>var</code>: <code>response</code> may change.</div>
+  <div class="callout task"><strong>Do</strong> Add the <code>renewSession</code> field and replace the body of <code>_send</code>: it is what you ordered in the game.</div>
   <aside class="notes">Until <code>main.dart</code> connects it, <code>renewSession</code> answers <code>false</code>: the 401 goes on as before. That is why the step compiles and runs halfway. <code>&amp;&amp;</code> only calls <code>renewSession</code> when the status is 401.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 3 (2 of 2): the session renews</h2>
+  <h2>Step 2 (2 of 2): the session goes to the desk</h2>
 <pre data-title="lib/state/session_notifier.dart · after restore"><code class="language-dart">/// After a 401: a new access token, from the refresh token.
 Future&lt;bool&gt; renew() async {
   final current = session;
   if (current == null) return false;
   try {
     session = await _auth.refresh(current.refreshToken);
-    notifyListeners(); // "Sessão até" moves on
+    notifyListeners(); // the session has a new access token
     return true;
   } catch (_) {
     return false; // the request fails with the 401 it got
   }
 }</code></pre>
-<pre data-title="lib/main.dart · where TODO 3 is"><code class="language-dart">api.renewSession = session.renew; // on a 401, the ApiClient asks here</code></pre>
-  <p><strong>In the app:</strong> tap the bug button ("Estragar o token") and then a heart. It works, and the session time moves on. Without step 3, the same tap gave <code>401: Token inválido.</code></p>
-  <aside class="notes">The bug button only exists in debug (<code>kDebugMode</code>): it replaces the access token with any text, so the 401 happens without waiting 15 minutes. It does not show in a release build. <code>AuthRepository.refresh</code> already puts the new token in the <code>ApiClient</code> (through <code>_keep</code>), so the repetition goes out with it. The course API's refresh token stays the same until logout: there is no need to save it again. Typical mistake: <code>api.renewSession = session.renew()</code>, with brackets, which calls the function instead of passing it.</aside>
-</section>
-
-<section class="slide">
-  <h2>4. Optimistic UI</h2>
-  <ul>
-    <li><strong>Pessimistic</strong> (the starting point): tap, wait for the API, only then change the heart. On a slow network, a second with no response: the user taps again.</li>
-    <li><strong>Optimistic:</strong> change the heart now, send the request and, if it fails, go back and say why.</li>
-    <li>It works because nearly all requests succeed, and because the favourites' <code>PUT</code> and <code>DELETE</code> can be repeated without breaking anything.</li>
-    <li>It is not for everything: a payment or sending a report waits for the answer.</li>
-  </ul>
-  <div class="callout"><strong>Question for the class</strong> The heart turned red and the API answered 500. What does the user see, and what has to happen to the state?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> They see the heart go back to empty and the warning with the error. The state has to go back to what it was before the tap: otherwise the app shows one thing and the server has another. That is the rollback. Examples they know: the Instagram like, the WhatsApp message with the clock before the tick.</aside>
-</section>
-
-<section class="slide">
-  <h2>Step 4: the heart changes at once</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-3
-flutter pub get</code></pre>
-<pre data-title="lib/state/favorites_notifier.dart · toggle, where TODO 4 is"><code class="language-dart">/// The heart changes at once. If the API fails, it goes back.
-Future&lt;void&gt; toggle(String islandId) async {
-  final adding = !isFavorite(islandId);
-  _mark(islandId, adding);
-  error = null;
-  notifyListeners(); // the heart changes now, before the API answers
-  try {
-    if (adding) {
-      await _repository.add(islandId);
-    } else {
-      await _repository.remove(islandId);
-    }
-  } catch (e) {
-    _mark(islandId, !adding); // undo
-    error = _message(e);
-    notifyListeners();
-  }
-}
-
-void _mark(String islandId, bool favorite) {
-  if (favorite) {
-    ids.add(islandId);
-  } else {
-    ids.remove(islandId);
-  }
-}</code></pre>
-  <p><strong>In the app:</strong> in Chrome DevTools (<kbd>F12</kbd>), Network tab, choose <em>Slow 4G</em>: the heart no longer waits. With <em>Offline</em>, it stays as it was and the warning says "Sem ligação".</p>
-  <aside class="notes">The <code>notifyListeners()</code> before the <code>try</code> is what makes the heart change at once. The second one, in the <code>catch</code>, is the rollback's. With no network the request fails in milliseconds: the heart changes and goes back before you can see it, so show <em>Slow 4G</em> first and only then <em>Offline</em>. On a phone, airplane mode does the same. If time runs short, show this step on the projector with <code>git checkout passo-4</code>.</aside>
+<pre data-title="lib/main.dart · where TODO 2 is"><code class="language-dart">api.renewSession = session.renew; // on a 401, the ApiClient asks here</code></pre>
+  <p><strong>In the app:</strong> tap the bug button and then a heart. It works. In step 1, the same tap gave <code>401: Token inválido.</code></p>
+  <aside class="notes"><code>AuthRepository.refresh</code> already puts the new wristband in the <code>ApiClient</code> (through <code>_keep</code>), so the repetition goes out with it. The course API's ticket stays the same until logout: no need to save it again. Typical mistake: <code>api.renewSession = session.renew()</code>, with brackets, which calls the function instead of passing it.</aside>
 </section>
 
 <section class="slide">
   <h2>Where we got to</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 860 215" role="img" aria-label="The screen with the heart calls FavoritesNotifier, which calls FavoritesRepository, which calls ApiClient, which picks the wristband and talks to the API. SessionNotifier keeps who logged in and goes to the exchange desk.">
+    <rect x="10" y="20" width="150" height="70" rx="12" class="box"/><text x="85" y="50" text-anchor="middle" class="t b">Screen</text><text x="85" y="72" text-anchor="middle" class="t s">the heart</text>
+    <rect x="190" y="20" width="160" height="70" rx="12" class="box"/><text x="270" y="50" text-anchor="middle" class="t b mono">Favorites</text><text x="270" y="72" text-anchor="middle" class="t s">Notifier · already done</text>
+    <rect x="380" y="20" width="160" height="70" rx="12" class="box"/><text x="460" y="50" text-anchor="middle" class="t b mono">Favorites</text><text x="460" y="72" text-anchor="middle" class="t s">Repository · already done</text>
+    <rect x="570" y="20" width="150" height="70" rx="12" class="box accent"/><text x="645" y="50" text-anchor="middle" class="t b mono">ApiClient</text><text x="645" y="72" text-anchor="middle" class="t s">steps 1 and 2</text>
+    <rect x="750" y="20" width="100" height="70" rx="12" class="box"/><text x="800" y="60" text-anchor="middle" class="t b">API</text>
+    <path d="M164 55 L186 55" class="arrow"/><path d="M354 55 L376 55" class="arrow"/>
+    <path d="M544 55 L566 55" class="arrow"/><path d="M724 55 L746 55" class="arrow"/>
+    <rect x="510" y="140" width="270" height="64" rx="12" class="box warn"/><text x="645" y="168" text-anchor="middle" class="t b mono">SessionNotifier</text><text x="645" y="190" text-anchor="middle" class="t s">who logged in · the exchange desk · step 2</text>
+    <path d="M645 136 L645 94" class="arrow dashed"/><text x="655" y="122" class="t s">new wristband</text>
+  </svg>
+  <figcaption>Where each piece of the story lives in the code.</figcaption>
+  </figure>
   <ol class="steps">
-    <li><code>_request</code> sends the user's token when there is a session, and the app's when there is not (step 1).</li>
-    <li><code>exp</code> is read from the JWT payload with no key at all: base64, not encryption (step 2).</li>
-    <li>On a 401, the <code>ApiClient</code> asks the session for a new access token with the refresh token and repeats the request once (step 3).</li>
-    <li>The heart changes before the answer and goes back if the API fails (step 4).</li>
+    <li><code>_request</code> shows Ana's wristband when there is a session, and the visitor's when there is not (step 1).</li>
+    <li>On a 401, the session swaps the wristband with the ticket and the request is repeated once (step 2).</li>
   </ol>
-  <p>Branch <code>passo-4</code> is the final state. <code>FavoritesRepository</code>, <code>FavoritesNotifier</code> and <code>ApiClient</code> go into the group project as they are: favourite islands and trails follow the same pattern.</p>
-  <aside class="notes">For the project: <code>/v1/me/favorites/trails/{id}</code> works the same as the islands one. <code>GET /v1/me/favorites</code> returns <code>islands</code> and <code>trails</code> in the same answer. Tomorrow is the first sprint 1 check-in.</aside>
+  <p>Branch <code>passo-2</code> is the final state. <code>ApiClient</code>, <code>FavoritesRepository</code> and <code>FavoritesNotifier</code> go into the group project as they are.</p>
+  <aside class="notes">For the project: <code>/v1/me/favorites/trails/{id}</code> works the same as the islands one. <code>GET /v1/me/favorites</code> returns <code>islands</code> and <code>trails</code> in the same answer.</aside>
 </section>
 
 <section class="slide" data-part="End">
@@ -418,8 +540,8 @@ void _mark(String islandId, bool favorite) {
       <h3>Tomorrow</h3>
       <ul>
         <li>Wednesday, 28 October, 16:00 to 18:00: security, performance and the sprint 1 check-in.</li>
-        <li>Bring the group's app running: we will look at it in profile mode.</li>
-        <li>Today's final state is in branch <code>passo-4</code>: <code>git stash -u</code> and then <code>git checkout passo-4</code>.</li>
+        <li>Bring the group's app running.</li>
+        <li>Today's final state is in branch <code>passo-2</code>: <code>git stash -u</code> and then <code>git checkout passo-2</code>.</li>
       </ul>
     </div>
     <div>
@@ -427,7 +549,6 @@ void _mark(String islandId, bool favorite) {
       <ul>
         <li><a href="https://jwt.io/introduction" target="_blank" rel="noopener">Introduction to JSON Web Tokens</a>: the three parts and the claims, with a decoder.</li>
         <li><a href="https://oauth.net/2/pkce/" target="_blank" rel="noopener">PKCE</a>: why mobile apps do not keep client secrets.</li>
-        <li><a href="https://docs.flutter.dev/cookbook/networking/authenticated-requests" target="_blank" rel="noopener">Make authenticated requests</a>: the <code>Authorization</code> header in the official recipe.</li>
         <li><a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">API documentation</a>: login, refresh, logout and favourites.</li>
       </ul>
     </div>
@@ -441,5 +562,6 @@ void _mark(String islandId, bool favorite) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../../assets/app.js"></script>
+<script src="../../assets/parsons.js"></script>
 </body>
 </html>
