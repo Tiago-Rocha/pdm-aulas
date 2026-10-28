@@ -23,7 +23,7 @@
     { n: 15, d: "2026-10-21", h: "16:00-18:00", t: "Antes do projeto: JSON, pronto e contrato", te: "Before the project: JSON, done and contract", repo: null, kind: "" },
     { n: 16, d: "2026-10-26", h: "16:00-18:00", t: "Persistência local e cache offline", te: "Local persistence and offline cache", repo: "pdm-aula-16", kind: "" },
     { n: 17, d: "2026-10-27", h: "08:30-10:30", t: "Autenticação com token e favoritos sincronizados", te: "Token authentication and synced favourites", repo: "pdm-aula-17", kind: "" },
-    { n: 18, d: "2026-10-28", h: "16:00-18:00", t: "Segurança, performance e sprint 1", te: "Security, performance and sprint 1", repo: null, kind: "sprint" },
+    { n: 18, d: "2026-10-28", h: "16:00-18:00", t: "Sprint 1: login, logout e apagar conta", te: "Sprint 1: login, logout and delete account", repo: null, kind: "sprint" },
     { n: 19, d: "2026-11-02", h: "16:00-18:00", t: "Push notifications, review da sprint 1 e revisão para o teste 1", te: "Push notifications, sprint 1 review and revision for test 1", repo: null, kind: "sprint" },
     { n: 20, d: "2026-11-04", h: "16:00-18:00", t: "Teste escrito 1", te: "Written test 1", repo: null, kind: "test" },
     { n: 21, d: "2026-11-06", h: "08:30-12:30", t: "Workshop: localização, mapas e permissões", te: "Workshop: location, maps and permissions", repo: "pdm-aula-21", kind: "workshop" },

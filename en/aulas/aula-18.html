@@ -26,407 +26,10 @@
 
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 18 · Week 8 · Wednesday, 28 October 2026 · 16:00 to 18:00</p>
-  <h1>Security, performance and sprint 1</h1>
-  <p class="lead">The festival goes on. Security: the programme everyone takes home (the APK), the queue where others listen (the network), the bag check at the entrance (permissions) and the list of who came in (personal data). Performance: the bar with one barman (the UI thread). Games about it. Then sprint 1: the login, the session and the renewal on a 401 brought into each group's project.</p>
+  <h1>Sprint 1: login, logout and delete account</h1>
+  <p class="lead">Today is sprint only. Each group builds into its project the three things the account needs: logging in, logging out and deleting the account. Login and logout come ready from yesterday's lesson; deleting the account is new, and it is three pieces, one in each layer.</p>
   <div class="meta"><span>Sprint 1 · review on Monday, 02/11, at 16:00</span></div>
-  <aside class="notes">Reference times: theory until 16:35, games until 16:55, sprint until 17:55. If the theory runs late, go quickly through the lists and profile mode slides: the core of performance is the barman and compute.</aside>
-</section>
-
-<section class="slide" data-part="Objectives">
-  <h2>By the end of this lesson you can</h2>
-  <ul>
-    <li>Say what anyone can read in an APK, and why <code>--dart-define</code> takes the secret out of the repository but not out of the APK.</li>
-    <li>Explain what HTTPS and certificate pinning protect.</li>
-    <li>Ask only for the permissions you need, when you need them, and meet the minimum for privacy.</li>
-    <li>Explain jank with the barman, and when to use <code>compute()</code> instead of <code>async</code>.</li>
-    <li>Save the barman work with <code>const</code>, small widgets and <code>ListView.builder</code>.</li>
-    <li>Bring the login, the session and the renewal on a 401 into the group project.</li>
-  </ul>
-</section>
-
-<section class="slide" data-part="Theory">
-  <h2>The festival goes on: where people get in without a wristband</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 190" role="img" aria-label="Four places where someone tries to get in without a wristband: the programme everyone takes home (the APK), the queue where others listen (the network), the bag check at the entrance (permissions) and the list of who came in (personal data).">
-    <rect x="10" y="10" width="200" height="170" rx="14" class="box danger"/>
-    <text x="110" y="58" text-anchor="middle" class="t big">📖</text>
-    <text x="110" y="96" text-anchor="middle" class="t b">The programme</text>
-    <text x="110" y="122" text-anchor="middle" class="t mono">the APK</text>
-    <text x="110" y="152" text-anchor="middle" class="t s">everyone takes one home</text>
-    <rect x="222" y="10" width="200" height="170" rx="14" class="box"/>
-    <text x="322" y="58" text-anchor="middle" class="t big">🗣️</text>
-    <text x="322" y="96" text-anchor="middle" class="t b">The queue</text>
-    <text x="322" y="122" text-anchor="middle" class="t mono">the network</text>
-    <text x="322" y="152" text-anchor="middle" class="t s">others are listening</text>
-    <rect x="434" y="10" width="200" height="170" rx="14" class="box"/>
-    <text x="534" y="58" text-anchor="middle" class="t big">🎒</text>
-    <text x="534" y="96" text-anchor="middle" class="t b">The bag check</text>
-    <text x="534" y="122" text-anchor="middle" class="t mono">permissions</text>
-    <text x="534" y="152" text-anchor="middle" class="t s">only what is needed</text>
-    <rect x="646" y="10" width="200" height="170" rx="14" class="box"/>
-    <text x="746" y="58" text-anchor="middle" class="t big">📋</text>
-    <text x="746" y="96" text-anchor="middle" class="t b">The list</text>
-    <text x="746" y="122" text-anchor="middle" class="t mono">personal data</text>
-    <text x="746" y="152" text-anchor="middle" class="t s">who came in, and why</text>
-  </svg>
-  <figcaption>Yesterday the doorman. Today, everything around him: where a festival leaks.</figcaption>
-  </figure>
-  <div class="table-wrap"><table>
-  <thead><tr><th>At the festival</th><th>In the app</th><th>The risk</th></tr></thead>
-  <tbody>
-  <tr><td>The programme</td><td>The APK you install</td><td>What you write in it, everyone reads</td></tr>
-  <tr><td>The queue</td><td>The network: café Wi-Fi, 4G</td><td>Whoever is next to you hears what you shout</td></tr>
-  <tr><td>The bag check at the entrance</td><td>Permissions</td><td>Asking for everything makes people turn around</td></tr>
-  <tr><td>The list of who came in</td><td>Personal data</td><td>Keeping more than you need, without saying why</td></tr>
-  </tbody></table></div>
-  <aside class="notes">Yesterday the doorman: the wristband, the ticket and the 401. Today the rest of the venue. Say that each security slide is one of these four places. Start with the programme, which is what shows up most in the students' apps.</aside>
-</section>
-
-<section class="slide">
-  <h2>The programme: everyone takes one home</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 290" role="img" aria-label="app-release.apk is a zip. Inside: classes.dex, which a decompiler turns back into Kotlin; libapp.so, the Dart code, where the strings can still be read, the URL and the value of the --dart-define secret included; assets; and the AndroidManifest with the permissions.">
-    <rect x="300" y="10" width="260" height="56" rx="12" class="box accent"/>
-    <text x="430" y="36" text-anchor="middle" class="t b mono">app-release.apk</text>
-    <text x="430" y="56" text-anchor="middle" class="t s">it is a zip</text>
-    <path d="M360 70 L112 112" class="arrow"/><path d="M410 70 L325 112" class="arrow"/>
-    <path d="M450 70 L540 112" class="arrow"/><path d="M500 70 L750 112" class="arrow"/>
-    <rect x="10" y="116" width="200" height="110" rx="12" class="box"/>
-    <text x="110" y="146" text-anchor="middle" class="t b mono">classes.dex</text>
-    <text x="110" y="172" text-anchor="middle" class="t s">Kotlin, compiled</text>
-    <text x="110" y="194" text-anchor="middle" class="t s">the jadx decompiles it</text>
-    <rect x="222" y="116" width="210" height="160" rx="12" class="box danger"/>
-    <text x="327" y="146" text-anchor="middle" class="t b mono">libapp.so</text>
-    <text x="327" y="172" text-anchor="middle" class="t s">your Dart code</text>
-    <text x="327" y="194" text-anchor="middle" class="t s">strings in plain text:</text>
-    <text x="327" y="222" text-anchor="middle" class="t mono danger">https://api-pdm...</text>
-    <text x="327" y="246" text-anchor="middle" class="t s danger">the secret's value</text>
-    <rect x="444" y="116" width="200" height="110" rx="12" class="box"/>
-    <text x="544" y="146" text-anchor="middle" class="t b mono">assets/</text>
-    <text x="544" y="172" text-anchor="middle" class="t s">images, JSON</text>
-    <text x="544" y="194" text-anchor="middle" class="t s">and a forgotten .env</text>
-    <rect x="656" y="116" width="194" height="110" rx="12" class="box"/>
-    <text x="753" y="146" text-anchor="middle" class="t b mono">AndroidManifest</text>
-    <text x="753" y="172" text-anchor="middle" class="t s">the permissions</text>
-  </svg>
-  <figcaption>Five minutes, free tools, no password. What is written in the programme, everyone reads.</figcaption>
-  </figure>
-<pre data-title="lib/main.dart · as in the group project"><code class="language-dart">// flutter run --dart-define=CLIENT_SECRET=...
-const clientSecret = String.fromEnvironment('CLIENT_SECRET');</code></pre>
-  <ul>
-    <li><code>--dart-define</code> takes the secret out of the <strong>repository</strong>. It does not take it out of the <strong>APK</strong>: the value is compiled into <code>libapp.so</code>.</li>
-    <li>That is why an app secret is worth little: it only gets the visitor wristband. What protects Ana's account is her login.</li>
-  </ul>
-  <div class="callout"><strong>Question for the class</strong> So what is <code>--dart-define</code> for, if the secret ends up in the APK?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> It keeps the secret off GitHub, where it stays forever and where any collaborator, or a repository that one day goes public, exposes it. And each group gets its own without touching the code. The APK only reaches whoever installs it; the repository reaches everyone who ever has access to it. In production, apps carry no secret at all (yesterday's PKCE) and the server can revoke a secret that leaks.</aside>
-</section>
-
-<section class="slide">
-  <h2>The festival's memory: git</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 225" role="img" aria-label="A line of commits. In the second one the clientSecret goes into the code; in the third it is deleted. git log -S still finds the second commit: the secret is in the history for good.">
-    <line x1="60" y1="70" x2="750" y2="70" class="box muted"/>
-    <circle cx="60" cy="70" r="16" class="box"/>
-    <text x="60" y="116" text-anchor="middle" class="t s">login screen</text>
-    <circle cx="290" cy="70" r="16" class="box danger"/>
-    <text x="290" y="116" text-anchor="middle" class="t mono danger">+ clientSecret</text>
-    <circle cx="520" cy="70" r="16" class="box"/>
-    <text x="520" y="116" text-anchor="middle" class="t s">− clientSecret</text>
-    <circle cx="750" cy="70" r="16" class="box"/>
-    <text x="750" y="116" text-anchor="middle" class="t s">islands</text>
-    <text x="750" y="32" text-anchor="middle" class="t b">main</text>
-    <path d="M290 150 L290 92" class="arrow danger"/>
-    <text x="290" y="172" text-anchor="middle" class="t danger b">git log -S finds it here</text>
-    <text x="430" y="212" text-anchor="middle" class="t s">Deleting it in the next commit does not unpublish it. The fix: ask for a new secret and never commit it.</text>
-  </svg>
-  <figcaption>Git is the festival's memory: it keeps every version of the programme ever printed.</figcaption>
-  </figure>
-<pre class="term"><code class="language-bash">git log -S "the-group-secret" --oneline</code></pre>
-  <ul>
-    <li>Never in the repository: the <code>clientSecret</code>, the signing keystore (<code>*.jks</code>) and <code>key.properties</code>. The project's <code>android/.gitignore</code> already ignores the last two.</li>
-    <li>If a secret went into a commit, it counts as published: ask for a new one and switch to it. Deleting the commit is not enough: whoever already pulled has a copy.</li>
-  </ul>
-  <aside class="notes"><code>git log -S</code> finds the commits that added or removed that text. They will use it in a moment on the group repository, with the real secret. It works the same in PowerShell and in the Mac terminal.</aside>
-</section>
-
-<section class="slide">
-  <h2>The queue: speaking into the doorman's ear</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 250" role="img" aria-label="Three ways of crossing the café Wi-Fi to reach the API. HTTP: a postcard, anyone on the way reads it. HTTPS: a sealed envelope. HTTPS with pinning: a sealed envelope, and the app also checks it is the real doorman&#x27;s badge.">
-    <rect x="10" y="10" width="110" height="200" rx="14" class="box"/>
-    <text x="65" y="118" text-anchor="middle" class="t b">App</text>
-    <rect x="740" y="10" width="110" height="200" rx="14" class="box"/>
-    <text x="795" y="118" text-anchor="middle" class="t b">API</text>
-    <text x="430" y="236" text-anchor="middle" class="t s">👂 café Wi-Fi</text>
-    <path d="M124 42 L736 42" class="arrow danger"/>
-    <rect x="200" y="20" width="460" height="44" rx="10" class="box danger"/>
-    <text x="226" y="48" class="t mono">http://</text>
-    <text x="400" y="49" class="t">📮</text>
-    <text x="430" y="48" class="t s">a postcard: anyone reads it</text>
-    <path d="M124 108 L736 108" class="arrow ok"/>
-    <rect x="200" y="86" width="460" height="44" rx="10" class="box ok"/>
-    <text x="226" y="114" class="t mono">https://</text>
-    <text x="400" y="115" class="t">✉️</text>
-    <text x="430" y="114" class="t s">a sealed envelope</text>
-    <path d="M124 174 L736 174" class="arrow accent"/>
-    <rect x="200" y="152" width="460" height="44" rx="10" class="box accent"/>
-    <text x="226" y="180" class="t mono">https + pinning</text>
-    <text x="400" y="181" class="t">🪪</text>
-    <text x="430" y="180" class="t s">envelope, and the badge checked</text>
-  </svg>
-  <figcaption>In the queue, everyone hears what you shout. HTTPS is speaking into the doorman's ear.</figcaption>
-  </figure>
-  <ul>
-    <li><strong>HTTPS always.</strong> Android blocks <code>http://</code> since version 9; so does iOS (App Transport Security). Turning this off "to test" is one of the most common mistakes.</li>
-    <li>Never accept any certificate: <code>badCertificateCallback</code> returning <code>true</code> lets a fake doorman in.</li>
-    <li><strong>Certificate pinning:</strong> the app carries the real doorman's badge and checks it. It protects against whoever controls the network; it is expensive: when the server certificate changes, old apps stop working. Worth it for banks and health, not for Tempo Açores.</li>
-  </ul>
-  <aside class="notes">If they ask how someone reads the traffic: on open Wi-Fi anyone on the network sees the packets, and whoever runs the router sees everything. With HTTPS they see the server address but not what is said.</aside>
-</section>
-
-<section class="slide">
-  <h2>The bag check at the entrance: only what is needed</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 190" role="img" aria-label="Two apps. The first asks for location, camera, contacts and notifications as soon as it opens, without saying why: the person taps Don&#x27;t allow. The second asks only for the approximate location when the person taps Nearest island, after a sentence explaining why: the person taps Allow.">
-    <rect x="10" y="14" width="170" height="52" rx="12" class="box"/><text x="95" y="46" text-anchor="middle" class="t s">opens the app</text>
-    <path d="M184 40 L236 40" class="arrow danger"/>
-    <rect x="240" y="14" width="390" height="52" rx="12" class="box danger"/><text x="435" y="46" text-anchor="middle" class="t">📍 📷 👥 🔔 all at once</text>
-    <path d="M634 40 L686 40" class="arrow danger"/>
-    <rect x="690" y="14" width="160" height="52" rx="26" class="box danger"/><text x="770" y="46" text-anchor="middle" class="t b">Don't allow</text>
-    <rect x="10" y="114" width="170" height="64" rx="12" class="box"/><text x="95" y="151" text-anchor="middle" class="t s">taps "Nearest island"</text>
-    <path d="M184 146 L236 146" class="arrow ok"/>
-    <rect x="240" y="114" width="210" height="64" rx="12" class="box ok"/><text x="345" y="151" text-anchor="middle" class="t s">"to find your island"</text>
-    <path d="M454 146 L486 146" class="arrow ok"/>
-    <rect x="490" y="114" width="140" height="64" rx="12" class="box ok"/><text x="560" y="151" text-anchor="middle" class="t">📍 approximate</text>
-    <path d="M634 146 L686 146" class="arrow ok"/>
-    <rect x="690" y="120" width="160" height="52" rx="26" class="box ok"/><text x="770" y="152" text-anchor="middle" class="t b">Allow</text>
-  </svg>
-  <figcaption>A bag check that asks for everything at the gate makes people turn around. Ask for one thing, when it is needed, and say why.</figcaption>
-  </figure>
-  <ul>
-    <li>Ask for the permission <strong>when</strong> the person taps the feature, and say <strong>why</strong> in one sentence before the system prompt.</li>
-    <li>Ask for the <strong>smallest</strong>: approximate location is enough for "the nearest island". If the person says no, the app keeps working without it.</li>
-    <li>The stores reject permissions the app does not justify.</li>
-  </ul>
-  <div class="callout"><strong>Watch out</strong> In debug, Flutter adds the <code>INTERNET</code> permission for you. In the release APK, it only has it if it is in <code>android/app/src/main/AndroidManifest.xml</code>. Without it, the APK you hand in has no network.</div>
-  <aside class="notes">The INTERNET permission is not shown to the user (it is "normal", not "dangerous"), but it must be declared. The project template does not have it in the main manifest: they will add it in the sprint check.</aside>
-</section>
-
-<section class="slide">
-  <h2>The list of who came in: privacy</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th></th><th>What it is</th><th>In Tempo Açores</th></tr></thead>
-  <tbody>
-  <tr><td>GDPR</td><td>Each piece of data has a reason; keep the minimum; the person can ask for it to be deleted</td><td>Email and name, and <code>DELETE /v1/me</code> to delete the account</td></tr>
-  <tr><td>Consent</td><td>Explicit and never pre-ticked, for analytics and marketing</td><td>No analytics: nothing to ask</td></tr>
-  <tr><td>App Tracking Transparency</td><td>On iOS, ask before following the person across apps from different companies</td><td>Does not apply</td></tr>
-  <tr><td>Privacy labels and Data safety</td><td>App Store and Play Store forms: which data, what for, shared with whom</td><td>Email and name, for the account, not shared</td></tr>
-  </tbody></table></div>
-  <div class="callout"><strong>At the festival</strong> The list at the door has your name because it is needed to get in. If it also asked for your address and phone number "just in case", it would be keeping more than it needs.</div>
-  <aside class="notes">For the test this is enough: minimisation, explicit consent, the right to delete, and that the stores ask for a data declaration. Deleting the account is requirement 1 of the project.</aside>
-</section>
-
-<section class="slide">
-  <h2>OWASP Mobile Top 10, at the festival</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Risk (2024 list)</th><th>At the festival</th><th>How it shows up in Flutter</th><th>Defence</th></tr></thead>
-  <tbody>
-  <tr><td><strong>M1</strong> Improper credential usage</td><td>The door code printed in the programme</td><td>Secret in the code; password stored</td><td>Out of the repository; short tokens; never store the password</td></tr>
-  <tr><td><strong>M5</strong> Insecure communication</td><td>Shouting in the queue</td><td><code>http://</code>; accepting any certificate</td><td>HTTPS; pinning when justified</td></tr>
-  <tr><td><strong>M6</strong> Inadequate privacy controls</td><td>A list with too much data</td><td>Personal data in logs or collected for no reason</td><td>Collect the minimum; logs only in debug</td></tr>
-  <tr><td><strong>M9</strong> Insecure data storage</td><td>The ticket in the outside pocket</td><td>Token in <code>shared_preferences</code></td><td>Keychain and Keystore (<code>flutter_secure_storage</code>)</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li><strong>Obfuscation</strong> (<code>flutter build apk --obfuscate --split-debug-info=...</code>): renames classes and functions in the binary. It makes reading harder, but does not hide the strings.</li>
-    <li><strong>Root and jailbreak detection:</strong> the app finds out whether the phone has been unlocked. It helps in a bank; it can be bypassed.</li>
-  </ul>
-  <aside class="notes">For the test: the ones that show up most are secrets in the code (M1), insecure storage (M9) and insecure communication (M5). Obfuscation is the trick question: it does not hide secrets.</aside>
-</section>
-
-<section class="slide" data-part="Performance">
-  <h2>The festival bar has one barman</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 165" role="img" aria-label="One barman serves one customer every 16 milliseconds: each customer is a frame. Then a customer orders a 5 MB jsonDecode and takes 120 ms: seven customers in the queue are not served and the screen freezes. That is jank.">
-    <text x="10" y="30" class="t b">🍹 one barman: the UI thread</text>
-    <rect x="10" y="50" width="60" height="50" rx="8" class="box ok"/><text x="40" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="76" y="50" width="60" height="50" rx="8" class="box ok"/><text x="106" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="142" y="50" width="60" height="50" rx="8" class="box ok"/><text x="172" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="208" y="50" width="60" height="50" rx="8" class="box ok"/><text x="238" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="274" y="50" width="400" height="50" rx="8" class="box danger"/><text x="474" y="81" text-anchor="middle" class="t mono">jsonDecode 5 MB · 120 ms</text>
-    <rect x="680" y="50" width="60" height="50" rx="8" class="box ok"/><text x="710" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="746" y="50" width="60" height="50" rx="8" class="box ok"/><text x="776" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <path d="M284 116 L284 128 L664 128 L664 116" class="box muted" fill="none"/>
-    <text x="474" y="152" text-anchor="middle" class="t danger b">7 frames lost: the screen freezes</text>
-  </svg>
-  <figcaption>60 customers a second, 16 ms each. One slow order and the whole queue stops.</figcaption>
-  </figure>
-  <div class="table-wrap"><table>
-  <thead><tr><th>At the bar</th><th>In the app</th></tr></thead>
-  <tbody>
-  <tr><td>The barman</td><td>The UI thread: runs <code>build</code>, taps and animations</td></tr>
-  <tr><td>One customer served</td><td>One frame: 16 ms at 60 fps, 8 ms at 120 fps</td></tr>
-  <tr><td>The queue stopped</td><td>Jank: the screen freezes or stutters</td></tr>
-  <tr><td>A second barman, at another counter</td><td>An isolate, with <code>compute()</code></td></tr>
-  <tr><td>Glasses already poured</td><td><code>const</code> widgets</td></tr>
-  <tr><td>Serving only who is at the counter</td><td><code>ListView.builder</code></td></tr>
-  </tbody></table></div>
-  <aside class="notes">Dart has one thread per isolate: the whole app runs on one barman. Everything he does in a row, without a break, the queue waits for. Come back to this table at the end of the performance part.</aside>
-</section>
-
-<section class="slide">
-  <h2><code>async</code> does not call another barman</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 195" role="img" aria-label="Two lanes. On top the main isolate keeps serving 16 ms frames. Below, a second isolate does the jsonDecode. The main isolate hands it the text and gets back the list of trails; each isolate has its own memory.">
-    <text x="10" y="40" class="t b">🍹 main isolate</text>
-    <text x="10" y="60" class="t s">UI, widgets, notifiers</text>
-    <text x="10" y="150" class="t b">🍸 second barman</text>
-    <text x="10" y="170" class="t s">his own till: own memory</text>
-    <rect x="230" y="24" width="60" height="44" rx="8" class="box ok"/><text x="260" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="298" y="24" width="60" height="44" rx="8" class="box ok"/><text x="328" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="366" y="24" width="60" height="44" rx="8" class="box ok"/><text x="396" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="434" y="24" width="60" height="44" rx="8" class="box ok"/><text x="464" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="502" y="24" width="60" height="44" rx="8" class="box ok"/><text x="532" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="570" y="24" width="60" height="44" rx="8" class="box ok"/><text x="600" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="638" y="24" width="60" height="44" rx="8" class="box ok"/><text x="668" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="706" y="24" width="60" height="44" rx="8" class="box ok"/><text x="736" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="774" y="24" width="60" height="44" rx="8" class="box ok"/><text x="804" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="330" y="130" width="400" height="48" rx="8" class="box accent"/>
-    <text x="530" y="160" text-anchor="middle" class="t mono">jsonDecode 5 MB · 120 ms</text>
-    <path d="M300 72 L330 126" class="arrow accent"/><text x="250" y="104" class="t s">text in</text>
-    <path d="M734 130 L768 74" class="arrow accent"/><text x="770" y="112" class="t s">List&lt;Trail&gt; out</text>
-  </svg>
-  <figcaption>compute() calls a second barman to another counter. He does not see your widgets: only what you hand him.</figcaption>
-  </figure>
-<pre data-title="lib/data/api_client.dart · at the end of _send, if the response is huge"><code class="language-dart">// before: the UI thread decodes 5 MB, the queue stops
-return jsonDecode(response.body);
-
-// after: a second isolate decodes it, the UI keeps going
-return compute(jsonDecode, response.body);</code></pre>
-  <ul>
-    <li><code>await http.get(...)</code> does not block: waiting for the network is not work, and the barman serves others meanwhile.</li>
-    <li>A 5 MB <code>jsonDecode</code> blocks, even inside an <code>async</code> function: it is 120 ms of sums in a row.</li>
-    <li>The second barman has his own till (separate memory): he receives text and numbers, and returns data. He does not see the <code>BuildContext</code> or the notifiers.</li>
-  </ul>
-  <aside class="notes">The classic test question: "does putting jsonDecode in an async function fix the jank?" No: async only frees the barman at the awaits. Creating an isolate costs a few milliseconds: for the course API responses, which are small, it is not worth it. It is for large JSON, images, calculations.</aside>
-</section>
-
-<section class="slide">
-  <h2>Glasses already poured: <code>const</code> and small widgets</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 275" role="img" aria-label="Two trees. Left: the clock calls setState on the whole screen every second, and the screen, the header, the list and every card are rebuilt. Right: the clock is its own widget and the title is const; only the clock is rebuilt.">
-    <text x="10" y="24" class="t b danger">setState on the screen</text>
-    <text x="460" y="24" class="t b ok">the clock on its own</text>
-    <rect x="130" y="40" width="140" height="40" rx="10" class="box danger"/><text x="200" y="66" text-anchor="middle" class="t b">Screen</text>
-    <path d="M170 84 L70 112" class="arrow"/><path d="M200 84 L200 112" class="arrow"/><path d="M230 84 L330 112" class="arrow"/>
-    <rect x="10" y="116" width="120" height="40" rx="10" class="box danger"/><text x="70" y="142" text-anchor="middle" class="t s">Title</text>
-    <rect x="140" y="116" width="120" height="40" rx="10" class="box danger"/><text x="200" y="142" text-anchor="middle" class="t s">Clock</text>
-    <rect x="270" y="116" width="120" height="40" rx="10" class="box danger"/><text x="330" y="142" text-anchor="middle" class="t s">List</text>
-    <path d="M330 160 L330 184" class="arrow"/>
-    <rect x="270" y="188" width="120" height="40" rx="10" class="box danger"/><text x="330" y="214" text-anchor="middle" class="t s">9 cards</text>
-    <rect x="580" y="40" width="140" height="40" rx="10" class="box ok"/><text x="650" y="66" text-anchor="middle" class="t b">Screen</text>
-    <path d="M620 84 L520 112" class="arrow"/><path d="M650 84 L650 112" class="arrow"/><path d="M680 84 L780 112" class="arrow"/>
-    <rect x="460" y="116" width="120" height="40" rx="10" class="box ok"/><text x="520" y="142" text-anchor="middle" class="t s">const Title</text>
-    <rect x="590" y="116" width="120" height="40" rx="10" class="box danger"/><text x="650" y="142" text-anchor="middle" class="t s">Clock</text>
-    <rect x="720" y="116" width="120" height="40" rx="10" class="box ok"/><text x="780" y="142" text-anchor="middle" class="t s">List</text>
-    <path d="M780 160 L780 184" class="arrow"/>
-    <rect x="720" y="188" width="120" height="40" rx="10" class="box ok"/><text x="780" y="214" text-anchor="middle" class="t s">9 cards</text>
-    <rect x="10" y="250" width="16" height="16" rx="3" class="box danger"/><text x="34" y="263" class="t s">rebuilt every second</text>
-    <rect x="260" y="250" width="16" height="16" rx="3" class="box ok"/><text x="284" y="263" class="t s">stays as it was</text>
-  </svg>
-  <figcaption>A glass already poured is not poured again: const and small widgets keep the barman free.</figcaption>
-  </figure>
-  <ul>
-    <li><code>setState</code> and <code>notifyListeners</code> rebuild the widget and everything below it. The higher up, the more work.</li>
-    <li>Split the screen into small widgets: what changes lives in a widget of its own.</li>
-    <li><code>const Text('Islands')</code> is created once and never rebuilt. <code>flutter analyze</code> tells you where it is missing.</li>
-    <li>With Provider: <code>context.select</code> instead of <code>context.watch</code>, to rebuild only when the value the widget uses changes.</li>
-  </ul>
-  <aside class="notes">DevTools shows how many times each widget is rebuilt (Rebuild stats, in the Performance tab). Not for today; just so they know it exists.</aside>
-</section>
-
-<section class="slide">
-  <h2>Serving only who is at the counter: lists and images</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Problem</th><th>What you see</th><th>Fix</th></tr></thead>
-  <tbody>
-  <tr><td><code>ListView(children: [...])</code> with 3000 trails</td><td>The screen is slow to open: it builds all 3000</td><td><code>ListView.builder</code>: only the visible ones</td></tr>
-  <tr><td>A 4000 × 3000 photo in a 56 thumbnail</td><td>Memory going up, jumpy scrolling</td><td><code>cacheWidth</code>, or thumbnails from the server</td></tr>
-  <tr><td>The same image downloaded every time it appears</td><td>Network and battery wasted</td><td><code>cached_network_image</code>: keeps it on disk</td></tr>
-  </tbody></table></div>
-  <div class="callout"><strong>At the bar</strong> The barman does not make drinks for people still in the car park. He makes them for who is at the counter, and for the two or three coming next.</div>
-  <aside class="notes">A 4000 by 3000 photo takes about 48 MB decoded (4 bytes per pixel), even if it is shown 56 wide. It is one of the game questions.</aside>
-</section>
-
-<section class="slide">
-  <h2>Measure on festival day, not at rehearsal</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Mode</th><th>What for</th><th>Command</th></tr></thead>
-  <tbody>
-  <tr><td>Debug</td><td>Programming: hot reload, asserts. Slow on purpose</td><td><code>flutter run</code></td></tr>
-  <tr><td>Profile</td><td>Measuring: as fast as release, with DevTools attached</td><td><code>flutter run --profile</code></td></tr>
-  <tr><td>Release</td><td>Delivering: the APK testers install</td><td><code>flutter build apk --release</code></td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>Never measure in debug: everything looks slow. The <strong>performance overlay</strong> (key <code>P</code> in the terminal, in profile) shows two graphs: the UI thread and the raster thread. Red bars in a row are jank.</li>
-    <li><strong>Battery and network:</strong> the radio is one of the biggest consumers. Group requests, no asking "anything new?" every 30 seconds, location only while it is needed.</li>
-  </ul>
-  <aside class="notes">Profile only runs on a real phone; on the emulator and in Chrome the numbers do not count. There is no measuring exercise today: the groups' apps are still too small to have anything to measure.</aside>
-</section>
-
-<section class="slide" data-part="Games">
-  <h2>5 minutes of memory</h2>
-<ol class="steps how"><li>Open <code>tiago-rocha.github.io/pdm-aulas/en/aulas/aula-18.html</code> on your computer and come to this slide.</li><li>Type your first name and join. You stay in for the games for the whole lesson.</li><li>Five questions, no notes. <strong>Only your first answer counts.</strong></li></ol>
-  <div class="pz-seq" data-id="a18-mem" data-word="Question">
-  <div class="pz-mcq" data-id="a18-m17-401" data-label="Authentication"><script type="application/json">{"q": "Ana taps the heart and the API answers 401. What does the app do?", "options": ["Gets a new wristband with the refresh token and repeats the request once", "Repeats the same request until it gets a 200", "Shows the login screen straight away", "Uses the visitor wristband"], "why": "401 means \"I don't know who you are\": the wristband expired. Swap it with the ticket and repeat once. Only if the ticket also fails does Ana go back to the login."}</script></div>
-  <div class="pz-mcq" data-id="a18-m17-jwt" data-label="Authentication"><script type="application/json">{"q": "What is true about the middle of a JWT (the payload)?", "options": ["Anyone can read it, but nobody can change it without breaking the signature", "It is encrypted: only the server can read it", "Only the app that logged in can read it", "It is where the password is kept, hashed"], "why": "It is base64, not encryption: anyone can read it. The signature (the seal) is what stops changes. That is why nothing secret ever goes in a JWT."}</script></div>
-  <div class="pz-mcq" data-id="a18-m16-refresh" data-label="Persistence"><script type="application/json">{"q": "Where does the app keep the refresh token, which lasts 30 days?", "options": ["In flutter_secure_storage (Keychain on iOS, Keystore on Android)", "In shared_preferences", "In a variable, only in memory", "In a JSON file in the app folder"], "why": "It is a password that lasts 30 days: it goes into the system's secure storage. In memory it would be lost when the app closes; shared_preferences and files are not encrypted."}</script></div>
-  <div class="pz-mcq" data-id="a18-m16-prefs" data-label="Persistence"><script type="application/json">{"q": "The user picked the dark theme. Where is that kept?", "options": ["In shared_preferences", "In flutter_secure_storage", "In a SQLite database", "On the server, in the account"], "why": "It is small, not secret and needed on the very first screen: shared_preferences. A database is for lists you search."}</script></div>
-  <div class="pz-mcq" data-id="a18-m15-pronto" data-label="Project"><script type="application/json">{"q": "The PR was tested with flutter run -d chrome, handles errors, analyze is clean and a teammate approved it. Is it done?", "options": ["No: it still has to run on a phone", "Yes, it meets everything", "No: it needs a teammate's review", "No: analyze has warnings"], "why": "Chrome is not a phone. The definition of done asks for it to run on a phone."}</script></div>
-  </div>
-  <aside class="notes">None of this counts towards the grade. Two questions are from yesterday (the 401 and the JWT), two from persistence and one from the definition of done, which counts at Monday's review.</aside>
-</section>
-
-<section class="slide">
-  <h2>Memory: the class</h2>
-  <div class="pz-poll" data-track="a18-mem"></div>
-  <aside class="notes">Look at the question with the fewest right answers and ask someone who got it right: "how did you think it through?".</aside>
-</section>
-
-<section class="slide">
-  <h2>Game: what does the attacker read?</h2>
-  <p class="how"><strong>One case at a time, everyone together.</strong> Wait for everyone: we go over each answer together.</p>
-  <ol class="steps how"><li>Read the case and vote on your own.</li><li>Discuss with the person next to you: why that answer?</li><li>Vote again. Only then do you see the answer.</li></ol>
-  <div class="pz-seq" data-id="a18-atacante" data-word="Case">
-  <div class="pz-mcq" data-id="a18-s1" data-label="Secret in the code" data-revote><script type="application/json">{"q": "The clientSecret is written in a const in lib/main.dart. The repository is private. Who reads it?", "options": ["Whoever has the APK, and whoever has access to the repository, forever", "Only the group members", "Nobody: the repository is private", "Only the teacher"], "why": "It goes into the libapp.so of every APK you distribute, and stays in the git history even if you delete it in the next commit."}</script></div>
-  <div class="pz-mcq" data-id="a18-s2" data-label="dart-define" data-revote><script type="application/json">{"q": "The clientSecret goes via --dart-define and the APK is sent to three testers. Who reads it?", "options": ["Whoever has the APK and knows how to look for strings", "Nobody: --dart-define hides it", "Only whoever has the code", "Nobody: the APK is encrypted"], "why": "--dart-define takes the secret out of the repository, not out of the APK: the value stays in libapp.so. That is why an app secret only gets the visitor wristband."}</script></div>
-  <div class="pz-mcq" data-id="a18-s3" data-label="http:// at the café" data-revote><script type="application/json">{"q": "The app logs in over http:// on the café Wi-Fi. Who reads the password?", "options": ["Anyone on the same network, and whoever runs the router", "Nobody: the password goes in a POST", "Only the API", "Nobody: the Wi-Fi has a password"], "why": "Over http everything goes in plain text, the POST body too. The Wi-Fi password only keeps out people who are not on the network. With https, only the API reads it."}</script></div>
-  <div class="pz-mcq" data-id="a18-s4" data-label="Storing the password" data-revote><script type="application/json">{"q": "To log in on its own, the app stores Ana's password in flutter_secure_storage. Is that fine?", "options": ["No: you keep the ticket (refresh token), never the password", "Yes: secure storage is encrypted", "Yes, if it is hashed", "No: it should go in shared_preferences"], "why": "The ticket lasts 30 days, is revoked on logout and opens nothing else. The password is valid forever, and many people use the same one everywhere."}</script></div>
-  </div>
-  <aside class="notes">Say "case 1", let them vote, one minute of discussion in pairs, second vote, and move on. The --dart-define one usually splits the class: it is the same secret as in their project.</aside>
-</section>
-
-<section class="slide">
-  <h2>What does the attacker read? The class</h2>
-  <div class="pz-poll" data-track="a18-atacante"></div>
-  <aside class="notes">Compare the two bars of each case: if the second vote has more right answers, the discussion worked.</aside>
-</section>
-
-<section class="slide">
-  <h2>Game: who holds up the bar queue?</h2>
-  <p>Four code excerpts, at your own pace. For each one: does it block the barman, or not?</p>
-  <div class="pz-seq" data-id="a18-bar" data-word="Excerpt">
-  <div class="pz-mcq" data-id="a18-b1" data-label="jsonDecode"><script type="application/json">{"q": "The response is 8 MB. Does this line, inside an async function, block the barman?", "code": "final data = jsonDecode(response.body);", "options": ["Yes: it is 120 ms of sums in a row on the UI thread", "No: it is in an async function", "No: jsonDecode is instant", "Only on the iPhone"], "why": "async only frees the barman at the awaits, and jsonDecode has none. compute() hands it to another barman."}</script></div>
-  <div class="pz-mcq" data-id="a18-b2" data-label="await"><script type="application/json">{"q": "The request takes 2 seconds. Does the bar queue stop for those 2 seconds?", "code": "final islands = await _api.get('/v1/islands');", "options": ["No: while he waits, the barman serves other customers", "Yes: await blocks the app", "Yes, unless you use compute()", "Only when there is no network"], "why": "Waiting for the network is not work: at the await the barman serves other frames. What blocks is computing a lot in a row."}</script></div>
-  <div class="pz-mcq" data-id="a18-b3" data-label="3000 trails"><script type="application/json">{"q": "There are 3000 trails. What happens when the screen opens?", "code": "ListView(\n  children: [for (final t in trails) TrailTile(t)],\n)", "options": ["It builds all 3000 at once: the screen is slow to open", "It builds only the visible ones", "It errors: the maximum is 1000", "Nothing: Flutter is fast"], "why": "With children, the list builds everything up front. ListView.builder only builds who is at the counter (the visible ones) and a few more."}</script></div>
-  <div class="pz-mcq" data-id="a18-b4" data-label="Photo"><script type="application/json">{"q": "The island photo is 4000 by 3000 pixels. What is the problem?", "code": "leading: Image.network(island.imageUrl, width: 56),", "options": ["The whole image is decoded: about 48 MB of memory per photo", "None: width shrinks the file", "The image becomes blurry", "The request goes over http"], "why": "4000 × 3000 pixels × 4 bytes is 48 MB, to show 56 pixels. width only changes the size on screen; cacheWidth decodes it already small."}</script></div>
-  </div>
-  <aside class="notes">The second is the opposite of the first and is the one they miss most: an await does not block. The fourth is the real code of the islands screen.</aside>
-</section>
-
-<section class="slide">
-  <h2>Who holds up the queue? The class</h2>
-  <div class="pz-poll" data-track="a18-bar"></div>
-  <aside class="notes">If the class missed the second one, go back to the two barmen diagram: waiting is not working.</aside>
+  <aside class="notes">Reference times: status round until 16:15, bringing in login and logout until 17:00, delete account until 17:45, check until 17:55.</aside>
 </section>
 
 <section class="slide" data-part="Sprint">
@@ -449,24 +52,100 @@ return compute(jsonDecode, response.body);</code></pre>
   <aside class="notes">Time it. Write the blockers on the board and tackle them in order as you go round. Remind them that what counts is what is on main at review time, not what is in branches.</aside>
 </section>
 
+<section class="slide" data-part="Sprint">
+  <h2>Where each piece lives</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Screen</th><th>State</th><th>Data</th><th>API</th></tr></thead>
+  <tbody>
+  <tr><td>Log in</td><td><code>login_screen</code></td><td><code>login()</code></td><td><code>login()</code></td><td><code>POST /v1/auth/login</code></td></tr>
+  <tr><td>Log out</td><td>Button in the AppBar</td><td><code>logout()</code></td><td><code>logout()</code></td><td><code>POST /v1/auth/logout</code></td></tr>
+  <tr><td>Delete account</td><td>Button and dialog</td><td><code>deleteAccount()</code></td><td><code>deleteAccount()</code></td><td><code>DELETE /v1/me</code></td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>The state is <code>SessionNotifier</code>; the data is <code>AuthRepository</code>. <code>ApiClient</code> does not change: it already has <code>delete()</code>.</li>
+    <li>The first two rows come ready from yesterday's <code>passo-2</code>. You write the third.</li>
+  </ul>
+  <div class="callout"><strong>Question for the class</strong> After deleting the account, how does the app go back to the login screen on its own?</div>
+  <aside class="notes"><strong>Answer.</strong> <code>SessionNotifier</code> sets <code>session</code> to null and calls <code>notifyListeners()</code>. <code>main</code> is listening and, with no session, shows the login. It is the same path as logout.</aside>
+</section>
+
 <section class="slide">
-  <h2>Bring the code from the lessons: one PR per piece</h2>
+  <h2>Bring in login and logout: one PR</h2>
   <p>Everything comes from <code>pdm-aula-17</code>, branch <code>passo-2</code>, into the same folders of the project.</p>
   <div class="table-wrap"><table>
-  <thead><tr><th>Piece</th><th>Files</th><th>Req.</th></tr></thead>
+  <thead><tr><th>Piece</th><th>Files</th></tr></thead>
   <tbody>
-  <tr><td>Login, sign-up and session</td><td><code>api_client</code>, <code>auth_repository</code>, <code>session_store</code>, <code>user</code>, <code>session_notifier</code>, <code>login_screen</code></td><td>1</td></tr>
-  <tr><td>Renew on a 401</td><td>Already in <code>api_client</code> and <code>session_notifier</code></td><td>1</td></tr>
-  <tr><td>Islands and forecast</td><td><code>island</code>, <code>forecast</code>, <code>forecast_repository</code>, <code>http_forecast_repository</code>, <code>forecast_notifier</code>, <code>islands_screen</code></td><td>2, 3</td></tr>
-  <tr><td>Wiring it up</td><td><code>main.dart</code>: the one from <code>passo-2</code>, minus what you do not use yet</td><td></td></tr>
+  <tr><td>Login, sign-up, logout and session</td><td><code>api_client</code>, <code>auth_repository</code>, <code>session_store</code>, <code>user</code>, <code>session_notifier</code>, <code>login_screen</code></td></tr>
+  <tr><td>Wiring it up</td><td><code>main.dart</code>: the one from <code>passo-2</code>, minus what you do not use yet</td></tr>
   </tbody></table></div>
 <pre class="term"><code class="language-bash">flutter pub add http provider shared_preferences flutter_secure_storage</code></pre>
   <ul>
     <li>In <code>pdm-aula-17</code>: <code>git stash -u</code> and <code>git checkout passo-2</code>. The command above runs in the group project.</li>
     <li>The package is called <code>tempo_acores</code> on both sides: the imports work without changing anything.</li>
-    <li>One piece, one branch, one PR, reviewed by another member. Each group member brings one piece: it counts towards the process.</li>
+    <li><strong>In the app:</strong> create an account, log out, log in again. Close the app and open it: still logged in.</li>
   </ul>
-  <aside class="notes">Whoever did not finish step 2 yesterday does not need to finish it: the <code>passo-2</code> branch is the solution and that is where they copy from. The island search and the forecast screen with the Figma design are their work. Favourites (<code>favorites_repository</code> and <code>favorites_notifier</code>) are sprint 2: whoever is ahead can bring them now. Give them the 60 minutes and go round the groups, starting with the ones that said they are blocked.</aside>
+  <aside class="notes">Whoever did not finish step 2 yesterday does not need to finish it: the <code>passo-2</code> branch is the solution and that is where they copy from. Go round starting with the groups that said they are blocked. Whoever finishes early brings in the islands and the forecast from the same branch.</aside>
+</section>
+
+<section class="slide">
+  <h2>Delete account 1 of 3: the data</h2>
+<pre data-title="lib/data/auth_repository.dart · inside the class"><code class="language-dart">  /// The account and everything in it disappear. There is no way back.
+  Future&lt;void&gt; deleteAccount() async {
+    await _api.delete('/v1/me'); // goes with the user's token
+    _api.userToken = null;
+  }</code></pre>
+  <ul>
+    <li><code>DELETE /v1/me</code> goes with the person's token: the API knows who to delete without anything else.</li>
+    <li>The API deletes the account, the favourites and the sessions. The response is 204, with no body.</li>
+  </ul>
+  <aside class="notes">If they ask why no id is sent: <code>/me</code> is always whoever holds the token. Nobody can delete someone else's account.</aside>
+</section>
+
+<section class="slide">
+  <h2>Delete account 2 of 3: the state</h2>
+<pre data-title="lib/state/session_notifier.dart · next to logout()"><code class="language-dart">  Future&lt;void&gt; deleteAccount() async {
+    await _auth.deleteAccount(); // if it fails, the user stays logged in
+    session = null;
+    await _store.clear();
+    notifyListeners(); // back to the login screen
+  }</code></pre>
+  <ul>
+    <li>First the API, then the phone. If the request fails, the person stays logged in and can try again.</li>
+    <li><code>_store.clear()</code> removes the ticket from secure storage: when the app opens, there is no session to restore.</li>
+  </ul>
+  <aside class="notes">Difference from logout: logout clears the phone first and the API is just a notice, because logging out has to work offline. Deleting the account offline cannot pretend it worked.</aside>
+</section>
+
+<section class="slide">
+  <h2>Delete account 3 of 3: the screen</h2>
+<pre data-title="lib/screens/islands_screen.dart · in the AppBar actions"><code class="language-dart">IconButton(
+  tooltip: 'Apagar conta',
+  icon: const Icon(Icons.delete_forever),
+  onPressed: () async {
+    final sure = await showDialog&lt;bool&gt;(
+      context: context,
+      builder: (dialog) =&gt; AlertDialog(
+        title: const Text('Apagar a conta?'),
+        content: const Text('Os favoritos vão com ela. Não há volta.'),
+        actions: [
+          TextButton(
+            onPressed: () =&gt; Navigator.pop(dialog, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () =&gt; Navigator.pop(dialog, true),
+            child: const Text('Apagar'),
+          ),
+        ],
+      ),
+    );
+    if (sure == true &amp;&amp; context.mounted) {
+      await context.read&lt;SessionNotifier&gt;().deleteAccount();
+    }
+  },
+),</code></pre>
+  <div class="callout task"><strong>In the app</strong> Create a test account, delete it, and try to log in with it again: it must fail.</div>
+  <aside class="notes"><code>context.mounted</code> is there because the dialog is asynchronous: when the person answers, the screen may be gone. It is requirement 1 of the project (sign-up, login, logout and delete account). The texts stay in Portuguese, like the rest of the app.</aside>
 </section>
 
 <section class="slide">
@@ -485,25 +164,13 @@ git grep -n "uses-permission" -- android</code></pre>
 
 <section class="slide" data-part="End">
   <h2>See you on Monday</h2>
-  <div class="cols">
-    <div>
-      <h3>For Monday, 02/11, at 16:00</h3>
-      <ul>
-        <li>Sprint 1 review: each group shows the app on the phone in 5 minutes. What counts is what is on <code>main</code>.</li>
-        <li>The security check done, with <code>INTERNET</code> in the main manifest.</li>
-        <li>The sprint 2 backlog written in issues.</li>
-        <li>On Wednesday, 04/11, it is test 1: today's material is in it.</li>
-      </ul>
-    </div>
-    <div>
-      <h3>Further reading</h3>
-      <ul>
-        <li><a href="https://owasp.org/www-project-mobile-top-10/" target="_blank" rel="noopener">OWASP Mobile Top 10</a>: the ten risks, with examples.</li>
-        <li><a href="https://docs.flutter.dev/perf/isolates" target="_blank" rel="noopener">Concurrency and isolates</a>: compute() and isolates, in the Flutter docs.</li>
-        <li><a href="https://docs.flutter.dev/perf/best-practices" target="_blank" rel="noopener">Performance best practices</a>: const, lists, images.</li>
-      </ul>
-    </div>
-  </div>
+  <h3>For Monday, 02/11, at 16:00</h3>
+  <ul>
+    <li>Sprint 1 review: each group shows the app on the phone in 5 minutes. What counts is what is on <code>main</code>.</li>
+    <li>Logging in, logging out and deleting the account working, and <code>INTERNET</code> in the main manifest.</li>
+    <li>The sprint 2 backlog written in issues.</li>
+    <li>On Wednesday, 04/11, it is test 1.</li>
+  </ul>
   <nav class="pager" id="pager"></nav>
 </section>
 

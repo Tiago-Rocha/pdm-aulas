@@ -26,407 +26,10 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 18 · Semana 8 · Quarta, 28 de outubro de 2026 · 16:00 às 18:00</p>
-  <h1>Segurança, performance e sprint 1</h1>
-  <p class="lead">O festival continua. Segurança: o programa que toda a gente leva para casa (o APK), a fila onde os outros ouvem (a rede), a revista à entrada (as permissões) e a lista de quem entrou (os dados pessoais). Performance: o bar com um só barman (a thread de UI). Jogos sobre isso. Depois, sprint 1: o login, a sessão e a renovação em 401 trazidos para o projeto do grupo.</p>
+  <h1>Sprint 1: login, logout e apagar conta</h1>
+  <p class="lead">Hoje é só sprint. Cada grupo monta no seu projeto as três coisas que a conta precisa: entrar, sair e apagar a conta. O login e o logout vêm prontos da aula de ontem; apagar a conta é novo, e são três peças, uma em cada camada.</p>
   <div class="meta"><span>Sprint 1 · review na segunda, 02/11, às 16:00</span></div>
-  <aside class="notes">Tempos de referência: teoria até às 16:35, jogos até às 16:55, sprint até às 17:55. Se a teoria atrasar, os slides das listas e do modo profile passam depressa: o essencial da performance está no barman e no compute.</aside>
-</section>
-
-<section class="slide" data-part="Objetivos">
-  <h2>No fim desta aula consegues</h2>
-  <ul>
-    <li>Dizer o que qualquer pessoa lê num APK, e porque o <code>--dart-define</code> tira o segredo do repositório mas não do APK.</li>
-    <li>Explicar o que o HTTPS e o certificate pinning protegem.</li>
-    <li>Pedir só as permissões precisas, quando são precisas, e cumprir o mínimo de privacidade.</li>
-    <li>Explicar o jank com o barman, e quando usar <code>compute()</code> em vez de <code>async</code>.</li>
-    <li>Poupar trabalho ao barman com <code>const</code>, widgets pequenos e <code>ListView.builder</code>.</li>
-    <li>Trazer o login, a sessão e a renovação em 401 para o projeto do grupo.</li>
-  </ul>
-</section>
-
-<section class="slide" data-part="Teoria">
-  <h2>O festival continua: por onde se entra sem pulseira</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 190" role="img" aria-label="Quatro sítios onde alguém tenta entrar sem pulseira: o programa que toda a gente leva para casa (o APK), a fila onde os outros ouvem (a rede), a revista à entrada (as permissões) e a lista de quem entrou (os dados pessoais).">
-    <rect x="10" y="10" width="200" height="170" rx="14" class="box danger"/>
-    <text x="110" y="58" text-anchor="middle" class="t big">📖</text>
-    <text x="110" y="96" text-anchor="middle" class="t b">O programa</text>
-    <text x="110" y="122" text-anchor="middle" class="t mono">o APK</text>
-    <text x="110" y="152" text-anchor="middle" class="t s">toda a gente leva um</text>
-    <rect x="222" y="10" width="200" height="170" rx="14" class="box"/>
-    <text x="322" y="58" text-anchor="middle" class="t big">🗣️</text>
-    <text x="322" y="96" text-anchor="middle" class="t b">A fila</text>
-    <text x="322" y="122" text-anchor="middle" class="t mono">a rede</text>
-    <text x="322" y="152" text-anchor="middle" class="t s">os outros ouvem</text>
-    <rect x="434" y="10" width="200" height="170" rx="14" class="box"/>
-    <text x="534" y="58" text-anchor="middle" class="t big">🎒</text>
-    <text x="534" y="96" text-anchor="middle" class="t b">A revista</text>
-    <text x="534" y="122" text-anchor="middle" class="t mono">as permissões</text>
-    <text x="534" y="152" text-anchor="middle" class="t s">só o que é preciso</text>
-    <rect x="646" y="10" width="200" height="170" rx="14" class="box"/>
-    <text x="746" y="58" text-anchor="middle" class="t big">📋</text>
-    <text x="746" y="96" text-anchor="middle" class="t b">A lista</text>
-    <text x="746" y="122" text-anchor="middle" class="t mono">os dados pessoais</text>
-    <text x="746" y="152" text-anchor="middle" class="t s">quem entrou, e porquê</text>
-  </svg>
-  <figcaption>Ontem o porteiro. Hoje, tudo à volta dele: por onde um festival se rompe.</figcaption>
-  </figure>
-  <div class="table-wrap"><table>
-  <thead><tr><th>No festival</th><th>Na app</th><th>O risco</th></tr></thead>
-  <tbody>
-  <tr><td>O programa</td><td>O APK que instalas</td><td>O que lá escreves, toda a gente lê</td></tr>
-  <tr><td>A fila</td><td>A rede: Wi-Fi do café, 4G</td><td>Quem está ao lado ouve o que gritas</td></tr>
-  <tr><td>A revista à entrada</td><td>As permissões</td><td>Pedir tudo faz as pessoas darem meia volta</td></tr>
-  <tr><td>A lista de quem entrou</td><td>Os dados pessoais</td><td>Guardar mais do que precisas, sem dizer porquê</td></tr>
-  </tbody></table></div>
-  <aside class="notes">Ontem o porteiro: a pulseira, o talão e o 401. Hoje o resto do recinto. Diz que cada slide de segurança é um destes quatro sítios. Começa pelo programa, que é o que mais aparece nas apps dos alunos.</aside>
-</section>
-
-<section class="slide">
-  <h2>O programa: toda a gente leva um para casa</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 290" role="img" aria-label="O app-release.apk é um zip. Lá dentro: classes.dex, que um descompilador volta a pôr em Kotlin; libapp.so, o código Dart, onde as strings se continuam a ler, incluindo o URL e o valor do segredo do --dart-define; os assets; e o AndroidManifest com as permissões.">
-    <rect x="300" y="10" width="260" height="56" rx="12" class="box accent"/>
-    <text x="430" y="36" text-anchor="middle" class="t b mono">app-release.apk</text>
-    <text x="430" y="56" text-anchor="middle" class="t s">é um zip</text>
-    <path d="M360 70 L112 112" class="arrow"/><path d="M410 70 L325 112" class="arrow"/>
-    <path d="M450 70 L540 112" class="arrow"/><path d="M500 70 L750 112" class="arrow"/>
-    <rect x="10" y="116" width="200" height="110" rx="12" class="box"/>
-    <text x="110" y="146" text-anchor="middle" class="t b mono">classes.dex</text>
-    <text x="110" y="172" text-anchor="middle" class="t s">Kotlin compilado</text>
-    <text x="110" y="194" text-anchor="middle" class="t s">o jadx descompila</text>
-    <rect x="222" y="116" width="210" height="160" rx="12" class="box danger"/>
-    <text x="327" y="146" text-anchor="middle" class="t b mono">libapp.so</text>
-    <text x="327" y="172" text-anchor="middle" class="t s">o teu código Dart</text>
-    <text x="327" y="194" text-anchor="middle" class="t s">strings em claro:</text>
-    <text x="327" y="222" text-anchor="middle" class="t mono danger">https://api-pdm...</text>
-    <text x="327" y="246" text-anchor="middle" class="t s danger">o valor do segredo</text>
-    <rect x="444" y="116" width="200" height="110" rx="12" class="box"/>
-    <text x="544" y="146" text-anchor="middle" class="t b mono">assets/</text>
-    <text x="544" y="172" text-anchor="middle" class="t s">imagens, JSON</text>
-    <text x="544" y="194" text-anchor="middle" class="t s">e um .env esquecido</text>
-    <rect x="656" y="116" width="194" height="110" rx="12" class="box"/>
-    <text x="753" y="146" text-anchor="middle" class="t b mono">AndroidManifest</text>
-    <text x="753" y="172" text-anchor="middle" class="t s">as permissões</text>
-  </svg>
-  <figcaption>Cinco minutos, ferramentas grátis, sem password. O que está escrito no programa, toda a gente lê.</figcaption>
-  </figure>
-<pre data-title="lib/main.dart · como no projeto do grupo"><code class="language-dart">// flutter run --dart-define=CLIENT_SECRET=...
-const clientSecret = String.fromEnvironment('CLIENT_SECRET');</code></pre>
-  <ul>
-    <li>O <code>--dart-define</code> tira o segredo do <strong>repositório</strong>. Não o tira do <strong>APK</strong>: o valor é compilado para o <code>libapp.so</code>.</li>
-    <li>Por isso um segredo de app vale pouco: só dá a pulseira de visitante. O que protege a conta da Ana é o login dela.</li>
-  </ul>
-  <div class="callout"><strong>Pergunta à turma</strong> Então para que serve o <code>--dart-define</code>, se o segredo acaba no APK?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> Serve para o segredo não ir para o GitHub, onde fica para sempre e onde qualquer colaborador, ou um repositório que um dia passe a público, o expõe. E para cada grupo ter o seu sem mexer no código. O APK só chega a quem o instala; o repositório chega a toda a gente que alguma vez lhe tenha acesso. Em produção, as apps não levam segredo nenhum (é o PKCE de ontem) e o servidor pode revogar um segredo que vaze.</aside>
-</section>
-
-<section class="slide">
-  <h2>A memória do festival: o git</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 225" role="img" aria-label="Uma linha de commits. No segundo, o clientSecret entra no código; no terceiro, é apagado. O git log -S continua a encontrar o segundo commit: o segredo fica na história para sempre.">
-    <line x1="60" y1="70" x2="750" y2="70" class="box muted"/>
-    <circle cx="60" cy="70" r="16" class="box"/>
-    <text x="60" y="116" text-anchor="middle" class="t s">ecrã de login</text>
-    <circle cx="290" cy="70" r="16" class="box danger"/>
-    <text x="290" y="116" text-anchor="middle" class="t mono danger">+ clientSecret</text>
-    <circle cx="520" cy="70" r="16" class="box"/>
-    <text x="520" y="116" text-anchor="middle" class="t s">− clientSecret</text>
-    <circle cx="750" cy="70" r="16" class="box"/>
-    <text x="750" y="116" text-anchor="middle" class="t s">ilhas</text>
-    <text x="750" y="32" text-anchor="middle" class="t b">main</text>
-    <path d="M290 150 L290 92" class="arrow danger"/>
-    <text x="290" y="172" text-anchor="middle" class="t danger b">o git log -S encontra-o aqui</text>
-    <text x="430" y="212" text-anchor="middle" class="t s">Apagar no commit seguinte não o despublica. A solução: pedir um segredo novo e nunca o pôr num commit.</text>
-  </svg>
-  <figcaption>O git é a memória do festival: guarda todas as versões do programa que alguma vez se imprimiram.</figcaption>
-  </figure>
-<pre class="term"><code class="language-bash">git log -S "o-segredo-do-grupo" --oneline</code></pre>
-  <ul>
-    <li>Nunca no repositório: o <code>clientSecret</code>, a keystore de assinatura (<code>*.jks</code>) e o <code>key.properties</code>. O <code>android/.gitignore</code> do projeto já ignora os dois últimos.</li>
-    <li>Se um segredo entrou num commit, conta como publicado: pede um novo e muda-o. Apagar o commit não chega: quem já fez pull tem uma cópia.</li>
-  </ul>
-  <aside class="notes">O <code>git log -S</code> procura commits que acrescentaram ou tiraram aquele texto. Vão usá-lo daqui a pouco no repositório do grupo, com o segredo verdadeiro. Funciona igual no PowerShell e no terminal do Mac.</aside>
-</section>
-
-<section class="slide">
-  <h2>A fila: falar ao ouvido do porteiro</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 250" role="img" aria-label="Três maneiras de atravessar o Wi-Fi do café até à API. HTTP: um postal, qualquer um pelo caminho o lê. HTTPS: um envelope fechado. HTTPS com pinning: envelope fechado, e a app ainda confere o crachá do porteiro verdadeiro.">
-    <rect x="10" y="10" width="110" height="200" rx="14" class="box"/>
-    <text x="65" y="118" text-anchor="middle" class="t b">App</text>
-    <rect x="740" y="10" width="110" height="200" rx="14" class="box"/>
-    <text x="795" y="118" text-anchor="middle" class="t b">API</text>
-    <text x="430" y="236" text-anchor="middle" class="t s">👂 Wi-Fi do café</text>
-    <path d="M124 42 L736 42" class="arrow danger"/>
-    <rect x="200" y="20" width="460" height="44" rx="10" class="box danger"/>
-    <text x="226" y="48" class="t mono">http://</text>
-    <text x="400" y="49" class="t">📮</text>
-    <text x="430" y="48" class="t s">um postal: qualquer um lê</text>
-    <path d="M124 108 L736 108" class="arrow ok"/>
-    <rect x="200" y="86" width="460" height="44" rx="10" class="box ok"/>
-    <text x="226" y="114" class="t mono">https://</text>
-    <text x="400" y="115" class="t">✉️</text>
-    <text x="430" y="114" class="t s">um envelope fechado</text>
-    <path d="M124 174 L736 174" class="arrow accent"/>
-    <rect x="200" y="152" width="460" height="44" rx="10" class="box accent"/>
-    <text x="226" y="180" class="t mono">https + pinning</text>
-    <text x="400" y="181" class="t">🪪</text>
-    <text x="430" y="180" class="t s">envelope, e o crachá conferido</text>
-  </svg>
-  <figcaption>Na fila, toda a gente ouve o que gritas. O HTTPS é falar ao ouvido do porteiro.</figcaption>
-  </figure>
-  <ul>
-    <li><strong>HTTPS sempre.</strong> O Android bloqueia <code>http://</code> desde a versão 9; o iOS também (App Transport Security). Desligar isto "para testar" é dos erros mais comuns.</li>
-    <li>Nunca aceitar qualquer certificado: <code>badCertificateCallback</code> a devolver <code>true</code> deixa entrar um porteiro falso.</li>
-    <li><strong>Certificate pinning:</strong> a app traz o crachá do porteiro verdadeiro e confere-o. Protege de quem controla a rede; custa caro: quando o certificado do servidor muda, as apps antigas deixam de funcionar. Vale a pena em bancos e saúde, não na Tempo Açores.</li>
-  </ul>
-  <aside class="notes">Se perguntarem como alguém lê o tráfego: num Wi-Fi aberto qualquer pessoa na rede vê os pacotes, e quem gere o router vê tudo. Com HTTPS vê o endereço do servidor mas não o que se diz.</aside>
-</section>
-
-<section class="slide">
-  <h2>A revista à entrada: só o que é preciso</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 190" role="img" aria-label="Duas apps. A primeira pede localização, câmara, contactos e notificações mal abre, sem dizer porquê: a pessoa toca em Não permitir. A segunda só pede a localização aproximada quando a pessoa toca em Ilha mais próxima, depois de uma frase a explicar porquê: a pessoa toca em Permitir.">
-    <rect x="10" y="14" width="170" height="52" rx="12" class="box"/><text x="95" y="46" text-anchor="middle" class="t s">abre a app</text>
-    <path d="M184 40 L236 40" class="arrow danger"/>
-    <rect x="240" y="14" width="390" height="52" rx="12" class="box danger"/><text x="435" y="46" text-anchor="middle" class="t">📍 📷 👥 🔔 tudo de uma vez</text>
-    <path d="M634 40 L686 40" class="arrow danger"/>
-    <rect x="690" y="14" width="160" height="52" rx="26" class="box danger"/><text x="770" y="46" text-anchor="middle" class="t b">Não permitir</text>
-    <rect x="10" y="114" width="170" height="64" rx="12" class="box"/><text x="95" y="151" text-anchor="middle" class="t s">toca em "Ilha mais próxima"</text>
-    <path d="M184 146 L236 146" class="arrow ok"/>
-    <rect x="240" y="114" width="210" height="64" rx="12" class="box ok"/><text x="345" y="151" text-anchor="middle" class="t s">"para encontrar a tua ilha"</text>
-    <path d="M454 146 L486 146" class="arrow ok"/>
-    <rect x="490" y="114" width="140" height="64" rx="12" class="box ok"/><text x="560" y="151" text-anchor="middle" class="t">📍 aproximada</text>
-    <path d="M634 146 L686 146" class="arrow ok"/>
-    <rect x="690" y="120" width="160" height="52" rx="26" class="box ok"/><text x="770" y="152" text-anchor="middle" class="t b">Permitir</text>
-  </svg>
-  <figcaption>Uma revista que pede tudo à porta faz as pessoas darem meia volta. Pede uma coisa, quando é precisa, e diz porquê.</figcaption>
-  </figure>
-  <ul>
-    <li>Pede a permissão <strong>quando</strong> a pessoa toca na funcionalidade, e diz <strong>porquê</strong> numa frase antes do pedido do sistema.</li>
-    <li>Pede a <strong>menor</strong>: localização aproximada chega para "a ilha mais próxima". Se a pessoa recusar, a app continua a funcionar sem isso.</li>
-    <li>As lojas rejeitam permissões que a app não justifica.</li>
-  </ul>
-  <div class="callout"><strong>Atenção</strong> Em debug, o Flutter acrescenta a permissão <code>INTERNET</code> sozinho. No APK de release, só a tem se estiver em <code>android/app/src/main/AndroidManifest.xml</code>. Sem ela, o APK que vão entregar não tem rede.</div>
-  <aside class="notes">A permissão INTERNET não aparece ao utilizador (é "normal", não "perigosa"), mas tem de estar declarada. O template do projeto não a tem no manifesto principal: vão acrescentá-la na verificação da sprint.</aside>
-</section>
-
-<section class="slide">
-  <h2>A lista de quem entrou: privacidade</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th></th><th>O que é</th><th>Na Tempo Açores</th></tr></thead>
-  <tbody>
-  <tr><td>RGPD</td><td>Cada dado tem uma razão; guarda-se o mínimo; a pessoa pode pedir para apagar</td><td>Email e nome, e <code>DELETE /v1/me</code> para apagar a conta</td></tr>
-  <tr><td>Consentimento</td><td>Explícito e nunca pré-marcado, para analytics e marketing</td><td>Não há analytics: não há nada a pedir</td></tr>
-  <tr><td>App Tracking Transparency</td><td>No iOS, pedir antes de seguir a pessoa entre apps de empresas diferentes</td><td>Não se aplica</td></tr>
-  <tr><td>Privacy labels e Data safety</td><td>Formulários da App Store e da Play Store: que dados, para quê, partilhados com quem</td><td>Email e nome, para a conta, não partilhados</td></tr>
-  </tbody></table></div>
-  <div class="callout"><strong>No festival</strong> A lista à porta tem o teu nome porque é preciso para entrar. Se também pedisse a morada e o número de telefone "para o caso de", estaria a guardar mais do que precisa.</div>
-  <aside class="notes">Para o teste chega isto: minimização, consentimento explícito, direito a apagar, e que as lojas pedem uma declaração dos dados. O apagar conta é o requisito 1 do projeto.</aside>
-</section>
-
-<section class="slide">
-  <h2>OWASP Mobile Top 10, no festival</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Risco (lista de 2024)</th><th>No festival</th><th>Como aparece no Flutter</th><th>Defesa</th></tr></thead>
-  <tbody>
-  <tr><td><strong>M1</strong> Credenciais mal usadas</td><td>Código da porta escrito no programa</td><td>Segredo no código; password guardada</td><td>Fora do repositório; tokens curtos; não guardar a password</td></tr>
-  <tr><td><strong>M5</strong> Comunicação insegura</td><td>Gritar na fila</td><td><code>http://</code>; aceitar qualquer certificado</td><td>HTTPS; pinning quando se justifica</td></tr>
-  <tr><td><strong>M6</strong> Privacidade insuficiente</td><td>Lista com dados a mais</td><td>Dados pessoais nos logs ou recolhidos sem razão</td><td>Recolher o mínimo; logs só em debug</td></tr>
-  <tr><td><strong>M9</strong> Armazenamento inseguro</td><td>Talão no bolso de fora</td><td>Token no <code>shared_preferences</code></td><td>Keychain e Keystore (<code>flutter_secure_storage</code>)</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li><strong>Ofuscação</strong> (<code>flutter build apk --obfuscate --split-debug-info=...</code>): troca os nomes das classes e funções no binário. Dificulta a leitura, mas não esconde as strings.</li>
-    <li><strong>Deteção de root e jailbreak:</strong> a app descobre se o telemóvel foi desbloqueado. Ajuda num banco; contorna-se.</li>
-  </ul>
-  <aside class="notes">Para o teste: os que mais aparecem são segredos no código (M1), armazenamento inseguro (M9) e comunicação insegura (M5). A ofuscação é a pergunta-armadilha: não esconde segredos.</aside>
-</section>
-
-<section class="slide" data-part="Performance">
-  <h2>O bar do festival tem um só barman</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 165" role="img" aria-label="Um barman serve um cliente a cada 16 milissegundos: cada cliente é um frame. Até que um cliente pede um jsonDecode de 5 MB e demora 120 ms: sete clientes da fila ficam por servir e o ecrã congela. Isto é jank.">
-    <text x="10" y="30" class="t b">🍹 um barman: a thread de UI</text>
-    <rect x="10" y="50" width="60" height="50" rx="8" class="box ok"/><text x="40" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="76" y="50" width="60" height="50" rx="8" class="box ok"/><text x="106" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="142" y="50" width="60" height="50" rx="8" class="box ok"/><text x="172" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="208" y="50" width="60" height="50" rx="8" class="box ok"/><text x="238" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="274" y="50" width="400" height="50" rx="8" class="box danger"/><text x="474" y="81" text-anchor="middle" class="t mono">jsonDecode 5 MB · 120 ms</text>
-    <rect x="680" y="50" width="60" height="50" rx="8" class="box ok"/><text x="710" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="746" y="50" width="60" height="50" rx="8" class="box ok"/><text x="776" y="80" text-anchor="middle" class="t s">16 ms</text>
-    <path d="M284 116 L284 128 L664 128 L664 116" class="box muted" fill="none"/>
-    <text x="474" y="152" text-anchor="middle" class="t danger b">7 frames perdidos: o ecrã congela</text>
-  </svg>
-  <figcaption>60 clientes por segundo, 16 ms cada um. Um pedido lento e a fila inteira para.</figcaption>
-  </figure>
-  <div class="table-wrap"><table>
-  <thead><tr><th>No bar</th><th>Na app</th></tr></thead>
-  <tbody>
-  <tr><td>O barman</td><td>A thread de UI: corre o <code>build</code>, os toques e as animações</td></tr>
-  <tr><td>Um cliente servido</td><td>Um frame: 16 ms a 60 fps, 8 ms a 120 fps</td></tr>
-  <tr><td>A fila parada</td><td>Jank: o ecrã congela ou salta</td></tr>
-  <tr><td>Um segundo barman, noutro balcão</td><td>Um isolate, com <code>compute()</code></td></tr>
-  <tr><td>Copos já cheios</td><td>Widgets <code>const</code></td></tr>
-  <tr><td>Servir só quem está ao balcão</td><td><code>ListView.builder</code></td></tr>
-  </tbody></table></div>
-  <aside class="notes">O Dart tem uma só thread por isolate: a app inteira corre num barman. Tudo o que ele faz de seguida, sem pausa, a fila espera. Volta a esta tabela no fim da parte de performance.</aside>
-</section>
-
-<section class="slide">
-  <h2><code>async</code> não chama outro barman</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 195" role="img" aria-label="Duas faixas. Em cima o isolate principal continua a servir frames de 16 ms. Em baixo, um segundo isolate faz o jsonDecode. O principal entrega-lhe o texto e recebe a lista de trilhos; cada isolate tem a sua memória.">
-    <text x="10" y="40" class="t b">🍹 isolate principal</text>
-    <text x="10" y="60" class="t s">UI, widgets, notifiers</text>
-    <text x="10" y="150" class="t b">🍸 segundo barman</text>
-    <text x="10" y="170" class="t s">caixa própria: memória própria</text>
-    <rect x="230" y="24" width="60" height="44" rx="8" class="box ok"/><text x="260" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="298" y="24" width="60" height="44" rx="8" class="box ok"/><text x="328" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="366" y="24" width="60" height="44" rx="8" class="box ok"/><text x="396" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="434" y="24" width="60" height="44" rx="8" class="box ok"/><text x="464" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="502" y="24" width="60" height="44" rx="8" class="box ok"/><text x="532" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="570" y="24" width="60" height="44" rx="8" class="box ok"/><text x="600" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="638" y="24" width="60" height="44" rx="8" class="box ok"/><text x="668" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="706" y="24" width="60" height="44" rx="8" class="box ok"/><text x="736" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="774" y="24" width="60" height="44" rx="8" class="box ok"/><text x="804" y="51" text-anchor="middle" class="t s">16 ms</text>
-    <rect x="330" y="130" width="400" height="48" rx="8" class="box accent"/>
-    <text x="530" y="160" text-anchor="middle" class="t mono">jsonDecode 5 MB · 120 ms</text>
-    <path d="M300 72 L330 126" class="arrow accent"/><text x="250" y="104" class="t s">entra texto</text>
-    <path d="M734 130 L768 74" class="arrow accent"/><text x="770" y="112" class="t s">sai List&lt;Trail&gt;</text>
-  </svg>
-  <figcaption>O compute() chama um segundo barman para outro balcão. Ele não vê os teus widgets: só o que lhe entregas.</figcaption>
-  </figure>
-<pre data-title="lib/data/api_client.dart · no fim do _send, se a resposta for enorme"><code class="language-dart">// before: the UI thread decodes 5 MB, the queue stops
-return jsonDecode(response.body);
-
-// after: a second isolate decodes it, the UI keeps going
-return compute(jsonDecode, response.body);</code></pre>
-  <ul>
-    <li><code>await http.get(...)</code> não trava: esperar pela rede não é trabalhar, e o barman serve outros entretanto.</li>
-    <li><code>jsonDecode</code> de 5 MB trava, mesmo dentro de uma função <code>async</code>: são 120 ms de contas seguidas.</li>
-    <li>O segundo barman tem a caixa dele (memória separada): recebe texto e números, devolve dados. Não vê o <code>BuildContext</code> nem os notifiers.</li>
-  </ul>
-  <aside class="notes">A pergunta clássica do teste: "meter o jsonDecode numa função async resolve o jank?" Não: o async só liberta o barman nos await. Criar um isolate custa alguns milissegundos: para as respostas da API do curso, que são pequenas, não compensa. É para JSON grande, imagens, cálculos.</aside>
-</section>
-
-<section class="slide">
-  <h2>Copos já cheios: <code>const</code> e widgets pequenos</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 860 275" role="img" aria-label="Duas árvores. À esquerda, o relógio faz setState no ecrã inteiro a cada segundo e reconstroem-se o ecrã, o cabeçalho, a lista e todos os cartões. À direita, o relógio é um widget à parte e o título é const; só o relógio se reconstrói.">
-    <text x="10" y="24" class="t b danger">setState no ecrã</text>
-    <text x="460" y="24" class="t b ok">o relógio à parte</text>
-    <rect x="130" y="40" width="140" height="40" rx="10" class="box danger"/><text x="200" y="66" text-anchor="middle" class="t b">Ecrã</text>
-    <path d="M170 84 L70 112" class="arrow"/><path d="M200 84 L200 112" class="arrow"/><path d="M230 84 L330 112" class="arrow"/>
-    <rect x="10" y="116" width="120" height="40" rx="10" class="box danger"/><text x="70" y="142" text-anchor="middle" class="t s">Título</text>
-    <rect x="140" y="116" width="120" height="40" rx="10" class="box danger"/><text x="200" y="142" text-anchor="middle" class="t s">Relógio</text>
-    <rect x="270" y="116" width="120" height="40" rx="10" class="box danger"/><text x="330" y="142" text-anchor="middle" class="t s">Lista</text>
-    <path d="M330 160 L330 184" class="arrow"/>
-    <rect x="270" y="188" width="120" height="40" rx="10" class="box danger"/><text x="330" y="214" text-anchor="middle" class="t s">9 cartões</text>
-    <rect x="580" y="40" width="140" height="40" rx="10" class="box ok"/><text x="650" y="66" text-anchor="middle" class="t b">Ecrã</text>
-    <path d="M620 84 L520 112" class="arrow"/><path d="M650 84 L650 112" class="arrow"/><path d="M680 84 L780 112" class="arrow"/>
-    <rect x="460" y="116" width="120" height="40" rx="10" class="box ok"/><text x="520" y="142" text-anchor="middle" class="t s">const Título</text>
-    <rect x="590" y="116" width="120" height="40" rx="10" class="box danger"/><text x="650" y="142" text-anchor="middle" class="t s">Relógio</text>
-    <rect x="720" y="116" width="120" height="40" rx="10" class="box ok"/><text x="780" y="142" text-anchor="middle" class="t s">Lista</text>
-    <path d="M780 160 L780 184" class="arrow"/>
-    <rect x="720" y="188" width="120" height="40" rx="10" class="box ok"/><text x="780" y="214" text-anchor="middle" class="t s">9 cartões</text>
-    <rect x="10" y="250" width="16" height="16" rx="3" class="box danger"/><text x="34" y="263" class="t s">reconstrói a cada segundo</text>
-    <rect x="260" y="250" width="16" height="16" rx="3" class="box ok"/><text x="284" y="263" class="t s">fica como estava</text>
-  </svg>
-  <figcaption>Um copo já cheio não se volta a encher: const e widgets pequenos deixam o barman livre.</figcaption>
-  </figure>
-  <ul>
-    <li><code>setState</code> e <code>notifyListeners</code> reconstroem o widget e tudo o que está por baixo. Quanto mais alto, mais trabalho.</li>
-    <li>Parte o ecrã em widgets pequenos: o que muda fica num widget só dele.</li>
-    <li><code>const Text('Ilhas')</code> é criado uma vez e nunca mais se reconstrói. O <code>flutter analyze</code> avisa onde falta.</li>
-    <li>Com Provider: <code>context.select</code> em vez de <code>context.watch</code>, para só reconstruir quando muda o valor que o widget usa.</li>
-  </ul>
-  <aside class="notes">O DevTools mostra quantas vezes cada widget se reconstrói (Rebuild stats, no separador Performance). Não é para usar hoje; é para saberem que existe.</aside>
-</section>
-
-<section class="slide">
-  <h2>Servir só quem está ao balcão: listas e imagens</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Problema</th><th>O que se vê</th><th>Solução</th></tr></thead>
-  <tbody>
-  <tr><td><code>ListView(children: [...])</code> com 3000 trilhos</td><td>O ecrã demora a abrir: constrói os 3000</td><td><code>ListView.builder</code>: só os que se veem</td></tr>
-  <tr><td>Fotografia de 4000 × 3000 numa miniatura de 56</td><td>Memória a subir, scroll aos saltos</td><td><code>cacheWidth</code>, ou miniaturas do servidor</td></tr>
-  <tr><td>A mesma imagem descarregada sempre que aparece</td><td>Rede e bateria gastas</td><td><code>cached_network_image</code>: guarda em disco</td></tr>
-  </tbody></table></div>
-  <div class="callout"><strong>No bar</strong> O barman não prepara bebidas para quem ainda está no parque de estacionamento. Prepara para quem está ao balcão, e para os dois ou três que vêm a seguir.</div>
-  <aside class="notes">Uma fotografia de 4000 por 3000 ocupa cerca de 48 MB descodificada (4 bytes por píxel), mesmo que apareça com 56 de largura. É uma das perguntas do jogo.</aside>
-</section>
-
-<section class="slide">
-  <h2>Medir no dia do festival, não no ensaio</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Modo</th><th>Para quê</th><th>Comando</th></tr></thead>
-  <tbody>
-  <tr><td>Debug</td><td>Programar: hot reload, asserts. Lento de propósito</td><td><code>flutter run</code></td></tr>
-  <tr><td>Profile</td><td>Medir: rápido como o release, com o DevTools ligado</td><td><code>flutter run --profile</code></td></tr>
-  <tr><td>Release</td><td>Entregar: o APK que os testers instalam</td><td><code>flutter build apk --release</code></td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>Nunca medir em debug: parece tudo lento. O <strong>performance overlay</strong> (tecla <code>P</code> no terminal, em profile) mostra dois gráficos: a thread de UI e a de raster. Barras vermelhas seguidas são jank.</li>
-    <li><strong>Bateria e rede:</strong> o rádio é dos maiores consumidores. Juntar pedidos, nada de perguntar "há novidades?" de 30 em 30 segundos, localização só enquanto é precisa.</li>
-  </ul>
-  <aside class="notes">O profile só corre num telemóvel a sério; no emulador e no Chrome os números não contam. Não há exercício de medição hoje: as apps dos grupos ainda são pequenas demais para haver o que medir.</aside>
-</section>
-
-<section class="slide" data-part="Jogos">
-  <h2>5 minutos de memória</h2>
-<ol class="steps how"><li>Abre <code>tiago-rocha.github.io/pdm-aulas/aulas/aula-18.html</code> no teu computador e vem a este slide.</li><li>Escreve o primeiro nome e entra. Ficas dentro para os jogos da aula toda.</li><li>Cinco perguntas, sem apontamentos. <strong>Só vale a primeira resposta.</strong></li></ol>
-  <div class="pz-seq" data-id="a18-mem" data-word="Pergunta">
-  <div class="pz-mcq" data-id="a18-m17-401" data-label="Autenticação"><script type="application/json">{"q": "A Ana toca no coração e a API responde 401. O que faz a app?", "options": ["Pede uma pulseira nova com o refresh token e repete o pedido uma vez", "Repete o mesmo pedido até dar 200", "Mostra logo o ecrã de login", "Usa a pulseira de visitante"], "why": "401 é \"não sei quem és\": a pulseira caducou. Troca-se com o talão e repete-se uma vez. Só se o talão também falhar é que a Ana volta ao login."}</script></div>
-  <div class="pz-mcq" data-id="a18-m17-jwt" data-label="Autenticação"><script type="application/json">{"q": "O que é verdade sobre o meio de um JWT (o payload)?", "options": ["Qualquer um o lê, mas ninguém o altera sem estragar a assinatura", "Está cifrado: só o servidor o lê", "Só a app que fez login o consegue ler", "É lá que se guarda a password, em hash"], "why": "É base64, não é cifra: qualquer um lê. A assinatura (o selo) é que impede alterações. Por isso nunca se põe nada secreto num JWT."}</script></div>
-  <div class="pz-mcq" data-id="a18-m16-refresh" data-label="Persistência"><script type="application/json">{"q": "Onde guarda a app o refresh token, que dura 30 dias?", "options": ["No flutter_secure_storage (Keychain no iOS, Keystore no Android)", "No shared_preferences", "Numa variável, só em memória", "Num ficheiro JSON na pasta da app"], "why": "É uma password que dura 30 dias: vai para o armazenamento seguro do sistema. Em memória perdia-se ao fechar a app; o shared_preferences e os ficheiros não são cifrados."}</script></div>
-  <div class="pz-mcq" data-id="a18-m16-prefs" data-label="Persistência"><script type="application/json">{"q": "O utilizador escolheu o tema escuro. Onde se guarda isso?", "options": ["No shared_preferences", "No flutter_secure_storage", "Numa base de dados SQLite", "No servidor, na conta"], "why": "É pequeno, não é secreto e é preciso logo no primeiro ecrã: shared_preferences. Uma base de dados é para listas que se pesquisam."}</script></div>
-  <div class="pz-mcq" data-id="a18-m15-pronto" data-label="Projeto"><script type="application/json">{"q": "O PR foi testado com flutter run -d chrome, trata os erros, o analyze está limpo e o colega aprovou. Está pronto?", "options": ["Não: falta correr no telemóvel", "Sim, cumpre tudo", "Não: falta a revisão de um colega", "Não: tem avisos do analyze"], "why": "O Chrome não é um telemóvel. A definição de pronto pede que corra no telemóvel."}</script></div>
-  </div>
-  <aside class="notes">Nada disto conta para a nota. Duas perguntas são de ontem (o 401 e o JWT), duas das persistências e uma da definição de pronto, que conta na review de segunda.</aside>
-</section>
-
-<section class="slide">
-  <h2>Memória: a turma</h2>
-  <div class="pz-poll" data-track="a18-mem"></div>
-  <aside class="notes">Olha para a pergunta com menos respostas certas e pergunta a quem acertou: "como pensaste?".</aside>
-</section>
-
-<section class="slide">
-  <h2>Jogo: o que é que o atacante lê?</h2>
-  <p class="how"><strong>Um caso de cada vez, todos ao mesmo tempo.</strong> Esperem por todos: revemos cada resposta juntos.</p>
-  <ol class="steps how"><li>Lê o caso e vota sozinho.</li><li>Discute com o colega do lado: porquê essa resposta?</li><li>Vota outra vez. Só depois vês a resposta.</li></ol>
-  <div class="pz-seq" data-id="a18-atacante" data-word="Caso">
-  <div class="pz-mcq" data-id="a18-s1" data-label="Segredo no código" data-revote><script type="application/json">{"q": "O clientSecret está escrito num const em lib/main.dart. O repositório é privado. Quem o lê?", "options": ["Quem tiver o APK, e quem tiver acesso ao repositório, para sempre", "Só os membros do grupo", "Ninguém: o repositório é privado", "Só o professor"], "why": "Vai para o libapp.so de cada APK que distribuírem e fica na história do git mesmo que o apaguem no commit seguinte."}</script></div>
-  <div class="pz-mcq" data-id="a18-s2" data-label="dart-define" data-revote><script type="application/json">{"q": "O clientSecret vai por --dart-define e o APK é enviado a três testers. Quem o lê?", "options": ["Quem tiver o APK e souber procurar as strings", "Ninguém: o --dart-define esconde-o", "Só quem tiver o código", "Ninguém: o APK é cifrado"], "why": "O --dart-define tira o segredo do repositório, não do APK: o valor fica no libapp.so. Por isso um segredo de app só dá a pulseira de visitante."}</script></div>
-  <div class="pz-mcq" data-id="a18-s3" data-label="http:// no café" data-revote><script type="application/json">{"q": "A app faz login com http:// no Wi-Fi do café. Quem lê a password?", "options": ["Qualquer pessoa na mesma rede, e quem gere o router", "Ninguém: a password vai num POST", "Só a API", "Ninguém: o Wi-Fi tem password"], "why": "Em http tudo vai em claro, o corpo do POST também. A password do Wi-Fi só deixa de fora quem não está na rede. Com https, só a API lê."}</script></div>
-  <div class="pz-mcq" data-id="a18-s4" data-label="Guardar a password" data-revote><script type="application/json">{"q": "Para entrar sozinha, a app guarda a password da Ana no flutter_secure_storage. Está bem?", "options": ["Não: guarda-se o talão (refresh token), a password nunca", "Sim: o secure storage é cifrado", "Sim, se for em hash", "Não: devia ir para o shared_preferences"], "why": "O talão dura 30 dias, é revogado no logout e não abre mais nada. A password vale para sempre, e muita gente usa a mesma em todo o lado."}</script></div>
-  </div>
-  <aside class="notes">Diz "caso 1", deixa votar, um minuto de discussão aos pares, segunda votação, e passa ao seguinte. O do --dart-define costuma dividir a turma: é o mesmo segredo do projeto deles.</aside>
-</section>
-
-<section class="slide">
-  <h2>O que é que o atacante lê? A turma</h2>
-  <div class="pz-poll" data-track="a18-atacante"></div>
-  <aside class="notes">Compara as duas barras de cada caso: se a segunda votação tem mais respostas certas, a discussão funcionou.</aside>
-</section>
-
-<section class="slide">
-  <h2>Jogo: quem trava a fila do bar?</h2>
-  <p>Quatro excertos de código, ao teu ritmo. Para cada um: trava o barman, ou não?</p>
-  <div class="pz-seq" data-id="a18-bar" data-word="Excerto">
-  <div class="pz-mcq" data-id="a18-b1" data-label="jsonDecode"><script type="application/json">{"q": "A resposta tem 8 MB. Esta linha, dentro de uma função async, trava o barman?", "code": "final data = jsonDecode(response.body);", "options": ["Sim: são 120 ms de contas seguidas na thread de UI", "Não: está numa função async", "Não: o jsonDecode é instantâneo", "Só no iPhone"], "why": "O async só liberta o barman nos await, e o jsonDecode não tem nenhum. O compute() passa-o a outro barman."}</script></div>
-  <div class="pz-mcq" data-id="a18-b2" data-label="await"><script type="application/json">{"q": "O pedido demora 2 segundos. A fila do bar para durante esses 2 segundos?", "code": "final islands = await _api.get('/v1/islands');", "options": ["Não: enquanto espera, o barman serve outros clientes", "Sim: o await bloqueia a app", "Sim, a não ser que se use compute()", "Só quando não há rede"], "why": "Esperar pela rede não é trabalhar: no await o barman serve outros frames. O que trava é calcular muito de seguida."}</script></div>
-  <div class="pz-mcq" data-id="a18-b3" data-label="3000 trilhos"><script type="application/json">{"q": "São 3000 trilhos. O que acontece ao abrir o ecrã?", "code": "ListView(\n  children: [for (final t in trails) TrailTile(t)],\n)", "options": ["Constrói os 3000 de uma vez: o ecrã demora a abrir", "Constrói só os que se veem", "Dá erro: o máximo são 1000", "Nada: o Flutter é rápido"], "why": "Com children, a lista constrói tudo à cabeça. O ListView.builder só constrói quem está ao balcão (os visíveis) e mais uns poucos."}</script></div>
-  <div class="pz-mcq" data-id="a18-b4" data-label="Fotografia"><script type="application/json">{"q": "A fotografia da ilha tem 4000 por 3000 píxeis. Qual é o problema?", "code": "leading: Image.network(island.imageUrl, width: 56),", "options": ["A imagem é descodificada inteira: uns 48 MB de memória por fotografia", "Nenhum: o width reduz o ficheiro", "A imagem fica desfocada", "O pedido vai em http"], "why": "4000 × 3000 píxeis × 4 bytes são 48 MB, para mostrar 56 píxeis. O width só muda o tamanho no ecrã; o cacheWidth descodifica já pequena."}</script></div>
-  </div>
-  <aside class="notes">O segundo é o contrário do primeiro e é o que mais falham: um await não trava. O quarto é o código verdadeiro do ecrã das ilhas.</aside>
-</section>
-
-<section class="slide">
-  <h2>Quem trava a fila? A turma</h2>
-  <div class="pz-poll" data-track="a18-bar"></div>
-  <aside class="notes">Se a turma falhou o segundo, volta ao diagrama dos dois barmen: esperar não é trabalhar.</aside>
+  <aside class="notes">Tempos de referência: ponto de situação até às 16:15, trazer o login e o logout até às 17:00, apagar conta até às 17:45, verificação até às 17:55.</aside>
 </section>
 
 <section class="slide" data-part="Sprint">
@@ -449,24 +52,100 @@ return compute(jsonDecode, response.body);</code></pre>
   <aside class="notes">Cronometra. Escreve os bloqueios no quadro e ataca-os por ordem quando circulares. Lembra que conta o que estiver no main à hora da review, não o que está em branches.</aside>
 </section>
 
+<section class="slide" data-part="Sprint">
+  <h2>Onde fica cada peça</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th></th><th>Ecrã</th><th>Estado</th><th>Dados</th><th>API</th></tr></thead>
+  <tbody>
+  <tr><td>Entrar</td><td><code>login_screen</code></td><td><code>login()</code></td><td><code>login()</code></td><td><code>POST /v1/auth/login</code></td></tr>
+  <tr><td>Sair</td><td>Botão na AppBar</td><td><code>logout()</code></td><td><code>logout()</code></td><td><code>POST /v1/auth/logout</code></td></tr>
+  <tr><td>Apagar conta</td><td>Botão e diálogo</td><td><code>deleteAccount()</code></td><td><code>deleteAccount()</code></td><td><code>DELETE /v1/me</code></td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>O estado é a <code>SessionNotifier</code>; os dados são o <code>AuthRepository</code>. O <code>ApiClient</code> não muda: já tem o <code>delete()</code>.</li>
+    <li>As duas primeiras linhas vêm prontas do <code>passo-2</code> de ontem. A terceira escrevem vocês.</li>
+  </ul>
+  <div class="callout"><strong>Pergunta à turma</strong> Depois de apagar a conta, como é que a app volta sozinha ao ecrã de login?</div>
+  <aside class="notes"><strong>Resposta.</strong> A <code>SessionNotifier</code> põe a <code>session</code> a null e chama <code>notifyListeners()</code>. O <code>main</code> está à escuta e, sem sessão, mostra o login. É o mesmo caminho do logout.</aside>
+</section>
+
 <section class="slide">
-  <h2>Trazer o código das aulas: um PR por peça</h2>
+  <h2>Trazer o login e o logout: um PR</h2>
   <p>Tudo vem do <code>pdm-aula-17</code>, branch <code>passo-2</code>, para as mesmas pastas do projeto.</p>
   <div class="table-wrap"><table>
-  <thead><tr><th>Peça</th><th>Ficheiros</th><th>Req.</th></tr></thead>
+  <thead><tr><th>Peça</th><th>Ficheiros</th></tr></thead>
   <tbody>
-  <tr><td>Login, registo e sessão</td><td><code>api_client</code>, <code>auth_repository</code>, <code>session_store</code>, <code>user</code>, <code>session_notifier</code>, <code>login_screen</code></td><td>1</td></tr>
-  <tr><td>Renovar em 401</td><td>Já vem no <code>api_client</code> e na <code>session_notifier</code></td><td>1</td></tr>
-  <tr><td>Ilhas e previsão</td><td><code>island</code>, <code>forecast</code>, <code>forecast_repository</code>, <code>http_forecast_repository</code>, <code>forecast_notifier</code>, <code>islands_screen</code></td><td>2, 3</td></tr>
-  <tr><td>Ligar tudo</td><td><code>main.dart</code>: o do <code>passo-2</code>, sem o que ainda não usam</td><td></td></tr>
+  <tr><td>Login, registo, logout e sessão</td><td><code>api_client</code>, <code>auth_repository</code>, <code>session_store</code>, <code>user</code>, <code>session_notifier</code>, <code>login_screen</code></td></tr>
+  <tr><td>Ligar tudo</td><td><code>main.dart</code>: o do <code>passo-2</code>, sem o que ainda não usam</td></tr>
   </tbody></table></div>
 <pre class="term"><code class="language-bash">flutter pub add http provider shared_preferences flutter_secure_storage</code></pre>
   <ul>
     <li>No <code>pdm-aula-17</code>: <code>git stash -u</code> e <code>git checkout passo-2</code>. O comando de cima corre-se no projeto do grupo.</li>
     <li>O package chama-se <code>tempo_acores</code> nos dois lados: os imports funcionam sem mudar nada.</li>
-    <li>Uma peça, um branch, um PR, revisto por outro membro. Cada um do grupo traz uma peça: conta no processo.</li>
+    <li><strong>Na app:</strong> criar conta, sair, voltar a entrar. Fechar a app e abrir: continua com sessão.</li>
   </ul>
-  <aside class="notes">Quem não acabou o passo 2 ontem não precisa de o acabar: o branch <code>passo-2</code> é a solução e é daí que copiam. A pesquisa nas ilhas e o ecrã da previsão com o design do Figma são trabalho deles. Os favoritos (<code>favorites_repository</code> e <code>favorites_notifier</code>) são da sprint 2: quem estiver adiantado pode trazê-los já. Dá os 60 minutos e circula pelos grupos, a começar pelos que disseram que estão bloqueados.</aside>
+  <aside class="notes">Quem não acabou o passo 2 ontem não precisa de o acabar: o branch <code>passo-2</code> é a solução e é daí que copiam. Circula a começar pelos grupos que disseram que estão bloqueados. Quem acabar cedo traz as ilhas e a previsão do mesmo branch.</aside>
+</section>
+
+<section class="slide">
+  <h2>Apagar conta 1 de 3: os dados</h2>
+<pre data-title="lib/data/auth_repository.dart · dentro da classe"><code class="language-dart">  /// The account and everything in it disappear. There is no way back.
+  Future&lt;void&gt; deleteAccount() async {
+    await _api.delete('/v1/me'); // goes with the user's token
+    _api.userToken = null;
+  }</code></pre>
+  <ul>
+    <li>O <code>DELETE /v1/me</code> vai com o token da pessoa: a API sabe quem apagar sem mais nada.</li>
+    <li>A API apaga a conta, os favoritos e as sessões. A resposta é 204, sem corpo.</li>
+  </ul>
+  <aside class="notes">Se perguntarem porque não se manda o id: o <code>/me</code> é sempre quem tem o token. Ninguém consegue apagar a conta de outra pessoa.</aside>
+</section>
+
+<section class="slide">
+  <h2>Apagar conta 2 de 3: o estado</h2>
+<pre data-title="lib/state/session_notifier.dart · ao lado do logout()"><code class="language-dart">  Future&lt;void&gt; deleteAccount() async {
+    await _auth.deleteAccount(); // if it fails, the user stays logged in
+    session = null;
+    await _store.clear();
+    notifyListeners(); // back to the login screen
+  }</code></pre>
+  <ul>
+    <li>Primeiro a API, depois o telemóvel. Se o pedido falhar, a pessoa continua com sessão e pode tentar outra vez.</li>
+    <li>O <code>_store.clear()</code> tira o talão do armazenamento seguro: ao abrir a app, já não há sessão para recuperar.</li>
+  </ul>
+  <aside class="notes">Diferença para o logout: no logout limpa-se primeiro o telemóvel e a API é só um aviso, porque sair tem de funcionar sem rede. Apagar a conta sem rede não pode fingir que funcionou.</aside>
+</section>
+
+<section class="slide">
+  <h2>Apagar conta 3 de 3: o ecrã</h2>
+<pre data-title="lib/screens/islands_screen.dart · nas actions da AppBar"><code class="language-dart">IconButton(
+  tooltip: 'Apagar conta',
+  icon: const Icon(Icons.delete_forever),
+  onPressed: () async {
+    final sure = await showDialog&lt;bool&gt;(
+      context: context,
+      builder: (dialog) =&gt; AlertDialog(
+        title: const Text('Apagar a conta?'),
+        content: const Text('Os favoritos vão com ela. Não há volta.'),
+        actions: [
+          TextButton(
+            onPressed: () =&gt; Navigator.pop(dialog, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () =&gt; Navigator.pop(dialog, true),
+            child: const Text('Apagar'),
+          ),
+        ],
+      ),
+    );
+    if (sure == true &amp;&amp; context.mounted) {
+      await context.read&lt;SessionNotifier&gt;().deleteAccount();
+    }
+  },
+),</code></pre>
+  <div class="callout task"><strong>Na app</strong> Cria uma conta de teste, apaga-a, e tenta entrar outra vez com ela: tem de dar erro.</div>
+  <aside class="notes">O <code>context.mounted</code> é porque o diálogo é assíncrono: quando a pessoa responde, o ecrã pode já não existir. É o requisito 1 do projeto (registo, login, logout e apagar conta).</aside>
 </section>
 
 <section class="slide">
@@ -485,25 +164,13 @@ git grep -n "uses-permission" -- android</code></pre>
 
 <section class="slide" data-part="Fim">
   <h2>Até segunda</h2>
-  <div class="cols">
-    <div>
-      <h3>Para segunda, 02/11, às 16:00</h3>
-      <ul>
-        <li>Review da sprint 1: cada grupo mostra a app no telemóvel em 5 minutos. Conta o que estiver no <code>main</code>.</li>
-        <li>A verificação de segurança feita, com a <code>INTERNET</code> no manifesto principal.</li>
-        <li>O backlog da sprint 2 escrito em issues.</li>
-        <li>Na quarta, 04/11, é o teste 1: a matéria de hoje entra.</li>
-      </ul>
-    </div>
-    <div>
-      <h3>Para quem quiser ler mais</h3>
-      <ul>
-        <li><a href="https://owasp.org/www-project-mobile-top-10/" target="_blank" rel="noopener">OWASP Mobile Top 10</a>: os dez riscos, com exemplos.</li>
-        <li><a href="https://docs.flutter.dev/perf/isolates" target="_blank" rel="noopener">Concurrency and isolates</a>: o compute() e os isolates, na documentação do Flutter.</li>
-        <li><a href="https://docs.flutter.dev/perf/best-practices" target="_blank" rel="noopener">Performance best practices</a>: const, listas, imagens.</li>
-      </ul>
-    </div>
-  </div>
+  <h3>Para segunda, 02/11, às 16:00</h3>
+  <ul>
+    <li>Review da sprint 1: cada grupo mostra a app no telemóvel em 5 minutos. Conta o que estiver no <code>main</code>.</li>
+    <li>Entrar, sair e apagar a conta a funcionar, e a <code>INTERNET</code> no manifesto principal.</li>
+    <li>O backlog da sprint 2 escrito em issues.</li>
+    <li>Na quarta, 04/11, é o teste 1.</li>
+  </ul>
   <nav class="pager" id="pager"></nav>
 </section>
 
