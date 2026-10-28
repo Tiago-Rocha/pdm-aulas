@@ -26,140 +26,124 @@
 
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 18 · Week 8 · Wednesday, 28 October 2026 · 16:00 to 18:00</p>
-  <h1>Sprint 1: login, logout and delete account</h1>
-  <p class="lead">Today is sprint only. Each group builds into its project the three things the account needs: logging in, logging out and deleting the account. Login and logout come ready from yesterday's lesson; deleting the account is new, and it is three pieces, one in each layer.</p>
+  <h1>Sprint 1: pick your track</h1>
+  <p class="lead">Today is project only, and each group leaves with a pull request reviewed and merged into <code>main</code>. There are three tracks to choose from: the account, the navigation and the design system. I go round the groups to help.</p>
   <div class="meta"><span>Sprint 1 · review on Monday, 02/11, at 16:00</span></div>
-  <aside class="notes">Reference times: status round until 16:15, bringing in login and logout until 17:00, delete account until 17:45, check until 17:55.</aside>
+  <aside class="notes">Reference times: the PR path and picking the track by 16:15, work until 17:30, review and merge until 17:50, each group says where it got to by 17:55. At 17:30 say: whoever has not opened the PR opens it now with what they have.</aside>
 </section>
 
 <section class="slide" data-part="Sprint">
-  <h2>Sprint 1: where each group is</h2>
-  <p>Each group, one minute, without opening the laptop:</p>
+  <h2>Today's goal: one PR from start to finish</h2>
   <ol class="steps">
-    <li>What is on <code>main</code> and runs on the phone.</li>
-    <li>What is in an open PR, and who is reviewing it.</li>
-    <li>What is blocking you.</li>
+    <li><strong>Branch:</strong> from an up-to-date <code>main</code>, a branch named after the track.</li>
+    <li><strong>Work:</strong> small commits, each with a sentence saying what changed.</li>
+    <li><strong>PR:</strong> push the branch and, on GitHub, <em>Compare &amp; pull request</em>. Pick a teammate under <em>Reviewers</em>.</li>
+    <li><strong>Review:</strong> the teammate opens <em>Files changed</em>, comments on what they do not understand and, when it is fine, <em>Approve</em>.</li>
+    <li><strong>Merge:</strong> <em>Merge pull request</em> and <em>Delete branch</em>. Everyone pulls <code>main</code>.</li>
   </ol>
-  <div class="table-wrap"><table>
-  <thead><tr><th>At Monday's review, 02/11, at 16:00</th><th>Requirement</th></tr></thead>
-  <tbody>
-  <tr><td>Sign-up and login, session kept, renewal on a 401</td><td>1</td></tr>
-  <tr><td>Island list with search, and the 5-day forecast</td><td>2, 3</td></tr>
-  <tr><td>Screens, notifiers and repositories, each in its own folder</td><td>9</td></tr>
-  <tr><td>Loading, error, empty and data in those screens</td><td>8</td></tr>
-  <tr><td>The sprint 2 backlog in issues</td><td></td></tr>
-  </tbody></table></div>
-  <aside class="notes">Time it. Write the blockers on the board and tackle them in order as you go round. Remind them that what counts is what is on main at review time, not what is in branches.</aside>
+  <div class="callout"><strong>Done</strong> Each group leaves with one PR reviewed and merged into <code>main</code>. Small and finished beats big and open.</div>
+  <aside class="notes">This is what is assessed under process: branches, PRs reviewed by someone else, commits with messages that say what changed. If a group's track is big, split it into two PRs: the first can be just the theme or just the router with empty screens.</aside>
 </section>
 
-<section class="slide" data-part="Sprint">
-  <h2>Where each piece lives</h2>
+<section class="slide">
+  <h2>Three tracks: each group picks one</h2>
   <div class="table-wrap"><table>
-  <thead><tr><th></th><th>Screen</th><th>State</th><th>Data</th><th>API</th></tr></thead>
+  <thead><tr><th>Track</th><th>By the end of the lesson, the app</th><th>Where you work</th></tr></thead>
   <tbody>
-  <tr><td>Log in</td><td><code>login_screen</code></td><td><code>login()</code></td><td><code>login()</code></td><td><code>POST /v1/auth/login</code></td></tr>
-  <tr><td>Log out</td><td>Button in the AppBar</td><td><code>logout()</code></td><td><code>logout()</code></td><td><code>POST /v1/auth/logout</code></td></tr>
-  <tr><td>Delete account</td><td>Button and dialog</td><td><code>deleteAccount()</code></td><td><code>deleteAccount()</code></td><td><code>DELETE /v1/me</code></td></tr>
+  <tr><td><strong>The account</strong></td><td>Signs up, logs in, logs out, changes the name and deletes the account</td><td><code>data/</code>, <code>state/</code>, login and account screens</td></tr>
+  <tr><td><strong>The navigation</strong></td><td>Has the bar with Início, Ilhas, Trilhos and Relatos, and each tab opens its screen</td><td><code>router.dart</code>, <code>main.dart</code>, an empty screen per tab</td></tr>
+  <tr><td><strong>The design system</strong></td><td>Uses the colours, type and components from Figma</td><td><code>theme.dart</code>, <code>widgets/</code></td></tr>
   </tbody></table></div>
   <ul>
-    <li>The state is <code>SessionNotifier</code>; the data is <code>AuthRepository</code>. <code>ApiClient</code> does not change: it already has <code>delete()</code>.</li>
-    <li>The first two rows come ready from yesterday's <code>passo-2</code>. You write the third.</li>
+    <li>Pick the one your <code>main</code> is missing most. The other two are for the next days.</li>
+    <li>One branch, one PR, reviewed by another group member before the merge.</li>
   </ul>
-  <div class="callout"><strong>Question for the class</strong> After deleting the account, how does the app go back to the login screen on its own?</div>
-  <aside class="notes"><strong>Answer.</strong> <code>SessionNotifier</code> sets <code>session</code> to null and calls <code>notifyListeners()</code>. <code>main</code> is listening and, with no session, shows the login. It is the same path as logout.</aside>
+  <aside class="notes">Ask each group to say out loud the track they picked and write it on the board. If everyone picks the same one, that is fine: each group is in its own repository. Start going round with the groups that are stuck.</aside>
 </section>
 
 <section class="slide">
-  <h2>Bring in login and logout: one PR</h2>
-  <p>Everything comes from <code>pdm-aula-17</code>, branch <code>passo-2</code>, into the same folders of the project.</p>
+  <h2>The commands, in order</h2>
+<pre class="term"><code class="language-bash">git checkout main
+git pull
+git checkout -b conta
+
+git add .
+git commit -m "Account: sign-up and login"
+git push -u origin conta
+
+git checkout main
+git pull</code></pre>
+  <ul>
+    <li>The first block before you start; the second every time a part works; the third after the merge, on every computer in the group.</li>
+    <li>They work the same in PowerShell and in the Mac terminal. The branch is named after your track: <code>conta</code>, <code>navegacao</code> or <code>design-system</code>.</li>
+  </ul>
+  <aside class="notes">Classic mistake: working on main without noticing. If it happens before the commit, <code>git checkout -b conta</code> takes the changes to the new branch. Another: push asks for a login; on Windows it opens the browser, on the Mac it may ask for a token (<code>gh auth login</code> solves it).</aside>
+</section>
+
+<section class="slide">
+  <h2>Track 1: the account</h2>
   <div class="table-wrap"><table>
-  <thead><tr><th>Piece</th><th>Files</th></tr></thead>
+  <thead><tr><th>Piece</th><th>Where it comes from</th></tr></thead>
   <tbody>
-  <tr><td>Login, sign-up, logout and session</td><td><code>api_client</code>, <code>auth_repository</code>, <code>session_store</code>, <code>user</code>, <code>session_notifier</code>, <code>login_screen</code></td></tr>
-  <tr><td>Wiring it up</td><td><code>main.dart</code>: the one from <code>passo-2</code>, minus what you do not use yet</td></tr>
+  <tr><td>Sign-up, login, logout, saved session</td><td><code>pdm-aula-17</code>, branch <code>passo-2</code>: copy it</td></tr>
+  <tr><td>Deleting the account</td><td><code>DELETE /v1/me</code>, with the person's token</td></tr>
+  <tr><td>Changing the name</td><td><code>PUT /v1/me</code> with <code>{"name": "..."}</code></td></tr>
   </tbody></table></div>
-<pre class="term"><code class="language-bash">flutter pub add http provider shared_preferences flutter_secure_storage</code></pre>
   <ul>
-    <li>In <code>pdm-aula-17</code>: <code>git stash -u</code> and <code>git checkout passo-2</code>. The command above runs in the group project.</li>
-    <li>The package is called <code>tempo_acores</code> on both sides: the imports work without changing anything.</li>
-    <li><strong>In the app:</strong> create an account, log out, log in again. Close the app and open it: still logged in.</li>
+    <li>The <code>put()</code> in the <code>passo-2</code> <code>ApiClient</code> takes no body: you need one that does, like <code>post()</code>.</li>
+    <li>Each new request is a method in <code>AuthRepository</code> and another in <code>SessionNotifier</code>; the screen only talks to the notifier.</li>
+    <li>Deleting the account asks for confirmation in a dialog, and then the app goes back to the login.</li>
   </ul>
-  <aside class="notes">Whoever did not finish step 2 yesterday does not need to finish it: the <code>passo-2</code> branch is the solution and that is where they copy from. Go round starting with the groups that said they are blocked. Whoever finishes early brings in the islands and the forecast from the same branch.</aside>
+  <div class="callout task"><strong>In the app</strong> Sign up, change the name, log out, log in again. Delete the account and try to log in with it: it must fail.</div>
+  <aside class="notes">In <code>pdm-aula-17</code>: <code>git stash -u</code> and <code>git checkout passo-2</code>. Packages: <code>flutter pub add http provider shared_preferences flutter_secure_storage</code>. The package is <code>tempo_acores</code> on both sides. To delete: in the notifier, first the API, then <code>session = null</code>, <code>_store.clear()</code> and <code>notifyListeners()</code>. I tested <code>DELETE /v1/me</code> on the API: 204, and then login gives 401.</aside>
 </section>
 
 <section class="slide">
-  <h2>Delete account 1 of 3: the data</h2>
-<pre data-title="lib/data/auth_repository.dart · inside the class"><code class="language-dart">  /// The account and everything in it disappear. There is no way back.
-  Future&lt;void&gt; deleteAccount() async {
-    await _api.delete('/v1/me'); // goes with the user's token
-    _api.userToken = null;
-  }</code></pre>
+  <h2>Track 2: the navigation</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Tab</th><th>Path</th><th>Screen, for now</th></tr></thead>
+  <tbody>
+  <tr><td>Início</td><td><code>/</code></td><td>A <code>Text('Início')</code></td></tr>
+  <tr><td>Ilhas</td><td><code>/islands</code>, and <code>/islands/:id</code> for one island</td><td>The list, if you already have it</td></tr>
+  <tr><td>Trilhos</td><td><code>/trails</code>, and <code>/trails/:id</code></td><td>A <code>Text('Trilhos')</code></td></tr>
+  <tr><td>Relatos</td><td><code>/reports</code></td><td>A <code>Text('Relatos')</code></td></tr>
+  </tbody></table></div>
   <ul>
-    <li><code>DELETE /v1/me</code> goes with the person's token: the API knows who to delete without anything else.</li>
-    <li>The API deletes the account, the favourites and the sessions. The response is 204, with no body.</li>
+    <li>Starting point: the <code>router.dart</code> from <code>pdm-aula-10</code>, with <code>StatefulShellRoute</code> and <code>NavigationBar</code>. Start with <code>flutter pub add go_router</code>.</li>
+    <li>The account is not a tab: it opens from the avatar, in the corner of the AppBar, with <code>context.push('/account')</code>.</li>
+    <li>The empty screens are on purpose: whoever builds the real screen just swaps the <code>Text</code>.</li>
   </ul>
-  <aside class="notes">If they ask why no id is sent: <code>/me</code> is always whoever holds the token. Nobody can delete someone else's account.</aside>
+  <div class="callout task"><strong>In the app</strong> Tap the four tabs, open an island, switch tabs and come back: the island is still open.</div>
+  <aside class="notes">The tabs come from the app map (Início, Ilhas, Trilhos, Relatos, and the account on the avatar). Whoever finishes early: GoRouter's <code>redirect</code> sends to <code>/login</code> when there is no session, with <code>refreshListenable</code> pointing at <code>SessionNotifier</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Delete account 2 of 3: the state</h2>
-<pre data-title="lib/state/session_notifier.dart · next to logout()"><code class="language-dart">  Future&lt;void&gt; deleteAccount() async {
-    await _auth.deleteAccount(); // if it fails, the user stays logged in
-    session = null;
-    await _store.clear();
-    notifyListeners(); // back to the login screen
-  }</code></pre>
+  <h2>Track 3: the design system</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>In Figma</th><th>In Flutter</th><th>File</th></tr></thead>
+  <tbody>
+  <tr><td>Colours</td><td><code>ColorScheme</code> inside <code>ThemeData</code></td><td><code>lib/theme.dart</code></td></tr>
+  <tr><td>Typography</td><td><code>TextTheme</code></td><td><code>lib/theme.dart</code></td></tr>
+  <tr><td>Spacing and radii</td><td>Constants: <code>Space.m</code>, <code>Radii.card</code></td><td><code>lib/theme.dart</code></td></tr>
+  <tr><td>Components</td><td>Your own widgets: button, card, field, warning</td><td><code>lib/widgets/</code></td></tr>
+  <tr><td>States</td><td>Loading, error with Try again, empty</td><td><code>lib/widgets/</code></td></tr>
+  </tbody></table></div>
   <ul>
-    <li>First the API, then the phone. If the request fails, the person stays logged in and can try again.</li>
-    <li><code>_store.clear()</code> removes the ticket from secure storage: when the app opens, there is no session to restore.</li>
+    <li><a href="https://www.figma.com/design/nEKJZqAoacXEfYoW94t58G" target="_blank" rel="noopener">Figma</a> has the measurements, the states and the Flutter code of each component.</li>
+    <li>A catalogue screen, debug only, with every component one under the other: that is where you see whether they match Figma.</li>
   </ul>
-  <aside class="notes">Difference from logout: logout clears the phone first and the API is just a notice, because logging out has to work offline. Deleting the account offline cannot pretend it worked.</aside>
+  <div class="callout task"><strong>In the app</strong> The catalogue shows the components with the Figma colours and type, and one screen of the app already uses them.</div>
+  <aside class="notes">Start with the colours and the typography in <code>ThemeData</code>: it changes the whole app at once and makes them want to carry on. The state components (loading, error, empty) are requirement 8 and serve every screen; they are the best thing to do next.</aside>
 </section>
 
 <section class="slide">
-  <h2>Delete account 3 of 3: the screen</h2>
-<pre data-title="lib/screens/islands_screen.dart · in the AppBar actions"><code class="language-dart">IconButton(
-  tooltip: 'Apagar conta',
-  icon: const Icon(Icons.delete_forever),
-  onPressed: () async {
-    final sure = await showDialog&lt;bool&gt;(
-      context: context,
-      builder: (dialog) =&gt; AlertDialog(
-        title: const Text('Apagar a conta?'),
-        content: const Text('Os favoritos vão com ela. Não há volta.'),
-        actions: [
-          TextButton(
-            onPressed: () =&gt; Navigator.pop(dialog, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () =&gt; Navigator.pop(dialog, true),
-            child: const Text('Apagar'),
-          ),
-        ],
-      ),
-    );
-    if (sure == true &amp;&amp; context.mounted) {
-      await context.read&lt;SessionNotifier&gt;().deleteAccount();
-    }
-  },
-),</code></pre>
-  <div class="callout task"><strong>In the app</strong> Create a test account, delete it, and try to log in with it again: it must fail.</div>
-  <aside class="notes"><code>context.mounted</code> is there because the dialog is asynchronous: when the person answers, the screen may be gone. It is requirement 1 of the project (sign-up, login, logout and delete account). The texts stay in Portuguese, like the rest of the app.</aside>
-</section>
-
-<section class="slide">
-  <h2>Security check: 5 minutes, on the group repository</h2>
-<pre class="term"><code class="language-bash">git log -S "the-group-clientSecret" --oneline
-git grep -n "http://"
-git grep -n "uses-permission" -- android</code></pre>
+  <h2>Before you leave: where each group got to</h2>
   <ol class="steps">
-    <li>The first command must show nothing. If it shows a commit, the secret was published: ask for a new one in the credentials issue.</li>
-    <li>The second one neither: everything on <code>https://</code>.</li>
-    <li>The third must show <code>INTERNET</code> in <code>android/app/src/main/AndroidManifest.xml</code>. If it only shows up in <code>debug</code> and <code>profile</code>, release is missing it.</li>
+    <li>The link to today's PR: is it reviewed and merged?</li>
+    <li>If not yet: what is missing, and who reviews it by tomorrow.</li>
+    <li>Which track is next.</li>
   </ol>
-  <div class="callout task"><strong>Do</strong> Run the three commands. If <code>INTERNET</code> is missing, add it in a PR, right after <code>&lt;manifest ...&gt;</code>: <code>&lt;uses-permission android:name="android.permission.INTERNET"/&gt;</code></div>
-  <aside class="notes">The commands are git commands and work in PowerShell. The secret goes in quotes, without writing it anywhere else. The project template only has INTERNET in the debug and profile manifests, so every group will need the line.</aside>
+  <aside class="notes">One minute per group. Remind them that what counts at Monday's review is what is on main, running on the phone.</aside>
 </section>
 
 <section class="slide" data-part="End">
@@ -167,7 +151,6 @@ git grep -n "uses-permission" -- android</code></pre>
   <h3>For Monday, 02/11, at 16:00</h3>
   <ul>
     <li>Sprint 1 review: each group shows the app on the phone in 5 minutes. What counts is what is on <code>main</code>.</li>
-    <li>Logging in, logging out and deleting the account working, and <code>INTERNET</code> in the main manifest.</li>
     <li>The sprint 2 backlog written in issues.</li>
     <li>On Wednesday, 04/11, it is test 1.</li>
   </ul>

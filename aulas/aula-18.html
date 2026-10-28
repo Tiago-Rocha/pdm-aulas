@@ -26,140 +26,124 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 18 · Semana 8 · Quarta, 28 de outubro de 2026 · 16:00 às 18:00</p>
-  <h1>Sprint 1: login, logout e apagar conta</h1>
-  <p class="lead">Hoje é só sprint. Cada grupo monta no seu projeto as três coisas que a conta precisa: entrar, sair e apagar a conta. O login e o logout vêm prontos da aula de ontem; apagar a conta é novo, e são três peças, uma em cada camada.</p>
+  <h1>Sprint 1: escolham a vossa frente</h1>
+  <p class="lead">Hoje é só projeto, e cada grupo sai daqui com um pull request revisto e com merge no <code>main</code>. Há três frentes à escolha: a conta, a navegação e o design system. Eu ando pelos grupos a ajudar.</p>
   <div class="meta"><span>Sprint 1 · review na segunda, 02/11, às 16:00</span></div>
-  <aside class="notes">Tempos de referência: ponto de situação até às 16:15, trazer o login e o logout até às 17:00, apagar conta até às 17:45, verificação até às 17:55.</aside>
+  <aside class="notes">Tempos de referência: o caminho do PR e a escolha da frente até às 16:15, trabalho até às 17:30, review e merge até às 17:50, cada grupo diz onde ficou até às 17:55. Às 17:30 avisa: quem não abriu o PR abre agora com o que tem.</aside>
 </section>
 
 <section class="slide" data-part="Sprint">
-  <h2>Sprint 1: onde está cada grupo</h2>
-  <p>Cada grupo, um minuto, sem ligar o portátil:</p>
+  <h2>O objetivo de hoje: um PR do princípio ao fim</h2>
   <ol class="steps">
-    <li>O que está no <code>main</code> e corre no telemóvel.</li>
-    <li>O que está num PR aberto, e quem o está a rever.</li>
-    <li>O que vos está a bloquear.</li>
+    <li><strong>Branch:</strong> a partir do <code>main</code> atualizado, um branch com o nome da frente.</li>
+    <li><strong>Trabalho:</strong> commits pequenos, cada um com uma frase que diz o que mudou.</li>
+    <li><strong>PR:</strong> push do branch e, no GitHub, <em>Compare &amp; pull request</em>. Escolham um colega em <em>Reviewers</em>.</li>
+    <li><strong>Review:</strong> o colega abre <em>Files changed</em>, comenta o que não percebe e, quando estiver bem, <em>Approve</em>.</li>
+    <li><strong>Merge:</strong> <em>Merge pull request</em> e <em>Delete branch</em>. Todos fazem pull do <code>main</code>.</li>
   </ol>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Na review de segunda, 02/11, às 16:00</th><th>Requisito</th></tr></thead>
-  <tbody>
-  <tr><td>Registo e login, sessão guardada, renovação em 401</td><td>1</td></tr>
-  <tr><td>Lista das ilhas com pesquisa, e a previsão a 5 dias</td><td>2, 3</td></tr>
-  <tr><td>Ecrãs, notifiers e repositories, cada um na sua pasta</td><td>9</td></tr>
-  <tr><td>Carregamento, erro, vazio e dados nesses ecrãs</td><td>8</td></tr>
-  <tr><td>O backlog da sprint 2 em issues</td><td></td></tr>
-  </tbody></table></div>
-  <aside class="notes">Cronometra. Escreve os bloqueios no quadro e ataca-os por ordem quando circulares. Lembra que conta o que estiver no main à hora da review, não o que está em branches.</aside>
+  <div class="callout"><strong>Pronto</strong> Sai daqui um PR com review e merge no <code>main</code>, por grupo. Pequeno e acabado vale mais do que grande e aberto.</div>
+  <aside class="notes">É isto que se avalia no processo: branches, PRs revistos por outra pessoa, commits com mensagens que dizem o que mudou. Se um grupo tiver a frente grande, partam em dois PRs: o primeiro pode ser só o tema ou só o router com ecrãs vazios.</aside>
 </section>
 
-<section class="slide" data-part="Sprint">
-  <h2>Onde fica cada peça</h2>
+<section class="slide">
+  <h2>Três frentes: cada grupo escolhe uma</h2>
   <div class="table-wrap"><table>
-  <thead><tr><th></th><th>Ecrã</th><th>Estado</th><th>Dados</th><th>API</th></tr></thead>
+  <thead><tr><th>Frente</th><th>No fim da aula, a app</th><th>Onde mexem</th></tr></thead>
   <tbody>
-  <tr><td>Entrar</td><td><code>login_screen</code></td><td><code>login()</code></td><td><code>login()</code></td><td><code>POST /v1/auth/login</code></td></tr>
-  <tr><td>Sair</td><td>Botão na AppBar</td><td><code>logout()</code></td><td><code>logout()</code></td><td><code>POST /v1/auth/logout</code></td></tr>
-  <tr><td>Apagar conta</td><td>Botão e diálogo</td><td><code>deleteAccount()</code></td><td><code>deleteAccount()</code></td><td><code>DELETE /v1/me</code></td></tr>
+  <tr><td><strong>A conta</strong></td><td>Cria conta, entra, sai, muda o nome e apaga a conta</td><td><code>data/</code>, <code>state/</code>, ecrãs de login e da conta</td></tr>
+  <tr><td><strong>A navegação</strong></td><td>Tem a barra com Início, Ilhas, Trilhos e Relatos, e cada separador abre o seu ecrã</td><td><code>router.dart</code>, <code>main.dart</code>, um ecrã vazio por separador</td></tr>
+  <tr><td><strong>O design system</strong></td><td>Usa as cores, os tipos e os componentes do Figma</td><td><code>theme.dart</code>, <code>widgets/</code></td></tr>
   </tbody></table></div>
   <ul>
-    <li>O estado é a <code>SessionNotifier</code>; os dados são o <code>AuthRepository</code>. O <code>ApiClient</code> não muda: já tem o <code>delete()</code>.</li>
-    <li>As duas primeiras linhas vêm prontas do <code>passo-2</code> de ontem. A terceira escrevem vocês.</li>
+    <li>Escolham a que falta mais no vosso <code>main</code>. As outras duas ficam para os próximos dias.</li>
+    <li>Um branch, um PR, revisto por outro membro do grupo antes do merge.</li>
   </ul>
-  <div class="callout"><strong>Pergunta à turma</strong> Depois de apagar a conta, como é que a app volta sozinha ao ecrã de login?</div>
-  <aside class="notes"><strong>Resposta.</strong> A <code>SessionNotifier</code> põe a <code>session</code> a null e chama <code>notifyListeners()</code>. O <code>main</code> está à escuta e, sem sessão, mostra o login. É o mesmo caminho do logout.</aside>
+  <aside class="notes">Pede a cada grupo que diga em voz alta a frente que escolheu e escreve no quadro. Se todos escolherem a mesma, não faz mal: cada grupo está no seu repositório. Começa a circular pelos grupos que ficarem parados.</aside>
 </section>
 
 <section class="slide">
-  <h2>Trazer o login e o logout: um PR</h2>
-  <p>Tudo vem do <code>pdm-aula-17</code>, branch <code>passo-2</code>, para as mesmas pastas do projeto.</p>
+  <h2>Os comandos, pela ordem</h2>
+<pre class="term"><code class="language-bash">git checkout main
+git pull
+git checkout -b conta
+
+git add .
+git commit -m "Conta: registo e login"
+git push -u origin conta
+
+git checkout main
+git pull</code></pre>
+  <ul>
+    <li>O primeiro bloco antes de começar; o segundo cada vez que uma parte funciona; o terceiro depois do merge, em todos os computadores do grupo.</li>
+    <li>Funcionam iguais no PowerShell e no terminal do Mac. O nome do branch é o da vossa frente: <code>conta</code>, <code>navegacao</code> ou <code>design-system</code>.</li>
+  </ul>
+  <aside class="notes">Erro clássico: trabalhar no main sem reparar. Se acontecer antes do commit, <code>git checkout -b conta</code> leva as mudanças para o branch novo. Outro: o push pede login; no Windows abre o browser, no Mac pode pedir um token (o <code>gh auth login</code> resolve).</aside>
+</section>
+
+<section class="slide">
+  <h2>Frente 1: a conta</h2>
   <div class="table-wrap"><table>
-  <thead><tr><th>Peça</th><th>Ficheiros</th></tr></thead>
+  <thead><tr><th>Peça</th><th>De onde vem</th></tr></thead>
   <tbody>
-  <tr><td>Login, registo, logout e sessão</td><td><code>api_client</code>, <code>auth_repository</code>, <code>session_store</code>, <code>user</code>, <code>session_notifier</code>, <code>login_screen</code></td></tr>
-  <tr><td>Ligar tudo</td><td><code>main.dart</code>: o do <code>passo-2</code>, sem o que ainda não usam</td></tr>
+  <tr><td>Registo, login, logout, sessão guardada</td><td><code>pdm-aula-17</code>, branch <code>passo-2</code>: copiar</td></tr>
+  <tr><td>Apagar a conta</td><td><code>DELETE /v1/me</code>, com o token da pessoa</td></tr>
+  <tr><td>Mudar o nome</td><td><code>PUT /v1/me</code> com <code>{"name": "..."}</code></td></tr>
   </tbody></table></div>
-<pre class="term"><code class="language-bash">flutter pub add http provider shared_preferences flutter_secure_storage</code></pre>
   <ul>
-    <li>No <code>pdm-aula-17</code>: <code>git stash -u</code> e <code>git checkout passo-2</code>. O comando de cima corre-se no projeto do grupo.</li>
-    <li>O package chama-se <code>tempo_acores</code> nos dois lados: os imports funcionam sem mudar nada.</li>
-    <li><strong>Na app:</strong> criar conta, sair, voltar a entrar. Fechar a app e abrir: continua com sessão.</li>
+    <li>O <code>put()</code> do <code>ApiClient</code> do <code>passo-2</code> não leva corpo: precisam de um que leve, como o <code>post()</code>.</li>
+    <li>Cada pedido novo é um método no <code>AuthRepository</code> e outro na <code>SessionNotifier</code>; o ecrã só fala com o notifier.</li>
+    <li>Apagar a conta pede confirmação num diálogo, e depois a app volta ao login.</li>
   </ul>
-  <aside class="notes">Quem não acabou o passo 2 ontem não precisa de o acabar: o branch <code>passo-2</code> é a solução e é daí que copiam. Circula a começar pelos grupos que disseram que estão bloqueados. Quem acabar cedo traz as ilhas e a previsão do mesmo branch.</aside>
+  <div class="callout task"><strong>Na app</strong> Criar conta, mudar o nome, sair, entrar outra vez. Apagar a conta e tentar entrar com ela: tem de dar erro.</div>
+  <aside class="notes">No <code>pdm-aula-17</code>: <code>git stash -u</code> e <code>git checkout passo-2</code>. Pacotes: <code>flutter pub add http provider shared_preferences flutter_secure_storage</code>. O package é <code>tempo_acores</code> nos dois lados. Para apagar: na notifier, primeiro a API, depois <code>session = null</code>, <code>_store.clear()</code> e <code>notifyListeners()</code>. Testei o <code>DELETE /v1/me</code> na API: 204, e depois o login dá 401.</aside>
 </section>
 
 <section class="slide">
-  <h2>Apagar conta 1 de 3: os dados</h2>
-<pre data-title="lib/data/auth_repository.dart · dentro da classe"><code class="language-dart">  /// The account and everything in it disappear. There is no way back.
-  Future&lt;void&gt; deleteAccount() async {
-    await _api.delete('/v1/me'); // goes with the user's token
-    _api.userToken = null;
-  }</code></pre>
+  <h2>Frente 2: a navegação</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Separador</th><th>Caminho</th><th>Ecrã, por agora</th></tr></thead>
+  <tbody>
+  <tr><td>Início</td><td><code>/</code></td><td>Um <code>Text('Início')</code></td></tr>
+  <tr><td>Ilhas</td><td><code>/islands</code>, e <code>/islands/:id</code> para uma ilha</td><td>A lista, se já a tiverem</td></tr>
+  <tr><td>Trilhos</td><td><code>/trails</code>, e <code>/trails/:id</code></td><td>Um <code>Text('Trilhos')</code></td></tr>
+  <tr><td>Relatos</td><td><code>/reports</code></td><td>Um <code>Text('Relatos')</code></td></tr>
+  </tbody></table></div>
   <ul>
-    <li>O <code>DELETE /v1/me</code> vai com o token da pessoa: a API sabe quem apagar sem mais nada.</li>
-    <li>A API apaga a conta, os favoritos e as sessões. A resposta é 204, sem corpo.</li>
+    <li>Ponto de partida: o <code>router.dart</code> do <code>pdm-aula-10</code>, com o <code>StatefulShellRoute</code> e a <code>NavigationBar</code>. Começa com <code>flutter pub add go_router</code>.</li>
+    <li>A Conta não é um separador: abre-se no avatar, no canto da AppBar, com <code>context.push('/account')</code>.</li>
+    <li>Os ecrãs vazios são de propósito: quem fizer o ecrã a sério só troca o <code>Text</code>.</li>
   </ul>
-  <aside class="notes">Se perguntarem porque não se manda o id: o <code>/me</code> é sempre quem tem o token. Ninguém consegue apagar a conta de outra pessoa.</aside>
+  <div class="callout task"><strong>Na app</strong> Tocar nos quatro separadores, abrir uma ilha, mudar de separador e voltar: a ilha continua aberta.</div>
+  <aside class="notes">Os separadores vêm do mapa da app (Início, Ilhas, Trilhos, Relatos, e a Conta no avatar). Quem acabar cedo: o <code>redirect</code> do GoRouter manda para <code>/login</code> quando não há sessão, com <code>refreshListenable</code> a apontar para a <code>SessionNotifier</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Apagar conta 2 de 3: o estado</h2>
-<pre data-title="lib/state/session_notifier.dart · ao lado do logout()"><code class="language-dart">  Future&lt;void&gt; deleteAccount() async {
-    await _auth.deleteAccount(); // if it fails, the user stays logged in
-    session = null;
-    await _store.clear();
-    notifyListeners(); // back to the login screen
-  }</code></pre>
+  <h2>Frente 3: o design system</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>No Figma</th><th>No Flutter</th><th>Ficheiro</th></tr></thead>
+  <tbody>
+  <tr><td>Cores</td><td><code>ColorScheme</code> dentro do <code>ThemeData</code></td><td><code>lib/theme.dart</code></td></tr>
+  <tr><td>Tipografia</td><td><code>TextTheme</code></td><td><code>lib/theme.dart</code></td></tr>
+  <tr><td>Espaços e raios</td><td>Constantes: <code>Space.m</code>, <code>Radii.card</code></td><td><code>lib/theme.dart</code></td></tr>
+  <tr><td>Componentes</td><td>Widgets próprios: botão, cartão, campo, aviso</td><td><code>lib/widgets/</code></td></tr>
+  <tr><td>Estados</td><td>Carregamento, erro com Tentar outra vez, vazio</td><td><code>lib/widgets/</code></td></tr>
+  </tbody></table></div>
   <ul>
-    <li>Primeiro a API, depois o telemóvel. Se o pedido falhar, a pessoa continua com sessão e pode tentar outra vez.</li>
-    <li>O <code>_store.clear()</code> tira o talão do armazenamento seguro: ao abrir a app, já não há sessão para recuperar.</li>
+    <li>O <a href="https://www.figma.com/design/nEKJZqAoacXEfYoW94t58G" target="_blank" rel="noopener">Figma</a> tem as medidas, os estados e o código Flutter de cada componente.</li>
+    <li>Um ecrã de catálogo, só em debug, com todos os componentes uns por baixo dos outros: é onde se vê se estão iguais ao Figma.</li>
   </ul>
-  <aside class="notes">Diferença para o logout: no logout limpa-se primeiro o telemóvel e a API é só um aviso, porque sair tem de funcionar sem rede. Apagar a conta sem rede não pode fingir que funcionou.</aside>
+  <div class="callout task"><strong>Na app</strong> O catálogo mostra os componentes com as cores e os tipos do Figma, e um ecrã da app já os usa.</div>
+  <aside class="notes">Começar pelas cores e pela tipografia no <code>ThemeData</code>: muda a app inteira de uma vez e dá vontade de continuar. Os componentes de estado (carregamento, erro, vazio) são o requisito 8 e servem a todos os ecrãs; é o que mais vale fazer a seguir.</aside>
 </section>
 
 <section class="slide">
-  <h2>Apagar conta 3 de 3: o ecrã</h2>
-<pre data-title="lib/screens/islands_screen.dart · nas actions da AppBar"><code class="language-dart">IconButton(
-  tooltip: 'Apagar conta',
-  icon: const Icon(Icons.delete_forever),
-  onPressed: () async {
-    final sure = await showDialog&lt;bool&gt;(
-      context: context,
-      builder: (dialog) =&gt; AlertDialog(
-        title: const Text('Apagar a conta?'),
-        content: const Text('Os favoritos vão com ela. Não há volta.'),
-        actions: [
-          TextButton(
-            onPressed: () =&gt; Navigator.pop(dialog, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () =&gt; Navigator.pop(dialog, true),
-            child: const Text('Apagar'),
-          ),
-        ],
-      ),
-    );
-    if (sure == true &amp;&amp; context.mounted) {
-      await context.read&lt;SessionNotifier&gt;().deleteAccount();
-    }
-  },
-),</code></pre>
-  <div class="callout task"><strong>Na app</strong> Cria uma conta de teste, apaga-a, e tenta entrar outra vez com ela: tem de dar erro.</div>
-  <aside class="notes">O <code>context.mounted</code> é porque o diálogo é assíncrono: quando a pessoa responde, o ecrã pode já não existir. É o requisito 1 do projeto (registo, login, logout e apagar conta).</aside>
-</section>
-
-<section class="slide">
-  <h2>Verificação de segurança: 5 minutos, no repositório do grupo</h2>
-<pre class="term"><code class="language-bash">git log -S "o-clientSecret-do-grupo" --oneline
-git grep -n "http://"
-git grep -n "uses-permission" -- android</code></pre>
+  <h2>Antes de sair: onde ficou cada grupo</h2>
   <ol class="steps">
-    <li>O primeiro comando não pode mostrar nada. Se mostrar um commit, o segredo foi publicado: pede um novo no issue das credenciais.</li>
-    <li>O segundo também não: tudo em <code>https://</code>.</li>
-    <li>O terceiro tem de mostrar a <code>INTERNET</code> em <code>android/app/src/main/AndroidManifest.xml</code>. Se só aparecer em <code>debug</code> e <code>profile</code>, falta no release.</li>
+    <li>O link do PR de hoje: está com review e merge?</li>
+    <li>Se ainda não: o que falta, e quem o revê até amanhã.</li>
+    <li>Qual é a próxima frente.</li>
   </ol>
-  <div class="callout task"><strong>Faz</strong> Corre os três comandos. Se faltar a <code>INTERNET</code>, acrescenta num PR, logo a seguir a <code>&lt;manifest ...&gt;</code>: <code>&lt;uses-permission android:name="android.permission.INTERNET"/&gt;</code></div>
-  <aside class="notes">Os comandos são do git e funcionam no PowerShell. O segredo vai entre aspas, sem o escrever em mais lado nenhum. O template do projeto só tem a INTERNET nos manifestos de debug e profile, por isso todos os grupos vão precisar da linha.</aside>
+  <aside class="notes">Um minuto por grupo. Lembra que na review de segunda conta o que estiver no main, a correr no telemóvel.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -167,7 +151,6 @@ git grep -n "uses-permission" -- android</code></pre>
   <h3>Para segunda, 02/11, às 16:00</h3>
   <ul>
     <li>Review da sprint 1: cada grupo mostra a app no telemóvel em 5 minutos. Conta o que estiver no <code>main</code>.</li>
-    <li>Entrar, sair e apagar a conta a funcionar, e a <code>INTERNET</code> no manifesto principal.</li>
     <li>O backlog da sprint 2 escrito em issues.</li>
     <li>Na quarta, 04/11, é o teste 1.</li>
   </ul>
