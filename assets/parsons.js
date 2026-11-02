@@ -26,7 +26,8 @@
         ok: function (t, n) { return "Done in " + t + ", " + n + (n === 1 ? " try." : " tries."); },
         bad: function (k, n) { return k + " of " + n + " in the right place. Green ones are right; move the red ones."; },
         helper: "Drag the pieces. A piece in the right place locks and turns green.",
-        quiz: "One answer only.", quizOk: "Right.", quizNo: "Not quite.", understood: function (a, b) { return a + " of " + b + " answered right"; },
+        quiz: "One answer only.", quizOk: "Right.", quizNo: "Not quite.", saved: "Answer saved. The right answers come at the end.",
+        score: function (a, b) { return "You got " + a + " of " + b + " right"; }, mine: "Your answer", rightAns: "Right answer", noAns: "No answer", none: "You have not answered any question yet.", understood: function (a, b) { return a + " of " + b + " answered right"; },
         room: "Room code", name: "Name", team: "Team", join: "Join the game", leave: "Leave",
         inRoom: function (n) { return "Playing as " + n; }, offline: "no connection to the scoreboard",
         yourPart: "Your part", choose: "Choose a part", waitPart: "Join the room to get your part.",
@@ -45,7 +46,8 @@
         ok: function (t, n) { return "Feito em " + t + ", à " + n + "ª tentativa."; },
         bad: function (k, n) { return k + " de " + n + " no sítio certo. As verdes estão certas; mexe nas vermelhas."; },
         helper: "Arrasta as peças. A que fica no sítio certo prende-se e fica verde.",
-        quiz: "Só uma resposta.", quizOk: "Certo.", quizNo: "Não é bem isso.", understood: function (a, b) { return a + " de " + b + " acertaram na pergunta"; },
+        quiz: "Só uma resposta.", quizOk: "Certo.", quizNo: "Não é bem isso.", saved: "Resposta registada. As respostas certas ficam para o fim.",
+        score: function (a, b) { return "Acertaste " + a + " de " + b; }, mine: "A tua resposta", rightAns: "A certa", noAns: "Sem resposta", none: "Ainda não respondeste a nenhuma pergunta.", understood: function (a, b) { return a + " de " + b + " acertaram na pergunta"; },
         room: "Código da sala", name: "Nome", team: "Equipa", join: "Entrar no jogo", leave: "Sair",
         inRoom: function (n) { return "A jogar como " + n; }, offline: "sem ligação ao placar",
         yourPart: "A tua parte", choose: "Escolhe uma parte", waitPart: "Entra na sala para receberes a tua parte.",
@@ -463,10 +465,11 @@
   //   <div class="pz-mcq" data-id="m1" data-label="..." [data-revote]>
   //     <script type="application/json">{"q": "...", "code": "opcional", "options": ["a certa", "...], "why": "..."}</script></div>
   //   Com data-revote (votar, discutir, votar outra vez): a primeira conta, a segunda fica à parte e só então se vê a resposta.
+  //   Com data-hide: depois de responder só se vê a escolha; a certa e o porquê ficam para o .pz-final.
   var ITEMS = ".parsons, .pz-mcq, .pz-sort";
   function initMcq(box, report, hooks) {
     var q = JSON.parse(box.querySelector("script[type='application/json']").textContent);
-    var id = box.getAttribute("data-id"), revote = box.hasAttribute("data-revote");
+    var id = box.getAttribute("data-id"), revote = box.hasAttribute("data-revote"), hide = box.hasAttribute("data-hide");
     var key = "pz-ans-" + id, saved = load(key), t0 = Date.now();
     box.pzData = q;
     box.innerHTML = "";
@@ -486,13 +489,14 @@
       Array.prototype.forEach.call(ul.children, function (b) {
         var i = Number(b.dataset.id), mine = end ? s.last : s.first;
         b.disabled = end;
-        b.classList.toggle("picked", !end && s.first === i);
-        b.classList.toggle("right", end && i === 0);
-        b.classList.toggle("wrong", end && i === mine && i !== 0);
+        b.classList.toggle("picked", (!end || hide) && s.first === i);
+        b.classList.toggle("right", end && !hide && i === 0);
+        b.classList.toggle("wrong", end && !hide && i === mine && i !== 0);
         b.classList.toggle("was", end && revote && s.first === i && s.last !== i);
       });
       box.classList.toggle("answered", end);
-      if (end) why.innerHTML = "<strong>" + ((revote ? s.last : s.first) === 0 ? T.quizOk : T.quizNo) + "</strong> " + esc(q.why || "");
+      if (end && hide) why.textContent = T.saved;
+      else if (end) why.innerHTML = "<strong>" + ((revote ? s.last : s.first) === 0 ? T.quizOk : T.quizNo) + "</strong> " + esc(q.why || "");
       else why.textContent = saved ? T.discuss : "";
     }
     ul.addEventListener("click", function (e) {
@@ -760,6 +764,34 @@
     poll(); setInterval(poll, 2000);
   }
 
+  // ----- nota final: as respostas deste aluno às perguntas escondidas de várias sequências -----
+  //   <div class="pz-final" data-tracks="a19-b1 a19-b2"></div>
+  function initFinal(box) {
+    var tracks = (box.getAttribute("data-tracks") || "").split(/\s+/).filter(Boolean);
+    function render() {
+      var ok = 0, n = 0, answered = 0;
+      var parts = tracks.map(function (tid) {
+        var track = document.querySelector('.pz-seq[data-id="' + tid + '"]');
+        if (!track) return "";
+        var slide = track.closest(".slide"), title = slide && slide.querySelector("h2") ? slide.querySelector("h2").textContent : tid;
+        var good = 0, items = Array.prototype.map.call(track.querySelectorAll(".pz-mcq"), function (b) {
+          var d = b.pzData || {}, s = load("pz-ans-" + b.getAttribute("data-id")), pick = s ? s.first : null;
+          n++; if (s) answered++;
+          if (pick === 0) { ok++; good++; }
+          var mine = pick == null ? T.noAns : (d.options || [])[pick];
+          return '<li class="' + (pick === 0 ? "ok" : "no") + '"><p><strong>' + esc(d.q || "") + "</strong></p>" +
+            (pick === 0 ? "" : "<p>" + T.mine + ": " + esc(mine || "") + "</p>") +
+            "<p>" + T.rightAns + ": <b>" + esc((d.options || [])[0] || "") + "</b></p><p class=\"pz-why\">" + esc(d.why || "") + "</p></li>";
+        }).join("");
+        return "<details><summary>" + esc(title) + " · " + T.of(good, track.querySelectorAll(".pz-mcq").length) + "</summary><ol>" + items + "</ol></details>";
+      }).join("");
+      box.innerHTML = answered ? '<p class="pz-score">' + esc(T.score(ok, n)) + "</p>" + parts : '<p class="pz-wait">' + T.none + "</p>";
+    }
+    render();
+    var slide = box.closest(".slide");
+    new MutationObserver(function () { if (!slide || slide.classList.contains("active")) render(); }).observe(slide || box, { attributes: true, attributeFilter: ["class"] });
+  }
+
   function boot() {
     document.querySelectorAll(".pz-seq").forEach(initTrack);
     document.querySelectorAll(".pz-set").forEach(initSet);
@@ -767,6 +799,7 @@
     document.querySelectorAll(".pz-board").forEach(initBoard);
     document.querySelectorAll(".pz-room-board").forEach(initRoomBoard);
     document.querySelectorAll(".pz-poll").forEach(initPoll);
+    document.querySelectorAll(".pz-final").forEach(initFinal);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
 })();
