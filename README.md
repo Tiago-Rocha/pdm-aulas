@@ -2,6 +2,12 @@
 
 Site das aulas da UC, em HTML puro, sem build. Publicado tal como está pelo GitHub Pages.
 
+## Contexto
+
+Site da cadeira de PDM (Flutter) que o Tiago Rocha dá no CTeSP DAW da ESTA, Universidade dos Açores, no ano letivo 2026/27. Os alunos seguem as aulas por aqui, em https://tiago-rocha.github.io/pdm-aulas/. As ferramentas que geram e validam as páginas estão no repo privado `pdm-tools`; o código de cada aula está nos repos públicos `pdm-aula-NN`. Em uso durante o semestre.
+
+## Conteúdo
+
 - `index.html`: calendário das 37 aulas por semana (gerado por `../pdm-tools/gen_index.py` a partir de `../pdm-tools/plano.py`), programa e avaliação.
 - `guia-instalacao.html`, `projeto.html`, `avaliacao.html`, `api.html`.
 - `aulas/aula-NN.html`: uma página por aula (teoria + prática).
