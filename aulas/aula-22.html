@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 22 · Deep links e notificações locais · PDM</title>
+<title>Aula 22 · Localização, mapas e permissões · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/parsons.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body data-aula="22">
@@ -25,500 +26,735 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 22 · Semana 10 · Segunda, 9 de novembro de 2026 · 16:00 às 18:00</p>
-  <h1>Deep links e notificações locais</h1>
-  <p class="lead">Teoria: deep links: custom schemes, App Links e Universal Links, verificação de domínio e deferred deep links. Prática: notificação local de aviso para um favorito, abertura do detalhe a partir da notificação, esquema tempoacores:// testado com adb, e notificação agendada com a previsão de amanhã.</p>
-  <div class="meta"><span>Repo: pdm-aula-22</span></div>
-  <aside class="notes">Nos primeiros minutos pede que clonem o repo e corram o starter enquanto dás a teoria: o flutter_local_notifications obriga a desugaring no Gradle e a primeira compilação demora. Quem tem Android 13+ vai ver o diálogo de permissão; no iOS as notificações locais funcionam no simulador e o deep link testa-se com xcrun. Confirma que toda a gente ainda tem a rota /localidade/:id da aula 9 e o mapa da aula 21 no projeto. A teoria acaba às 16:40.</aside>
+  <h1>Localização, mapas e permissões</h1>
+  <p class="lead">Primeiro, a localização: de onde vem a posição do telemóvel, as quatro respostas à permissão e um mapa feito de tiles. Depois, as permissões no Android e no iPhone: quais há, a vida de uma permissão, os casos com regras próprias e o que as lojas conferem. Um jogo, e uma atividade sem código: as permissões do teu telemóvel e as do projeto do grupo.</p>
+  <div class="meta"><span>Repositório: pdm-aula-21</span></div>
+  <aside class="notes">Versão de 2 horas, sem intervalo e sem código. Tempos de referência: localização e mapas até às 16:25, permissões até às 16:55, jogo até às 17:10, o teu telemóvel até às 17:25, as permissões do projeto até às 17:45, fecho às 17:55. Pede logo no início que tenham o telemóvel à mão. Os slides Extra, com a prática da localização, não se dão: da atividade salta para o Fim, na barra das partes.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Distinguir um custom scheme de um App Link ou Universal Link, e dizer qual usar para partilha, login mágico ou callback de OAuth.</li>
-    <li>Explicar como o sistema verifica a posse do domínio com <code>assetlinks.json</code> e <code>apple-app-site-association</code>, e o que acontece quando falha.</li>
-    <li>Mostrar uma notificação local com canal, permissão e payload usando <code>flutter_local_notifications</code>.</li>
-    <li>Abrir o ecrã certo com <code>go_router</code> a partir do payload de uma notificação ou de um URL, com a app a correr ou fechada.</li>
-    <li>Agendar uma notificação para uma hora certa com <code>zonedSchedule</code> e fuso horário.</li>
+    <li>Explicar de onde vem a posição do telemóvel e porque é que mais precisão custa mais bateria.</li>
+    <li>Dizer que permissões abrem uma janela no Android e no iPhone, e quais não perguntam nada.</li>
+    <li>Descrever a vida de uma permissão, de declarar a mudar, e tratar as respostas, incluindo "nunca mais".</li>
+    <li>Escrever uma frase de razão que a pessoa e as lojas aceitam.</li>
+    <li>Explicar como se monta um mapa com tiles do OpenStreetMap e o que custa mostrá-lo.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Teoria">
-  <h2>Um URL abre um ecrã: os três tipos</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Tipo</th><th>Exemplo</th><th>Sem a app instalada</th><th>Quem pode reclamar o link</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Custom scheme</strong></td><td><code>tempoacores://localidade/3</code></td><td>Nada acontece (Android) ou "não é possível abrir" (iOS). Link morto.</td><td>Qualquer app. Duas apps com o mesmo scheme: conflito sem regra.</td></tr>
-  <tr><td><strong>App Links</strong> (Android 6+)</td><td><code>https://tempoacores.pt/localidade/3</code></td><td>Abre o site no browser.</td><td>Só quem prova o domínio com <code>assetlinks.json</code>.</td></tr>
-  <tr><td><strong>Universal Links</strong> (iOS 9+)</td><td><code>https://tempoacores.pt/localidade/3</code></td><td>Abre o site no Safari.</td><td>Só quem prova o domínio com <code>apple-app-site-association</code>.</td></tr>
-  <tr><td><strong>https sem verificação</strong> (Android)</td><td>O mesmo URL, sem <code>autoVerify</code></td><td>Browser.</td><td>O Android pergunta "abrir com…" e o utilizador escolhe.</td></tr>
-  </tbody></table></div>
-  <p>Um <em>deep link</em> é um URL que abre a app num ecrã específico em vez do ecrã inicial. Os três tipos fazem isso; diferem em quem os pode registar e no que acontece sem a app.</p>
-  <p><strong>Para os testes:</strong> App Links e Universal Links são URLs <code>https</code> normais que o sistema entrega à app depois de verificar o domínio; um custom scheme é um URL só da app, sem verificação.</p>
-  <div class="callout"><strong>Analogia</strong> Um deep link é uma morada completa, com rua, número, andar e porta, em vez de «vai à cidade e procura». Abrir a app pelo ícone é chegar à cidade; o URL leva à app e ao ecrã certo, com o <code>id</code> da localidade já no caminho.</div>
-  <aside class="notes">Pergunta quem já tocou num link do Instagram num email e viu abrir a app em vez do site. Depois pergunta o que acontece a esse mesmo link num telemóvel sem Instagram: abre o site. É essa a diferença que os custom schemes não conseguem dar.</aside>
+<section class="slide" data-part="Localização">
+  <h2>Depois do toque em "Onde estou?"</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 372" role="img" aria-label="Cinco linhas, do toque ao mapa. 1: o serviço está ligado? isLocationServiceEnabled, responde o sistema. 2: posso saber? checkPermission e requestPermission, responde a pessoa. 3: onde estou? getCurrentPosition, respondem o GPS, o Wi-Fi e as antenas. 4: que ilha? distanceBetween, responde a própria app. Depois, um segundo toque, no separador Mapa: 5, como mostro? FlutterMap, responde o servidor de mapas.">
+<text x="40" y="22" class="t s">PERGUNTA</text><text x="400" y="22" class="t s">CÓDIGO</text><text x="860" y="22" text-anchor="end" class="t s">QUEM RESPONDE</text>
+<rect x="20" y="32" width="860" height="56" rx="10" class="box"/><circle cx="52" cy="60" r="16" class="box accent"/><text x="52" y="65" text-anchor="middle" class="t b">1</text><text x="84" y="65" class="t b">O serviço está ligado?</text><text x="400" y="65" class="t mono">isLocationServiceEnabled()</text><text x="860" y="65" text-anchor="end" class="t">o sistema</text>
+<rect x="20" y="96" width="860" height="56" rx="10" class="box warn"/><circle cx="52" cy="124" r="16" class="box accent"/><text x="52" y="129" text-anchor="middle" class="t b">2</text><text x="84" y="129" class="t b">Posso saber?</text><text x="400" y="129" class="t mono">checkPermission(), requestPermission()</text><text x="860" y="129" text-anchor="end" class="t">a pessoa</text>
+<rect x="20" y="160" width="860" height="56" rx="10" class="box"/><circle cx="52" cy="188" r="16" class="box accent"/><text x="52" y="193" text-anchor="middle" class="t b">3</text><text x="84" y="193" class="t b">Onde estou?</text><text x="400" y="193" class="t mono">getCurrentPosition()</text><text x="860" y="193" text-anchor="end" class="t">GPS, Wi-Fi e antenas</text>
+<rect x="20" y="224" width="860" height="56" rx="10" class="box ok"/><circle cx="52" cy="252" r="16" class="box accent"/><text x="52" y="257" text-anchor="middle" class="t b">4</text><text x="84" y="257" class="t b">Que ilha?</text><text x="400" y="257" class="t mono">distanceBetween()</text><text x="860" y="257" text-anchor="end" class="t">a própria app</text>
+<line x1="20" y1="300" x2="880" y2="300" class="box muted"/><text x="450" y="296" text-anchor="middle" class="t s">o cartão diz "Estás a 16 km de São Miguel." · segundo toque, no separador Mapa</text>
+<rect x="20" y="312" width="860" height="56" rx="10" class="box accent"/><circle cx="52" cy="340" r="16" class="box"/><text x="52" y="345" text-anchor="middle" class="t b">5</text><text x="84" y="345" class="t b">Como mostro?</text><text x="400" y="345" class="t mono">FlutterMap</text><text x="860" y="345" text-anchor="end" class="t">o servidor de mapas</text>
+  </svg>
+  <figcaption>É isto que a app da prática faz. Os próximos três slides abrem as linhas 2, 3 e 5.</figcaption>
+  </figure>
+  <aside class="notes">Segue o dedo: a pessoa toca no botão do cartão e há quatro perguntas antes de aparecer a frase. Cada uma tem dono. A 1 e a 2 podem acabar logo ali, com uma mensagem, sem posição nenhuma. A 3 é a única que demora. A 4 é só matemática, corre no telemóvel e não pede nada a ninguém. O mapa já é outro ecrã e outro toque. Pergunta à turma: "qual destas linhas pode demorar mais?" A 3, e da primeira vez a 2, porque espera pela pessoa. Passo 1 da prática: linhas 1 a 3. Passo 2: a linha 4. Passos 3 e 4: a linha 5.</aside>
 </section>
 
 <section class="slide">
-  <h2>Custom scheme vs https: segurança e fallback</h2>
+  <h2>Posso saber? A janela verdadeira e as quatro respostas</h2>
+  <div class="cols c-wr" style="align-items: center">
+    <div style="display:flex; gap:.8rem; align-items:flex-start">
+      <img src="../assets/img/aula-21/permissao-ios.png" alt="A janela de permissão do iPhone, em português: Permitir que Tempo Acores use a sua localização? Com a razão por baixo e as opções Permitir uma vez, Permitir durante a utilização e Não permitir." style="width:54%; border:1px solid var(--border); border-radius:12px">
+      <img src="../assets/img/aula-21/permissao-android.png" alt="A janela de permissão do Android, em inglês, com o mapa Precise e Approximate e as opções While using the app, Only this time e Don't allow." style="width:42%; border:1px solid var(--border); border-radius:12px">
+    </div>
+    <figure class="diagram" style="margin:0">
+    <svg viewBox="0 0 520 356" role="img" aria-label="Quatro respostas e o que o cartão diz. Concedida: Estás a 16 km de São Miguel. Negada: Sem a tua posição não há ilha mais próxima. Negada para sempre: Sem permissão. Muda isso nas definições, com o botão Definições. Serviço desligado: A localização está desligada no telemóvel, com o botão Ligar.">
+<rect x="4" y="4" width="512" height="78" rx="10" class="box ok"/><text x="20" y="32" class="t b">Concedida</text><text x="20" y="60" class="t">"Estás a 16 km de São Miguel."</text>
+<rect x="4" y="92" width="512" height="78" rx="10" class="box warn"/><text x="20" y="120" class="t b">Negada</text><text x="500" y="120" text-anchor="end" class="t s">pode pedir outra vez</text><text x="20" y="148" class="t">"Sem a tua posição não há ilha mais próxima."</text>
+<rect x="4" y="180" width="512" height="78" rx="10" class="box danger"/><text x="20" y="208" class="t b">Negada para sempre</text><rect x="404" y="190" width="100" height="28" rx="14" class="box accent"/><text x="454" y="209" text-anchor="middle" class="t s">Definições</text><text x="20" y="236" class="t">"Sem permissão. Muda isso nas definições."</text>
+<rect x="4" y="268" width="512" height="78" rx="10" class="box muted"/><text x="20" y="296" class="t b">Serviço desligado</text><rect x="404" y="278" width="100" height="28" rx="14" class="box accent"/><text x="454" y="297" text-anchor="middle" class="t s">Ligar</text><text x="20" y="324" class="t">"A localização está desligada no telemóvel."</text>
+    </svg>
+    </figure>
+  </div>
+  <ul>
+    <li><strong>No iOS, a razão vem do <code>Info.plist</code></strong> (<code>NSLocationWhenInUseUsageDescription</code>). Sem ela, a janela nem aparece.</li>
+    <li><strong>"Nunca mais":</strong> no iOS basta uma recusa; no Android são duas. Depois disso, só nas definições.</li>
+  </ul>
+  <aside class="notes">As duas capturas são da app da prática, tiradas no simulador do iPhone e no emulador do Android; a do Android ficou em inglês. Repara que a pessoa pode escolher "aproximada": para a ilha mais próxima chega. O serviço desligado não é uma permissão: é o telemóvel inteiro sem localização, e resolve-se nas definições do sistema, não nas da app. Pergunta à turma: "a pessoa recusou uma vez no Android. A app pode voltar a pedir?" Pode, quando ela tocar outra vez no botão, com a razão à vista. Pedir em ciclo leva ao "nunca mais". No Chrome a janela é a do browser, e recusar conta logo como "nunca mais": repõe-se no cadeado ao lado do endereço.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde estou? Três fontes, três erros</h2>
+  <div class="cols c-wl" style="align-items: center">
+    <figure class="diagram" style="margin:0">
+    <svg viewBox="0 0 768 512" role="img" aria-label="Mapa de Angra do Heroísmo com três círculos centrados no mesmo ponto. GPS: 10 metros, um ponto. Wi-Fi: 50 metros, um quarteirão. Antenas: 400 metros, meia cidade.">
+<image href="../assets/img/aula-21/angra.png" x="0" y="0" width="768" height="512"/>
+<circle cx="280" cy="250" r="214" fill="var(--ok)" fill-opacity=".12" stroke="var(--ok)" stroke-width="3"/>
+<circle cx="280" cy="250" r="27" fill="var(--warn)" fill-opacity=".3" stroke="var(--warn)" stroke-width="3"/>
+<circle cx="280" cy="250" r="6" fill="var(--danger)" stroke="#fff" stroke-width="2"/>
+<rect x="520" y="20" width="236" height="132" rx="10" fill="#fff" fill-opacity=".92" stroke="var(--border)"/>
+<circle cx="542" cy="50" r="8" fill="var(--danger)"/><text x="560" y="56" style="fill:#222;font-size:17px;font-weight:700">GPS: 10 m</text>
+<circle cx="542" cy="86" r="8" fill="var(--warn)"/><text x="560" y="92" style="fill:#222;font-size:17px;font-weight:700">Wi-Fi: 50 m</text>
+<circle cx="542" cy="122" r="8" fill="var(--ok)"/><text x="560" y="128" style="fill:#222;font-size:17px;font-weight:700">Antenas: 400 m</text>
+<text x="760" y="504" text-anchor="end" style="fill:#222;font-size:13px">© OpenStreetMap</text>
+    </svg>
+    <figcaption>Angra do Heroísmo, à escala. O círculo é onde a pessoa pode estar.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>GPS:</strong> o mais exato, mas precisa de céu aberto e gasta mais bateria.</li>
+      <li><strong>Wi-Fi:</strong> as redes à volta, comparadas com um catálogo. Funciona dentro de casa.</li>
+      <li><strong>Antenas:</strong> quase sem bateria, mas só sabe o bairro.</li>
+      <li>A app não escolhe a fonte: pede uma precisão. Aqui chega <code>LocationAccuracy.medium</code>.</li>
+      <li>Com um <code>timeLimit</code> de 15 segundos, o cartão diz "Sem sinal. Tenta perto de uma janela."</li>
+      <li>Quem se mexe pede um stream: <code>getPositionStream()</code>.</li>
+    </ul>
+  </div>
+  <aside class="notes">Os três círculos estão à escala sobre o mapa verdadeiro de Angra: dez metros, cinquenta e quatrocentos. São valores típicos; nas antenas pode chegar a quilómetros no campo. O sistema junta as fontes que tiver. Pergunta à turma: "para a ilha mais próxima, qual destes círculos chega?" Qualquer um: as ilhas estão a dezenas de quilómetros umas das outras. Por isso pedimos medium e aceitamos a posição aproximada. E "porque é que numa garagem a app fica a rodar?" Sem céu não há GPS: daí o limite de 15 segundos. O stream serve para navegação, corridas e entregas, com distanceFilter para não avisar a cada metro.</aside>
+</section>
+
+<section class="slide">
+  <h2>Como mostro? Um mapa são tiles</h2>
+  <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align:center">
+    <figure class="shot" style="margin:0"><img src="../assets/img/aula-21/azulejo-6-27-24.png" alt="Tile de zoom 6: o mar com a Terceira, São Miguel e Santa Maria." style="width:100%; max-width:256px; margin:0 auto; background:#fff"><figcaption><strong>zoom 6</strong> · três ilhas<br><code>6/27/24.png</code></figcaption></figure>
+    <figure class="shot" style="margin:0"><img src="../assets/img/aula-21/azulejo-10-434-392.png" alt="Tile de zoom 10: a ilha Terceira inteira, com Angra a sul." style="width:100%; max-width:256px; margin:0 auto; background:#fff"><figcaption><strong>zoom 10</strong> · a Terceira<br><code>10/434/392.png</code></figcaption></figure>
+    <figure class="shot" style="margin:0"><img src="../assets/img/aula-21/azulejo-16-27813-25127.png" alt="Tile de zoom 16: o porto de Angra, com as ruas." style="width:100%; max-width:256px; margin:0 auto; background:#fff"><figcaption><strong>zoom 16</strong> · o porto de Angra<br><code>16/27813/25127.png</code></figcaption></figure>
+  </div>
+  <ul>
+    <li>Cada tile é uma imagem quadrada de 256 px, pedida a <code>tile.openstreetmap.org/{z}/{x}/{y}.png</code>: zoom, coluna e linha. A app só pede os que estão no ecrã.</li>
+    <li><code>flutter_map</code> desenha-os em Dart: igual no Chrome, no Android e no iOS. Trocar de fornecedor é trocar o endereço.</li>
+    <li>A atribuição "© OpenStreetMap" fica sempre visível no mapa.</li>
+  </ul>
+  <aside class="notes">São três tiles verdadeiros, com o endereço por baixo; podem abri-los no browser. Cada nível tem o dobro dos tiles em cada direção: no zoom 6 um só tile leva três ilhas, no 16 vê-se o porto de Angra. É por isso que, numa rede lenta, o mapa aparece aos quadrados. Pergunta à turma: "o que muda no endereço quando fazes zoom?" O z sobe um, e o x e o y passam a ser o dobro, mais ou menos.</aside>
+</section>
+
+<section class="slide">
+  <h2>Qual mapa? Duas perguntas</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 320" role="img" aria-label="Dois caminhos a partir de um toque num link: com custom scheme tempoacores:// qualquer app pode registar o scheme e sem app instalada nada acontece; com https://tempoacores.pt o sistema verifica assetlinks.json ou AASA no domínio, abre a app se existir e o site se não">
-    <rect x="350" y="14" width="200" height="40" rx="10" class="box"/>
-    <text x="450" y="39" class="t b" text-anchor="middle">Toque num link</text>
-    <line x1="400" y1="54" x2="230" y2="90" class="arrow"/>
-    <line x1="500" y1="54" x2="670" y2="90" class="arrow accent"/>
-    <rect x="40" y="90" width="380" height="56" rx="10" class="box warn"/>
-    <text x="60" y="112" class="t b">Custom scheme</text>
-    <text x="60" y="134" class="t mono">tempoacores://localidade/3</text>
-    <line x1="230" y1="146" x2="230" y2="172" class="arrow"/>
-    <rect x="40" y="172" width="380" height="52" rx="10" class="box"/>
-    <text x="60" y="194" class="t b">Ninguém verifica quem é o dono</text>
-    <text x="60" y="214" class="t s">qualquer app regista tempoacores://; o SO pergunta</text>
-    <line x1="230" y1="224" x2="230" y2="250" class="arrow"/>
-    <rect x="40" y="250" width="380" height="52" rx="10" class="box danger"/>
-    <text x="60" y="272" class="t b">Sem a app instalada, nada acontece</text>
-    <text x="60" y="292" class="t s">não há fallback: o link morre num email ou QR</text>
-    <rect x="480" y="90" width="380" height="56" rx="10" class="box accent"/>
-    <text x="500" y="112" class="t b">App Link / Universal Link</text>
-    <text x="500" y="134" class="t mono">https://tempoacores.pt/localidade/3</text>
-    <line x1="670" y1="146" x2="670" y2="172" class="arrow accent"/>
-    <rect x="480" y="172" width="380" height="52" rx="10" class="box accent"/>
-    <text x="500" y="194" class="t b">O SO verifica o domínio</text>
-    <text x="500" y="214" class="t s">assetlinks.json / AASA em /.well-known/ do site</text>
-    <line x1="670" y1="224" x2="670" y2="250" class="arrow accent"/>
-    <rect x="480" y="250" width="380" height="52" rx="10" class="box ok"/>
-    <text x="500" y="272" class="t b">Com app abre a app; sem app abre o site</text>
-    <text x="500" y="292" class="t s">o mesmo link serve em email, SMS, QR e anúncios</text>
+  <svg viewBox="0 0 900 286" role="img" aria-label="Duas perguntas. Precisas de tráfego ou de moradas? Se sim, Google Maps, com chave e conta com cartão. Se não: a app é só para iPhone? Se sim, Apple Maps, grátis e só iOS. Se não, flutter_map com OpenStreetMap, grátis e sem chave. Se a app crescer e der erro 429, passa-se para um fornecedor de tiles com chave.">
+<rect x="30" y="20" width="240" height="84" rx="12" class="box accent"/><text x="150" y="56" text-anchor="middle" class="t b">Precisas de tráfego</text><text x="150" y="80" text-anchor="middle" class="t b">ou de moradas?</text><rect x="330" y="20" width="240" height="84" rx="12" class="box accent"/><text x="450" y="56" text-anchor="middle" class="t b">A app é só</text><text x="450" y="80" text-anchor="middle" class="t b">para iPhone?</text><rect x="630" y="20" width="250" height="110" rx="12" class="box ok"/><text x="755" y="50" text-anchor="middle" class="t b">flutter_map + OpenStreetMap</text><text x="755" y="72" text-anchor="middle" class="t">grátis, sem chave</text><text x="755" y="94" text-anchor="middle" class="t">corre em todo o lado</text><text x="755" y="118" text-anchor="middle" class="t s">é o que fazemos hoje</text><line x1="270" y1="62" x2="326" y2="62" class="arrow"/><text x="298" y="50" text-anchor="middle" class="t s">não</text><line x1="570" y1="62" x2="626" y2="62" class="arrow"/><text x="598" y="50" text-anchor="middle" class="t s">não</text><line x1="150" y1="104" x2="150" y2="166" class="arrow"/><text x="162" y="140" text-anchor="start" class="t s">sim</text><line x1="450" y1="104" x2="450" y2="166" class="arrow"/><text x="462" y="140" text-anchor="start" class="t s">sim</text><line x1="755" y1="130" x2="755" y2="166" class="arrow"/><text x="767" y="153" text-anchor="start" class="t s">cresceu, erro 429</text><rect x="30" y="170" width="240" height="104" rx="12" class="box warn"/><text x="150.0" y="200" text-anchor="middle" class="t b">Google Maps</text><text x="150.0" y="226" text-anchor="middle" class="t">chave e conta com cartão</text><text x="150.0" y="250" text-anchor="middle" class="t">moradas e tráfego pagam-se</text><rect x="330" y="170" width="240" height="104" rx="12" class="box warn"/><text x="450.0" y="200" text-anchor="middle" class="t b">Apple Maps</text><text x="450.0" y="226" text-anchor="middle" class="t">grátis, sem chave</text><text x="450.0" y="250" text-anchor="middle" class="t">só iOS</text><rect x="630" y="170" width="250" height="104" rx="12" class="box muted"/><text x="755.0" y="200" text-anchor="middle" class="t b">Fornecedor de tiles</text><text x="755.0" y="226" text-anchor="middle" class="t">MapTiler, Stadia, Mapbox</text><text x="755.0" y="250" text-anchor="middle" class="t">chave; troca-se só o endereço</text>
   </svg>
-  <figcaption>O custom scheme não é verificado por ninguém e não tem fallback; o link https prova a posse do domínio e cai no site sem app.</figcaption>
+  <figcaption>Quase sempre se responde em duas perguntas.</figcaption>
   </figure>
   <ul>
-    <li><strong>Qualquer app declara <code>tempoacores://</code>.</strong> Com duas apps a reclamar o mesmo scheme, o Android pergunta "abrir com" e o iOS escolhe uma sem regra documentada. É por isso que nenhum banco manda tokens por custom scheme.</li>
-    <li><strong>Sem a app, o custom scheme morre.</strong> O <code>https</code> cai no site: o mesmo link serve num email, num SMS, num QR ou num anúncio, com ou sem app instalada.</li>
-    <li><strong>O https verificado tem custo</strong>: um domínio, um ficheiro servido em <code>/.well-known/</code>, e no iOS o entitlement <em>Associated Domains</em>, que exige conta de developer paga.</li>
-    <li><strong>Custom scheme serve</strong> para protótipos e aulas, apps internas, e o callback de OAuth (<code>com.googleusercontent.apps.123:/oauth2redirect</code>), porque o PKCE da aula 17 protege o código mesmo que outra app o apanhe.</li>
-    <li>Exemplo: o Spotify tem <code>spotify:track:…</code> e <code>https://open.spotify.com/track/…</code>. O botão de partilha usa sempre o segundo.</li>
+    <li><strong>Grátis não é sem regras:</strong> no OpenStreetMap, a atribuição fica visível e a app identifica-se (<code>userAgentPackageName</code>). Descarregar tiles em massa é proibido.</li>
   </ul>
-  <p><strong>Para os testes:</strong> um custom scheme não é verificado por ninguém e não tem fallback; um App Link ou Universal Link prova a posse do domínio e cai no site quando a app não está instalada.</p>
-  <div class="callout"><strong>Analogia</strong> <code>tempoacores://</code> é uma alcunha: qualquer app a pode reclamar e ninguém verifica quem responde. <code>https://tempoacores.pt/...</code> é uma morada registada: o sistema confirma no domínio, através do <code>assetlinks.json</code> ou do AASA, que a app é mesmo a dona da morada; e se a app não estiver instalada, a carta chega na mesma, ao site.</div>
+  <aside class="notes">O Google Maps em mobile não cobra o mapa, mas exige conta de faturação; moradas, direções e tráfego são cobrados. Os dados do OSM são abertos (ODbL), com atribuição. Os da Google e da Apple têm termos: não podes guardar tiles nem mostrar os dados deles noutro mapa. Se alguém perguntar "então porque é que as empresas usam Google Maps se o OSM é grátis?": tráfego em tempo real, moradas, e alguém a quem ligar quando falha. Um fornecedor de tiles do OSM custa poucos euros por mês numa app pequena.</aside>
 </section>
 
 <section class="slide">
-  <h2>Verificação de domínio: AASA e assetlinks.json</h2>
+  <h2>Para os testes</h2>
   <ul>
-    <li><strong>iOS</strong>: <code>https://tempoacores.pt/.well-known/apple-app-site-association</code>, JSON sem extensão, servido como <code>application/json</code> por HTTPS sem redirects. Lista <code>appIDs</code> (Team ID + bundle id) e os caminhos. A app declara <code>applinks:tempoacores.pt</code> no entitlement.</li>
-    <li>O iPhone não vai ao teu servidor: descarrega o ficheiro através do CDN da Apple na instalação e de tempos a tempos. Uma alteração demora horas a chegar; em desenvolvimento usa <code>?mode=developer</code> no entitlement.</li>
-    <li><strong>Android</strong>: <code>https://tempoacores.pt/.well-known/assetlinks.json</code> com <code>package_name</code> e o SHA-256 do certificado de assinatura. O intent-filter leva <code>android:autoVerify="true"</code>. Verificado na instalação.</li>
-    <li><strong>Chaves</strong>: debug, release e Play App Signing têm SHA-256 diferentes. O ficheiro pode listar as três; <code>./gradlew signingReport</code> mostra-as.</li>
-    <li><strong>Quando falha, ninguém avisa</strong>: o iOS abre o Safari, o Android abre o browser ou pergunta. Diagnóstico: <code>adb shell pm get-app-links pt.uac.tempoacores</code>; no iOS, Definições → Developer → Universal Links.</li>
+    <li>A app pede uma precisão; é o sistema que escolhe e junta as fontes.</li>
+    <li>Pede a precisão mais baixa que o caso de uso aguenta: precisão alta é GPS, e GPS é bateria.</li>
+    <li>Começa pela permissão "em uso", e pela aproximada se chegar; "sempre" e "precisa" são pedidos à parte e posteriores.</li>
+    <li>Uma app trata quatro casos: concedida, negada, negada para sempre e serviço desligado.</li>
+    <li>Segundo plano só para funcionalidades centrais, com declaração nas lojas e a pessoa a ver que está a acontecer. Geofencing é feito pelo sistema, poupa bateria e tem minutos de atraso.</li>
+    <li>Um mapa web ou móvel é feito de tiles de 256 px, pedidos por nível de zoom, coluna e linha.</li>
+    <li>O OSM é grátis mas tem regras de uso e atribuição obrigatória; o Google Maps exige chave e conta de faturação mesmo quando não cobra.</li>
   </ul>
-  <p><strong>Para os testes:</strong> a verificação é feita pelo sistema na instalação, contra um ficheiro em <code>/.well-known/</code> do domínio; a falha é silenciosa e o link cai no browser.</p>
-  <aside class="notes">Erro clássico de produção: mudam a chave de assinatura (ou passam a Play App Signing) e os App Links deixam de abrir a app sem ninguém perceber, porque o browser continua a mostrar o site. Conta isto como história; aparece no teste.</aside>
+  <aside class="notes">Não é para ler em voz alta: fica para estudarem. Se perguntarem pelo segundo plano e pelo geofencing: seguir a pessoa com o ecrã desligado (navegação, entregas) e uma cerca virtual em que o sistema acorda a app quando se entra ou sai. Nenhum entra no projeto.</aside>
 </section>
 
-<section class="slide">
-  <h2>Deferred deep links, atribuição e casos de uso</h2>
-  <ul>
-    <li><strong>Deferred deep link</strong>: o utilizador toca no link, não tem a app, instala, abre, e cai no conteúdo certo. As lojas não passam o URL à app; um serviço (Branch, AppsFlyer, Adjust) regista o toque (IP, modelo, hora) e faz o <em>match</em> na primeira abertura.</li>
-    <li><strong>Atribuição de campanhas</strong>: saber de que anúncio ou cartaz veio cada instalação. É o negócio desses serviços; o ATT no iOS (aula 18) limita o match. O Firebase Dynamic Links fechou em agosto de 2025.</li>
-    <li><strong>Play Install Referrer</strong>: o único mecanismo oficial, só Android e só Play Store: a loja entrega uma string à app na primeira abertura.</li>
-    <li><strong>Casos de uso</strong>: notificação → conteúdo (hoje); partilha ("vê a previsão da Horta"); marketing (QR no cartaz do festival); verificação de email e login mágico; callback de OAuth.</li>
-    <li><strong>Login mágico só com App Link ou Universal Link.</strong> Num custom scheme, a app errada pode apanhar o token que vai no URL.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> um deferred deep link sobrevive à instalação e precisa de um serviço externo, porque as lojas não entregam o link à app.</p>
-</section>
-
-<section class="slide">
-  <h2>Do URL ao ecrã: o router decide</h2>
+<section class="slide" data-part="Permissões">
+  <h2>O mapa das permissões</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 260" role="img" aria-label="Três origens de um URL, app fechada com initialLocation, app em segundo plano com evento de link e notificação com payload, convergem no GoRouter, que normaliza host e path e valida o id, e abre o ecrã /localidade/:id">
-    <rect x="40" y="16" width="260" height="64" rx="10" class="box"/>
-    <text x="60" y="40" class="t b">App fechada</text>
-    <text x="60" y="58" class="t s">arranque frio: URL = initialLocation</text>
-    <text x="60" y="74" class="t s">ainda não há token nem cache</text>
-    <rect x="40" y="100" width="260" height="64" rx="10" class="box"/>
-    <text x="60" y="124" class="t b">App em segundo plano</text>
-    <text x="60" y="142" class="t s">o SO entrega o link (onNewIntent)</text>
-    <text x="60" y="158" class="t s">a app volta ao ecrã e navega</text>
-    <rect x="40" y="184" width="260" height="64" rx="10" class="box"/>
-    <text x="60" y="208" class="t b">Notificação tocada</text>
-    <text x="60" y="226" class="t s">o payload traz a rota</text>
-    <text x="60" y="242" class="t s">ex.: /localidade/3</text>
-    <line x1="300" y1="48" x2="350" y2="100" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(350 100) rotate(46.1)"/>
-    <line x1="300" y1="132" x2="350" y2="124" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(350 124) rotate(-9.1)"/>
-    <line x1="300" y1="216" x2="350" y2="148" class="arrow"/><path d="M-10 -5L0 0L-10 5z" class="ah" transform="translate(350 148) rotate(-53.7)"/>
-    <rect x="350" y="60" width="260" height="130" rx="10" class="box accent"/>
-    <text x="370" y="90" class="t b">GoRouter</text>
-    <text x="370" y="112" class="t s">recebe o URL via MaterialApp.router</text>
-    <text x="370" y="130" class="t s">igual a context.go(url)</text>
-    <text x="370" y="148" class="t s">redirect: normaliza host e path</text>
-    <text x="370" y="166" class="t s">valida o id (pode não existir)</text>
-    <line x1="610" y1="124" x2="690" y2="124" class="arrow accent"/><path d="M-10 -5L0 0L-10 5z" class="ah accent" transform="translate(690 124)"/>
-    <text x="650" y="116" class="t mono" text-anchor="middle">go(url)</text>
-    <rect x="690" y="84" width="170" height="80" rx="10" class="box ok"/>
-    <text x="710" y="108" class="t b">Ecrã de detalhe</text>
-    <text x="710" y="130" class="t mono">/localidade/:id</text>
-    <text x="710" y="150" class="t s">carrega-se pelo id</text>
-  </svg>
-  <figcaption>Venha de onde vier, o URL passa pelo router como qualquer navegação; o que muda é se a app já estava a correr.</figcaption>
+  <svg viewBox="0 0 900 388" role="img" aria-label="Grelha de permissões, Android à esquerda e iPhone à direita. Internet: dada ao instalar no Android, não é permissão no iPhone. Localização, câmara, microfone, contactos, notificações e Bluetooth: os dois perguntam; na localização, os dois deixam escolher entre precisa e aproximada e dar só uma vez. Uma foto: o seletor do sistema não pergunta nada. Rastreio entre apps: o Android não pergunta, o iPhone pergunta com a App Tracking Transparency.">
+<text x="20" y="24" class="t s">O QUÊ</text><text x="226" y="24" class="t s">ANDROID</text><text x="566" y="24" class="t s">IPHONE</text>
+<text x="20" y="61" class="t b">Internet</text><rect x="210" y="40" width="335" height="31" rx="8" class="box ok"/><text x="224" y="61" class="t s">dada ao instalar</text><rect x="555" y="40" width="335" height="31" rx="8" class="box muted"/><text x="569" y="61" class="t s">não é permissão</text>
+<text x="20" y="99" class="t b">Localização</text><rect x="210" y="78" width="335" height="31" rx="8" class="box warn"/><text x="224" y="99" class="t s">pergunta · precisa ou aproximada · uma vez</text><rect x="555" y="78" width="335" height="31" rx="8" class="box warn"/><text x="569" y="99" class="t s">pergunta · precisa ou aproximada · uma vez</text>
+<text x="20" y="137" class="t b">Câmara</text><rect x="210" y="116" width="335" height="31" rx="8" class="box warn"/><text x="224" y="137" class="t s">pergunta · só desta vez</text><rect x="555" y="116" width="335" height="31" rx="8" class="box warn"/><text x="569" y="137" class="t s">pergunta · sem razão, a app fecha</text>
+<text x="20" y="175" class="t b">Microfone</text><rect x="210" y="154" width="335" height="31" rx="8" class="box warn"/><text x="224" y="175" class="t s">pergunta · só desta vez</text><rect x="555" y="154" width="335" height="31" rx="8" class="box warn"/><text x="569" y="175" class="t s">pergunta</text>
+<text x="20" y="213" class="t b">Uma foto</text><rect x="210" y="192" width="335" height="31" rx="8" class="box ok"/><text x="224" y="213" class="t s">seletor do sistema: não pergunta</text><rect x="555" y="192" width="335" height="31" rx="8" class="box ok"/><text x="569" y="213" class="t s">seletor do sistema: não pergunta</text>
+<text x="20" y="251" class="t b">Contactos</text><rect x="210" y="230" width="335" height="31" rx="8" class="box warn"/><text x="224" y="251" class="t s">pergunta</text><rect x="555" y="230" width="335" height="31" rx="8" class="box warn"/><text x="569" y="251" class="t s">pergunta · pode dar só alguns</text>
+<text x="20" y="289" class="t b">Notificações</text><rect x="210" y="268" width="335" height="31" rx="8" class="box warn"/><text x="224" y="289" class="t s">pergunta desde o Android 13</text><rect x="555" y="268" width="335" height="31" rx="8" class="box warn"/><text x="569" y="289" class="t s">pergunta · ou chegam em silêncio</text>
+<text x="20" y="327" class="t b">Bluetooth</text><rect x="210" y="306" width="335" height="31" rx="8" class="box warn"/><text x="224" y="327" class="t s">pergunta · dispositivos próximos</text><rect x="555" y="306" width="335" height="31" rx="8" class="box warn"/><text x="569" y="327" class="t s">pergunta</text>
+<text x="20" y="365" class="t b">Rastreio</text><rect x="210" y="344" width="335" height="31" rx="8" class="box muted"/><text x="224" y="365" class="t s">não pergunta · está nas definições</text><rect x="555" y="344" width="335" height="31" rx="8" class="box danger"/><text x="569" y="365" class="t s">pergunta · App Tracking Transparency</text>
+</svg>
+  <figcaption>Verde: a pessoa nem dá por ela. Amarelo: aparece uma janela. A mesma funcionalidade pode ter regras diferentes em cada sistema.</figcaption>
   </figure>
   <ul>
-    <li><strong>O SO entrega o URL à app.</strong> Android: um <code>Intent</code> com <code>ACTION_VIEW</code>, em <code>onCreate</code> se estava fechada ou <code>onNewIntent</code> se estava a correr. iOS: <code>application(_:open:)</code>, ou <code>continue userActivity</code> para Universal Links.</li>
-    <li><strong>O Flutter embrulha-o num <code>RouteInformation</code></strong> e o <code>MaterialApp.router</code> entrega-o ao <code>go_router</code>. Para o router é igual a <code>context.go(url)</code>. As rotas desenhadas como URLs públicos na aula 9 pagam-se aqui.</li>
-    <li><strong>Três situações</strong>: app em primeiro plano (só navega); em segundo plano (volta ao ecrã e navega); fechada (arranque frio: o URL é a rota inicial e mais nada existe ainda, nem token nem cache).</li>
-    <li>Logo, <strong>o ecrã de destino carrega-se sozinho</strong> a partir do <code>id</code>, sem depender de o utilizador ter passado pela lista. E valida: o <code>id</code> vem de fora e pode não existir.</li>
-    <li><strong>Testar sem site nem servidor</strong>: <code>adb shell am start -a android.intent.action.VIEW -d "tempoacores://localidade/3"</code> no Android; <code>xcrun simctl openurl booted "tempoacores://localidade/3"</code> no simulador iOS.</li>
+    <li><strong>No Android</strong> umas são dadas ao instalar e outras perguntadas em uso. <strong>No iPhone</strong> tudo o que é sensível se pergunta em uso, sempre com a frase de razão do <code>Info.plist</code>.</li>
   </ul>
-  <p><strong>Para os testes:</strong> um deep link é tratado pelo router como qualquer navegação; o que muda é de onde vem o URL e se a app já estava a correr.</p>
-  <aside class="notes">Faz a demo com a solução: app fechada, comando adb, abre no detalhe; app aberta noutro separador, comando adb, muda para o detalhe. Trinta segundos e a segunda parte da prática fica clara. Depois pergunta: "e se o id for 999?" É o exercício 3.</aside>
+  <aside class="notes">Lê a grelha por linhas, não por colunas. A localização é igual nos dois: a pessoa escolhe precisa ou aproximada (no Android com duas imagens, no iPhone com o interruptor "Precisa" no canto do mapa, desde o iOS 14) e escolhe entre só uma vez, em uso ou não permitir. No Flutter, <code>Geolocator.getLocationAccuracy()</code> diz qual das duas a pessoa deu. A pergunta que interessa é "esta funcionalidade abre uma janela?". Internet não abre em lado nenhum: no Android é dada ao instalar, e no iPhone nem existe como permissão. A câmara no iPhone sem a frase NSCameraUsageDescription faz a app fechar logo, não é só a janela que falha. Os contactos no iPhone, desde o iOS 18, podem ficar limitados a alguns. As notificações no iPhone podem chegar "em silêncio" ao centro de notificações sem perguntar nada (autorização provisória). Pergunta à turma: "que linha da grelha vos surpreendeu?" Costuma ser a da foto: escolher uma foto não precisa de permissão nenhuma.</aside>
 </section>
 
-<section class="slide" data-part="Prática">
-  <h2>Prática: clonar e correr</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-22.git
-cd pdm-aula-22/starter
-flutter pub get
-flutter run</code></pre>
+<section class="slide">
+  <h2>A vida de uma permissão</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 250" role="img" aria-label="Quatro fases em linha: declarar no Manifest e no Info.plist, pedir no toque que precisa, responder com uma de cinco respostas, e mudar, porque a pessoa pode tirar a permissão nas definições e o Android tira-a sozinho. Uma seta tracejada volta da quarta para a segunda: verifica antes de cada uso.">
+<rect x="10" y="10" width="200" height="130" rx="12" class="box "/><circle cx="40" cy="42" r="16" class="box accent"/><text x="40" y="47" text-anchor="middle" class="t b">1</text><text x="66" y="48" class="t b">Declarar</text><text x="26" y="86" class="t s">Manifest e Info.plist</text><text x="26" y="112" class="t s">a loja vê o que a app usa</text>
+<line x1="212" y1="75" x2="231" y2="75" class="arrow"/>
+<rect x="235" y="10" width="200" height="130" rx="12" class="box warn"/><circle cx="265" cy="42" r="16" class="box accent"/><text x="265" y="47" text-anchor="middle" class="t b">2</text><text x="291" y="48" class="t b">Pedir</text><text x="251" y="86" class="t s">no toque que precisa</text><text x="251" y="112" class="t s">com a razão à vista</text>
+<line x1="437" y1="75" x2="456" y2="75" class="arrow"/>
+<rect x="460" y="10" width="200" height="130" rx="12" class="box "/><circle cx="490" cy="42" r="16" class="box accent"/><text x="490" y="47" text-anchor="middle" class="t b">3</text><text x="516" y="48" class="t b">Responder</text><text x="476" y="86" class="t s">concedida, negada, para</text><text x="476" y="112" class="t s">sempre, limitada, restrita</text>
+<line x1="662" y1="75" x2="681" y2="75" class="arrow"/>
+<rect x="685" y="10" width="200" height="130" rx="12" class="box muted"/><circle cx="715" cy="42" r="16" class="box accent"/><text x="715" y="47" text-anchor="middle" class="t b">4</text><text x="741" y="48" class="t b">Mudar</text><text x="701" y="86" class="t s">a pessoa tira nas definições;</text><text x="701" y="112" class="t s">o Android tira sozinho</text>
+<line x1="790" y1="144" x2="790" y2="200" class="arrow dashed"/><line x1="790" y1="200" x2="335" y2="200" class="arrow dashed"/><line x1="335" y1="200" x2="335" y2="146" class="arrow dashed"/><text x="562" y="230" text-anchor="middle" class="t s">por isso: verifica antes de cada uso, nunca guardes "já tenho"</text>
+</svg>
+  <figcaption>Uma permissão não fica dada para sempre.</figcaption>
+  </figure>
   <ul>
-    <li><code>starter/</code> tem a app das aulas anteriores (lista, detalhe, favoritos, avisos, mapa) com <strong>TODOs numerados</strong> de 1 a 9 e testes a falhar em <code>test/notificacoes_test.dart</code> e <code>test/rotas_test.dart</code>. Os packages <code>flutter_local_notifications</code>, <code>timezone</code> e <code>go_router</code> já estão no <code>pubspec.yaml</code>.</li>
-    <li><code>solucao/</code> tem o estado final. Só se abre quando se está preso mais de 10 minutos.</li>
-    <li>Android 13+ mostra o diálogo de permissão. No iOS, notificações locais funcionam no simulador; o deep link testa-se com <code>xcrun simctl openurl</code>.</li>
+    <li><strong>Em Flutter</strong>, o package <code>permission_handler</code> trata todas da mesma maneira: <code>Permission.camera.request()</code> responde <code>granted</code>, <code>denied</code>, <code>permanentlyDenied</code>, <code>limited</code> ou <code>restricted</code>.</li>
+    <li><strong>Restrita</strong> é só no iPhone: controlo parental ou telemóvel da empresa. A pessoa não pode mudar, por isso não vale a pena mandá-la para as definições.</li>
   </ul>
+  <aside class="notes">A seta tracejada é a ideia do slide. A permissão muda fora da app: a pessoa tira-a nas definições, o "só desta vez" acaba quando a app sai de cena, e o Android repõe as permissões das apps que não se abrem há uns meses. Por isso a app verifica antes de cada uso, como o check() da localização. Pergunta à turma: "a app guardou num ficheiro que a câmara está concedida. A pessoa tirou-a nas definições. O que acontece?" A app tenta usar a câmara sem permissão e falha; no iPhone pode até fechar. Daí verificar sempre.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quatro casos com regras próprias</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 420" role="img" aria-label="Quatro casos com regras próprias, cada um com para que serve e o que a pessoa vê. Uma foto: foto de perfil ou anexar a um post; o seletor do sistema mostra as fotos, a pessoa escolhe uma e a app só recebe essa, sem pergunta. Notificações: mensagens, lembretes, a encomenda chegou; a janela Permitir notificações, com Permitir e Não permitir; o Android pergunta desde a versão 13 e o iPhone pergunta ou entrega em silêncio. Localização em segundo plano: navegação, gravar uma corrida, saber onde está a família; nas definições, Permitir sempre, Só durante o uso, Não permitir; primeiro pede-se em uso, o sempre só nas definições, e a Google Play pede um vídeo. Rastreio entre apps, só no iPhone: publicidade à medida e medir anúncios; a janela da Apple com Pedir para não rastrear e Permitir; sem sim, a app não tem o identificador de publicidade.">
+<rect x="10" y="6" width="205" height="408" rx="12" class="box ok"/>
+<text x="24" y="48" class="t big">🖼️</text>
+<text x="64" y="42" class="t b">Uma foto</text>
+<text x="24" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="24" y="106" class="t">foto de perfil,</text>
+<text x="24" y="126" class="t">anexar a um post</text>
+<text x="24" y="150" class="t s">Instagram, WhatsApp, Vinted</text>
+<rect x="24" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="34" y="190" class="t s" style="font-weight:700">Escolher foto</text>
+<rect x="34" y="202" width="49" height="44" rx="6" class="box muted"/>
+<text x="58.5" y="230" class="t" text-anchor="middle">🌋</text>
+<rect x="88" y="202" width="49" height="44" rx="6" class="box ok"/>
+<text x="112.5" y="230" class="t" text-anchor="middle">🌊</text>
+<text x="129" y="216" class="t b ok" text-anchor="middle">✓</text>
+<rect x="142" y="202" width="49" height="44" rx="6" class="box muted"/>
+<text x="166.5" y="230" class="t" text-anchor="middle">🐄</text>
+<rect x="34" y="252" width="49" height="44" rx="6" class="box muted"/>
+<text x="58.5" y="280" class="t" text-anchor="middle">🌸</text>
+<rect x="88" y="252" width="49" height="44" rx="6" class="box muted"/>
+<text x="112.5" y="280" class="t" text-anchor="middle">🏖️</text>
+<rect x="142" y="252" width="49" height="44" rx="6" class="box muted"/>
+<text x="166.5" y="280" class="t" text-anchor="middle">⛰️</text>
+<text x="24" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="24" y="356" class="t s" style="fill:var(--fg)">Seletor do sistema: sem</text>
+<text x="24" y="376" class="t s" style="fill:var(--fg)">pergunta, a app só recebe</text>
+<text x="24" y="396" class="t s" style="fill:var(--fg)">a foto escolhida.</text>
+<rect x="235" y="6" width="205" height="408" rx="12" class="box warn"/>
+<text x="249" y="48" class="t big">🔔</text>
+<text x="289" y="42" class="t b">Notificações</text>
+<text x="249" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="249" y="106" class="t">mensagens, lembretes,</text>
+<text x="249" y="126" class="t">"a encomenda chegou"</text>
+<text x="249" y="150" class="t s">WhatsApp, CTT, Gmail</text>
+<rect x="249" y="170" width="177" height="140" rx="10" class="box"/>
+<rect x="257" y="180" width="161" height="46" rx="8" class="box accent"/>
+<text x="267" y="199" class="t s" style="font-weight:700">🔔 CTT · agora</text>
+<text x="267" y="217" class="t s">A encomenda chegou.</text>
+<text x="337.5" y="254" class="t s" text-anchor="middle" style="font-weight:700">Permitir notificações?</text>
+<rect x="257" y="268" width="78" height="30" rx="8" class="box accent"/>
+<text x="296" y="288" class="t s" text-anchor="middle">Permitir</text>
+<rect x="340" y="268" width="78" height="30" rx="8" class="box"/>
+<text x="379" y="288" class="t s" text-anchor="middle">Não permitir</text>
+<text x="249" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="249" y="356" class="t s" style="fill:var(--fg)">Android 13 ou mais: pergunta.</text>
+<text x="249" y="376" class="t s" style="fill:var(--fg)">iPhone: pergunta, ou entrega</text>
+<text x="249" y="396" class="t s" style="fill:var(--fg)">em silêncio até decidir.</text>
+<rect x="460" y="6" width="205" height="408" rx="12" class="box danger"/>
+<text x="474" y="48" class="t big">📍</text>
+<text x="514" y="32" class="t b">Localização</text>
+<text x="514" y="52" class="t b">em segundo plano</text>
+<text x="474" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="474" y="106" class="t">navegação, gravar</text>
+<text x="474" y="126" class="t">uma corrida, a família</text>
+<text x="474" y="150" class="t s">Google Maps, Strava, Life360</text>
+<rect x="474" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="484" y="192" class="t s" style="font-weight:700">Localização da app</text>
+<rect x="482" y="204" width="161" height="28" rx="8" class="box danger"/>
+<circle cx="496" cy="218" r="6" class="box danger"/>
+<circle cx="496" cy="218" r="2.5" style="fill:var(--danger)"/>
+<text x="510" y="223" class="t s">Permitir sempre</text>
+<rect x="482" y="238" width="161" height="28" rx="8" class="box "/>
+<circle cx="496" cy="252" r="6" class="box "/>
+<text x="510" y="257" class="t s">Só durante o uso</text>
+<rect x="482" y="272" width="161" height="28" rx="8" class="box "/>
+<circle cx="496" cy="286" r="6" class="box "/>
+<text x="510" y="291" class="t s">Não permitir</text>
+<text x="474" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="474" y="356" class="t s" style="fill:var(--fg)">Primeiro "em uso"; o "sempre"</text>
+<text x="474" y="376" class="t s" style="fill:var(--fg)">só nas definições. A Google</text>
+<text x="474" y="396" class="t s" style="fill:var(--fg)">Play pede um vídeo a provar.</text>
+<rect x="685" y="6" width="205" height="408" rx="12" class="box danger"/>
+<text x="699" y="48" class="t big">👁️</text>
+<text x="739" y="32" class="t b">Rastreio entre</text>
+<text x="739" y="52" class="t b">apps (iPhone)</text>
+<text x="699" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="699" y="106" class="t">publicidade à medida,</text>
+<text x="699" y="126" class="t">medir anúncios</text>
+<text x="699" y="150" class="t s">Facebook, jogos grátis</text>
+<rect x="699" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="787.5" y="192" class="t s" text-anchor="middle" style="font-weight:700">Permitir que a app</text>
+<text x="787.5" y="210" class="t s" text-anchor="middle">rastreie a sua atividade</text>
+<text x="787.5" y="228" class="t s" text-anchor="middle">noutras apps e sites?</text>
+<rect x="707" y="244" width="161" height="28" rx="8" class="box accent"/>
+<text x="787.5" y="263" class="t s" text-anchor="middle">Pedir para não rastrear</text>
+<rect x="707" y="276" width="161" height="28" rx="8" class="box"/>
+<text x="787.5" y="295" class="t s" text-anchor="middle">Permitir</text>
+<text x="699" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="699" y="356" class="t s" style="fill:var(--fg)">A janela da Apple (ATT).</text>
+<text x="699" y="376" class="t s" style="fill:var(--fg)">Sem "sim", nada de</text>
+<text x="699" y="396" class="t s" style="fill:var(--fg)">identificador de publicidade.</text>
+</svg>
+  <figcaption>Verde: mais fácil do que parece. Amarelo: aparece uma janela. Vermelho: regras extra das lojas.</figcaption>
+  </figure>
+  <aside class="notes">Começa pela linha "para que serve" de cada um: são apps que eles usam todos os dias. No Chrome quem pergunta é o browser, site a site; para repor, o cadeado ao lado do endereço. Uma foto: é o caso mais comum em projetos e o mais mal feito; muita gente pede acesso à galeria toda para escolher uma foto de perfil. Notificações: no Android 13 em diante, uma app que nunca pede deixa de mostrar notificações em telemóveis novos. Segundo plano: nenhum projeto da cadeira precisa. Rastreio: só existe no iPhone; no Android o identificador de publicidade apaga-se nas definições, sem janela. Pergunta à turma: "qual destes quatro o vosso projeto vai usar?" Quase todos: uma foto ou notificações.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quem confere: as lojas</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 420" role="img" aria-label="Três coisas que as lojas conferem. A frase da janela: a janela do sistema mostra a razão escrita no Info.plist; Precisamos da sua localização é rejeitada, Para mostrar a ilha mais próxima e a tua posição no mapa é aprovada. A ficha na loja: a Privacidade da app na App Store e a Segurança dos dados na Google Play dizem que dados a app recolhe, e têm de bater com o que a app faz. Só o que a app usa: uma lanterna que pede os contactos é rejeitada; não pedir permissões que a app não usa, não obrigar a aceitar para entrar, não pedir a galeria toda para uma foto, pedir no toque que precisa.">
+<rect x="6" y="6" width="280" height="408" rx="12" class="box box"/>
+<text x="20" y="46" class="t big">💬</text>
+<text x="60" y="34" class="t b">A frase da janela</text>
+<text x="60" y="54" class="t s">o revisor lê a razão</text>
+<rect x="310" y="6" width="280" height="408" rx="12" class="box box"/>
+<text x="324" y="46" class="t big">🏷️</text>
+<text x="364" y="34" class="t b">A ficha na loja</text>
+<text x="364" y="54" class="t s">o que a app declara</text>
+<rect x="614" y="6" width="280" height="408" rx="12" class="box box"/>
+<text x="628" y="46" class="t big">🔦</text>
+<text x="668" y="34" class="t b">Só o que a app usa</text>
+<text x="668" y="54" class="t s">permissões a mais</text>
+<rect x="20" y="76" width="252" height="118" rx="12" class="box"/>
+<text x="146.0" y="98" class="t s" text-anchor="middle" style="font-weight:700;fill:var(--fg)">Permitir que «Tempo Acores»</text>
+<text x="146.0" y="116" class="t s" text-anchor="middle" style="font-weight:700;fill:var(--fg)">use a sua localização?</text>
+<text x="146.0" y="136" class="t s" text-anchor="middle">Precisamos da sua localização.</text>
+<line x1="20" y1="164" x2="272" y2="164" style="stroke:var(--border);stroke-width:1.2"/>
+<line x1="146.0" y1="164" x2="146.0" y2="194" style="stroke:var(--border);stroke-width:1.2"/>
+<text x="83.0" y="184" class="t s" text-anchor="middle" style="fill:var(--accent)">Não permitir</text>
+<text x="209.0" y="184" class="t s" text-anchor="middle" style="fill:var(--accent);font-weight:700">Permitir</text>
+<g transform="rotate(-9 210 176)"><rect x="151.0" y="161" width="118" height="30" rx="5" style="fill:var(--surface);fill-opacity:.85;stroke:var(--danger);stroke-width:2.5"/><text x="210" y="182" class="t b danger" text-anchor="middle" style="letter-spacing:.12em;font-size:15px">REJEITADA</text></g>
+<rect x="20" y="214" width="252" height="118" rx="12" class="box"/>
+<text x="146.0" y="236" class="t s" text-anchor="middle" style="font-weight:700;fill:var(--fg)">Permitir que «Tempo Acores»</text>
+<text x="146.0" y="254" class="t s" text-anchor="middle" style="font-weight:700;fill:var(--fg)">use a sua localização?</text>
+<text x="146.0" y="274" class="t s" text-anchor="middle">Para mostrar a ilha mais próxima</text>
+<text x="146.0" y="291" class="t s" text-anchor="middle">e a tua posição no mapa.</text>
+<line x1="20" y1="302" x2="272" y2="302" style="stroke:var(--border);stroke-width:1.2"/>
+<line x1="146.0" y1="302" x2="146.0" y2="332" style="stroke:var(--border);stroke-width:1.2"/>
+<text x="83.0" y="322" class="t s" text-anchor="middle" style="fill:var(--accent)">Não permitir</text>
+<text x="209.0" y="322" class="t s" text-anchor="middle" style="fill:var(--accent);font-weight:700">Permitir</text>
+<g transform="rotate(-9 210 314)"><rect x="151.0" y="299" width="118" height="30" rx="5" style="fill:var(--surface);fill-opacity:.85;stroke:var(--ok);stroke-width:2.5"/><text x="210" y="320" class="t b ok" text-anchor="middle" style="letter-spacing:.12em;font-size:15px">APROVADA</text></g>
+<text x="20" y="358" class="t s" style="letter-spacing:.06em">DE ONDE VEM</text>
+<text x="20" y="380" class="t s" style="fill:var(--fg)">Do Info.plist. A pessoa só lê isto</text>
+<text x="20" y="398" class="t s" style="fill:var(--fg)">antes de decidir.</text>
+<rect x="324" y="76" width="44" height="44" rx="10" class="box accent"/>
+<text x="346" y="106" class="t" text-anchor="middle">🌤️</text>
+<text x="380" y="94" class="t b">Tempo Acores</text>
+<text x="380" y="112" class="t s">Obter</text>
+<rect x="324" y="134" width="252" height="98" rx="10" class="box"/>
+<text x="336" y="156" class="t s" style="font-weight:700;fill:var(--fg)">Privacidade da app · App Store</text>
+<rect x="336" y="166" width="109.0" height="54" rx="8" class="box muted"/>
+<rect x="455.0" y="166" width="109.0" height="54" rx="8" class="box muted"/>
+<text x="390.5" y="186" class="t s" text-anchor="middle">para rastrear-te</text>
+<text x="390.5" y="208" class="t" text-anchor="middle">Nenhum</text>
+<text x="509.5" y="186" class="t s" text-anchor="middle">ligados a ti</text>
+<text x="509.5" y="208" class="t" text-anchor="middle">📍 Localização</text>
+<rect x="324" y="244" width="252" height="98" rx="10" class="box"/>
+<text x="336" y="266" class="t s" style="font-weight:700;fill:var(--fg)">Segurança dos dados · Google Play</text>
+<text x="336" y="290" class="t s" style="fill:var(--fg)">· Recolhe a localização aproximada</text>
+<text x="336" y="310" class="t s" style="fill:var(--fg)">· Não partilha com terceiros</text>
+<text x="336" y="330" class="t s" style="fill:var(--fg)">· Pode pedir para apagar os dados</text>
+<text x="324" y="374" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="324" y="396" class="t s" style="fill:var(--fg)">Tem de bater com o que a app faz.</text>
+<rect x="628" y="76" width="252" height="100" rx="12" class="box"/>
+<text x="754.0" y="98" class="t s" text-anchor="middle" style="font-weight:700;fill:var(--fg)">«Lanterna» quer aceder</text>
+<text x="754.0" y="116" class="t s" text-anchor="middle" style="font-weight:700;fill:var(--fg)">aos seus contactos?</text>
+<text x="754.0" y="136" class="t s" text-anchor="middle">Para melhorar a experiência.</text>
+<line x1="628" y1="146" x2="880" y2="146" style="stroke:var(--border);stroke-width:1.2"/>
+<line x1="754.0" y1="146" x2="754.0" y2="176" style="stroke:var(--border);stroke-width:1.2"/>
+<text x="691.0" y="166" class="t s" text-anchor="middle" style="fill:var(--accent)">Não permitir</text>
+<text x="817.0" y="166" class="t s" text-anchor="middle" style="fill:var(--accent);font-weight:700">Permitir</text>
+<g transform="rotate(-9 818 160)"><rect x="759.0" y="145" width="118" height="30" rx="5" style="fill:var(--surface);fill-opacity:.85;stroke:var(--danger);stroke-width:2.5"/><text x="818" y="166" class="t b danger" text-anchor="middle" style="letter-spacing:.12em;font-size:15px">REJEITADA</text></g>
+<text x="628" y="222" class="t b danger">✗</text>
+<text x="650" y="222" class="t">Permissão que a app não usa</text>
+<text x="628" y="260" class="t b danger">✗</text>
+<text x="650" y="260" class="t">Obrigar a aceitar para entrar</text>
+<text x="628" y="298" class="t b danger">✗</text>
+<text x="650" y="298" class="t">A galeria toda para uma foto</text>
+<text x="628" y="336" class="t b ok">✓</text>
+<text x="650" y="336" class="t">Pedir no toque que precisa</text>
+<text x="628" y="374" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="628" y="396" class="t s" style="fill:var(--fg)">Pedir pouco e na altura certa.</text>
+</svg>
+  <figcaption>Antes de chegar à pessoa, a app passa por uma revisão. Os carimbos são o que o revisor decide.</figcaption>
+  </figure>
+  <aside class="notes">Antes de chegar à pessoa, alguém da Apple ou da Google abre a app e compara três coisas. A frase: é o único texto que a pessoa lê antes de decidir, por isso tem de dizer o que ganha. A ficha: está na página de cada app nas lojas; mostrem a do WhatsApp ou do Instagram no telemóvel, em "Privacidade da app" ou "Segurança dos dados". Se a ficha diz uma coisa e a app faz outra, a app pode sair da loja. A lanterna: caso real, em 2013 a "Brightest Flashlight" mandava a localização dos utilizadores a anunciantes e foi castigada pela FTC nos EUA; é por isso que hoje uma permissão a mais é das razões de rejeição mais comuns. Pergunta à turma: "reescrevam a frase rejeitada para uma app de corridas." Por exemplo: "Para gravar o percurso da tua corrida."</aside>
+</section>
+
+<section class="slide">
+  <h2>Para os testes: permissões</h2>
+  <ul>
+    <li>No Android há permissões dadas ao instalar (<code>INTERNET</code>) e perguntadas em uso; no iPhone, tudo o que é sensível se pergunta em uso.</li>
+    <li>Declara-se antes (Manifest e <code>Info.plist</code> com a razão), pede-se no toque que precisa, verifica-se antes de cada uso.</li>
+    <li>Respostas: concedida, negada, negada para sempre, limitada (só algumas fotos ou contactos) e restrita (iPhone, controlo parental).</li>
+    <li>"Nunca mais": no iPhone à primeira recusa, no Android à segunda. Depois, só nas definições da app.</li>
+    <li>Escolher uma foto com o seletor do sistema não precisa de permissão.</li>
+    <li>Notificações: permissão no Android desde a versão 13; no iPhone sempre, ou em silêncio sem perguntar.</li>
+    <li>A frase de razão diz o que a pessoa ganha. As lojas rejeitam permissões a mais e frases vagas.</li>
+  </ul>
+  <aside class="notes">Fica para estudarem, não é para ler em voz alta.</aside>
+</section>
+
+<section class="slide" data-part="Jogos">
+  <h2>Jogo: o que faz a app?</h2>
+  <p class="how"><strong>Um cenário de cada vez, todos ao mesmo tempo.</strong> Vota, discute com o colega do lado, vota outra vez.</p>
+  <div class="pz-seq" data-id="a21-porta" data-word="Cenário">
+  <div class="pz-mcq" data-id="a21-p1" data-label="Primeira recusa" data-revote><script type="application/json">{"q": "No Android, a pessoa carrega em \"Não permitir\" pela primeira vez. O que faz a app?", "options": ["Mostra a lista na mesma; mais tarde pode voltar a pedir, explicando porquê", "Pede outra vez logo a seguir, até ela aceitar", "Fecha, porque sem posição não funciona", "Abre as definições da app"], "why": "Negada uma vez é \"agora não\". A app continua útil, e quando a pessoa tocar outra vez no botão pode voltar a perguntar, com a razão à vista. Pedir em ciclo é o caminho mais curto para o \"nunca mais\"."}</script></div>
+  <div class="pz-mcq" data-id="a21-p2" data-label="Duas recusas" data-revote><script type="application/json">{"q": "No Android 11, a pessoa recusou duas vezes seguidas. Agora o que acontece quando a app pede?", "options": ["Nada: o diálogo já não aparece; só nas definições da app", "O diálogo aparece outra vez, com um aviso", "O sistema dá uma posição aproximada", "A app recebe uma posição vazia"], "why": "Negada para sempre: requestPermission() responde logo, sem diálogo. A única saída é um botão que abre as definições da app, com openAppSettings()."}</script></div>
+  <div class="pz-mcq" data-id="a21-p3" data-label="Serviço desligado" data-revote><script type="application/json">{"q": "A localização está desligada no telemóvel inteiro. A permissão da app está concedida. O que faz a app?", "options": ["Diz que a localização está desligada e oferece abrir as definições de localização do sistema", "Abre as definições da app, como no \"nunca mais\"", "Pede a permissão outra vez", "Usa a última posição conhecida e não diz nada"], "why": "Não é uma permissão: é o serviço desligado. Resolve-se nas definições de localização do telemóvel (openLocationSettings), não nas da app. São dois ecrãs diferentes."}</script></div>
+  <div class="pz-mcq" data-id="a21-p5" data-label="Quando pedir" data-revote><script type="application/json">{"q": "Quando é que a app deve pedir a permissão de localização?", "options": ["Quando a pessoa toca em \"Onde estou?\", com a razão à vista", "No arranque, para ficar despachado", "No ecrã de login, junto com a password", "Nunca: usa-se a ilha por defeito"], "why": "No momento em que se usa, não no arranque. No arranque ninguém sabe para que serve; ao tocar no botão a razão é evidente, e mais gente aceita."}</script></div>
+  <div class="pz-mcq" data-id="a21-p6" data-label="Foto de perfil" data-revote><script type="application/json">{"q": "A app só precisa que a pessoa escolha uma foto de perfil. Que permissão pede?", "options": ["Nenhuma: usa o seletor de fotos do sistema", "Acesso a todas as fotos", "Câmara e fotos, para ficar despachado", "Acesso a todos os ficheiros do telemóvel"], "why": "O seletor do sistema corre fora da app: a pessoa escolhe e a app só recebe essa foto. Não há janela de permissão, e é o caminho que a Google Play e a Apple preferem."}</script></div>
+  <div class="pz-mcq" data-id="a21-p7" data-label="Android 13" data-revote><script type="application/json">{"q": "A app foi compilada para o Android 13. Nos telemóveis novos, as notificações deixaram de aparecer. Porquê?", "options": ["Agora é preciso pedir POST_NOTIFICATIONS, e a app nunca pede", "O Android 13 bloqueia notificações de apps grátis", "Falta a frase no Info.plist", "O canal das notificações expirou"], "why": "Desde o Android 13 as notificações são uma permissão como a localização: declara-se no manifesto e pede-se no momento certo, por exemplo quando a pessoa marca um favorito."}</script></div>
+  <div class="pz-mcq" data-id="a21-p8" data-label="Aceitar para entrar" data-revote><script type="application/json">{"q": "Uma app de meteorologia pede a câmara no arranque e só deixa entrar quem aceita. O que diz a revisão da App Store?", "options": ["Provavelmente rejeita: obriga a aceitar algo de que a app não precisa", "Aprova: a frase está no Info.plist", "Aprova, mas só nos EUA", "Só rejeita se a câmara for usada em segundo plano"], "why": "A Apple não aceita apps que obrigam a dar acesso ao que não precisam. Pede-se no toque que precisa, e a app funciona sem."}</script></div>
+  </div>
+  <aside class="notes">Sete cenários, uns dois minutos cada. O cenário do serviço desligado é o que mais confunde: muita gente responde "abre as definições da app". Insiste nos dois ecrãs: definições de localização do sistema para o serviço, definições da app para a permissão. O da foto de perfil costuma surpreender: não há permissão nenhuma.</aside>
+</section>
+
+<section class="slide">
+  <h2>O que faz a app? A turma</h2>
+  <div class="pz-poll" data-track="a21-porta"></div>
+  <aside class="notes">Pega no cenário com menos respostas certas. Pergunta a quem acertou como pensou, e só depois explica.</aside>
+</section>
+
+<section class="slide" data-part="Atividade">
+  <h2>No teu telemóvel: quem sabe o quê?</h2>
+  <div class="cols">
+    <div>
+      <h3>Android</h3>
+      <p>Definições · Segurança e privacidade · Privacidade · <strong>Gestor de autorizações</strong>. Escolhe Localização, Câmara ou Microfone e vê as apps por modo.</p>
+    </div>
+    <div>
+      <h3>iPhone</h3>
+      <p>Definições · <strong>Privacidade e segurança</strong>. Em Localização, cada app diz Nunca, Perguntar, Durante a utilização ou Sempre.</p>
+    </div>
+  </div>
+  <ol class="steps">
+    <li>Escolhe três apps que usas todos os dias.</li>
+    <li>Para cada uma: que permissões tem, e em que modo.</li>
+    <li>Encontra uma que te surpreenda e diz ao colega do lado para que achas que ela a usa.</li>
+  </ol>
+  <div class="callout"><strong>Pergunta à turma</strong> Quem encontrou uma app com a localização em "Sempre"? Precisa mesmo?</div>
+  <aside class="notes">15 minutos. O caminho muda um pouco de marca para marca: na Samsung está em Segurança e privacidade, noutras em Privacidade; procurar "autorizações" nas definições resolve. Quem não tiver telemóvel faz o mesmo no Chrome: Definições, Privacidade e segurança, Definições de sites. <strong>Resposta à pergunta.</strong> Costumam aparecer apps de redes sociais, lojas ou bancos em "Sempre". Raramente precisam: a pergunta certa é "o que é que eu ganho com isto quando a app está fechada?". Se ninguém souber, a permissão está a mais.</aside>
+</section>
+
+<section class="slide">
+  <h2>No projeto: as permissões da vossa app</h2>
   <div class="table-wrap"><table>
-  <thead><tr><th>Bloco</th><th>Horas</th><th>Passos</th></tr></thead>
-  <tbody>
-  <tr><td>Notificação de aviso</td><td>16:40 a 17:10</td><td>1 a 4</td></tr>
-  <tr><td>Do toque ao ecrã</td><td>17:10 a 17:30</td><td>5 e 6</td></tr>
-  <tr><td>Scheme e teste com adb</td><td>17:30 a 17:45</td><td>7 e 8</td></tr>
-  <tr><td>Notificação agendada</td><td>17:45 a 18:00</td><td>9</td></tr>
-  </tbody></table></div>
+    <thead><tr><th>Permissão</th><th>Quando se pede</th><th>Frase de razão</th><th>Se a pessoa disser não</th></tr></thead>
+    <tbody><tr><td>Localização</td><td>Toque em "Onde estou?"</td><td>"Para mostrar a ilha mais próxima de ti."</td><td>O cartão explica e a lista continua.</td></tr></tbody>
+  </table></div>
+  <ol class="steps">
+    <li>Em grupo, listem o que a vossa app usa do telemóvel: mapa, posição, fotos, câmara, notificações.</li>
+    <li>Uma linha por permissão, como a de cima, que é a da app de hoje.</li>
+    <li>Ponham a tabela num issue do repositório do grupo, com o título "Permissões".</li>
+  </ol>
+  <div class="callout tip"><strong>Amanhã</strong> A sprint começa por este issue: a primeira tarefa é a permissão que a vossa app mais usa.</div>
+  <aside class="notes">20 minutos. O issue faz-se no site do GitHub, sem branches nem terminal. Passa pelos grupos e pergunta pela última coluna: é a que costuma ficar em branco. Uma app que não funciona sem uma permissão que não é essencial vai ser rejeitada.</aside>
+</section>
+
+<section class="slide" data-part="Extra">
+  <h2>Extra: a localização na app</h2>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;max-width:880px;margin:0 auto">
+    <figure style="margin:0">
+      <img src="../assets/img/aula-21/inicio.webp" alt="A lista das ilhas com um cartão por cima: o botão Onde estou? e a frase Sem a tua posição não há ilha mais próxima." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>Sem permissão.</strong> O cartão explica e a lista continua.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="../assets/img/aula-21/final.webp" alt="A mesma lista, com o cartão a dizer Estás a 16 km de São Miguel." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>Com permissão.</strong> A app sabe onde estás e qual é a ilha mais próxima.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="../assets/img/aula-21/mapa.webp" alt="O mapa dos Açores, com um pino e o nome em cada uma das nove ilhas." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>O mapa.</strong> Um pino com o nome em cada ilha.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="../assets/img/aula-21/mapa-eu.webp" alt="O mapa centrado em São Miguel, com um pino vermelho em Ponta Delgada." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>A minha posição.</strong> O mapa leva-te até ti, com um pino vermelho.</figcaption>
+    </figure>
+  </div>
+  <p>A app está acabada no <code>main</code> do <code>pdm-aula-21</code>. Os slides seguintes mostram só os quatro pedaços onde a magia acontece:</p>
+  <ol class="steps">
+    <li><code>check()</code> pede a permissão e traduz as quatro respostas.</li>
+    <li><code>nearestIsland()</code> mede a distância a cada ilha e fica com a mais curta.</li>
+    <li><code>_marker()</code> põe um pino com o nome em cada ilha; tocar abre a folha.</li>
+    <li><code>_goToMe()</code> leva o mapa até ti.</li>
+  </ol>
+  <aside class="notes">Não se dá na aula: fica para quem quiser ver a localização no código. Não há passos nem branches: corre-se a app acabada e lê-se o código ao lado, com o VS Code aberto no ficheiro de cada slide.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 1: o que o Android precisa de saber</h2>
-<pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
-    &lt;!-- Android 13+: mostrar notificações é uma permissão de runtime --&gt;
-    &lt;uses-permission android:name="android.permission.POST_NOTIFICATIONS" /&gt;
-    &lt;!-- Agendadas sobrevivem a um reinício do telemóvel --&gt;
-    &lt;uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /&gt;
+  <h2>Começar: o repositório de hoje</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-21.git
+cd pdm-aula-21
+flutter pub get</code></pre>
+  <ol class="steps">
+    <li>Corre a app, tudo numa linha: <code>flutter run -d chrome --dart-define=CLIENT_ID=... --dart-define=CLIENT_SECRET=...</code>. O <code>clientId</code> e o <code>clientSecret</code> são os do issue #1 do teu <code>pdm-miniprojeto</code>, ou os do teu grupo.</li>
+    <li>Entra com a tua conta. Por cima da lista está um cartão com o botão <strong>Onde estou?</strong>. Toca-lhe e aceita: o cartão diz qual é a ilha mais próxima.</li>
+    <li>Na barra de cima há um botão novo, o mapa. Abre-o: os Açores em tiles, um pino com o nome em cada ilha e o botão "A minha posição".</li>
+  </ol>
+  <p>Está tudo no <code>main</code>: não há passos nem branches. Abre no VS Code o ficheiro de cada slide e lê-o ao lado da app. No Chrome, a janela de permissão é a do próprio browser; para voltar a testar, carrega no cadeado ao lado do endereço e repõe a permissão.</p>
+  <aside class="notes">Os três packages de hoje já estão no <code>pubspec.yaml</code>: <code>geolocator</code>, <code>flutter_map</code> e <code>latlong2</code>. Quem corre no telemóvel Android tem de ter a localização ligada; o manifesto já tem as permissões. O F5 do VS Code não passa os <code>--dart-define</code>. Se o Chrome não der posição (Windows com a localização desligada, ou sem Wi-Fi): F12, os três pontos, More tools, Sensors, e em Location escolhe Other com 37.74 e -25.67.</aside>
+</section>
 
-    &lt;application android:label="Tempo Açores" android:icon="@mipmap/ic_launcher"&gt;
-        &lt;activity android:name=".MainActivity" ...&gt;...&lt;/activity&gt;
-
-        &lt;!-- Receivers do plugin: disparar a agendada e re-agendar depois do boot --&gt;
-        &lt;receiver android:exported="false"
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" /&gt;
-        &lt;receiver android:exported="false"
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"&gt;
-            &lt;intent-filter&gt;
-                &lt;action android:name="android.intent.action.BOOT_COMPLETED" /&gt;
-                &lt;action android:name="android.intent.action.MY_PACKAGE_REPLACED" /&gt;
-            &lt;/intent-filter&gt;
-        &lt;/receiver&gt;
-    &lt;/application&gt;
-&lt;/manifest&gt;</code></pre>
+<section class="slide">
+  <h2>1. Posso saber onde estás?</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 230" role="img" aria-label="Um toque em Onde estou? chega ao check(), que vê o serviço e a permissão e dá uma de quatro respostas, cada uma com a sua frase no cartão: ready, Estás a 16 km de São Miguel; serviceOff, A localização está desligada no telemóvel; denied, Sem a tua posição não há ilha mais próxima; deniedForever, Sem permissão, muda isso nas definições.">
+<rect x="10" y="95" width="150" height="40" rx="20" class="box"/><text x="85" y="121" text-anchor="middle" class="t s">Onde estou?</text>
+<line x1="164" y1="115" x2="196" y2="115" class="arrow"/>
+<rect x="200" y="82" width="150" height="66" rx="12" class="box accent"/><text x="275" y="110" text-anchor="middle" class="t b mono">check()</text><text x="275" y="132" text-anchor="middle" class="t s">serviço e permissão</text>
+<line x1="354" y1="115" x2="386" y2="30" class="arrow"/>
+<rect x="390" y="6" width="500" height="48" rx="10" class="box ok"/>
+<text x="406" y="36" class="t b mono">ready</text>
+<text x="560" y="36" class="t">"Estás a 16 km de São Miguel."</text>
+<line x1="354" y1="115" x2="386" y2="86" class="arrow"/>
+<rect x="390" y="62" width="500" height="48" rx="10" class="box warn"/>
+<text x="406" y="92" class="t b mono">serviceOff</text>
+<text x="560" y="92" class="t">"A localização está desligada no telemóvel."</text>
+<line x1="354" y1="115" x2="386" y2="142" class="arrow"/>
+<rect x="390" y="118" width="500" height="48" rx="10" class="box warn"/>
+<text x="406" y="148" class="t b mono">denied</text>
+<text x="560" y="148" class="t">"Sem a tua posição não há ilha mais próxima."</text>
+<line x1="354" y1="115" x2="386" y2="198" class="arrow"/>
+<rect x="390" y="174" width="500" height="48" rx="10" class="box danger"/>
+<text x="406" y="204" class="t b mono">deniedForever</text>
+<text x="560" y="204" class="t">"Sem permissão. Muda isso nas definições."</text>
+</svg>
+  <figcaption>Um toque, uma de quatro respostas, uma frase no cartão. Quem decide qual é o <code>check()</code> do <code>LocationService</code>.</figcaption>
+  </figure>
+<pre data-title="lib/location/location_service.dart · as quatro respostas possíveis"><code class="language-dart">/// What the phone answered when the app asked for the position.
+enum LocationStatus { ready, serviceOff, denied, deniedForever }</code></pre>
   <ul>
-    <li>No projeto do grupo: <code>flutter pub add flutter_local_notifications timezone</code>, e em <code>android/app/build.gradle.kts</code> o plugin exige <code>isCoreLibraryDesugaringEnabled = true</code> mais a dependência <code>coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")</code>. O starter já tem tudo.</li>
-    <li>iOS: nada a declarar para notificações locais. O diálogo de permissão é do sistema e o texto não se personaliza.</li>
+    <li>O <code>LocationNotifier</code> chama <code>check()</code> e, se a resposta for <code>ready</code>, pede a posição. Para cada outra resposta tem uma frase pronta para o cartão.</li>
+    <li>O <code>geolocator</code> fala com o sistema: <code>isLocationServiceEnabled</code> (o serviço está ligado?), <code>checkPermission</code> (o que respondeu da última vez?) e <code>requestPermission</code> (o diálogo).</li>
   </ul>
+  <aside class="notes">As frases do diagrama estão no <code>switch</code> do <code>message</code>, em <code>location_notifier.dart</code>: uma por resposta. O <code>locate()</code> do mesmo ficheiro chama o <code>check()</code> e só pede a posição quando a resposta é <code>ready</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 2: inicializar o plugin e criar o canal</h2>
-<pre data-title="lib/notificacoes/servico_notificacoes.dart"><code class="language-dart">import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-class ServicoNotificacoes {
-  final _plugin = FlutterLocalNotificationsPlugin();
-  static const canalAvisos = AndroidNotificationChannel(
-    'avisos', 'Avisos meteorológicos',
-    description: 'Avisos do IPMA para as tuas localidades favoritas',
-    importance: Importance.high, // aparece como heads-up, com som
-  );
-
-  Future&lt;void&gt; inicializar({required void Function(String rota) aoTocar}) async {
-    await _plugin.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings( // não pedir já: pedimos em contexto
-          requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
-      ),
-      onDidReceiveNotificationResponse: (resposta) {
-        if (resposta.payload case final rota?) aoTocar(rota); // toque com a app a correr
-      },
-    );
-    await _plugin.resolvePlatformSpecificImplementation&lt;AndroidFlutterLocalNotificationsPlugin&gt;()
-        ?.createNotificationChannel(canalAvisos); // uma vez; o utilizador gere-o no sistema
+  <h2>Onde a magia acontece: o <code>check()</code></h2>
+<pre data-title="lib/location/location_service.dart · check"><code class="language-dart">/// Asks for permission, if needed, and says which answer came back.
+Future&lt;LocationStatus&gt; check() async {
+  if (!await Geolocator.isLocationServiceEnabled()) {
+    return LocationStatus.serviceOff; // off for every app, not just ours
   }
+  var permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission(); // the dialog
+  }
+  return switch (permission) {
+    LocationPermission.whileInUse ||
+    LocationPermission.always =&gt; LocationStatus.ready,
+    LocationPermission.deniedForever =&gt; LocationStatus.deniedForever,
+    _ =&gt; LocationStatus.denied,
+  };
 }</code></pre>
-  <aside class="notes">O ícone @mipmap/ic_launcher serve para a aula; em release, o Android pinta o ícone pequeno de branco e fica um quadrado. Diz que o projeto deve ter um ic_notificacao monocromático em res/drawable. Mostra o canal a aparecer nas definições do sistema depois do primeiro arranque.</aside>
+  <div class="callout tip"><strong>A ideia</strong> Primeiro o serviço, depois a permissão, e no fim um <code>switch</code> que traduz a resposta do sistema para as nossas quatro.</div>
+  <p><strong>Na app:</strong> toca em "Onde estou?". O Chrome pergunta; aceita, e o cartão diz "Estás a 16 km de São Miguel". Repõe a permissão no cadeado, recusa, e o cartão diz "Sem permissão. Muda isso nas definições". Nada rebenta. No Chrome, recusar conta logo como "nunca mais"; no telemóvel, a primeira recusa é só "agora não".</p>
+  <div class="callout"><strong>Pergunta à turma</strong> Porque é que só se chama <code>requestPermission()</code> quando a resposta anterior foi <code>denied</code>?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> Porque nos outros casos o diálogo não serve de nada: concedida já está, "nunca mais" não mostra diálogo, e o serviço desligado não é uma permissão. Só o "agora não" admite voltar a perguntar. O <code>_</code> do <code>switch</code> apanha <code>denied</code> e <code>unableToDetermine</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 3: pedir permissão em contexto e mostrar</h2>
-<pre data-title="lib/notificacoes/servico_notificacoes.dart"><code class="language-dart">/// Pede quando o utilizador liga "Avisar-me" nas definições, nunca no arranque.
-Future&lt;bool&gt; pedirPermissao() async {
-  final android = _plugin.resolvePlatformSpecificImplementation&lt;
-      AndroidFlutterLocalNotificationsPlugin&gt;();
-  if (android != null) {
-    return await android.requestNotificationsPermission() ?? false; // 13+; antes, true
-  }
-  final ios = _plugin.resolvePlatformSpecificImplementation&lt;
-      IOSFlutterLocalNotificationsPlugin&gt;();
-  return await ios?.requestPermissions(alert: true, badge: true, sound: true) ?? false;
-}
-
-Future&lt;void&gt; mostrarAviso(Aviso a) =&gt; _plugin.show(
-      a.id, // id estável: o mesmo aviso substitui a notificação, não a duplica
-      'Aviso ${a.nivel}: ${a.localidadeNome}',
-      a.descricao,
-      NotificationDetails(
-        android: AndroidNotificationDetails(canalAvisos.id, canalAvisos.name,
-            channelDescription: canalAvisos.description,
-            importance: Importance.high, priority: Priority.high),
-        iOS: const DarwinNotificationDetails(),
-      ),
-      payload: '/localidade/${a.localidadeId}', // a rota que o router abre no toque
-    );</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Notificações locais: o que interessa</h2>
+  <h2>2. A ilha mais próxima</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 230" role="img" aria-label="À esquerda, um ponto com a pessoa em Ponta Delgada. Três linhas até três ilhas: São Miguel a 16 quilómetros, realçada como a mais curta; Santa Maria a 99 quilómetros; Terceira a 174 quilómetros.">
+    <circle cx="120" cy="115" r="26" class="box accent"/>
+    <text x="120" y="121" text-anchor="middle" class="t b">tu</text>
+    <text x="120" y="170" text-anchor="middle" class="t s">37.74, -25.67</text>
+    <line x1="150" y1="105" x2="560" y2="42" class="arrow ok"/>
+    <text x="350" y="60" text-anchor="middle" class="t b ok">16 km</text>
+    <line x1="150" y1="118" x2="560" y2="118" class="arrow dashed"/>
+    <text x="350" y="108" text-anchor="middle" class="t s">99 km</text>
+    <line x1="150" y1="130" x2="560" y2="196" class="arrow dashed"/>
+    <text x="350" y="180" text-anchor="middle" class="t s">174 km</text>
+    <rect x="565" y="18" width="310" height="48" rx="10" class="box ok"/><text x="720" y="48" text-anchor="middle" class="t b">São Miguel · a mais curta</text>
+    <rect x="565" y="94" width="310" height="48" rx="10" class="box muted"/><text x="720" y="124" text-anchor="middle" class="t s">Santa Maria</text>
+    <rect x="565" y="172" width="310" height="48" rx="10" class="box muted"/><text x="720" y="202" text-anchor="middle" class="t s">Terceira</text>
+  </svg>
+  <figcaption>Mede-se a distância a cada ilha e fica-se com a mais curta. Nove medições, um vencedor.</figcaption>
+  </figure>
+<pre data-title="lib/location/nearest.dart · a régua"><code class="language-dart">double distanceTo(Position position, Island island) {
+  return Geolocator.distanceBetween(
+    position.latitude,
+    position.longitude,
+    island.latitude,
+    island.longitude,
+  );
+}</code></pre>
   <ul>
-    <li>Uma notificação tem <code>id</code>, título, corpo, detalhes por plataforma e <code>payload</code>. O <code>id</code> é a identidade: <code>show</code> com o mesmo id substitui. Usa o id do aviso, não um contador.</li>
-    <li><strong>Canal</strong>: criado uma vez, com um nome que o utilizador vai ler nas definições do sistema. <code>Importance.high</code> dá heads-up. Mudar a importância depois de criado não tem efeito: o canal passa a ser do utilizador.</li>
-    <li><strong>Permissão em contexto</strong>: no botão "Avisar-me", nunca no <code>main</code>. Android 13+ é runtime; antes é automática. O iOS pergunta uma vez e nunca mais: a segunda tentativa vai às definições.</li>
-    <li><strong>Primeiro plano</strong>: o Android mostra sempre; o iOS mostra por defeito e deixa afinar alerta, som e badge em <code>DarwinNotificationDetails</code>.</li>
-    <li><strong>O payload é uma rota, não dados</strong>: <code>/localidade/3</code>. Quem abre o ecrã vai buscar o resto ao repositório.</li>
-    <li>Ícone pequeno do Android: monocromático, em <code>res/drawable</code>. O <code>ic_launcher</code> fica um quadrado branco em release.</li>
+    <li><code>distanceBetween</code> devolve <strong>metros em linha reta</strong> sobre a esfera. Não é distância por estrada; para saber a ilha chega.</li>
+    <li>Cada <code>Island</code> traz agora <code>latitude</code> e <code>longitude</code> da API: o centro da ilha.</li>
+    <li>O resultado é um <em>record</em>, <code>({Island island, double metres})</code>: dois valores de uma vez, sem criar uma classe.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Completa os TODOs 1 a 3: <code>ServicoNotificacoes</code> com <code>inicializar</code>, <code>pedirPermissao</code> e <code>mostrarAviso</code>; interruptor "Avisar-me de avisos" nas definições que pede a permissão e mostra o resultado; botão de teste na lista de avisos que chama <code>mostrarAviso</code> com o primeiro aviso. Nega a permissão e vê o que acontece. O teste <code>notificacoes_test.dart</code> verifica o payload gerado.</div>
-  <aside class="notes">Dá 15 minutos. Passa pelos grupos e pede a cada um que te mostre o canal "Avisos meteorológicos" nas definições do sistema e a notificação com heads-up. Quem negou a permissão no Android 13 e quer voltar atrás: definições da app → notificações, ou reinstalar.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 4: detetar um aviso novo para um favorito</h2>
-<pre data-title="lib/avisos/avisos_notifier.dart"><code class="language-dart">class AvisosNotifier extends ChangeNotifier {
-  AvisosNotifier(this._repositorio, this._favoritos, this._notificacoes);
-  final AvisosRepository _repositorio;      // GET /v1/warnings (aulas 14 e 16)
-  final FavoritosNotifier _favoritos;       // aula 17
-  final ServicoNotificacoes _notificacoes;
-
-  List&lt;Aviso&gt; _avisos = [];
-  bool _jaCarregou = false;
-  List&lt;Aviso&gt; get avisos =&gt; _avisos;
-
-  Future&lt;void&gt; atualizar() async {
-    final conhecidos = _avisos.map((a) =&gt; a.id).toSet();
-    _avisos = await _repositorio.obterAvisos();
-    notifyListeners();
-
-    final primeiraVez = !_jaCarregou;
-    _jaCarregou = true;
-    if (primeiraVez) return; // ao arrancar, nada é "novo"
-
-    for (final a in _avisos) {
-      final novo = !conhecidos.contains(a.id) &amp;&amp; _favoritos.contem(a.localidadeId);
-      if (novo) await _notificacoes.mostrarAviso(a);
+  <h2>Onde a magia acontece: o <code>nearestIsland()</code></h2>
+<pre data-title="lib/location/nearest.dart · nearestIsland"><code class="language-dart">/// Measures the distance to every island; the shortest wins.
+Nearest nearestIsland(Position position, List&lt;Island&gt; islands) {
+  var best = islands.first;
+  var shortest = double.infinity;
+  for (final island in islands) {
+    final metres = distanceTo(position, island);
+    if (metres &lt; shortest) {
+      shortest = metres;
+      best = island;
     }
   }
+  return (island: best, metres: shortest);
 }</code></pre>
+  <div class="callout tip"><strong>A ideia</strong> Começa com a primeira ilha e uma distância infinita, e troca sempre que aparece uma mais curta. O <code>locate()</code> do notifier chama-o logo a seguir à posição: <code>nearest = nearestIsland(found, islands);</code></div>
+  <p><strong>Na app:</strong> toca em "Onde estou?". O cartão diz "Estás a 16 km de São Miguel".</p>
+  <div class="callout"><strong>Pergunta à turma</strong> Um colega com o emulador na Califórnia toca no botão. O que diz o cartão?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> "Estás a 7500 km de Corvo", ou perto disso: o ciclo devolve sempre a mais curta, mesmo longe. Uma app a sério dizia "fora dos Açores" acima de uns 300 km; fica como desafio. O <code>double.infinity</code> garante que a primeira medição ganha sempre.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 5: do payload à rota, com a app a correr ou fechada</h2>
-<pre data-title="lib/notificacoes/servico_notificacoes.dart e lib/main.dart"><code class="language-dart">/// null se a app abriu normalmente; a rota do payload se foi um toque que a lançou.
-Future&lt;String?&gt; rotaDeArranque() async {
-  final detalhes = await _plugin.getNotificationAppLaunchDetails();
-  if (detalhes?.didNotificationLaunchApp != true) return null;
-  return detalhes!.notificationResponse?.payload;
-}
-
-// lib/main.dart
-Future&lt;void&gt; main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // plugins antes de runApp
-  final notificacoes = ServicoNotificacoes();
-  // App a correr (à frente ou atrás): o toque chega ao callback e o router navega.
-  await notificacoes.inicializar(aoTocar: (rota) =&gt; router.go(rota));
-  // App fechada: o callback não dispara; a rota vai como rota inicial.
-  final rotaInicial = await notificacoes.rotaDeArranque();
-  router = criarRouter(rotaInicial: rotaInicial ?? '/');
-
-  runApp(MultiProvider(
-    providers: [
-      Provider.value(value: notificacoes),
-      // ...ApiClient, repositórios e notifiers das aulas anteriores
+  <h2>3. Um pino por ilha</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 220" role="img" aria-label="Três camadas empilhadas, de baixo para cima: os tiles do OpenStreetMap, os pinos das ilhas e a atribuição. À direita, um pino é uma coluna com um ícone e o nome, dentro de um detetor de toques.">
+    <rect x="40" y="130" width="400" height="60" rx="10" class="box muted"/><text x="240" y="156" text-anchor="middle" class="t b">1. Tiles</text><text x="240" y="178" text-anchor="middle" class="t mono">TileLayer · as imagens</text>
+    <rect x="70" y="80" width="400" height="60" rx="10" class="box accent"/><text x="270" y="106" text-anchor="middle" class="t b">2. Pinos</text><text x="270" y="128" text-anchor="middle" class="t mono">MarkerLayer · um por ilha</text>
+    <rect x="100" y="30" width="400" height="60" rx="10" class="box muted"/><text x="300" y="56" text-anchor="middle" class="t b">3. Atribuição</text><text x="300" y="78" text-anchor="middle" class="t mono">RichAttributionWidget · OSM</text>
+    <text x="270" y="212" text-anchor="middle" class="t s">o que vem depois na lista fica por cima</text>
+    <rect x="560" y="30" width="310" height="160" rx="12" class="box"/>
+    <text x="715" y="58" text-anchor="middle" class="t b">Um pino é um widget qualquer</text>
+    <text x="715" y="86" text-anchor="middle" class="t mono">GestureDetector</text>
+    <text x="715" y="110" text-anchor="middle" class="t mono">Column</text>
+    <text x="715" y="134" text-anchor="middle" class="t mono">Icon(Icons.place) + Text(nome)</text>
+    <text x="715" y="170" text-anchor="middle" class="t s">o toque abre a folha da ilha</text>
+  </svg>
+  <figcaption>Um <code>FlutterMap</code> é uma pilha de camadas. O pino é um widget normal preso a uma latitude e longitude.</figcaption>
+  </figure>
+<pre data-title="lib/screens/map_screen.dart · as camadas"><code class="language-dart">children: [
+  TileLayer(
+    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    userAgentPackageName: 'pt.uac.tempo_acores',
+  ),
+  MarkerLayer(
+    markers: [
+      for (final island in islands) _marker(context, island),
+      if (position != null) _mePin(position),
     ],
-    child: const TempoApp(), // MaterialApp.router(routerConfig: router)
-  ));
-}</code></pre>
+  ),
+  const RichAttributionWidget(
+    alignment: AttributionAlignment.bottomLeft, // the button is right
+    attributions: [TextSourceAttribution('OpenStreetMap contributors')],
+  ),
+],</code></pre>
+  <aside class="notes">O <code>MapOptions</code> por cima disto tem o centro inicial, o zoom e uma caixa à volta dos Açores (<code>cameraConstraint</code>) para ninguém se perder no Atlântico. O <code>userAgentPackageName</code> é a app a identificar-se: sem ele o OSM bloqueia.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 6: o router com rota inicial e URLs de fora</h2>
-<pre data-title="lib/app/router.dart"><code class="language-dart">late final GoRouter router; // criado em main(), depois de saber a rota inicial
-
-GoRouter criarRouter({String rotaInicial = '/'}) =&gt; GoRouter(
-      initialLocation: rotaInicial,
-      redirect: (context, state) {
-        final uri = state.uri;
-        // tempoacores://localidade/3: "localidade" é o host e "/3" o path, e o
-        // go_router só compara o path. Normalizamos para /localidade/3.
-        if (uri.scheme == 'tempoacores') return '/${uri.host}${uri.path}';
-        return null; // https://tempoacores.pt/localidade/3 já traz o path certo
-      },
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) =&gt; const EcraLocalidades(),
-          routes: [
-            GoRoute(
-              path: 'localidade/:id', // o id vem de fora: valida
-              builder: (context, state) =&gt;
-                  EcraDetalhe(id: int.tryParse(state.pathParameters['id'] ?? '')), // null → "não encontrada"
-            ),
-          ],
-        ),
-      ], // ...mais avisos, mapa e definições no StatefulShellRoute das aulas 9 e 21
-    );</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Do toque ao ecrã: o que interessa</h2>
-  <ul>
-    <li><strong>Dois caminhos, um destino.</strong> A correr: <code>onDidReceiveNotificationResponse</code> → <code>router.go</code>. Fechada: <code>getNotificationAppLaunchDetails</code> → <code>initialLocation</code>. Quem só trata o primeiro vê o toque com a app fechada abrir a lista.</li>
-    <li><code>WidgetsFlutterBinding.ensureInitialized()</code> antes de tocar em plugins no <code>main</code>. Sem isto, <code>MissingPluginException</code>.</li>
-    <li>O <code>redirect</code> normaliza URLs que vêm de fora antes de o router procurar rotas: scheme, host, prefixos. Um único sítio para todos os formatos.</li>
-    <li>O <code>id</code> vem de fora: <code>int.tryParse</code> e um ecrã "localidade não encontrada" com botão para a lista. Nunca <code>!</code>.</li>
-    <li>Detetar o novo: guardar os ids <code>conhecidos</code> antes de atualizar e comparar depois; a primeira carga não notifica. Extra: persistir os ids vistos em <code>shared_preferences</code> para sobreviver a reinícios. O workmanager de amanhã vai precisar disso.</li>
-    <li>Para testar sem esperar pelo IPMA, o starter tem um <code>AvisosRepositoryFake</code> que devolve um aviso a mais na segunda chamada.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> Completa os TODOs 4 a 6: <code>atualizar()</code> notifica só avisos novos de localidades favoritas; o toque com a app em segundo plano abre o detalhe; o toque com a app fechada (para a app no IDE, toca na notificação) também. O teste <code>rotas_test.dart</code> verifica que <code>criarRouter(rotaInicial: '/localidade/3')</code> mostra <code>EcraDetalhe</code>.</div>
-  <aside class="notes">Vinte minutos. O caso "app fechada" é o que falha mais: quem parar a app pelo IDE e tocar na notificação vê a lista, porque não chamou rotaDeArranque. Pede a cada grupo que te mostre esse caminho. Se algum grupo acabar cedo, que persista os ids vistos em shared_preferences.</aside>
-</section>
-
-<section class="slide">
-  <h2>Passo 7: registar o scheme no Android e no iOS</h2>
-<pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" ...&gt;
-    &lt;!-- Ligado por defeito desde o Flutter 3.27; explícito não faz mal --&gt;
-    &lt;meta-data android:name="flutter_deeplinking_enabled" android:value="true" /&gt;
-    &lt;!-- tempoacores://localidade/3 --&gt;
-    &lt;intent-filter&gt;
-        &lt;action android:name="android.intent.action.VIEW" /&gt;
-        &lt;category android:name="android.intent.category.DEFAULT" /&gt;
-        &lt;category android:name="android.intent.category.BROWSABLE" /&gt;
-        &lt;data android:scheme="tempoacores" /&gt;
-    &lt;/intent-filter&gt;
-&lt;/activity&gt;</code></pre>
-<pre data-title="ios/Runner/Info.plist"><code class="language-xml">&lt;key&gt;FlutterDeepLinkingEnabled&lt;/key&gt;
-&lt;true/&gt;
-&lt;key&gt;CFBundleURLTypes&lt;/key&gt;
-&lt;array&gt;
-  &lt;dict&gt;
-    &lt;key&gt;CFBundleTypeRole&lt;/key&gt;&lt;string&gt;Editor&lt;/string&gt;
-    &lt;key&gt;CFBundleURLName&lt;/key&gt;&lt;string&gt;pt.uac.tempoacores&lt;/string&gt;
-    &lt;key&gt;CFBundleURLSchemes&lt;/key&gt;
-    &lt;array&gt;&lt;string&gt;tempoacores&lt;/string&gt;&lt;/array&gt;
-  &lt;/dict&gt;
-&lt;/array&gt;</code></pre>
-  <p><code>singleTop</code> (já no template) faz a app a correr receber o URL em <code>onNewIntent</code> em vez de abrir uma segunda instância. <code>BROWSABLE</code> deixa um link numa página web abrir a app. Universal Links no iOS não vão no <code>Info.plist</code>: vão em <code>Runner.entitlements</code>, via Xcode → Signing &amp; Capabilities → Associated Domains.</p>
-</section>
-
-<section class="slide">
-  <h2>Passo 8: testar com adb e xcrun</h2>
-<pre class="term"><code class="language-bash">adb shell am start -a android.intent.action.VIEW -d "tempoacores://localidade/3" pt.uac.tempoacores
-xcrun simctl openurl booted "tempoacores://localidade/3"
-adb shell pm get-app-links pt.uac.tempoacores</code></pre>
-  <ul>
-    <li><strong>Três cenários por comando</strong>: app fechada, em segundo plano, em primeiro plano noutro separador. Os três têm de acabar no detalhe da localidade 3, com a lista por baixo.</li>
-    <li><code>-d</code> é o <code>data</code> do Intent; o último argumento restringe ao nosso package. Sem ele, o Android pergunta "abrir com" se outra app tiver o mesmo scheme.</li>
-    <li>Num iPhone físico: escreve o URL nas Notas e toca. Escrever o URL na barra do Chrome não conta; tem de ser um link tocado.</li>
-    <li>Sem rede, o detalhe abre com a cache da aula 16 ou com o estado de erro. Nunca em branco.</li>
-    <li>O terceiro comando é para App Links (Android 12+): mostra se o domínio está <em>verified</em>. Para o custom scheme não há verificação a mostrar.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 3</strong> Completa os TODOs 7 e 8: scheme no Android (e no iOS, se tiveres Mac), <code>redirect</code> no router, e o comando <code>adb</code> nos três cenários. <code>tempoacores://localidade/999</code> mostra "localidade não encontrada" com botão para a lista. Extra: <code>tempoacores://avisos</code> abre o separador de avisos.</div>
-  <aside class="notes">Quinze minutos. Se um grupo vê o comando abrir a app mas ficar na lista, são três causas: projeto criado antes do 3.27 sem o meta-data, redirect em falta (o host "localidade" perdeu-se), ou o intent-filter ficou fora da activity. Nesta ordem.</aside>
-</section>
-
-<section class="slide">
-  <h2>App Links e Universal Links: os ficheiros (visão)</h2>
-  <p>O backend do curso serve um exemplo em <code>/.well-known/assetlinks.json</code>. Para o vosso projeto seria preciso o SHA-256 da vossa chave (<code>./gradlew signingReport</code>) e um domínio próprio, por isso fica como visão.</p>
-<pre data-title="https://tempoacores.pt/.well-known/assetlinks.json"><code class="language-json">[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "pt.uac.tempoacores",
-    "sha256_cert_fingerprints": ["14:6D:E9:83:C5:73:06:50:D8:EE:B9:95:2F:34:FC:64:16:A0:83:42:E6:1D:BE:A8:8A:04:96:B2:3F:CF:44:E5"]
-  }
-}]</code></pre>
-<pre data-title="https://tempoacores.pt/.well-known/apple-app-site-association"><code class="language-json">{
-  "applinks": {
-    "details": [
-      { "appIDs": ["ABCDE12345.pt.uac.tempoacores"], "components": [{ "/": "/localidade/*" }] }
-    ]
-  }
-}</code></pre>
-  <p>Do lado da app: um segundo <code>intent-filter</code> com <code>android:autoVerify="true"</code>, <code>android:scheme="https"</code> e <code>android:host="tempoacores.pt"</code>; no iOS, o entitlement <code>applinks:tempoacores.pt</code>. O <code>redirect</code> do passo 6 não precisa de mudar: o path já vem certo.</p>
-</section>
-
-<section class="slide">
-  <h2>Passo 9: a previsão de amanhã às 20:00 com zonedSchedule</h2>
-<pre data-title="lib/notificacoes/servico_notificacoes.dart"><code class="language-dart">import 'package:timezone/timezone.dart' as tz; // tz.local definido em inicializar()
-
-Future&lt;void&gt; agendarPrevisaoDeAmanha(Localidade l, Previsao amanha) =&gt;
-    _plugin.zonedSchedule(
-      1000 + l.id, // um id por localidade: re-agendar substitui, não acumula
-      'Amanhã em ${l.nome}',
-      '${amanha.tMin.round()}° a ${amanha.tMax.round()}°, ${amanha.tipo.descricao}',
-      _proximas20h(),
-      const NotificationDetails(
-        android: AndroidNotificationDetails('previsao', 'Previsão de amanhã',
-            channelDescription: 'Todos os dias às 20:00, para os favoritos'),
-        iOS: DarwinNotificationDetails(),
+  <h2>Onde a magia acontece: o <code>_marker()</code></h2>
+<pre data-title="lib/screens/map_screen.dart · _marker"><code class="language-dart">/// A pin with the name; a tap opens the sheet.
+Marker _marker(BuildContext context, Island island) {
+  final theme = Theme.of(context);
+  return Marker(
+    point: LatLng(island.latitude, island.longitude),
+    width: 110,
+    height: 56,
+    child: GestureDetector(
+      onTap: () =&gt; showIslandSheet(context, island),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.place, size: 32, color: theme.colorScheme.primary),
+          Text(island.name, style: theme.textTheme.labelSmall),
+        ],
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, // sem alarme exato
-      payload: '/localidade/${l.id}',
-    );
-
-/// Hoje às 20:00 se ainda não passou; senão amanhã às 20:00. Sempre em tz.local.
-tz.TZDateTime _proximas20h() {
-  final agora = tz.TZDateTime.now(tz.local);
-  final hoje = tz.TZDateTime(tz.local, agora.year, agora.month, agora.day, 20);
-  return hoje.isAfter(agora) ? hoje : hoje.add(const Duration(days: 1));
+    ),
+  );
 }</code></pre>
+  <div class="callout tip"><strong>A ideia</strong> Um pino é um widget normal: um <code>GestureDetector</code> com uma <code>Column</code>, o ícone em cima e o nome em baixo. O toque abre a folha, <code>showIslandSheet</code>, de <code>widgets/island_sheet.dart</code>.</div>
+  <p><strong>Na app:</strong> nove pinos com nome. Toca num: abre a folha com a fotografia e, se já tocaste em "Onde estou?", a distância até ti. Faz zoom no grupo do meio para separar as cinco ilhas.</p>
+  <aside class="notes">O <code>width</code> e o <code>height</code> do <code>Marker</code> são o espaço do widget em pixels, não em metros: por isso o nome cabe. Desafio: trocar o ícone pela temperatura de hoje.</aside>
 </section>
 
 <section class="slide">
-  <h2>Agendadas: o que interessa</h2>
-  <ul>
-    <li><code>zonedSchedule</code> recebe um <code>TZDateTime</code>, não um <code>DateTime</code>: a hora pertence a um fuso. Em <code>inicializar()</code>: <code>tz.initializeTimeZones()</code> e <code>tz.setLocalLocation(tz.getLocation('Atlantic/Azores'))</code>. Sem isto <code>tz.local</code> é UTC e as 20:00 tocam às 19:00 no inverno. Para o fuso do telemóvel, <code>flutter_timezone</code>.</li>
-    <li><strong>Inexato vs exato</strong>: <code>inexactAllowWhileIdle</code> pode atrasar minutos (Doze, amanhã). <code>exactAllowWhileIdle</code> exige <code>SCHEDULE_EXACT_ALARM</code> no Android 12+ e no 14 só despertadores e calendários a têm por defeito. Para uma previsão, inexato chega.</li>
-    <li><strong>O mesmo id substitui</strong>: cada atualização da previsão re-agenda com texto fresco. Amanhã, o workmanager faz isso de 6 em 6 horas sem abrir a app.</li>
-    <li><strong>Android</strong>: sem <code>RECEIVE_BOOT_COMPLETED</code> e o receiver do passo 1, um reinício apaga o agendamento. <strong>iOS</strong>: guarda as 64 pendentes mais próximas e descarta o resto.</li>
-    <li>Depurar: <code>pendingNotificationRequests()</code> lista o que está agendado; <code>cancel(id)</code> e <code>cancelAll()</code>. Para testar, agenda para <code>agora + 10 s</code> e volta depois às 20:00.</li>
-    <li>Interruptor desligado nas definições da app: <code>cancel</code> de todas. Canal desligado no sistema: não toca e não há erro; a app não fica a saber.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 4</strong> TODO 9: ao atualizar a previsão de um favorito, agenda "Amanhã em X" para as 20:00; interruptor "Previsão de amanhã" nas definições que cancela quando desligado. Testa com <code>agora + 10 s</code>. Extra: o toque abre o detalhe já no dia de amanhã, com o payload <code>/localidade/3?dia=1</code> lido em <code>state.uri.queryParameters</code>.</div>
-  <aside class="notes">Últimos 15 minutos. Se o tempo apertar, o exercício 4 fica como trabalho de casa e mostras a solução a agendar para daqui a 10 segundos, com o telemóvel bloqueado. Termina a ligar com amanhã: o atualizar() do notifier vai correr num isolate de background, por isso não pode tocar em BuildContext nem em Provider.</aside>
+  <h2>Onde a magia acontece: o <code>_goToMe()</code></h2>
+<pre data-title="lib/screens/map_screen.dart · _goToMe"><code class="language-dart">/// Asks for the position and moves the map there.
+Future&lt;void&gt; _goToMe() async {
+  final location = context.read&lt;LocationNotifier&gt;();
+  await location.locate(context.read&lt;ForecastNotifier&gt;().islands);
+  if (!mounted) return; // the person may have left the screen
+  final position = location.position;
+  if (position == null) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(location.message)));
+    return;
+  }
+  // the red pin is already there: the screen watches the notifier
+  _controller.move(LatLng(position.latitude, position.longitude), 9);
+}</code></pre>
+  <div class="callout tip"><strong>A ideia</strong> O botão redondo chama <code>_goToMe</code>. Pede a posição ao <code>LocationNotifier</code>, o mesmo do cartão, e move a câmara para lá com o <code>MapController</code>.</div>
+  <p><strong>Na app:</strong> toca no botão redondo. O mapa centra-se em ti, com um pino vermelho. Se a permissão estiver negada, aparece a frase do cartão em baixo.</p>
+  <div class="callout"><strong>Pergunta à turma</strong> O pino vermelho não é posto aqui. Onde é que ele aparece, e porquê?</div>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> No <code>build</code>: o ecrã faz <code>watch</code> ao <code>LocationNotifier</code> e, quando há posição, a <code>MarkerLayer</code> ganha o <code>_mePin</code>. Um só sítio para o estado; o botão só pede e move a câmara. O <code>if (!mounted) return</code> é o mesmo cuidado do login: depois de um <code>await</code> a pessoa pode ter saído do ecrã.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde ficámos</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 230" role="img" aria-label="O cartão e o ecrã do mapa falam com o LocationNotifier, que fala com o LocationService, que fala com o geolocator e o sistema. O ecrã do mapa também fala com o flutter_map, que pede os tiles ao OpenStreetMap.">
+    <rect x="10" y="20" width="170" height="70" rx="12" class="box"/><text x="95" y="50" text-anchor="middle" class="t b">Cartão e Mapa</text><text x="95" y="72" text-anchor="middle" class="t s">os ecrãs</text>
+    <rect x="215" y="20" width="190" height="70" rx="12" class="box"/><text x="310" y="50" text-anchor="middle" class="t b mono">Location</text><text x="310" y="72" text-anchor="middle" class="t s">Notifier · a frase</text>
+    <rect x="440" y="20" width="190" height="70" rx="12" class="box accent"/><text x="535" y="50" text-anchor="middle" class="t b mono">Location</text><text x="535" y="72" text-anchor="middle" class="t s">Service · check()</text>
+    <rect x="665" y="20" width="110" height="70" rx="12" class="box"/><text x="720" y="50" text-anchor="middle" class="t b">geolocator</text><text x="720" y="72" text-anchor="middle" class="t s">o package</text>
+    <rect x="800" y="20" width="90" height="70" rx="12" class="box muted"/><text x="845" y="60" text-anchor="middle" class="t b">📍</text>
+    <line x1="184" y1="55" x2="211" y2="55" class="arrow"/><line x1="409" y1="55" x2="436" y2="55" class="arrow"/>
+    <line x1="634" y1="55" x2="661" y2="55" class="arrow"/><line x1="779" y1="55" x2="796" y2="55" class="arrow"/>
+    <rect x="215" y="140" width="190" height="70" rx="12" class="box accent"/><text x="310" y="170" text-anchor="middle" class="t b mono">MapScreen</text><text x="310" y="192" text-anchor="middle" class="t s">_marker e _goToMe</text>
+    <rect x="440" y="140" width="190" height="70" rx="12" class="box"/><text x="535" y="170" text-anchor="middle" class="t b">flutter_map</text><text x="535" y="192" text-anchor="middle" class="t s">as camadas</text>
+    <rect x="665" y="140" width="225" height="70" rx="12" class="box muted"/><text x="777" y="170" text-anchor="middle" class="t b">🧱 OpenStreetMap</text><text x="777" y="192" text-anchor="middle" class="t s">os tiles</text>
+    <line x1="95" y1="94" x2="95" y2="175" class="arrow dashed"/><line x1="95" y1="175" x2="211" y2="175" class="arrow dashed"/>
+    <line x1="409" y1="175" x2="436" y2="175" class="arrow"/><line x1="634" y1="175" x2="661" y2="175" class="arrow"/>
+  </svg>
+  <figcaption>Onde está cada peça da história no código.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li>O <code>check()</code> pede a permissão e traduz as quatro respostas.</li>
+    <li>O <code>nearestIsland</code> mede e fica com a mais curta; o notifier guarda.</li>
+    <li>O <code>_marker</code> põe um pino por ilha, com o nome e a folha.</li>
+    <li>O <code>_goToMe</code> pede ao notifier e move a câmara.</li>
+  </ol>
+  <p>O <code>main</code> do <code>pdm-aula-21</code> é o estado final. A pasta <code>location/</code>, o <code>LocationNotifier</code>, o cartão, a folha e o <code>MapScreen</code> passam para o projeto do grupo como estão.</p>
+</section>
+
+<section class="slide">
+  <h2>Para o projeto: o separador Mapa</h2>
+  <ol class="steps how">
+    <li>No projeto do grupo: <code>flutter pub add geolocator flutter_map latlong2</code>. Depois as permissões no <code>AndroidManifest.xml</code> e a frase no <code>Info.plist</code>, copiadas do repositório de hoje.</li>
+    <li>Copia <code>lib/location/</code>, <code>lib/state/location_notifier.dart</code>, <code>lib/widgets/nearest_card.dart</code>, <code>lib/widgets/island_sheet.dart</code> e <code>lib/screens/map_screen.dart</code>. O vosso <code>Island</code> precisa de <code>latitude</code> e <code>longitude</code>, como em <code>lib/models/island.dart</code>. Regista o <code>LocationNotifier</code> no <code>main.dart</code>, como no de hoje.</li>
+    <li>Com o <code>go_router</code> do projeto: uma rota <code>/mapa</code> e um destino "Mapa" na <code>NavigationBar</code>, em vez do botão na barra. O cartão vai para o ecrã de início.</li>
+    <li>Um PR por grupo, com um revisor. A definição de pronto: corre no telemóvel, a permissão negada não rebenta a app, e a atribuição do OSM está visível.</li>
+  </ol>
+  <div class="callout tip"><strong>Dividir o trabalho</strong> Uma pessoa faz os packages e as permissões, outra o mapa e a rota, outra o cartão e o notifier. Três commits pequenos no mesmo branch, um PR.</div>
+  <aside class="notes">Não se dá na aula. O objetivo é cada grupo sair com o PR aberto, não só com o repositório de hoje feito. Quem tem o projeto sem <code>go_router</code> ainda usa o <code>Navigator.push</code> como no de hoje; não é razão para parar. Se sobrar tempo, conta como se troca o endereço dos tiles por um fornecedor com chave: muda uma linha.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até amanhã</h2>
   <div class="cols">
     <div>
-      <h3>Para fazer</h3>
-      <ul class="checklist">
-        <li>Notificação de aviso e deep link no projeto: canal, permissão em contexto, <code>tempoacores://localidade/:id</code> a funcionar com a app fechada. PR revisto até quarta.</li>
-        <li>Mantém o <code>atualizar()</code> do notifier sem <code>BuildContext</code>: amanhã vai correr em segundo plano com o <code>workmanager</code>.</li>
-        <li>Quem tem Mac: scheme no <code>Info.plist</code> e teste com <code>xcrun simctl openurl</code>.</li>
+      <h3>Amanhã</h3>
+      <ul>
+        <li>Terça, 10 de novembro, das 08:30 às 10:30: sprint 2 no projeto, a começar pelo issue "Permissões".</li>
+        <li>Tragam a app do grupo a correr no telemóvel.</li>
+        <li>A localização no código está nos slides Extra, com a app acabada no <code>main</code> do <code>pdm-aula-21</code>: <a href="https://github.com/Tiago-Rocha/pdm-aula-21" target="_blank" rel="noopener">abrir no GitHub</a>.</li>
       </ul>
     </div>
     <div>
-      <h3>Para ler</h3>
+      <h3>Para quem quiser ler mais</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/ui/navigation/deep-linking" target="_blank" rel="noopener">Deep linking</a> em docs.flutter.dev: o que o Flutter faz com o URL e as páginas de configuração para Android e iOS.</li>
-        <li><a href="https://developer.android.com/training/app-links/verify-android-applinks" target="_blank" rel="noopener">Verify Android App Links</a>: o <code>assetlinks.json</code>, o <code>autoVerify</code> e como diagnosticar com <code>adb</code>.</li>
-        <li><a href="https://developer.apple.com/documentation/xcode/supporting-universal-links-in-your-app" target="_blank" rel="noopener">Supporting universal links in your app</a>: o ficheiro AASA, o entitlement Associated Domains e o modo developer para testar sem esperar pelo CDN.</li>
-        <li><a href="https://pub.dev/packages/flutter_local_notifications" target="_blank" rel="noopener">flutter_local_notifications</a>: a secção de configuração por plataforma e os modos de agendamento no Android.</li>
-        <li><a href="https://docs.expo.dev/linking/overview/" target="_blank" rel="noopener">Overview of linking</a> na documentação do Expo: os três tipos de link explicados de forma clara e independente do framework.</li>
+        <li><a href="https://pub.dev/packages/permission_handler" target="_blank" rel="noopener">permission_handler</a>: pedir e verificar qualquer permissão, com o que cada uma exige no Manifest e no Info.plist.</li>
+        <li><a href="https://pub.dev/packages/geolocator" target="_blank" rel="noopener">geolocator</a>: as precisões por plataforma, os erros de cada método e o que cada sistema exige.</li>
+        <li><a href="https://developer.android.com/develop/sensors-and-location/location/permissions" target="_blank" rel="noopener">Location permissions</a> no Android: precisa vs aproximada, em uso vs segundo plano, o que mudou em cada versão.</li>
+        <li><a href="https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services" target="_blank" rel="noopener">Requesting authorization to use location services</a>: as regras da Apple para "em uso" e "sempre".</li>
+        <li><a href="https://docs.fleaflet.dev" target="_blank" rel="noopener">flutter_map</a>: camadas, pinos, atribuição e fornecedores de tiles.</li>
+        <li><a href="https://operations.osmfoundation.org/policies/tiles/" target="_blank" rel="noopener">Tile usage policy</a> do OpenStreetMap: as regras dos tiles públicos.</li>
       </ul>
     </div>
   </div>
@@ -531,5 +767,6 @@ tz.TZDateTime _proximas20h() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../assets/app.js"></script>
+<script src="../assets/parsons.js"></script>
 </body>
 </html>

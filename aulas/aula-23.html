@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 23 · Trabalho em background e sprint 2 · PDM</title>
+<title>Aula 23 · A app fora do ecrã, e sprint 2 · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/parsons.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body data-aula="23">
@@ -25,226 +26,534 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 23 · Semana 10 · Terça, 10 de novembro de 2026 · 08:30 às 10:30</p>
-  <h1>Trabalho em background e sprint 2</h1>
-  <p class="lead">Teoria (30 minutos): execução em segundo plano: porque o sistema suspende ou termina a app, o que WorkManager e BGTaskScheduler garantem, e o que pode correr num isolate de background em Flutter. Prática: ponto de situação da sprint 2, demonstração do workmanager a atualizar a cache, e trabalho de grupo.</p>
-  <div class="meta"><span>Review da sprint 2: quarta 18/11</span></div>
-  <aside class="notes">Começa pelo estado da sprint: cada grupo diz em dez segundos se a notificação de aviso de ontem já está em PR. Anota no quadro. Tem a demo do workmanager preparada num telemóvel Android com a solução da aula 22 e a tarefa registada com initialDelay de 10 segundos; não dependas de esperar 6 horas. A teoria acaba às 09:00.</aside>
+  <h1>A app fora do ecrã, e sprint 2</h1>
+  <p class="lead">Primeiro, o que acontece a uma app quando sai do ecrã, porque é que o sistema a trava, e as quatro formas de trabalhar lá fora, com apps que usas todos os dias. Um jogo. Depois, a sprint 2: o que se vê nos repositórios e a próxima peça de cada grupo.</p>
+  <aside class="notes">Sem código e sem repositório da aula. Tempos de referência: teoria até às 09:05, jogo até às 09:20, sprint até às 10:25 (issue Permissões até às 09:30, a peça até às 10:15, ronda dos PRs até às 10:25). Peçam que tenham a app do grupo aberta no computador desde o início.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Explicar porque o sistema operativo suspende ou mata uma app em segundo plano e o que se perde nesse momento.</li>
-    <li>Escolher entre WorkManager, foreground service e alarme no Android, e entre <code>BGAppRefreshTask</code>, <code>BGProcessingTask</code> e silent push no iOS.</li>
-    <li>Dizer o que pode e não pode correr num isolate de background em Flutter.</li>
-    <li>Registar uma tarefa periódica com <code>workmanager</code> e escrever o callback de topo com <code>@pragma('vm:entry-point')</code>.</li>
-    <li>Fechar o ponto de situação da sprint 2 com um plano para a semana que falta até à review.</li>
+    <li>Dizer o que acontece a uma app quando sai do ecrã, e quem decide.</li>
+    <li>Explicar porque é que o Android e o iPhone limitam o trabalho em segundo plano.</li>
+    <li>Escolher o mecanismo certo para um caso: tarefa agendada, serviço em primeiro plano, push ou notificação local.</li>
+    <li>Levar a próxima peça do projeto do grupo por um PR até ao merge.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Teoria">
-  <h2>Porque o sistema limita o background</h2>
+<section class="slide" data-part="Fora do ecrã">
+  <h2>Sais da app: o que lhe acontece</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 320" role="img" aria-label="Linha do tempo de uma app: no ecrã tudo corre; em segundo plano o iOS suspende em segundos e o Android mata o processo quando precisa de memória; morrem timers, streams e pedidos a meio; sobrevive o que está em disco e o que o sistema agendou por ti, quando ele decidir">
-    <rect x="40" y="20" width="240" height="86" rx="10" class="box accent"/>
-    <text x="60" y="46" class="t b">1. No ecrã</text>
-    <text x="60" y="68" class="t s">Tudo corre: Timer, streams,</text>
-    <text x="60" y="88" class="t s">animações, await http.get</text>
-    <path d="M280 63H328" class="arrow"/>
-    <rect x="330" y="20" width="240" height="86" rx="10" class="box warn"/>
-    <text x="350" y="46" class="t b">2. Em segundo plano</text>
-    <text x="350" y="68" class="t s">iOS: suspende em segundos</text>
-    <text x="350" y="88" class="t s">Android: até faltar memória</text>
-    <path d="M570 63H618" class="arrow"/>
-    <rect x="620" y="20" width="240" height="86" rx="10" class="box danger"/>
-    <text x="640" y="46" class="t b">3. Processo terminado</text>
-    <text x="640" y="68" class="t s">Sem aviso; nada termina</text>
-    <text x="640" y="88" class="t s">Volta do zero, em main()</text>
-    <rect x="40" y="130" width="400" height="90" rx="10" class="box danger"/>
-    <text x="60" y="156" class="t b">O que morre</text>
-    <text x="60" y="178" class="t s">Timer, streams, animações, isolates</text>
-    <text x="60" y="198" class="t s">um await http.get a meio: a app não é avisada</text>
-    <rect x="460" y="130" width="400" height="90" rx="10" class="box ok"/>
-    <text x="480" y="156" class="t b">O que sobrevive</text>
-    <text x="480" y="178" class="t s">WorkManager · BGTaskScheduler · push silenciosa</text>
-    <text x="480" y="198" class="t s">notificações e alarmes · o que está em disco (aula 16)</text>
-    <path d="M660 220V242" class="arrow"/>
-    <rect x="40" y="244" width="820" height="56" rx="10" class="box muted"/>
-    <text x="450" y="267" class="t b" text-anchor="middle">O SO decide quando corre, não tu</text>
-    <text x="450" y="288" class="t s" text-anchor="middle">Pedes uma janela; o sistema escolhe a hora, junta com outras apps e pode adiar ou recusar.</text>
-  </svg>
-  <figcaption>Ao sair do ecrã a app não fica a correr: o que estava a meio morre, e só corre depois o que o sistema aceitou agendar.</figcaption>
+  <svg viewBox="0 0 900 400" role="img" aria-label="Os quatro estados de uma app: em uso, no ecrã, corre tudo; segundo plano, uns segundos para acabar o que tinha; suspensa, na memória e parada, nenhum código corre; morta, o sistema precisou de memória e a app arranca do zero. Quem decide é o sistema.">
+<rect x="10" y="40" width="200" height="300" rx="12" class="box ok"/>
+<text x="110" y="100" class="t big" text-anchor="middle">📱</text>
+<text x="110" y="140" class="t b" text-anchor="middle">Em uso</text>
+<text x="110" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">No ecrã. Corre tudo.</text>
+<text x="110" y="260" class="t s" text-anchor="middle">Estás a escrever no</text>
+<text x="110" y="280" class="t s" text-anchor="middle">WhatsApp.</text>
+<text x="222" y="195" class="t big" text-anchor="middle">›</text>
+<rect x="235" y="40" width="200" height="300" rx="12" class="box warn"/>
+<text x="335" y="100" class="t big" text-anchor="middle">⏳</text>
+<text x="335" y="140" class="t b" text-anchor="middle">Segundo plano</text>
+<text x="335" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">Só uns segundos.</text>
+<text x="335" y="260" class="t s" text-anchor="middle">Vais à câmara: a app</text>
+<text x="335" y="280" class="t s" text-anchor="middle">acaba o que tinha.</text>
+<text x="447" y="195" class="t big" text-anchor="middle">›</text>
+<rect x="460" y="40" width="200" height="300" rx="12" class="box muted"/>
+<text x="560" y="100" class="t big" text-anchor="middle">💤</text>
+<text x="560" y="140" class="t b" text-anchor="middle">Suspensa</text>
+<text x="560" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">Na memória, parada.</text>
+<text x="560" y="260" class="t s" text-anchor="middle">Nenhum código corre:</text>
+<text x="560" y="280" class="t s" text-anchor="middle">timers incluídos.</text>
+<text x="672" y="195" class="t big" text-anchor="middle">›</text>
+<rect x="685" y="40" width="200" height="300" rx="12" class="box danger"/>
+<text x="785" y="100" class="t big" text-anchor="middle">✖️</text>
+<text x="785" y="140" class="t b" text-anchor="middle">Morta</text>
+<text x="785" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">O sistema precisou</text>
+<text x="785" y="200" class="t s" text-anchor="middle" style="fill:var(--fg)">de memória.</text>
+<text x="785" y="260" class="t s" text-anchor="middle">Voltas e a app arranca</text>
+<text x="785" y="280" class="t s" text-anchor="middle">do zero.</text>
+<text x="450" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">A PESSOA CARREGA NO BOTÃO DE INÍCIO</text>
+<text x="450" y="380" class="t b" text-anchor="middle">Quem passa a app de um estado para o outro é o sistema, não a app.</text>
+</svg>
   </figure>
-  <ul>
-    <li><strong>Uma bateria, muitas apps.</strong> Cada app que "só verifica uma coisa" a cada minuto acorda o CPU e o rádio. Dez apps assim esgotam um telemóvel numa tarde, e o utilizador culpa o telemóvel.</li>
-    <li><strong>Privacidade e controlo.</strong> O utilizador quer saber o que corre sem ele ver. Por isso o iOS mostra "usou a localização em segundo plano" e o Android 14 obriga a declarar o tipo de cada foreground service.</li>
-    <li><strong>Ao sair do ecrã</strong>: o iOS suspende a app em segundos (uns 30 s de graça com <code>beginBackgroundTask</code>); o Android mantém o processo até precisar de memória, e depois mata-o sem aviso.</li>
-    <li><strong>O que morre</strong>: <code>Timer</code>, streams, animações, um <code>await http.get</code> a meio, isolates. A app não é avisada; da próxima vez começa do zero, em <code>main()</code>.</li>
-    <li><strong>O que sobrevive</strong>: o que está em disco (aula 16) e o que o sistema aceitou agendar por ti: notificações (aula 22), tarefas do WorkManager, alarmes.</li>
-    <li>Exemplos: o WhatsApp não fica a correr, é o push que o acorda; o Spotify corre porque tem um foreground service de áudio, com notificação visível.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> uma app em segundo plano não está a correr; está suspensa ou morta, e o código que estava a meio não termina.</p>
-  <div class="callout"><strong>Analogia</strong> Uma app é uma loja num centro comercial. Aberta e com clientes é o primeiro plano; com as luzes apagadas mas o stock no lugar é o segundo plano ou a suspensão. De madrugada, o centro comercial pode despejar a loja sem avisar para dar o espaço a outra: é o processo terminado. Quando o cliente volta, a loja reabre como se nada fosse, e o que não estava guardado no armazém (o disco) perdeu-se.</div>
-  <aside class="notes">Pergunta: "se tiveres um Timer.periodic a atualizar a previsão de minuto a minuto, o que acontece quando bloqueias o telemóvel?" A maioria acha que continua. No iOS pára em segundos; no Android continua até o processo morrer, e ninguém sabe quando. Nenhuma das duas respostas serve para desenhar uma app.</aside>
+  <div class="callout"><strong>Pergunta à turma</strong> Estás a meio de um formulário longo, vais ao WhatsApp e voltas uma hora depois. O que pode ter acontecido ao que escreveste?</div>
+  <aside class="notes">Resposta: se a app foi morta para libertar memória, arranca do zero e o texto perdeu-se, a não ser que a app o tenha guardado. Por isso as boas apps guardam o rascunho quando passam a segundo plano (o AppLifecycleState.paused no Flutter). Liga a uma experiência que todos tiveram: o jogo que recomeça depois de uma chamada.</aside>
 </section>
 
 <section class="slide">
-  <h2>Android: WorkManager, foreground services, Doze e buckets</h2>
+  <h2>Porque é que o sistema trava</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 400" role="img" aria-label="Porque o sistema corta: se 40 apps acordassem de 5 em 5 minutos o telemóvel nunca dormia e a bateria acabava às 15:00, e havia código a correr sem a pessoa saber. Android: Doze junta os acordares em janelas quando o telemóvel está parado. iPhone: o sistema escolhe a hora conforme o uso que dás à app. Nenhum promete uma hora certa.">
+<rect x="10" y="10" width="430" height="380" rx="12" class="box danger"/>
+<text x="30" y="46" class="t b">Se todas pudessem</text>
+<text x="30" y="70" class="t b">acordar quando quisessem</text>
+<rect x="37" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="50" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="73" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="109" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="145" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="158" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="181" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="217" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="253" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="266" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="289" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="325" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="361" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="374" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="37" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="73" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="109" y="133" width="26" height="26" rx="6" class="box muted"/>
+<text x="122" y="151" class="t s" text-anchor="middle">⏰</text>
+<rect x="145" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="181" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="217" y="133" width="26" height="26" rx="6" class="box muted"/>
+<text x="230" y="151" class="t s" text-anchor="middle">⏰</text>
+<rect x="253" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="289" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="325" y="133" width="26" height="26" rx="6" class="box muted"/>
+<text x="338" y="151" class="t s" text-anchor="middle">⏰</text>
+<rect x="361" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="37" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="73" y="169" width="26" height="26" rx="6" class="box muted"/>
+<text x="86" y="187" class="t s" text-anchor="middle">⏰</text>
+<rect x="109" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="145" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="181" y="169" width="26" height="26" rx="6" class="box muted"/>
+<text x="194" y="187" class="t s" text-anchor="middle">⏰</text>
+<rect x="217" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="253" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="289" y="169" width="26" height="26" rx="6" class="box muted"/>
+<text x="302" y="187" class="t s" text-anchor="middle">⏰</text>
+<rect x="325" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="361" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="37" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="50" y="223" class="t s" text-anchor="middle">⏰</text>
+<rect x="73" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="109" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="145" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="158" y="223" class="t s" text-anchor="middle">⏰</text>
+<rect x="181" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="217" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="253" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="266" y="223" class="t s" text-anchor="middle">⏰</text>
+<rect x="289" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="325" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="361" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="374" y="223" class="t s" text-anchor="middle">⏰</text>
+<text x="30" y="278" class="t s" style="fill:var(--fg)">40 apps, cada uma a acordar de 5 em</text>
+<text x="30" y="298" class="t s" style="fill:var(--fg)">5 minutos: o telemóvel nunca dorme.</text>
+<rect x="30" y="320" width="120" height="46" rx="8" class="box"/>
+<rect x="150" y="334" width="8" height="18" rx="2" class="box"/>
+<rect x="36" y="326" width="14" height="34" rx="4" class="box danger"/>
+<text x="170" y="350" class="t s">bateria às 15:00</text>
+<text x="30" y="384" class="t s">E código a correr sem a pessoa saber.</text>
+<rect x="460" y="10" width="430" height="180" rx="12" class="box ok"/>
+<text x="480" y="46" class="t b">🤖 Android: Doze</text>
+<text x="480" y="76" class="t s" style="fill:var(--fg)">Telemóvel parado e de ecrã desligado:</text>
+<text x="480" y="96" class="t s" style="fill:var(--fg)">o sistema junta os acordares em janelas.</text>
+<rect x="480" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="524" y="116" width="38" height="26" rx="6" class="box accent"/>
+<rect x="568" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="612" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="656" y="116" width="38" height="26" rx="6" class="box accent"/>
+<rect x="700" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="744" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="788" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="832" y="116" width="38" height="26" rx="6" class="box accent"/>
+<text x="480" y="170" class="t s">Azul: janela em que as apps correm.</text>
+<rect x="460" y="210" width="430" height="180" rx="12" class="box ok"/>
+<text x="480" y="246" class="t b">🍎 iPhone: o sistema escolhe</text>
+<text x="480" y="276" class="t s" style="fill:var(--fg)">Abres a app de manhã? Ela atualiza</text>
+<text x="480" y="296" class="t s" style="fill:var(--fg)">um pouco antes. Não a abres há semanas?</text>
+<text x="480" y="316" class="t s" style="fill:var(--fg)">Quase nunca corre.</text>
+<text x="480" y="360" class="t b">Nenhum dos dois promete uma hora certa.</text>
+</svg>
+  </figure>
+  <aside class="notes">A ideia a levar: bateria e privacidade. Doze: com o telemóvel parado na mesa e o ecrã desligado, o Android deixa as apps correr só em janelas curtas, cada vez mais espaçadas. No iPhone, o sistema aprende quando abres cada app e dá-lhe tempo um pouco antes. Algumas marcas Android (Xiaomi, Samsung, Huawei) ainda cortam mais; o site dontkillmyapp.com tem a lista.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quatro formas de trabalhar fora do ecrã</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 420" role="img" aria-label="Quatro formas de trabalhar fora do ecrã. Tarefa agendada: backup das fotos e sincronizar de noite, Google Fotos e WhatsApp; às 02:47 com Wi-Fi e a carregar; Android WorkManager no mínimo de 15 em 15 minutos, iPhone o sistema escolhe. Serviço em primeiro plano: gravar uma corrida, música, navegação, Strava, Spotify, Maps; uma notificação fixa A gravar 5,2 km; só com notificação à vista, no iPhone só áudio e navegação. Notificação push: mensagem nova, golo, encomenda, WhatsApp, SofaScore, CTT; vem de um servidor e a app pode estar fechada. Notificação local: lembrete, hábito, alarme, Duolingo e Relógio; às 20:00 mesmo em modo de avião; marcada pela própria app, sem internet, precisa da permissão de notificações.">
+<rect x="10" y="6" width="205" height="408" rx="12" class="box ok"/>
+<text x="24" y="48" class="t big">🌙</text>
+<text x="64" y="42" class="t b">Tarefa agendada</text>
+<text x="24" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="24" y="106" class="t">backup das fotos,</text>
+<text x="24" y="126" class="t">sincronizar de noite</text>
+<text x="24" y="150" class="t s">Google Fotos, WhatsApp</text>
+<rect x="24" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="112" y="200" class="t b" text-anchor="middle">🌙  02:47</text>
+<text x="112" y="226" class="t s" text-anchor="middle">📶 Wi-Fi   🔌 a carregar</text>
+<rect x="38" y="244" width="149" height="16" rx="8" class="box muted"/>
+<rect x="38" y="244" width="104" height="16" rx="8" class="box ok"/>
+<text x="112" y="290" class="t s" text-anchor="middle">A enviar 312 fotos</text>
+<text x="24" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="24" y="356" class="t s" style="fill:var(--fg)">Android: WorkManager, no</text>
+<text x="24" y="376" class="t s" style="fill:var(--fg)">mínimo de 15 em 15 min.</text>
+<text x="24" y="396" class="t s" style="fill:var(--fg)">iPhone: o sistema escolhe.</text>
+<rect x="235" y="6" width="205" height="408" rx="12" class="box warn"/>
+<text x="249" y="48" class="t big">🏃</text>
+<text x="289" y="32" class="t b">Serviço em</text>
+<text x="289" y="52" class="t b">primeiro plano</text>
+<text x="249" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="249" y="106" class="t">gravar uma corrida,</text>
+<text x="249" y="126" class="t">música, navegação</text>
+<text x="249" y="150" class="t s">Strava, Spotify, Maps</text>
+<rect x="249" y="170" width="177" height="140" rx="10" class="box"/>
+<rect x="257" y="182" width="161" height="50" rx="8" class="box warn"/>
+<text x="267" y="202" class="t s" style="font-weight:700">Strava · agora</text>
+<text x="267" y="221" class="t s">A gravar · 5,2 km</text>
+<text x="337" y="262" class="t s" text-anchor="middle">📌 não se pode</text>
+<text x="337" y="282" class="t s" text-anchor="middle">afastar</text>
+<text x="249" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="249" y="356" class="t s" style="fill:var(--fg)">Só com uma notificação</text>
+<text x="249" y="376" class="t s" style="fill:var(--fg)">sempre à vista. iPhone:</text>
+<text x="249" y="396" class="t s" style="fill:var(--fg)">só áudio e navegação.</text>
+<rect x="460" y="6" width="205" height="408" rx="12" class="box accent"/>
+<text x="474" y="48" class="t big">☁️</text>
+<text x="514" y="42" class="t b">Notificação push</text>
+<text x="474" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="474" y="106" class="t">mensagem nova,</text>
+<text x="474" y="126" class="t">golo, encomenda</text>
+<text x="474" y="150" class="t s">WhatsApp, SofaScore, CTT</text>
+<rect x="474" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="504" y="206" class="t big" text-anchor="middle">☁️</text>
+<text x="534" y="202" class="t s">servidor</text>
+<text x="562" y="232" class="t b" text-anchor="middle">⌄</text>
+<rect x="482" y="246" width="161" height="50" rx="8" class="box accent"/>
+<text x="492" y="266" class="t s" style="font-weight:700">WhatsApp · agora</text>
+<text x="492" y="285" class="t s">Mãe: Já chegaste?</text>
+<text x="474" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="474" y="356" class="t s" style="fill:var(--fg)">Vem de um servidor</text>
+<text x="474" y="376" class="t s" style="fill:var(--fg)">(FCM, APNs). A app pode</text>
+<text x="474" y="396" class="t s" style="fill:var(--fg)">estar fechada.</text>
+<rect x="685" y="6" width="205" height="408" rx="12" class="box accent"/>
+<text x="699" y="48" class="t big">🔔</text>
+<text x="739" y="42" class="t b">Notificação local</text>
+<text x="699" y="84" class="t s" style="letter-spacing:.06em">PARA QUE SERVE</text>
+<text x="699" y="106" class="t">lembrete, hábito,</text>
+<text x="699" y="126" class="t">alarme</text>
+<text x="699" y="150" class="t s">Duolingo, Relógio</text>
+<rect x="699" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="787" y="206" class="t b" text-anchor="middle">⏰ 20:00</text>
+<text x="787" y="230" class="t s" text-anchor="middle">✈️ modo de avião</text>
+<rect x="707" y="246" width="161" height="50" rx="8" class="box accent"/>
+<text x="717" y="266" class="t s" style="font-weight:700">Duolingo · 20:00</text>
+<text x="717" y="285" class="t s">Hora da lição!</text>
+<text x="699" y="334" class="t s" style="letter-spacing:.06em">A REGRA</text>
+<text x="699" y="356" class="t s" style="fill:var(--fg)">Marcada pela própria app,</text>
+<text x="699" y="376" class="t s" style="fill:var(--fg)">sem internet. Precisa da</text>
+<text x="699" y="396" class="t s" style="fill:var(--fg)">permissão de notificações.</text>
+</svg>
+  <figcaption>Verde: a pessoa nem dá por ela. Amarelo: tem de estar à vista. Azul: aparece uma notificação.</figcaption>
+  </figure>
+  <aside class="notes">Começa pelas apps: todos usam pelo menos três destas. A pergunta para escolher é sempre a mesma: tem de ser a uma hora certa? A pessoa tem de ver? Quem sabe que é altura, a app ou um servidor? O serviço em primeiro plano é o único que corre sem parar, e por isso o sistema obriga a notificação fixa. No iPhone não há serviço em primeiro plano livre: só áudio, navegação, chamadas e pouco mais.</aside>
+</section>
+
+<section class="slide">
+  <h2>Tocar na notificação: o ecrã certo</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 400" role="img" aria-label="Tocar na notificação de aviso amarelo de chuva. Sem deep link, a app abre no início com a lista das ilhas e a pessoa tem de procurar. Com deep link, a notificação leva o caminho /ilha/sao-miguel e a app abre logo o ecrã de São Miguel com o aviso.">
+<text x="150" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">A NOTIFICAÇÃO</text>
+<rect x="20" y="40" width="260" height="340" rx="16" class="box"/>
+<rect x="32" y="60" width="236" height="50" rx="8" class="box accent"/>
+<text x="42" y="80" class="t s" style="font-weight:700">Tempo Açores · agora</text>
+<text x="42" y="99" class="t s">⚠️ Amarelo em São Miguel: chuva</text>
+<text x="150" y="140" class="t big" text-anchor="middle">👆</text>
+<text x="450" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">SEM DEEP LINK</text>
+<rect x="320" y="40" width="260" height="340" rx="16" class="box danger"/>
+<text x="450" y="80" class="t b" text-anchor="middle">Início</text>
+<rect x="336" y="100" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="121" class="t s">Corvo</text>
+<rect x="336" y="140" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="161" class="t s">Flores</text>
+<rect x="336" y="180" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="201" class="t s">Faial</text>
+<rect x="336" y="220" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="241" class="t s">Pico</text>
+<rect x="336" y="260" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="281" class="t s">São Jorge</text>
+<rect x="336" y="300" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="321" class="t s">…</text>
+<text x="450" y="366" class="t s" text-anchor="middle">E agora, qual era a ilha?</text>
+<text x="750" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">COM DEEP LINK</text>
+<rect x="620" y="40" width="260" height="340" rx="16" class="box ok"/>
+<text x="750" y="80" class="t b" text-anchor="middle">São Miguel</text>
+<rect x="636" y="100" width="228" height="60" rx="8" class="box warn"/>
+<text x="650" y="124" class="t s" style="font-weight:700">⚠️ Aviso amarelo</text>
+<text x="650" y="146" class="t s">chuva forte até às 18:00</text>
+<rect x="636" y="172" width="228" height="70" rx="8" class="box muted"/>
+<text x="650" y="198" class="t b">🌧️  17° / 21°</text>
+<text x="650" y="222" class="t s">chuva 90%</text>
+<text x="750" y="290" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">/ilha/sao-miguel</text>
+<text x="750" y="366" class="t s" text-anchor="middle">Direto ao que interessa.</text>
+<text x="300" y="215" class="t big" text-anchor="middle">›</text>
+<text x="600" y="215" class="t big" text-anchor="middle">›</text>
+</svg>
+  </figure>
+  <div class="callout tip"><strong>A ideia</strong> A notificação leva um caminho, e a app entrega-o ao router. Isto é um <em>deep link</em>: o WhatsApp abre a conversa, os CTT abrem a encomenda.</div>
+  <aside class="notes">Com o go_router o caminho é o mesmo das rotas que já têm: /ilha/:id. Também se pode abrir a app a partir de um link num site ou num email (Universal Links no iPhone, App Links no Android), mas isso pede um ficheiro de verificação no domínio e fica fora do projeto.</aside>
+</section>
+
+<section class="slide">
+  <h2>No Tempo Açores, e no Flutter</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 420" role="img" aria-label="No Tempo Açores. A previsão de amanhã às 20:00 é uma notificação local, com flutter_local_notifications, que não corre no Chrome. A cache fresca às 07:00 sem nada aparecer é uma tarefa agendada, com workmanager. O aviso vermelho de vento agora é uma notificação push, com firebase_messaging, e precisa de um servidor a ver os avisos. O código de fundo corre sem ecrã, num isolate à parte, sem context nem Provider.">
+<text x="150" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">O QUE A PESSOA VÊ</text>
+<text x="450" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">O MECANISMO</text>
+<text x="740" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">NO FLUTTER</text>
+<rect x="20" y="50" width="260" height="50" rx="8" class="box accent"/>
+<text x="30" y="70" class="t s" style="font-weight:700">Tempo Açores · 20:00</text>
+<text x="30" y="89" class="t s">Amanhã no Pico: sol, 22°</text>
+<text x="300" y="82" class="t big" text-anchor="middle">›</text>
+<rect x="330" y="50" width="240" height="50" rx="25" class="box accent"/>
+<text x="450" y="81" class="t b" text-anchor="middle">Notificação local</text>
+<text x="590" y="82" class="t big" text-anchor="middle">›</text>
+<rect x="620" y="50" width="260" height="50" rx="8" class="box"/>
+<text x="750" y="81" class="t" text-anchor="middle" style="font-family:var(--mono,monospace)">flutter_local_notifications</text>
+<text x="330" y="126" class="t s">Não corre no Chrome: testa no telemóvel.</text>
+<rect x="20" y="160" width="260" height="50" rx="8" class="box muted"/>
+<text x="30" y="180" class="t s" style="font-weight:700">Tempo Açores · 07:00</text>
+<text x="30" y="199" class="t s">(nada aparece)</text>
+<text x="300" y="192" class="t big" text-anchor="middle">›</text>
+<rect x="330" y="160" width="240" height="50" rx="25" class="box ok"/>
+<text x="450" y="191" class="t b" text-anchor="middle">Tarefa agendada</text>
+<text x="590" y="192" class="t big" text-anchor="middle">›</text>
+<rect x="620" y="160" width="260" height="50" rx="8" class="box"/>
+<text x="750" y="191" class="t" text-anchor="middle" style="font-family:var(--mono,monospace)">workmanager</text>
+<text x="330" y="236" class="t s">A cache já está fresca quando abres a app.</text>
+<rect x="20" y="270" width="260" height="50" rx="8" class="box accent"/>
+<text x="30" y="290" class="t s" style="font-weight:700">Tempo Açores · agora</text>
+<text x="30" y="309" class="t s">⚠️ Aviso vermelho: vento</text>
+<text x="300" y="302" class="t big" text-anchor="middle">›</text>
+<rect x="330" y="270" width="240" height="50" rx="25" class="box accent"/>
+<text x="450" y="301" class="t b" text-anchor="middle">Notificação push</text>
+<text x="590" y="302" class="t big" text-anchor="middle">›</text>
+<rect x="620" y="270" width="260" height="50" rx="8" class="box"/>
+<text x="750" y="301" class="t" text-anchor="middle" style="font-family:var(--mono,monospace)">firebase_messaging</text>
+<text x="330" y="346" class="t s">Precisa de um servidor a ver os avisos.</text>
+<rect x="20" y="362" width="860" height="46" rx="10" class="box warn"/>
+<text x="450" y="391" class="t s" text-anchor="middle" style="font-weight:700">O código de fundo corre sem ecrã, num isolate à parte: sem context, sem Provider, sem o notifier.</text>
+</svg>
+  </figure>
+  <aside class="notes">A notificação da previsão de amanhã é um dos extras do projeto. O flutter_local_notifications não funciona no Chrome: quem o escolher tem de testar no telemóvel Android. O push precisa de uma conta Firebase e de um servidor, por isso fica fora do projeto. O isolate: o código da tarefa arranca sem a app aberta, por isso não vê o estado da app; lê o que precisa do disco, por exemplo do shared_preferences.</aside>
+</section>
+
+<section class="slide" data-part="Jogo">
+  <h2>Jogo: qual é o mecanismo?</h2>
+  <p class="how"><strong>Um cenário de cada vez, todos ao mesmo tempo.</strong> Vota, discute com o colega do lado, vota outra vez.</p>
+  <div class="pz-seq" data-id="a23-mec" data-word="Cenário">
+  <div class="pz-mcq" data-id="a23-m1" data-label="Backup" data-revote><script type="application/json">{"q": "O Google Fotos envia as fotos do dia para a nuvem, de noite, só com Wi-Fi e a carregar. Que mecanismo é?", "options": ["Tarefa agendada", "Serviço em primeiro plano", "Notificação push", "Notificação local"], "why": "Não tem hora certa nem precisa de estar à vista: é uma tarefa agendada com condições (Wi-Fi, a carregar). O sistema escolhe a janela."}</script></div>
+  <div class="pz-mcq" data-id="a23-m2" data-label="Corrida" data-revote><script type="application/json">{"q": "O Strava grava uma corrida de uma hora com o ecrã desligado. Que mecanismo é?", "options": ["Serviço em primeiro plano", "Tarefa agendada", "Notificação push", "Notificação local"], "why": "Tem de correr sem parar e a pessoa tem de saber: serviço em primeiro plano, com a notificação fixa \"A gravar\"."}</script></div>
+  <div class="pz-mcq" data-id="a23-m3" data-label="Mensagem" data-revote><script type="application/json">{"q": "Chega uma mensagem do WhatsApp com a app fechada há dois dias. Como é que o telemóvel sabe?", "options": ["Notificação push", "Tarefa agendada", "Serviço em primeiro plano", "Notificação local"], "why": "Quem sabe que há mensagem é o servidor do WhatsApp. Manda um push pela Google (FCM) ou pela Apple (APNs), e o sistema mostra a notificação."}</script></div>
+  <div class="pz-mcq" data-id="a23-m4" data-label="Medicamento" data-revote><script type="application/json">{"q": "Uma app lembra o medicamento às 21:00 todos os dias, mesmo em modo de avião. Que mecanismo é?", "options": ["Notificação local", "Tarefa agendada", "Serviço em primeiro plano", "Notificação push"], "why": "Hora certa, sem internet: a própria app marcou a notificação no sistema. É uma notificação local agendada."}</script></div>
+  <div class="pz-mcq" data-id="a23-m5" data-label="Aviso vermelho" data-revote><script type="application/json">{"q": "O Tempo Açores quer avisar no minuto em que o IPMA lança um aviso vermelho, a qualquer hora. Qual serve?", "options": ["Notificação push", "Tarefa agendada", "Serviço em primeiro plano", "Notificação local"], "why": "A app não sabe quando o aviso sai. Uma tarefa agendada corre, no máximo, de 15 em 15 minutos no Android e quando o sistema quer no iPhone. Só um servidor que vê os avisos e manda um push chega a tempo."}</script></div>
+  <div class="pz-mcq" data-id="a23-m6" data-label="Timer" data-revote><script type="application/json">{"q": "Uma app tem um Timer.periodic que, de minuto a minuto, vê se há mensagens novas. Saíste da app há uma hora. O que aconteceu?", "options": ["O timer parou quando a app foi suspensa; só volta a correr quando a abrires", "Correu 60 vezes, de minuto a minuto", "O sistema passou-o para uma tarefa de 15 em 15 minutos", "Correu, mas sem rede"], "why": "Suspensa quer dizer parada: nenhum código da app corre, timers incluídos. Para trabalhar fora do ecrã é preciso pedir ao sistema um dos quatro mecanismos."}</script></div>
+  <div class="pz-mcq" data-id="a23-m7" data-label="Deep link" data-revote><script type="application/json">{"q": "Tocas na notificação \"Aviso amarelo em São Miguel\" e a app abre no ecrã inicial. O que falta?", "options": ["A notificação levar o caminho /ilha/sao-miguel, e a app mandá-lo ao router", "A permissão de notificações", "Um serviço em primeiro plano", "Trocar a notificação local por push"], "why": "A notificação chegou, logo a permissão existe. Falta o deep link: um caminho na notificação que o go_router segue para abrir o ecrã certo."}</script></div>
+  </div>
+  <aside class="notes">Sete cenários, uns dois minutos cada. O do aviso vermelho é o que mais divide: muitos respondem tarefa agendada. Pergunta: quem sabe que o aviso saiu, a app ou o IPMA? O do Timer.periodic surpreende: dentro da app parece funcionar, e fora para.</aside>
+</section>
+
+<section class="slide">
+  <h2>Qual é o mecanismo? A turma</h2>
+  <div class="pz-poll" data-track="a23-mec"></div>
+  <aside class="notes">Pega no cenário com menos respostas certas. Pergunta a quem acertou como pensou, e só depois explica.</aside>
+</section>
+
+<section class="slide" data-part="Sprint 2">
+  <h2>Sprint 2: o que se vê nos repositórios</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 410" role="img" aria-label="Estado da sprint 2 nos quatro grupos, segunda à noite. No main: login e sessão 2 de 4; design system 2 de 4 e mais 2 em branch ou PR; navegação com separadores 1 de 4 e mais 2 em branch; ilhas e previsão 1 de 4; avisos, trilhos, favoritos, relatos com foto e o issue Permissões 0 de 4.">
+<text x="20" y="24" class="t s" style="letter-spacing:.06em">REQUISITO</text>
+<text x="560" y="24" class="t s" style="letter-spacing:.06em">OS QUATRO GRUPOS</text>
+<rect x="10" y="40" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="62" class="t">Login e sessão</text>
+<circle cx="580" cy="56" r="11" class="box ok"/>
+<circle cx="624" cy="56" r="11" class="box ok"/>
+<circle cx="668" cy="56" r="11" class="box"/>
+<circle cx="712" cy="56" r="11" class="box"/>
+<text x="780" y="62" class="t s">2 de 4</text>
+<rect x="10" y="78" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="100" class="t">Design system</text>
+<circle cx="580" cy="94" r="11" class="box ok"/>
+<circle cx="624" cy="94" r="11" class="box ok"/>
+<circle cx="668" cy="94" r="11" class="box warn"/>
+<circle cx="712" cy="94" r="11" class="box warn"/>
+<text x="780" y="100" class="t s">2 de 4</text>
+<rect x="10" y="116" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="138" class="t">Navegação com separadores</text>
+<circle cx="580" cy="132" r="11" class="box ok"/>
+<circle cx="624" cy="132" r="11" class="box warn"/>
+<circle cx="668" cy="132" r="11" class="box warn"/>
+<circle cx="712" cy="132" r="11" class="box"/>
+<text x="780" y="138" class="t s">1 de 4</text>
+<rect x="10" y="154" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="176" class="t">Ilhas e previsão</text>
+<circle cx="580" cy="170" r="11" class="box ok"/>
+<circle cx="624" cy="170" r="11" class="box"/>
+<circle cx="668" cy="170" r="11" class="box"/>
+<circle cx="712" cy="170" r="11" class="box"/>
+<text x="780" y="176" class="t s">1 de 4</text>
+<rect x="10" y="192" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="214" class="t">Avisos</text>
+<circle cx="580" cy="208" r="11" class="box"/>
+<circle cx="624" cy="208" r="11" class="box"/>
+<circle cx="668" cy="208" r="11" class="box"/>
+<circle cx="712" cy="208" r="11" class="box"/>
+<text x="780" y="214" class="t s">0 de 4</text>
+<rect x="10" y="230" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="252" class="t">Trilhos</text>
+<circle cx="580" cy="246" r="11" class="box"/>
+<circle cx="624" cy="246" r="11" class="box"/>
+<circle cx="668" cy="246" r="11" class="box"/>
+<circle cx="712" cy="246" r="11" class="box"/>
+<text x="780" y="252" class="t s">0 de 4</text>
+<rect x="10" y="268" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="290" class="t">Favoritos</text>
+<circle cx="580" cy="284" r="11" class="box"/>
+<circle cx="624" cy="284" r="11" class="box"/>
+<circle cx="668" cy="284" r="11" class="box"/>
+<circle cx="712" cy="284" r="11" class="box"/>
+<text x="780" y="290" class="t s">0 de 4</text>
+<rect x="10" y="306" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="328" class="t">Relatos com foto</text>
+<circle cx="580" cy="322" r="11" class="box"/>
+<circle cx="624" cy="322" r="11" class="box"/>
+<circle cx="668" cy="322" r="11" class="box"/>
+<circle cx="712" cy="322" r="11" class="box"/>
+<text x="780" y="328" class="t s">0 de 4</text>
+<rect x="10" y="344" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="366" class="t">Issue "Permissões"</text>
+<circle cx="580" cy="360" r="11" class="box"/>
+<circle cx="624" cy="360" r="11" class="box"/>
+<circle cx="668" cy="360" r="11" class="box"/>
+<circle cx="712" cy="360" r="11" class="box"/>
+<text x="780" y="366" class="t s">0 de 4</text>
+<circle cx="30" cy="395" r="9" class="box ok"/>
+<text x="46" y="400" class="t s">no main</text>
+<circle cx="140" cy="395" r="9" class="box warn"/>
+<text x="156" y="400" class="t s">num branch ou PR, ainda fora do main</text>
+</svg>
+  </figure>
+  <div class="callout warn"><strong>Faltam três aulas e a review</strong> A review é na quarta, 18 de novembro, às 16:00. Conta o que estiver no <code>main</code>, a correr no telemóvel.</div>
+  <aside class="notes">Visto na segunda, 09/11, à noite, nos quatro repositórios. Sem nomes no slide. Lê só os números e passa à frente: o objetivo é cada grupo ver onde está, não comparar. Há trabalho em branches que nunca chegou ao main (navegação em dois grupos, design system num) e um PR aberto há uma semana sem review: primeiro fechar isso.</aside>
+</section>
+
+<section class="slide">
+  <h2>Primeiro: o issue "Permissões"</h2>
   <div class="table-wrap"><table>
-  <thead><tr><th>Mecanismo</th><th>O que é</th><th>O que a tua app tem de saber</th></tr></thead>
-  <tbody>
-  <tr><td><strong>WorkManager</strong></td><td>Trabalho diferido ou periódico, com restrições (rede, carregador, bateria). Sobrevive a reinícios.</td><td>Mínimo 15 min entre execuções. O sistema escolhe a hora. A tarefa deve ser curta e idempotente.</td></tr>
-  <tr><td><strong>Foreground service</strong></td><td>Processo a correr com notificação permanente visível.</td><td>Só para o que o utilizador vê a acontecer: música, navegação, upload. Android 14 exige tipo declarado e permissão própria.</td></tr>
-  <tr><td><strong>AlarmManager</strong></td><td>Acordar a app a uma hora.</td><td>Exato exige <code>SCHEDULE_EXACT_ALARM</code> (12+); no 14 só despertadores e calendários a têm por defeito. Inexato pode atrasar minutos.</td></tr>
-  <tr><td><strong>Doze</strong></td><td>Ecrã desligado e telemóvel parado: rede, jobs e alarmes adiados para janelas de manutenção cada vez mais espaçadas.</td><td>A tua tarefa "de 6 em 6 horas" pode correr às 8 ou às 9. Não há volta a dar, e é assim que deve ser.</td></tr>
-  <tr><td><strong>App Standby buckets</strong></td><td>Active, working set, frequent, rare, restricted, consoante quanto o utilizador usa a app.</td><td>App raramente aberta: poucos jobs por dia. O utilizador pode ainda pô-la em "restrito" nas definições de bateria.</td></tr>
-  </tbody></table></div>
-  <p><strong>Para os testes:</strong> o WorkManager garante que a tarefa corre, não quando; o Doze e os buckets decidem o quando.</p>
-  <div class="callout"><strong>Analogia</strong> Registar uma tarefa no WorkManager é deixar um recado ao porteiro do prédio, o sistema operativo: «quando puderes, vai regar as plantas». O porteiro decide a hora, junta os recados de vários moradores para poupar viagens, e se o prédio estiver em modo poupança (Doze) só passa de madrugada. Nenhum morador pode exigir «às 20:00 em ponto»; para isso existem o alarme e a notificação agendada.</div>
+    <thead><tr><th>Permissão</th><th>Quando se pede</th><th>Frase de razão</th><th>Se a pessoa disser não</th></tr></thead>
+    <tbody>
+      <tr><td>Localização</td><td>Toque em "Onde estou?"</td><td>"Para mostrar a ilha mais próxima de ti."</td><td>O cartão explica e a lista continua.</td></tr>
+      <tr><td>Notificações</td><td>Ao marcar o primeiro favorito</td><td>"Para te avisar da previsão da tua ilha."</td><td>Os favoritos funcionam, sem avisos.</td></tr>
+      <tr><td>Uma foto</td><td>Ao criar um relato</td><td>Nenhuma: o seletor do sistema</td><td>O relato vai sem foto.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Dez minutos. Um issue no repositório do grupo, com o título "Permissões" e uma linha por permissão que a vossa app usa. Ninguém o tem ainda.</p>
+  <aside class="notes">A linha da localização é a da app de ontem; as outras duas são exemplos que servem a quase todos os grupos. Se um grupo não usa localização, tira a linha. O issue fica como lista de tarefas: cada linha vira um PR mais à frente.</aside>
 </section>
 
 <section class="slide">
-  <h2>iOS: BGAppRefreshTask, BGProcessingTask e silent push</h2>
-  <ul>
-    <li><strong><code>BGAppRefreshTask</code></strong>: até 30 s, para "atualizar antes de o utilizador abrir". O sistema aprende a que horas abres a app e acorda-a um pouco antes. Pedes <code>earliestBeginDate</code>, não uma hora.</li>
-    <li><strong><code>BGProcessingTask</code></strong>: minutos, para manutenção pesada. Corre tipicamente de noite, a carregar. Podes exigir rede e carregador.</li>
-    <li><strong>Sem garantias</strong>: se o utilizador raramente abre a app, o iOS quase não a acorda. Se desligar "Atualização em segundo plano" nas Definições, nunca.</li>
-    <li><strong>Silent push</strong> (<code>content-available: 1</code>, aula 19): o servidor acorda a app quando há novidade. Também limitado: poucas por hora, sem garantia de entrega.</li>
-    <li><strong><code>UIBackgroundModes</code></strong> no <code>Info.plist</code>: <code>fetch</code>, <code>processing</code>, <code>remote-notification</code>, <code>audio</code>, <code>location</code>, <code>voip</code>. Cada um é revisto pela Apple; áudio sem tocar som é rejeição.</li>
-    <li><strong>Testar</strong>: não há <code>adb</code>. Com a app parada no debugger do Xcode, <code>e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"..."]</code>.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> no iOS não há tarefa periódica com hora; o sistema aprende os hábitos do utilizador e decide quando acordar a app.</p>
+  <h2>A próxima peça do vosso grupo</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 400" role="img" aria-label="O caminho das peças, por ordem, e de onde se copiam: 1 login e sessão, pdm-aula-17, login_screen e session_notifier; 2 navegação, pdm-aula-10, router.dart; 3 ilhas e previsão, pdm-aula-17, islands_screen e forecast_notifier; 4 avisos, a API, GET /v1/warnings; 5 trilhos, pdm-aula-10, trails_screen e trail_screen; 6 favoritos, pdm-aula-17, favorites_repository; 7 relatos com foto, amanhã, POST /v1/reports.">
+<circle cx="40" cy="40" r="18" class="box accent"/>
+<text x="40" y="46" class="t b" text-anchor="middle">1</text>
+<line x1="40" y1="58" x2="40" y2="76" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="20" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="46" class="t b">Login e sessão</text>
+<rect x="392" y="20" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="46" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-17</text>
+<text x="580" y="46" class="t s" style="font-family:var(--mono,monospace)">login_screen, session_notifier</text>
+<circle cx="40" cy="94" r="18" class="box accent"/>
+<text x="40" y="100" class="t b" text-anchor="middle">2</text>
+<line x1="40" y1="112" x2="40" y2="130" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="74" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="100" class="t b">Navegação</text>
+<rect x="392" y="74" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="100" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-10</text>
+<text x="580" y="100" class="t s" style="font-family:var(--mono,monospace)">router.dart</text>
+<circle cx="40" cy="148" r="18" class="box accent"/>
+<text x="40" y="154" class="t b" text-anchor="middle">3</text>
+<line x1="40" y1="166" x2="40" y2="184" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="128" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="154" class="t b">Ilhas e previsão</text>
+<rect x="392" y="128" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="154" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-17</text>
+<text x="580" y="154" class="t s" style="font-family:var(--mono,monospace)">islands_screen, forecast_notifier</text>
+<circle cx="40" cy="202" r="18" class="box accent"/>
+<text x="40" y="208" class="t b" text-anchor="middle">4</text>
+<line x1="40" y1="220" x2="40" y2="238" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="182" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="208" class="t b">Avisos</text>
+<rect x="392" y="182" width="170" height="40" rx="8" class="box muted"/>
+<text x="477" y="208" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">API</text>
+<text x="580" y="208" class="t s" style="font-family:var(--mono,monospace)">GET /v1/warnings</text>
+<circle cx="40" cy="256" r="18" class="box accent"/>
+<text x="40" y="262" class="t b" text-anchor="middle">5</text>
+<line x1="40" y1="274" x2="40" y2="292" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="236" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="262" class="t b">Trilhos</text>
+<rect x="392" y="236" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="262" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-10</text>
+<text x="580" y="262" class="t s" style="font-family:var(--mono,monospace)">trails_screen, trail_screen</text>
+<circle cx="40" cy="310" r="18" class="box accent"/>
+<text x="40" y="316" class="t b" text-anchor="middle">6</text>
+<line x1="40" y1="328" x2="40" y2="346" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="290" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="316" class="t b">Favoritos</text>
+<rect x="392" y="290" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="316" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-17</text>
+<text x="580" y="316" class="t s" style="font-family:var(--mono,monospace)">favorites_repository</text>
+<circle cx="40" cy="364" r="18" class="box accent"/>
+<text x="40" y="370" class="t b" text-anchor="middle">7</text>
+<rect x="72" y="344" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="370" class="t b">Relatos com foto</text>
+<rect x="392" y="344" width="170" height="40" rx="8" class="box muted"/>
+<text x="477" y="370" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">amanhã</text>
+<text x="580" y="370" class="t s" style="font-family:var(--mono,monospace)">POST /v1/reports</text>
+</svg>
+  </figure>
+  <div class="callout tip"><strong>Hoje</strong> Encontrem-se no caminho: a primeira peça que ainda não está no <code>main</code> é a de hoje. Copiem do repositório indicado, adaptem, e levem-na por um PR até ao merge.</div>
+  <aside class="notes">Ordem pensada para que cada peça use a anterior: sem login não há favoritos, sem navegação não há onde pôr os trilhos. Os avisos não têm repositório: o endpoint está na página da API e o modelo é igual ao das ilhas. Os relatos com foto ficam para amanhã, com a câmara e a galeria. Circula pelos grupos que estão nas peças 1 e 2 primeiro.</aside>
 </section>
 
 <section class="slide">
-  <h2>No Flutter: workmanager, background_fetch e o isolate</h2>
-  <ul>
-    <li><strong><code>workmanager</code></strong>: WorkManager no Android e BGTaskScheduler no iOS, com uma API só. Periódicas com frequência só no Android; no iOS registas identificadores e o sistema chama quando quer.</li>
-    <li><strong><code>background_fetch</code></strong>: o mesmo espaço, com background fetch no iOS e modo <em>headless</em> no Android. <strong><code>flutter_background_service</code></strong>: foreground service com um isolate a correr.</li>
-    <li><strong>O callback corre num isolate novo</strong>, aberto pelo código nativo, sem a app: memória separada, o <code>main()</code> não correu, nenhum widget existe.</li>
-    <li><strong>Pode</strong>: Dart puro, <code>http</code>, <code>shared_preferences</code>, <code>drift</code>, <code>flutter_secure_storage</code>, <code>flutter_local_notifications</code>. <strong>Não pode</strong>: <code>BuildContext</code>, <code>Provider</code>, <code>setState</code>, plugins que precisam de uma Activity (diálogos de permissão, <code>image_picker</code>), o estado em memória da app.</li>
-    <li><strong><code>@pragma('vm:entry-point')</code></strong> na função de topo: em release o <em>tree-shaking</em> apaga o que nenhum código Dart chama, e esta é chamada pelo nativo.</li>
-    <li>Com a app aberta ao mesmo tempo são dois isolates a usar a mesma base de dados. O disco é o único ponto de encontro: o drift aguenta, um <code>Map</code> em memória não.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> o callback de background corre num isolate novo, sem árvore de widgets e sem o estado da app; só o disco é partilhado.</p>
-  <aside class="notes">Liga com a aula 18: o compute() cria um isolate a partir da app; aqui é o sistema que cria o isolate e a app pode nem existir. As regras são as mesmas (nada de BuildContext, dados copiados), com a agravante de que o main() não correu: quem quiser o token tem de o ler do secure storage outra vez.</aside>
-</section>
-
-<section class="slide">
-  <h2>Padrões: sincronizar de madrugada, não fazer polling, respeitar o utilizador</h2>
-  <ul>
-    <li><strong>Sincronizar quando compensa</strong>: com rede e bateria não fraca (restrições), a carregar para o que é pesado, de madrugada para o que pode esperar.</li>
-    <li><strong>Não fazer polling.</strong> "Há novidades?" de 15 em 15 minutos é o que o WorkManager permite, e é quase sempre a resposta errada: push (aula 19) para o que o servidor sabe, atualizar ao abrir para o resto.</li>
-    <li><strong>Curto e idempotente</strong>: pode ser morto a meio e repetido. Guarda "última sincronização" e não faz mais do que uma por janela; <code>return false</code> deixa o WorkManager repetir com backoff.</li>
-    <li><strong>Respeitar o utilizador</strong>: interruptor nas definições, respeitar o modo de poupança de bateria, nada de acordar o telemóvel por causa de analytics.</li>
-    <li><strong>Medir</strong>: Battery Historian e <code>adb shell dumpsys batterystats</code>; Energy gauge no Xcode. O utilizador vê "gastou 12% em segundo plano" nas definições de bateria, e desinstala.</li>
-    <li>Exemplos: o Gmail sincroniza por push, não por polling; o Spotify descarrega playlists de noite a carregar; as apps de tempo usam o refresh do sistema e um widget de ecrã inicial.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> trabalho em background é curto, idempotente e tolera ser adiado ou repetido; se precisa de hora exata, não é background, é um alarme ou uma notificação agendada.</p>
-</section>
-
-<section class="slide" data-part="Sprint">
-  <h2>Sprint 2: ponto de situação (semana 2 de 2)</h2>
-  <p>Cada grupo, um minuto, em pé, sem ligar o portátil:</p>
-  <ol class="steps">
-    <li><strong>O que está merged em <code>main</code></strong> e corre no telemóvel neste momento. A notificação de aviso e o deep link de ontem já estão em PR?</li>
-    <li><strong>O que está em PR aberto</strong> e quem está a rever.</li>
-    <li><strong>O que entra na review de quarta 18/11</strong> e o que passa para a sprint 3. Decidir hoje é melhor do que descobrir na terça.</li>
-    <li><strong>Um bloqueio</strong>, se houver. O docente resolve primeiro os bloqueios, depois circula pela ordem do quadro.</li>
+  <h2>Até às 10:25: uma peça, um PR, um merge</h2>
+  <ol>
+    <li>Um branch com o nome da peça: <code>git switch -c avisos</code>.</li>
+    <li>Commits pequenos, cada um com a app a correr.</li>
+    <li>PR no GitHub, com um colega do grupo como revisor.</li>
+    <li>O colega abre o PR, deixa um comentário e aprova. Merge.</li>
+    <li>Todos fazem <code>git pull</code> no <code>main</code>.</li>
   </ol>
-  <div class="callout warn"><strong>Review da sprint 2: quarta 18/11</strong> Demo de 5 minutos por grupo, no telemóvel, a partir de <code>main</code>. Candidatos: favoritos sincronizados, cache offline com "atualizado há X", mapa com localidade mais próxima, notificação de aviso com deep link. Nem tudo é obrigatório; o que entrar tem os quatro estados de UI tratados.</div>
-  <aside class="notes">Cronometra: quem passar do minuto é interrompido. Escreve os bloqueios no quadro e ataca-os por ordem. Grupos sem bloqueio veem a demo às 09:10 e vão trabalhar. A partir das 09:25 circula: pede a cada grupo que te mostre o deep link com a app fechada e a app em modo avião; são os dois caminhos que ninguém testa sozinho.</aside>
-</section>
-
-<section class="slide">
-  <h2>Demo (1 de 2): registar a tarefa periódica no Android</h2>
-<pre data-title="lib/main.dart"><code class="language-dart">import 'package:workmanager/workmanager.dart';
-import 'background/tarefas_background.dart'; // callbackDispatcher e tarefaCache
-
-Future&lt;void&gt; main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Workmanager().initialize(callbackDispatcher); // função de topo: slide seguinte
-
-  // Android: de 6 em 6 horas, só com rede e bateria não fraca. O sistema escolhe a hora.
-  // O nome único evita duplicar: registar outra vez com o mesmo nome mantém a existente.
-  await Workmanager().registerPeriodicTask(
-    tarefaCache, // uniqueName: para cancelar e não duplicar
-    tarefaCache, // taskName: o que chega ao callback
-    frequency: const Duration(hours: 6),
-    constraints: Constraints(
-      networkType: NetworkType.connected,
-      requiresBatteryNotLow: true,
-    ),
-    backoffPolicy: BackoffPolicy.exponential, // falhou? repete com espera crescente
-  );
-
-  // Testar já, só em desenvolvimento: registerOneOffTask('teste', tarefaCache, initialDelay: 10 s)
-  runApp(/* ...como na aula 22 */);
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Demo (2 de 2): o callback de topo, num isolate sem a app</h2>
-<pre data-title="lib/background/tarefas_background.dart"><code class="language-dart">import 'package:workmanager/workmanager.dart';
-const tarefaCache = 'pt.uac.tempoacores.atualizarCache';
-
-/// Chamada pelo nativo num isolate novo, sem a app: de topo, e com o pragma
-/// para o tree-shaking não a apagar em release.
-@pragma('vm:entry-point')
-void callbackDispatcher() {
-  Workmanager().executeTask((tarefa, dados) async {
-    if (tarefa != tarefaCache) return true; // tarefa desconhecida: não repetir
-    try { // sem Provider nem BuildContext: montamos o que precisamos à mão
-      final token = await const FlutterSecureStorage().read(key: 'token');
-      if (token == null) return true; // sem sessão, nada a fazer
-      final api = ApiClient(token: token);
-      final cache = PrevisoesCache(AppDatabase()); // drift, aula 16
-      final favoritos = await FavoritosLocais.ids(); // shared_preferences
-      for (final id in favoritos) {
-        await cache.guardar(id, await api.previsao(id)); // GET /v1/forecast/{id}
-      }
-      await AvisosBackground(api, cache).verificarENotificar(favoritos); // aula 22
-      return true;
-    } catch (e) {
-      return false; // o WorkManager repete com backoff exponencial
-    }
-  });
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Demo: o que interessa</h2>
-  <ul>
-    <li><strong>Nome único vs nome da tarefa</strong>: o primeiro identifica o registo (cancelar com <code>cancelByUniqueName</code>, não duplicar); o segundo chega ao callback para ele saber o que fazer.</li>
-    <li><strong>6 horas é um pedido.</strong> Com Doze e buckets pode ser 7 ou 9. Mínimo 15 minutos. Se precisas de uma hora, é <code>zonedSchedule</code> (ontem) ou um alarme.</li>
-    <li><strong>Mesma base de dados, dois isolates</strong>: o drift abre outra ligação. A app aberta vê os dados novos quando o utilizador faz refresh, ou logo, se observar a tabela com <code>watch()</code>.</li>
-    <li><code>return true</code> é feito; <code>return false</code> é repetir com backoff; exceção não apanhada é falha silenciosa em release. Apanha tudo e regista.</li>
-    <li><strong>Ver e forçar</strong>: <code>adb shell dumpsys jobscheduler | grep tempoacores</code> lista o que está agendado; <code>registerOneOffTask</code> com <code>initialDelay</code> de 10 s corre já. Os <code>print</code> do isolate aparecem no <code>flutter run</code> normal.</li>
-    <li><strong>iOS</strong>: <code>BGTaskSchedulerPermittedIdentifiers</code> e <code>UIBackgroundModes</code> no <code>Info.plist</code>, registo no <code>AppDelegate</code>, e o sistema chama <code>executeTask</code> quando quiser. Não entra no projeto.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1 (extra, só depois do essencial da sprint)</strong> Tarefa periódica no Android que atualiza a cache dos favoritos e dispara a notificação de aviso da aula 22 sem a app aberta. Interruptor "Atualizar em segundo plano" nas definições que faz <code>cancelByUniqueName</code>. Testa com <code>initialDelay</code> de 10 s, a app fechada e o telemóvel bloqueado.</div>
-  <aside class="notes">Faz a demo com a app fechada e o telemóvel bloqueado, e mostra o log no terminal quando a tarefa corre e a notificação de aviso a aparecer no ecrã bloqueado. Depois abre a app: o "atualizado há 0 min" prova que a cache foi escrita pelo isolate. Quinze minutos no total; o resto da aula é dos grupos.</aside>
+  <div class="callout"><strong>Às 10:15</strong> Cada grupo diz numa frase: que peça, e em que ponto está o PR.</div>
+  <aside class="notes">Os PRs abertos há mais de um dia sem review fecham-se antes de começar uma peça nova. Quem acabar a peça, passa à seguinte no caminho.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até amanhã</h2>
   <div class="cols">
     <div>
-      <h3>Para fazer</h3>
-      <ul class="checklist">
-        <li>Sprint 2 continua: PRs de ontem (notificação de aviso e deep link) revistos e merged; review na quarta 18/11 a partir de <code>main</code>.</li>
-        <li>Decidir hoje o que entra na review e fechar, com justificação, as issues que passam para a sprint 3.</li>
-        <li>Amanhã às 16:00: hardware e sensores. Traz o telemóvel com NFC ligado, se tiver.</li>
+      <h3>Amanhã</h3>
+      <ul>
+        <li>Quarta, 11 de novembro, das 16:00 às 18:00: hardware e sensores, e sprint 2.</li>
+        <li>A câmara e a galeria servem para a peça 7, os relatos com foto.</li>
+        <li>Tragam o PR de hoje com merge feito, e a app do grupo a correr no telemóvel.</li>
       </ul>
     </div>
     <div>
-      <h3>Para ler</h3>
+      <h3>Para quem quiser ler mais</h3>
       <ul>
-        <li><a href="https://developer.android.com/develop/background-work/background-tasks" target="_blank" rel="noopener">Background tasks overview</a> no Android: a árvore de decisão entre WorkManager, foreground service e alarmes.</li>
-        <li><a href="https://developer.android.com/develop/background-work/background-tasks/persistent" target="_blank" rel="noopener">Persistent work with WorkManager</a>: restrições, trabalho periódico, o mínimo de 15 minutos e o backoff em caso de falha.</li>
-        <li><a href="https://developer.apple.com/documentation/backgroundtasks" target="_blank" rel="noopener">BackgroundTasks</a> na Apple: <code>BGAppRefreshTask</code>, <code>BGProcessingTask</code> e como o sistema decide quando as corre.</li>
-        <li><a href="https://developer.android.com/guide/components/activities/process-lifecycle" target="_blank" rel="noopener">Processes and app lifecycle</a>: a hierarquia de processos do Android e a ordem pela qual o sistema os termina quando falta memória.</li>
-        <li><a href="https://pub.dev/packages/workmanager" target="_blank" rel="noopener">workmanager</a>: a configuração por plataforma, as restrições e o que o iOS não suporta.</li>
+        <li><a href="https://developer.android.com/develop/background-work/background-tasks" target="_blank" rel="noopener">Background tasks</a>: o guia do Android para escolher entre WorkManager, serviços e alarmes.</li>
+        <li><a href="https://developer.android.com/training/monitoring-device-state/doze-standby" target="_blank" rel="noopener">Doze and App Standby</a>: o que o Android faz quando o telemóvel está parado.</li>
+        <li><a href="https://developer.apple.com/documentation/backgroundtasks" target="_blank" rel="noopener">BackgroundTasks</a>: as regras da Apple para trabalho em segundo plano.</li>
+        <li><a href="https://pub.dev/packages/workmanager" target="_blank" rel="noopener">workmanager</a> e <a href="https://pub.dev/packages/flutter_local_notifications" target="_blank" rel="noopener">flutter_local_notifications</a>: os dois packages do Flutter.</li>
+        <li><a href="https://dontkillmyapp.com" target="_blank" rel="noopener">Don't kill my app</a>: as marcas que cortam mais as apps em segundo plano.</li>
       </ul>
     </div>
   </div>
@@ -257,5 +566,6 @@ void callbackDispatcher() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../assets/app.js"></script>
+<script src="../assets/parsons.js"></script>
 </body>
 </html>

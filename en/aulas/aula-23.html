@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lesson 23 · Background work and sprint 2 · PDM</title>
+<title>Lesson 23 · The app off screen, and sprint 2 · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="../../assets/parsons.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body data-aula="23">
@@ -25,226 +26,534 @@
 
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 23 · Week 10 · Tuesday, 10 November 2026 · 08:30 to 10:30</p>
-  <h1>Background work and sprint 2</h1>
-  <p class="lead">Theory (30 minutes): background execution: why the system suspends or kills the app, what WorkManager and BGTaskScheduler guarantee, and what can run in a background isolate in Flutter. Practice: sprint 2 status check, a demo of workmanager refreshing the cache, and group work.</p>
-  <div class="meta"><span>Sprint 2 review: Wednesday 18/11</span></div>
-  <aside class="notes">Start with the state of the sprint: each group says in ten seconds whether yesterday's warning notification is already in a PR. Write it on the board. Have the workmanager demo ready on an Android phone with the lesson 22 solution and the task registered with an initialDelay of 10 seconds; do not rely on waiting 6 hours. The theory ends at 09:00.</aside>
+  <h1>The app off screen, and sprint 2</h1>
+  <p class="lead">First, what happens to an app when it leaves the screen, why the system holds it back, and the four ways to work out there, with apps you use every day. A game. Then sprint 2: what the repositories show and each group's next piece.</p>
+  <aside class="notes">No code and no lesson repository. Reference times: theory until 09:05, game until 09:20, sprint until 10:25 (Permissions issue until 09:30, the piece until 10:15, round of PRs until 10:25). Ask them to have the group app open on the computer from the start.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
   <h2>By the end of this lesson you can</h2>
   <ul>
-    <li>Explain why the operating system suspends or kills an app in the background and what is lost at that moment.</li>
-    <li>Choose between WorkManager, a foreground service and an alarm on Android, and between <code>BGAppRefreshTask</code>, <code>BGProcessingTask</code> and silent push on iOS.</li>
-    <li>Say what can and cannot run in a background isolate in Flutter.</li>
-    <li>Register a periodic task with <code>workmanager</code> and write the top-level callback with <code>@pragma('vm:entry-point')</code>.</li>
-    <li>Close the sprint 2 status check with a plan for the week left until the review.</li>
+    <li>Say what happens to an app when it leaves the screen, and who decides.</li>
+    <li>Explain why Android and iPhone limit background work.</li>
+    <li>Pick the right mechanism for a case: scheduled task, foreground service, push or local notification.</li>
+    <li>Take the next piece of the group project through a PR to the merge.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Theory">
-  <h2>Why the system limits the background</h2>
+<section class="slide" data-part="Off screen">
+  <h2>You leave the app: what happens to it</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 320" role="img" aria-label="Timeline of an app: on screen everything runs; in the background iOS suspends it within seconds and Android kills the process when it needs memory; timers, streams and requests in flight die; what is on disk survives, and so does what the system scheduled for you, whenever it decides">
-    <rect x="40" y="20" width="240" height="86" rx="10" class="box accent"/>
-    <text x="60" y="46" class="t b">1. On screen</text>
-    <text x="60" y="68" class="t s">All runs: Timer, streams,</text>
-    <text x="60" y="88" class="t s">animations, await http.get</text>
-    <path d="M280 63H328" class="arrow"/>
-    <rect x="330" y="20" width="240" height="86" rx="10" class="box warn"/>
-    <text x="350" y="46" class="t b">2. In the background</text>
-    <text x="350" y="68" class="t s">iOS: suspends in seconds</text>
-    <text x="350" y="88" class="t s">Android: until memory is low</text>
-    <path d="M570 63H618" class="arrow"/>
-    <rect x="620" y="20" width="240" height="86" rx="10" class="box danger"/>
-    <text x="640" y="46" class="t b">3. Process killed</text>
-    <text x="640" y="68" class="t s">No notice; nothing finishes</text>
-    <text x="640" y="88" class="t s">Starts over, in main()</text>
-    <rect x="40" y="130" width="400" height="90" rx="10" class="box danger"/>
-    <text x="60" y="156" class="t b">What dies</text>
-    <text x="60" y="178" class="t s">Timer, streams, animations, isolates</text>
-    <text x="60" y="198" class="t s">an await http.get in flight: the app is not told</text>
-    <rect x="460" y="130" width="400" height="90" rx="10" class="box ok"/>
-    <text x="480" y="156" class="t b">What survives</text>
-    <text x="480" y="178" class="t s">WorkManager · BGTaskScheduler · silent push</text>
-    <text x="480" y="198" class="t s">notifications and alarms · what is on disk (lesson 16)</text>
-    <path d="M660 220V242" class="arrow"/>
-    <rect x="40" y="244" width="820" height="56" rx="10" class="box muted"/>
-    <text x="450" y="267" class="t b" text-anchor="middle">The OS decides when it runs, not you</text>
-    <text x="450" y="288" class="t s" text-anchor="middle">You ask for a window; the system picks the time, batches it with other apps and may defer or refuse.</text>
-  </svg>
-  <figcaption>When it leaves the screen the app does not keep running: whatever was in flight dies, and afterwards only what the system agreed to schedule runs.</figcaption>
+  <svg viewBox="0 0 900 400" role="img" aria-label="The four states of an app: in use, on screen, everything runs; background, a few seconds to finish up; suspended, in memory and frozen, no code runs; killed, the system needed the memory and the app starts from scratch. The system decides.">
+<rect x="10" y="40" width="200" height="300" rx="12" class="box ok"/>
+<text x="110" y="100" class="t big" text-anchor="middle">📱</text>
+<text x="110" y="140" class="t b" text-anchor="middle">In use</text>
+<text x="110" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">On screen. Everything runs.</text>
+<text x="110" y="260" class="t s" text-anchor="middle">You are typing in</text>
+<text x="110" y="280" class="t s" text-anchor="middle">WhatsApp.</text>
+<text x="222" y="195" class="t big" text-anchor="middle">›</text>
+<rect x="235" y="40" width="200" height="300" rx="12" class="box warn"/>
+<text x="335" y="100" class="t big" text-anchor="middle">⏳</text>
+<text x="335" y="140" class="t b" text-anchor="middle">Background</text>
+<text x="335" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">Only a few seconds.</text>
+<text x="335" y="260" class="t s" text-anchor="middle">You open the camera: the</text>
+<text x="335" y="280" class="t s" text-anchor="middle">app finishes up.</text>
+<text x="447" y="195" class="t big" text-anchor="middle">›</text>
+<rect x="460" y="40" width="200" height="300" rx="12" class="box muted"/>
+<text x="560" y="100" class="t big" text-anchor="middle">💤</text>
+<text x="560" y="140" class="t b" text-anchor="middle">Suspended</text>
+<text x="560" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">In memory, frozen.</text>
+<text x="560" y="260" class="t s" text-anchor="middle">No code runs:</text>
+<text x="560" y="280" class="t s" text-anchor="middle">timers included.</text>
+<text x="672" y="195" class="t big" text-anchor="middle">›</text>
+<rect x="685" y="40" width="200" height="300" rx="12" class="box danger"/>
+<text x="785" y="100" class="t big" text-anchor="middle">✖️</text>
+<text x="785" y="140" class="t b" text-anchor="middle">Killed</text>
+<text x="785" y="180" class="t s" text-anchor="middle" style="fill:var(--fg)">The system needed</text>
+<text x="785" y="200" class="t s" text-anchor="middle" style="fill:var(--fg)">the memory.</text>
+<text x="785" y="260" class="t s" text-anchor="middle">You come back and the app</text>
+<text x="785" y="280" class="t s" text-anchor="middle">starts from scratch.</text>
+<text x="450" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">THE PERSON PRESSES HOME</text>
+<text x="450" y="380" class="t b" text-anchor="middle">The system moves the app from one state to the next, not the app.</text>
+</svg>
   </figure>
-  <ul>
-    <li><strong>One battery, many apps.</strong> Every app that "just checks one thing" each minute wakes the CPU and the radio. Ten apps like that drain a phone in an afternoon, and the user blames the phone.</li>
-    <li><strong>Privacy and control.</strong> The user wants to know what runs without them seeing it. That is why iOS shows "used your location in the background" and Android 14 makes you declare the type of every foreground service.</li>
-    <li><strong>On leaving the screen</strong>: iOS suspends the app within seconds (about 30 s of grace with <code>beginBackgroundTask</code>); Android keeps the process until it needs memory, and then kills it without notice.</li>
-    <li><strong>What dies</strong>: <code>Timer</code>, streams, animations, an <code>await http.get</code> in flight, isolates. The app is not told; next time it starts from zero, in <code>main()</code>.</li>
-    <li><strong>What survives</strong>: what is on disk (lesson 16) and what the system agreed to schedule for you: notifications (lesson 22), WorkManager tasks, alarms.</li>
-    <li>Examples: WhatsApp does not keep running, it is the push that wakes it; Spotify runs because it has an audio foreground service, with a visible notification.</li>
-  </ul>
-  <p><strong>For the tests:</strong> an app in the background is not running; it is suspended or dead, and the code that was in flight does not finish.</p>
-  <div class="callout"><strong>Analogy</strong> An app is a shop in a shopping centre. Open and with customers is the foreground; with the lights off but the stock in place is the background or suspension. In the small hours, the shopping centre can evict the shop without notice to give the space to another: that is the process being killed. When the customer comes back, the shop reopens as if nothing had happened, and whatever was not kept in the storeroom (the disk) is lost.</div>
-  <aside class="notes">Ask: "if you have a Timer.periodic refreshing the forecast every minute, what happens when you lock the phone?" Most think it carries on. On iOS it stops within seconds; on Android it carries on until the process dies, and nobody knows when. Neither answer is any good for designing an app.</aside>
+  <div class="callout"><strong>Question for the class</strong> You are halfway through a long form, switch to WhatsApp and come back an hour later. What may have happened to what you typed?</div>
+  <aside class="notes">Answer: if the app was killed to free memory, it starts from scratch and the text is gone, unless the app saved it. That is why good apps save the draft when they go to the background (AppLifecycleState.paused in Flutter). Tie it to something everyone has seen: the game that restarts after a phone call.</aside>
 </section>
 
 <section class="slide">
-  <h2>Android: WorkManager, foreground services, Doze and buckets</h2>
+  <h2>Why the system holds apps back</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 400" role="img" aria-label="Why the system cuts: if 40 apps woke every 5 minutes the phone would never sleep and the battery would be gone by 3 pm, with code running without the person knowing. Android: Doze batches wake-ups into windows when the phone is still. iPhone: the system picks the time based on how you use the app. Neither promises an exact time.">
+<rect x="10" y="10" width="430" height="380" rx="12" class="box danger"/>
+<text x="30" y="46" class="t b">If every app could</text>
+<text x="30" y="70" class="t b">wake up whenever it liked</text>
+<rect x="37" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="50" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="73" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="109" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="145" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="158" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="181" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="217" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="253" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="266" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="289" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="325" y="97" width="26" height="26" rx="6" class="box muted"/>
+<rect x="361" y="97" width="26" height="26" rx="6" class="box muted"/>
+<text x="374" y="115" class="t s" text-anchor="middle">⏰</text>
+<rect x="37" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="73" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="109" y="133" width="26" height="26" rx="6" class="box muted"/>
+<text x="122" y="151" class="t s" text-anchor="middle">⏰</text>
+<rect x="145" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="181" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="217" y="133" width="26" height="26" rx="6" class="box muted"/>
+<text x="230" y="151" class="t s" text-anchor="middle">⏰</text>
+<rect x="253" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="289" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="325" y="133" width="26" height="26" rx="6" class="box muted"/>
+<text x="338" y="151" class="t s" text-anchor="middle">⏰</text>
+<rect x="361" y="133" width="26" height="26" rx="6" class="box muted"/>
+<rect x="37" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="73" y="169" width="26" height="26" rx="6" class="box muted"/>
+<text x="86" y="187" class="t s" text-anchor="middle">⏰</text>
+<rect x="109" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="145" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="181" y="169" width="26" height="26" rx="6" class="box muted"/>
+<text x="194" y="187" class="t s" text-anchor="middle">⏰</text>
+<rect x="217" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="253" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="289" y="169" width="26" height="26" rx="6" class="box muted"/>
+<text x="302" y="187" class="t s" text-anchor="middle">⏰</text>
+<rect x="325" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="361" y="169" width="26" height="26" rx="6" class="box muted"/>
+<rect x="37" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="50" y="223" class="t s" text-anchor="middle">⏰</text>
+<rect x="73" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="109" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="145" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="158" y="223" class="t s" text-anchor="middle">⏰</text>
+<rect x="181" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="217" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="253" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="266" y="223" class="t s" text-anchor="middle">⏰</text>
+<rect x="289" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="325" y="205" width="26" height="26" rx="6" class="box muted"/>
+<rect x="361" y="205" width="26" height="26" rx="6" class="box muted"/>
+<text x="374" y="223" class="t s" text-anchor="middle">⏰</text>
+<text x="30" y="278" class="t s" style="fill:var(--fg)">40 apps, each waking every 5 minutes</text>
+<text x="30" y="298" class="t s" style="fill:var(--fg)">the phone never sleeps.</text>
+<rect x="30" y="320" width="120" height="46" rx="8" class="box"/>
+<rect x="150" y="334" width="8" height="18" rx="2" class="box"/>
+<rect x="36" y="326" width="14" height="34" rx="4" class="box danger"/>
+<text x="170" y="350" class="t s">battery at 3 pm</text>
+<text x="30" y="384" class="t s">And code running without the person knowing.</text>
+<rect x="460" y="10" width="430" height="180" rx="12" class="box ok"/>
+<text x="480" y="46" class="t b">🤖 Android: Doze</text>
+<text x="480" y="76" class="t s" style="fill:var(--fg)">Phone still and screen off:</text>
+<text x="480" y="96" class="t s" style="fill:var(--fg)">the system batches wake-ups into windows.</text>
+<rect x="480" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="524" y="116" width="38" height="26" rx="6" class="box accent"/>
+<rect x="568" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="612" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="656" y="116" width="38" height="26" rx="6" class="box accent"/>
+<rect x="700" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="744" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="788" y="116" width="38" height="26" rx="6" class="box muted"/>
+<rect x="832" y="116" width="38" height="26" rx="6" class="box accent"/>
+<text x="480" y="170" class="t s">Blue: a window when apps get to run.</text>
+<rect x="460" y="210" width="430" height="180" rx="12" class="box ok"/>
+<text x="480" y="246" class="t b">🍎 iPhone: the system chooses</text>
+<text x="480" y="276" class="t s" style="fill:var(--fg)">Open the app every morning? It refreshes</text>
+<text x="480" y="296" class="t s" style="fill:var(--fg)">a little before. Not opened for weeks?</text>
+<text x="480" y="316" class="t s" style="fill:var(--fg)">It hardly ever runs.</text>
+<text x="480" y="360" class="t b">Neither promises an exact time.</text>
+</svg>
+  </figure>
+  <aside class="notes">The takeaway: battery and privacy. Doze: with the phone still on the table and the screen off, Android only lets apps run in short windows, further and further apart. On iPhone, the system learns when you open each app and gives it time a little before. Some Android brands (Xiaomi, Samsung, Huawei) cut even more; dontkillmyapp.com has the list.</aside>
+</section>
+
+<section class="slide">
+  <h2>Four ways to work off screen</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 420" role="img" aria-label="Four ways to work off screen. Scheduled task: photo backup and overnight sync, Google Photos and WhatsApp; at 02:47 on Wi-Fi and charging; Android WorkManager at most every 15 minutes, iPhone the system picks. Foreground service: recording a run, music, navigation, Strava, Spotify, Maps; a fixed notification Recording 5.2 km; only with a notification on show, on iPhone only audio and navigation. Push notification: a new message, a goal, a parcel, WhatsApp, SofaScore, CTT; comes from a server and the app can be closed. Local notification: a reminder, a habit, an alarm, Duolingo and Clock; at 20:00 even in airplane mode; scheduled by the app itself, no internet, needs the notification permission.">
+<rect x="10" y="6" width="205" height="408" rx="12" class="box ok"/>
+<text x="24" y="48" class="t big">🌙</text>
+<text x="64" y="42" class="t b">Scheduled task</text>
+<text x="24" y="84" class="t s" style="letter-spacing:.06em">WHAT IT IS FOR</text>
+<text x="24" y="106" class="t">photo backup,</text>
+<text x="24" y="126" class="t">syncing overnight</text>
+<text x="24" y="150" class="t s">Google Photos, WhatsApp</text>
+<rect x="24" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="112" y="200" class="t b" text-anchor="middle">🌙  02:47</text>
+<text x="112" y="226" class="t s" text-anchor="middle">📶 Wi-Fi   🔌 charging</text>
+<rect x="38" y="244" width="149" height="16" rx="8" class="box muted"/>
+<rect x="38" y="244" width="104" height="16" rx="8" class="box ok"/>
+<text x="112" y="290" class="t s" text-anchor="middle">Uploading 312 photos</text>
+<text x="24" y="334" class="t s" style="letter-spacing:.06em">THE RULE</text>
+<text x="24" y="356" class="t s" style="fill:var(--fg)">Android: WorkManager, at</text>
+<text x="24" y="376" class="t s" style="fill:var(--fg)">most every 15 min.</text>
+<text x="24" y="396" class="t s" style="fill:var(--fg)">iPhone: the system picks.</text>
+<rect x="235" y="6" width="205" height="408" rx="12" class="box warn"/>
+<text x="249" y="48" class="t big">🏃</text>
+<text x="289" y="32" class="t b">Foreground</text>
+<text x="289" y="52" class="t b">service</text>
+<text x="249" y="84" class="t s" style="letter-spacing:.06em">WHAT IT IS FOR</text>
+<text x="249" y="106" class="t">record a run,</text>
+<text x="249" y="126" class="t">music, navigation</text>
+<text x="249" y="150" class="t s">Strava, Spotify, Maps</text>
+<rect x="249" y="170" width="177" height="140" rx="10" class="box"/>
+<rect x="257" y="182" width="161" height="50" rx="8" class="box warn"/>
+<text x="267" y="202" class="t s" style="font-weight:700">Strava · now</text>
+<text x="267" y="221" class="t s">Recording · 5.2 km</text>
+<text x="337" y="262" class="t s" text-anchor="middle">📌 cannot be</text>
+<text x="337" y="282" class="t s" text-anchor="middle">swiped away</text>
+<text x="249" y="334" class="t s" style="letter-spacing:.06em">THE RULE</text>
+<text x="249" y="356" class="t s" style="fill:var(--fg)">Only with a notification</text>
+<text x="249" y="376" class="t s" style="fill:var(--fg)">always on show. iPhone:</text>
+<text x="249" y="396" class="t s" style="fill:var(--fg)">only audio and navigation.</text>
+<rect x="460" y="6" width="205" height="408" rx="12" class="box accent"/>
+<text x="474" y="48" class="t big">☁️</text>
+<text x="514" y="42" class="t b">Push notification</text>
+<text x="474" y="84" class="t s" style="letter-spacing:.06em">WHAT IT IS FOR</text>
+<text x="474" y="106" class="t">a new message,</text>
+<text x="474" y="126" class="t">a goal, a parcel</text>
+<text x="474" y="150" class="t s">WhatsApp, SofaScore, CTT</text>
+<rect x="474" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="504" y="206" class="t big" text-anchor="middle">☁️</text>
+<text x="534" y="202" class="t s">server</text>
+<text x="562" y="232" class="t b" text-anchor="middle">⌄</text>
+<rect x="482" y="246" width="161" height="50" rx="8" class="box accent"/>
+<text x="492" y="266" class="t s" style="font-weight:700">WhatsApp · now</text>
+<text x="492" y="285" class="t s">Mum: Home yet?</text>
+<text x="474" y="334" class="t s" style="letter-spacing:.06em">THE RULE</text>
+<text x="474" y="356" class="t s" style="fill:var(--fg)">Comes from a server</text>
+<text x="474" y="376" class="t s" style="fill:var(--fg)">(FCM, APNs). The app can</text>
+<text x="474" y="396" class="t s" style="fill:var(--fg)">be closed.</text>
+<rect x="685" y="6" width="205" height="408" rx="12" class="box accent"/>
+<text x="699" y="48" class="t big">🔔</text>
+<text x="739" y="42" class="t b">Local notification</text>
+<text x="699" y="84" class="t s" style="letter-spacing:.06em">WHAT IT IS FOR</text>
+<text x="699" y="106" class="t">a reminder, a habit,</text>
+<text x="699" y="126" class="t">an alarm</text>
+<text x="699" y="150" class="t s">Duolingo, Clock</text>
+<rect x="699" y="170" width="177" height="140" rx="10" class="box"/>
+<text x="787" y="206" class="t b" text-anchor="middle">⏰ 20:00</text>
+<text x="787" y="230" class="t s" text-anchor="middle">✈️ airplane mode</text>
+<rect x="707" y="246" width="161" height="50" rx="8" class="box accent"/>
+<text x="717" y="266" class="t s" style="font-weight:700">Duolingo · 20:00</text>
+<text x="717" y="285" class="t s">Lesson time!</text>
+<text x="699" y="334" class="t s" style="letter-spacing:.06em">THE RULE</text>
+<text x="699" y="356" class="t s" style="fill:var(--fg)">Scheduled by the app</text>
+<text x="699" y="376" class="t s" style="fill:var(--fg)">itself, no internet. Needs</text>
+<text x="699" y="396" class="t s" style="fill:var(--fg)">the notification permission.</text>
+</svg>
+  <figcaption>Green: the person doesn't notice. Yellow: it must stay on show. Blue: a notification appears.</figcaption>
+  </figure>
+  <aside class="notes">Start with the apps: everyone uses at least three of these. The question to choose is always the same: does it have to be at an exact time? Must the person see it? Who knows it is time, the app or a server? The foreground service is the only one that runs nonstop, which is why the system demands the fixed notification. On iPhone there is no free foreground service: only audio, navigation, calls and little else.</aside>
+</section>
+
+<section class="slide">
+  <h2>Tapping the notification: the right screen</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 400" role="img" aria-label="Tapping the yellow rain warning notification. Without a deep link, the app opens on home with the island list and the person has to look for it. With a deep link, the notification carries the path /ilha/sao-miguel and the app opens straight on the São Miguel screen with the warning.">
+<text x="150" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">THE NOTIFICATION</text>
+<rect x="20" y="40" width="260" height="340" rx="16" class="box"/>
+<rect x="32" y="60" width="236" height="50" rx="8" class="box accent"/>
+<text x="42" y="80" class="t s" style="font-weight:700">Tempo Açores · now</text>
+<text x="42" y="99" class="t s">⚠️ Yellow on São Miguel: rain</text>
+<text x="150" y="140" class="t big" text-anchor="middle">👆</text>
+<text x="450" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">NO DEEP LINK</text>
+<rect x="320" y="40" width="260" height="340" rx="16" class="box danger"/>
+<text x="450" y="80" class="t b" text-anchor="middle">Home</text>
+<rect x="336" y="100" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="121" class="t s">Corvo</text>
+<rect x="336" y="140" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="161" class="t s">Flores</text>
+<rect x="336" y="180" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="201" class="t s">Faial</text>
+<rect x="336" y="220" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="241" class="t s">Pico</text>
+<rect x="336" y="260" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="281" class="t s">São Jorge</text>
+<rect x="336" y="300" width="228" height="32" rx="8" class="box muted"/>
+<text x="350" y="321" class="t s">…</text>
+<text x="450" y="366" class="t s" text-anchor="middle">So which island was it?</text>
+<text x="750" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">WITH A DEEP LINK</text>
+<rect x="620" y="40" width="260" height="340" rx="16" class="box ok"/>
+<text x="750" y="80" class="t b" text-anchor="middle">São Miguel</text>
+<rect x="636" y="100" width="228" height="60" rx="8" class="box warn"/>
+<text x="650" y="124" class="t s" style="font-weight:700">⚠️ Yellow warning</text>
+<text x="650" y="146" class="t s">heavy rain until 18:00</text>
+<rect x="636" y="172" width="228" height="70" rx="8" class="box muted"/>
+<text x="650" y="198" class="t b">🌧️  17° / 21°</text>
+<text x="650" y="222" class="t s">rain 90%</text>
+<text x="750" y="290" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">/ilha/sao-miguel</text>
+<text x="750" y="366" class="t s" text-anchor="middle">Straight to what matters.</text>
+<text x="300" y="215" class="t big" text-anchor="middle">›</text>
+<text x="600" y="215" class="t big" text-anchor="middle">›</text>
+</svg>
+  </figure>
+  <div class="callout tip"><strong>The idea</strong> The notification carries a path, and the app hands it to the router. That is a <em>deep link</em>: WhatsApp opens the chat, a parcel app opens the parcel.</div>
+  <aside class="notes">With go_router the path is the same as the routes they already have: /ilha/:id. An app can also be opened from a link on a website or in an email (Universal Links on iPhone, App Links on Android), but that needs a verification file on the domain and is outside the project.</aside>
+</section>
+
+<section class="slide">
+  <h2>In Tempo Açores, and in Flutter</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 420" role="img" aria-label="In Tempo Açores. Tomorrow&#x27;s forecast at 20:00 is a local notification, with flutter_local_notifications, which does not run in Chrome. A fresh cache at 07:00 with nothing showing is a scheduled task, with workmanager. A red wind warning right now is a push notification, with firebase_messaging, and needs a server watching the warnings. Background code runs with no screen, in a separate isolate, with no context and no Provider.">
+<text x="150" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">WHAT THE PERSON SEES</text>
+<text x="450" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">THE MECHANISM</text>
+<text x="740" y="24" class="t s" text-anchor="middle" style="letter-spacing:.06em">IN FLUTTER</text>
+<rect x="20" y="50" width="260" height="50" rx="8" class="box accent"/>
+<text x="30" y="70" class="t s" style="font-weight:700">Tempo Açores · 20:00</text>
+<text x="30" y="89" class="t s">Tomorrow on Pico: sunny, 22°</text>
+<text x="300" y="82" class="t big" text-anchor="middle">›</text>
+<rect x="330" y="50" width="240" height="50" rx="25" class="box accent"/>
+<text x="450" y="81" class="t b" text-anchor="middle">Local notification</text>
+<text x="590" y="82" class="t big" text-anchor="middle">›</text>
+<rect x="620" y="50" width="260" height="50" rx="8" class="box"/>
+<text x="750" y="81" class="t" text-anchor="middle" style="font-family:var(--mono,monospace)">flutter_local_notifications</text>
+<text x="330" y="126" class="t s">Doesn't run in Chrome: test on the phone.</text>
+<rect x="20" y="160" width="260" height="50" rx="8" class="box muted"/>
+<text x="30" y="180" class="t s" style="font-weight:700">Tempo Açores · 07:00</text>
+<text x="30" y="199" class="t s">(nothing shows)</text>
+<text x="300" y="192" class="t big" text-anchor="middle">›</text>
+<rect x="330" y="160" width="240" height="50" rx="25" class="box ok"/>
+<text x="450" y="191" class="t b" text-anchor="middle">Scheduled task</text>
+<text x="590" y="192" class="t big" text-anchor="middle">›</text>
+<rect x="620" y="160" width="260" height="50" rx="8" class="box"/>
+<text x="750" y="191" class="t" text-anchor="middle" style="font-family:var(--mono,monospace)">workmanager</text>
+<text x="330" y="236" class="t s">The cache is already fresh when you open the app.</text>
+<rect x="20" y="270" width="260" height="50" rx="8" class="box accent"/>
+<text x="30" y="290" class="t s" style="font-weight:700">Tempo Açores · now</text>
+<text x="30" y="309" class="t s">⚠️ Red warning: wind</text>
+<text x="300" y="302" class="t big" text-anchor="middle">›</text>
+<rect x="330" y="270" width="240" height="50" rx="25" class="box accent"/>
+<text x="450" y="301" class="t b" text-anchor="middle">Push notification</text>
+<text x="590" y="302" class="t big" text-anchor="middle">›</text>
+<rect x="620" y="270" width="260" height="50" rx="8" class="box"/>
+<text x="750" y="301" class="t" text-anchor="middle" style="font-family:var(--mono,monospace)">firebase_messaging</text>
+<text x="330" y="346" class="t s">Needs a server watching the warnings.</text>
+<rect x="20" y="362" width="860" height="46" rx="10" class="box warn"/>
+<text x="450" y="391" class="t s" text-anchor="middle" style="font-weight:700">Background code runs with no screen, in a separate isolate: no context, no Provider, no notifier.</text>
+</svg>
+  </figure>
+  <aside class="notes">Tomorrow's forecast notification is one of the project extras. flutter_local_notifications does not work in Chrome: whoever picks it must test on an Android phone. Push needs a Firebase account and a server, so it is outside the project. The isolate: the task code starts without the app open, so it cannot see the app state; it reads what it needs from disk, for example from shared_preferences.</aside>
+</section>
+
+<section class="slide" data-part="Game">
+  <h2>Game: which mechanism?</h2>
+  <p class="how"><strong>One scenario at a time, everyone together.</strong> Vote, discuss with the person next to you, vote again.</p>
+  <div class="pz-seq" data-id="a23-mec" data-word="Scenario">
+  <div class="pz-mcq" data-id="a23-m1" data-label="Backup" data-revote><script type="application/json">{"q": "Google Photos uploads the day's photos to the cloud, overnight, only on Wi-Fi and while charging. Which mechanism is it?", "options": ["Scheduled task", "Foreground service", "Push notification", "Local notification"], "why": "No exact time and nothing on show: a scheduled task with conditions (Wi-Fi, charging). The system picks the window."}</script></div>
+  <div class="pz-mcq" data-id="a23-m2" data-label="Run" data-revote><script type="application/json">{"q": "Strava records a one-hour run with the screen off. Which mechanism is it?", "options": ["Foreground service", "Scheduled task", "Push notification", "Local notification"], "why": "It must run nonstop and the person must know: a foreground service, with the fixed \"Recording\" notification."}</script></div>
+  <div class="pz-mcq" data-id="a23-m3" data-label="Message" data-revote><script type="application/json">{"q": "A WhatsApp message arrives and the app has been closed for two days. How does the phone know?", "options": ["Push notification", "Scheduled task", "Foreground service", "Local notification"], "why": "The WhatsApp server is the one that knows. It sends a push through Google (FCM) or Apple (APNs), and the system shows the notification."}</script></div>
+  <div class="pz-mcq" data-id="a23-m4" data-label="Medicine" data-revote><script type="application/json">{"q": "An app reminds you of your medicine at 21:00 every day, even in airplane mode. Which mechanism is it?", "options": ["Local notification", "Scheduled task", "Foreground service", "Push notification"], "why": "An exact time and no internet: the app itself scheduled the notification with the system. A scheduled local notification."}</script></div>
+  <div class="pz-mcq" data-id="a23-m5" data-label="Red warning" data-revote><script type="application/json">{"q": "Tempo Açores wants to alert within the minute IPMA issues a red warning, at any time. Which one works?", "options": ["Push notification", "Scheduled task", "Foreground service", "Local notification"], "why": "The app doesn't know when the warning comes out. A scheduled task runs at most every 15 minutes on Android and whenever the system wants on iPhone. Only a server watching the warnings and sending a push gets there in time."}</script></div>
+  <div class="pz-mcq" data-id="a23-m6" data-label="Timer" data-revote><script type="application/json">{"q": "An app has a Timer.periodic that checks for new messages every minute. You left the app an hour ago. What happened?", "options": ["The timer stopped when the app was suspended; it only runs again when you open it", "It ran 60 times, once a minute", "The system turned it into a task every 15 minutes", "It ran, but with no network"], "why": "Suspended means frozen: none of the app's code runs, timers included. To work off screen you have to ask the system for one of the four mechanisms."}</script></div>
+  <div class="pz-mcq" data-id="a23-m7" data-label="Deep link" data-revote><script type="application/json">{"q": "You tap the \"Yellow warning on São Miguel\" notification and the app opens on home. What's missing?", "options": ["The notification carrying the path /ilha/sao-miguel, and the app passing it to the router", "The notification permission", "A foreground service", "Switching the local notification to push"], "why": "The notification arrived, so the permission is there. What's missing is the deep link: a path in the notification that go_router follows to open the right screen."}</script></div>
+  </div>
+  <aside class="notes">Seven scenarios, about two minutes each. The red warning one splits the class most: many answer scheduled task. Ask: who knows the warning is out, the app or IPMA? The Timer.periodic one surprises: inside the app it seems to work, and outside it stops.</aside>
+</section>
+
+<section class="slide">
+  <h2>Which mechanism? The class</h2>
+  <div class="pz-poll" data-track="a23-mec"></div>
+  <aside class="notes">Take the scenario with the fewest right answers. Ask someone who got it right how they thought, and only then explain.</aside>
+</section>
+
+<section class="slide" data-part="Sprint 2">
+  <h2>Sprint 2: what the repositories show</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 410" role="img" aria-label="Sprint 2 status across the four groups, Monday night. On main: login and session 2 of 4; design system 2 of 4 plus 2 in a branch or PR; navigation with tabs 1 of 4 plus 2 in a branch; islands and forecast 1 of 4; warnings, trails, favourites, reports with a photo and the Permissions issue 0 of 4.">
+<text x="20" y="24" class="t s" style="letter-spacing:.06em">REQUIREMENT</text>
+<text x="560" y="24" class="t s" style="letter-spacing:.06em">THE FOUR GROUPS</text>
+<rect x="10" y="40" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="62" class="t">Login and session</text>
+<circle cx="580" cy="56" r="11" class="box ok"/>
+<circle cx="624" cy="56" r="11" class="box ok"/>
+<circle cx="668" cy="56" r="11" class="box"/>
+<circle cx="712" cy="56" r="11" class="box"/>
+<text x="780" y="62" class="t s">2 of 4</text>
+<rect x="10" y="78" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="100" class="t">Design system</text>
+<circle cx="580" cy="94" r="11" class="box ok"/>
+<circle cx="624" cy="94" r="11" class="box ok"/>
+<circle cx="668" cy="94" r="11" class="box warn"/>
+<circle cx="712" cy="94" r="11" class="box warn"/>
+<text x="780" y="100" class="t s">2 of 4</text>
+<rect x="10" y="116" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="138" class="t">Navigation with tabs</text>
+<circle cx="580" cy="132" r="11" class="box ok"/>
+<circle cx="624" cy="132" r="11" class="box warn"/>
+<circle cx="668" cy="132" r="11" class="box warn"/>
+<circle cx="712" cy="132" r="11" class="box"/>
+<text x="780" y="138" class="t s">1 of 4</text>
+<rect x="10" y="154" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="176" class="t">Islands and forecast</text>
+<circle cx="580" cy="170" r="11" class="box ok"/>
+<circle cx="624" cy="170" r="11" class="box"/>
+<circle cx="668" cy="170" r="11" class="box"/>
+<circle cx="712" cy="170" r="11" class="box"/>
+<text x="780" y="176" class="t s">1 of 4</text>
+<rect x="10" y="192" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="214" class="t">Warnings</text>
+<circle cx="580" cy="208" r="11" class="box"/>
+<circle cx="624" cy="208" r="11" class="box"/>
+<circle cx="668" cy="208" r="11" class="box"/>
+<circle cx="712" cy="208" r="11" class="box"/>
+<text x="780" y="214" class="t s">0 of 4</text>
+<rect x="10" y="230" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="252" class="t">Trails</text>
+<circle cx="580" cy="246" r="11" class="box"/>
+<circle cx="624" cy="246" r="11" class="box"/>
+<circle cx="668" cy="246" r="11" class="box"/>
+<circle cx="712" cy="246" r="11" class="box"/>
+<text x="780" y="252" class="t s">0 of 4</text>
+<rect x="10" y="268" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="290" class="t">Favourites</text>
+<circle cx="580" cy="284" r="11" class="box"/>
+<circle cx="624" cy="284" r="11" class="box"/>
+<circle cx="668" cy="284" r="11" class="box"/>
+<circle cx="712" cy="284" r="11" class="box"/>
+<text x="780" y="290" class="t s">0 of 4</text>
+<rect x="10" y="306" width="880" height="32" rx="6" class="box muted"/>
+<text x="24" y="328" class="t">Reports with a photo</text>
+<circle cx="580" cy="322" r="11" class="box"/>
+<circle cx="624" cy="322" r="11" class="box"/>
+<circle cx="668" cy="322" r="11" class="box"/>
+<circle cx="712" cy="322" r="11" class="box"/>
+<text x="780" y="328" class="t s">0 of 4</text>
+<rect x="10" y="344" width="880" height="32" rx="6" class="box"/>
+<text x="24" y="366" class="t">"Permissions" issue</text>
+<circle cx="580" cy="360" r="11" class="box"/>
+<circle cx="624" cy="360" r="11" class="box"/>
+<circle cx="668" cy="360" r="11" class="box"/>
+<circle cx="712" cy="360" r="11" class="box"/>
+<text x="780" y="366" class="t s">0 of 4</text>
+<circle cx="30" cy="395" r="9" class="box ok"/>
+<text x="46" y="400" class="t s">on main</text>
+<circle cx="140" cy="395" r="9" class="box warn"/>
+<text x="156" y="400" class="t s">in a branch or PR, not on main yet</text>
+</svg>
+  </figure>
+  <div class="callout warn"><strong>Three lessons and the review left</strong> The review is on Wednesday 18 November at 16:00. What counts is what is on <code>main</code>, running on the phone.</div>
+  <aside class="notes">Seen on Monday 9 November at night, in the four repositories. No names on the slide. Just read the numbers and move on: the point is for each group to see where it stands, not to compare. There is work in branches that never reached main (navigation in two groups, design system in one) and a PR open for a week with no review: close those first.</aside>
+</section>
+
+<section class="slide">
+  <h2>First: the "Permissions" issue</h2>
   <div class="table-wrap"><table>
-  <thead><tr><th>Mechanism</th><th>What it is</th><th>What your app needs to know</th></tr></thead>
-  <tbody>
-  <tr><td><strong>WorkManager</strong></td><td>Deferred or periodic work, with constraints (network, charger, battery). Survives restarts.</td><td>Minimum 15 min between runs. The system picks the time. The task must be short and idempotent.</td></tr>
-  <tr><td><strong>Foreground service</strong></td><td>A running process with a permanent visible notification.</td><td>Only for what the user sees happening: music, navigation, upload. Android 14 requires a declared type and its own permission.</td></tr>
-  <tr><td><strong>AlarmManager</strong></td><td>Waking the app at a given time.</td><td>Exact requires <code>SCHEDULE_EXACT_ALARM</code> (12+); on 14 only alarm clocks and calendars have it by default. Inexact can be minutes late.</td></tr>
-  <tr><td><strong>Doze</strong></td><td>Screen off and phone still: network, jobs and alarms deferred to maintenance windows that get further and further apart.</td><td>Your "every 6 hours" task may run at 8 or at 9. There is no way round it, and that is how it should be.</td></tr>
-  <tr><td><strong>App Standby buckets</strong></td><td>Active, working set, frequent, rare, restricted, depending on how much the user uses the app.</td><td>An app that is rarely opened: few jobs per day. The user can also set it to "restricted" in the battery settings.</td></tr>
-  </tbody></table></div>
-  <p><strong>For the tests:</strong> WorkManager guarantees that the task runs, not when; Doze and the buckets decide the when.</p>
-  <div class="callout"><strong>Analogy</strong> Registering a task with WorkManager is leaving a note for the caretaker of the building, the operating system: "when you can, go and water the plants". The caretaker decides the time, batches the notes from several residents to save trips, and if the building is in power-saving mode (Doze) only comes by in the small hours. No resident can demand "at 20:00 sharp"; that is what the alarm and the scheduled notification are for.</div>
+    <thead><tr><th>Permission</th><th>When it is asked</th><th>Reason text</th><th>If the person says no</th></tr></thead>
+    <tbody>
+      <tr><td>Location</td><td>Tap on "Onde estou?"</td><td>"To show the island closest to you."</td><td>The card explains and the list carries on.</td></tr>
+      <tr><td>Notifications</td><td>When marking the first favourite</td><td>"To let you know the forecast for your island."</td><td>Favourites work, with no alerts.</td></tr>
+      <tr><td>A photo</td><td>When creating a report</td><td>None: the system picker</td><td>The report goes without a photo.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ten minutes. One issue in the group repository, titled "Permissions", with one row per permission your app uses. Nobody has it yet.</p>
+  <aside class="notes">The location row is the one from yesterday's app; the other two are examples that fit almost every group. If a group does not use location, drop the row. The issue stays as a to-do list: each row becomes a PR later on.</aside>
 </section>
 
 <section class="slide">
-  <h2>iOS: BGAppRefreshTask, BGProcessingTask and silent push</h2>
-  <ul>
-    <li><strong><code>BGAppRefreshTask</code></strong>: up to 30 s, to "refresh before the user opens the app". The system learns what time you open the app and wakes it a little earlier. You ask for an <code>earliestBeginDate</code>, not a time.</li>
-    <li><strong><code>BGProcessingTask</code></strong>: minutes, for heavy maintenance. It typically runs at night, while charging. You can require network and charger.</li>
-    <li><strong>No guarantees</strong>: if the user rarely opens the app, iOS hardly ever wakes it. If they turn off "Background App Refresh" in Settings, never.</li>
-    <li><strong>Silent push</strong> (<code>content-available: 1</code>, lesson 19): the server wakes the app when there is something new. Also limited: a few per hour, with no delivery guarantee.</li>
-    <li><strong><code>UIBackgroundModes</code></strong> in <code>Info.plist</code>: <code>fetch</code>, <code>processing</code>, <code>remote-notification</code>, <code>audio</code>, <code>location</code>, <code>voip</code>. Each one is reviewed by Apple; audio without playing sound means rejection.</li>
-    <li><strong>Testing</strong>: there is no <code>adb</code>. With the app paused in the Xcode debugger, <code>e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"..."]</code>.</li>
-  </ul>
-  <p><strong>For the tests:</strong> on iOS there is no periodic task with a set time; the system learns the user's habits and decides when to wake the app.</p>
+  <h2>Your group's next piece</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 400" role="img" aria-label="The path of pieces, in order, and where to copy them from: 1 login and session, pdm-aula-17, login_screen and session_notifier; 2 navigation, pdm-aula-10, router.dart; 3 islands and forecast, pdm-aula-17, islands_screen and forecast_notifier; 4 warnings, the API, GET /v1/warnings; 5 trails, pdm-aula-10, trails_screen and trail_screen; 6 favourites, pdm-aula-17, favorites_repository; 7 reports with a photo, tomorrow, POST /v1/reports.">
+<circle cx="40" cy="40" r="18" class="box accent"/>
+<text x="40" y="46" class="t b" text-anchor="middle">1</text>
+<line x1="40" y1="58" x2="40" y2="76" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="20" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="46" class="t b">Login and session</text>
+<rect x="392" y="20" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="46" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-17</text>
+<text x="580" y="46" class="t s" style="font-family:var(--mono,monospace)">login_screen, session_notifier</text>
+<circle cx="40" cy="94" r="18" class="box accent"/>
+<text x="40" y="100" class="t b" text-anchor="middle">2</text>
+<line x1="40" y1="112" x2="40" y2="130" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="74" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="100" class="t b">Navigation</text>
+<rect x="392" y="74" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="100" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-10</text>
+<text x="580" y="100" class="t s" style="font-family:var(--mono,monospace)">router.dart</text>
+<circle cx="40" cy="148" r="18" class="box accent"/>
+<text x="40" y="154" class="t b" text-anchor="middle">3</text>
+<line x1="40" y1="166" x2="40" y2="184" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="128" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="154" class="t b">Islands and forecast</text>
+<rect x="392" y="128" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="154" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-17</text>
+<text x="580" y="154" class="t s" style="font-family:var(--mono,monospace)">islands_screen, forecast_notifier</text>
+<circle cx="40" cy="202" r="18" class="box accent"/>
+<text x="40" y="208" class="t b" text-anchor="middle">4</text>
+<line x1="40" y1="220" x2="40" y2="238" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="182" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="208" class="t b">Warnings</text>
+<rect x="392" y="182" width="170" height="40" rx="8" class="box muted"/>
+<text x="477" y="208" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">API</text>
+<text x="580" y="208" class="t s" style="font-family:var(--mono,monospace)">GET /v1/warnings</text>
+<circle cx="40" cy="256" r="18" class="box accent"/>
+<text x="40" y="262" class="t b" text-anchor="middle">5</text>
+<line x1="40" y1="274" x2="40" y2="292" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="236" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="262" class="t b">Trails</text>
+<rect x="392" y="236" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="262" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-10</text>
+<text x="580" y="262" class="t s" style="font-family:var(--mono,monospace)">trails_screen, trail_screen</text>
+<circle cx="40" cy="310" r="18" class="box accent"/>
+<text x="40" y="316" class="t b" text-anchor="middle">6</text>
+<line x1="40" y1="328" x2="40" y2="346" style="stroke:var(--border);stroke-width:2"/>
+<rect x="72" y="290" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="316" class="t b">Favourites</text>
+<rect x="392" y="290" width="170" height="40" rx="8" class="box ok"/>
+<text x="477" y="316" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">pdm-aula-17</text>
+<text x="580" y="316" class="t s" style="font-family:var(--mono,monospace)">favorites_repository</text>
+<circle cx="40" cy="364" r="18" class="box accent"/>
+<text x="40" y="370" class="t b" text-anchor="middle">7</text>
+<rect x="72" y="344" width="300" height="40" rx="8" class="box"/>
+<text x="88" y="370" class="t b">Reports with a photo</text>
+<rect x="392" y="344" width="170" height="40" rx="8" class="box muted"/>
+<text x="477" y="370" class="t s" text-anchor="middle" style="font-family:var(--mono,monospace)">tomorrow</text>
+<text x="580" y="370" class="t s" style="font-family:var(--mono,monospace)">POST /v1/reports</text>
+</svg>
+  </figure>
+  <div class="callout tip"><strong>Today</strong> Find yourselves on the path: the first piece not yet on <code>main</code> is today's. Copy from the repository shown, adapt it, and take it through a PR to the merge.</div>
+  <aside class="notes">Order chosen so each piece builds on the one before: no login, no favourites; no navigation, nowhere to put the trails. Warnings have no repository: the endpoint is on the API page and the model works like the islands one. Reports with a photo are for tomorrow, with the camera and gallery. Visit the groups on pieces 1 and 2 first.</aside>
 </section>
 
 <section class="slide">
-  <h2>In Flutter: workmanager, background_fetch and the isolate</h2>
-  <ul>
-    <li><strong><code>workmanager</code></strong>: WorkManager on Android and BGTaskScheduler on iOS, with a single API. Periodic tasks with a frequency only on Android; on iOS you register identifiers and the system calls when it wants.</li>
-    <li><strong><code>background_fetch</code></strong>: the same space, with background fetch on iOS and <em>headless</em> mode on Android. <strong><code>flutter_background_service</code></strong>: a foreground service with an isolate running.</li>
-    <li><strong>The callback runs in a new isolate</strong>, opened by native code, without the app: separate memory, <code>main()</code> has not run, no widget exists.</li>
-    <li><strong>It can use</strong>: pure Dart, <code>http</code>, <code>shared_preferences</code>, <code>drift</code>, <code>flutter_secure_storage</code>, <code>flutter_local_notifications</code>. <strong>It cannot use</strong>: <code>BuildContext</code>, <code>Provider</code>, <code>setState</code>, plugins that need an Activity (permission dialogs, <code>image_picker</code>), the app's in-memory state.</li>
-    <li><strong><code>@pragma('vm:entry-point')</code></strong> on the top-level function: in release, <em>tree-shaking</em> removes whatever no Dart code calls, and this one is called by native code.</li>
-    <li>With the app open at the same time there are two isolates using the same database. The disk is the only meeting point: drift copes, an in-memory <code>Map</code> does not.</li>
-  </ul>
-  <p><strong>For the tests:</strong> the background callback runs in a new isolate, with no widget tree and without the app's state; only the disk is shared.</p>
-  <aside class="notes">Link to lesson 18: compute() creates an isolate from the app; here it is the system that creates the isolate and the app may not even exist. The rules are the same (no BuildContext, data copied), made worse by the fact that main() has not run: whoever wants the token has to read it from secure storage again.</aside>
-</section>
-
-<section class="slide">
-  <h2>Patterns: sync in the small hours, do not poll, respect the user</h2>
-  <ul>
-    <li><strong>Sync when it pays off</strong>: with network and battery not low (constraints), while charging for what is heavy, in the small hours for what can wait.</li>
-    <li><strong>Do not poll.</strong> "Anything new?" every 15 minutes is what WorkManager allows, and it is almost always the wrong answer: push (lesson 19) for what the server knows, refresh on open for the rest.</li>
-    <li><strong>Short and idempotent</strong>: it can be killed halfway and repeated. Save "last sync" and do no more than one per window; <code>return false</code> lets WorkManager retry with backoff.</li>
-    <li><strong>Respect the user</strong>: a switch in the settings, respect battery saver mode, no waking the phone for the sake of analytics.</li>
-    <li><strong>Measure</strong>: Battery Historian and <code>adb shell dumpsys batterystats</code>; the Energy gauge in Xcode. The user sees "used 12% in the background" in the battery settings, and uninstalls.</li>
-    <li>Examples: Gmail syncs by push, not by polling; Spotify downloads playlists at night while charging; weather apps use the system refresh and a home screen widget.</li>
-  </ul>
-  <p><strong>For the tests:</strong> background work is short, idempotent and tolerates being deferred or repeated; if it needs an exact time, it is not background work, it is an alarm or a scheduled notification.</p>
-</section>
-
-<section class="slide" data-part="Sprint">
-  <h2>Sprint 2: status check (week 2 of 2)</h2>
-  <p>Each group, one minute, standing up, without opening the laptop:</p>
-  <ol class="steps">
-    <li><strong>What is merged into <code>main</code></strong> and runs on the phone right now. Are yesterday's warning notification and deep link already in a PR?</li>
-    <li><strong>What is in an open PR</strong> and who is reviewing it.</li>
-    <li><strong>What goes into the review on Wednesday 18/11</strong> and what moves to sprint 3. Deciding today is better than finding out on Tuesday.</li>
-    <li><strong>One blocker</strong>, if there is one. The teacher sorts out the blockers first, then goes round in the order on the board.</li>
+  <h2>Until 10:25: one piece, one PR, one merge</h2>
+  <ol>
+    <li>A branch named after the piece: <code>git switch -c warnings</code>.</li>
+    <li>Small commits, each with the app running.</li>
+    <li>A PR on GitHub, with a group colleague as reviewer.</li>
+    <li>The colleague opens the PR, leaves a comment and approves. Merge.</li>
+    <li>Everyone runs <code>git pull</code> on <code>main</code>.</li>
   </ol>
-  <div class="callout warn"><strong>Sprint 2 review: Wednesday 18/11</strong> A 5-minute demo per group, on the phone, from <code>main</code>. Candidates: synced favourites, offline cache with "updated X ago", map with the nearest location, warning notification with deep link. Not everything is mandatory; whatever goes in has the four UI states handled.</div>
-  <aside class="notes">Time it: anyone who goes over the minute is cut off. Write the blockers on the board and tackle them in order. Groups without a blocker watch the demo at 09:10 and get to work. From 09:25 go round: ask each group to show you the deep link with the app closed and the app in airplane mode; those are the two paths nobody tests on their own.</aside>
-</section>
-
-<section class="slide">
-  <h2>Demo (1 of 2): register the periodic task on Android</h2>
-<pre data-title="lib/main.dart"><code class="language-dart">import 'package:workmanager/workmanager.dart';
-import 'background/background_tasks.dart'; // callbackDispatcher and cacheTask
-
-Future&lt;void&gt; main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Workmanager().initialize(callbackDispatcher); // top-level function: next slide
-
-  // Android: every 6 hours, only with network and battery not low. The system picks the time.
-  // The unique name avoids duplicates: registering again under it keeps the existing one.
-  await Workmanager().registerPeriodicTask(
-    cacheTask, // uniqueName: to cancel and not duplicate
-    cacheTask, // taskName: what reaches the callback
-    frequency: const Duration(hours: 6),
-    constraints: Constraints(
-      networkType: NetworkType.connected,
-      requiresBatteryNotLow: true,
-    ),
-    backoffPolicy: BackoffPolicy.exponential, // failed? retry with a growing delay
-  );
-
-  // Test right away, in development only: registerOneOffTask('test', cacheTask, initialDelay: 10 s)
-  runApp(/* ...as in lesson 22 */);
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Demo (2 of 2): the top-level callback, in an isolate without the app</h2>
-<pre data-title="lib/background/background_tasks.dart"><code class="language-dart">import 'package:workmanager/workmanager.dart';
-const cacheTask = 'pt.uac.tempoacores.refreshCache';
-
-/// Called by native code in a new isolate, without the app: top-level, and with
-/// the pragma so that tree-shaking does not remove it in release.
-@pragma('vm:entry-point')
-void callbackDispatcher() {
-  Workmanager().executeTask((task, data) async {
-    if (task != cacheTask) return true; // unknown task: do not retry
-    try { // no Provider or BuildContext: we build what we need by hand
-      final token = await const FlutterSecureStorage().read(key: 'token');
-      if (token == null) return true; // no session, nothing to do
-      final api = ApiClient(token: token);
-      final cache = ForecastCache(AppDatabase()); // drift, lesson 16
-      final favorites = await LocalFavorites.ids(); // shared_preferences
-      for (final id in favorites) {
-        await cache.save(id, await api.forecast(id)); // GET /v1/forecast/{id}
-      }
-      await BackgroundWarnings(api, cache).checkAndNotify(favorites); // lesson 22
-      return true;
-    } catch (e) {
-      return false; // WorkManager retries with exponential backoff
-    }
-  });
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Demo: what matters</h2>
-  <ul>
-    <li><strong>Unique name vs task name</strong>: the first identifies the registration (cancel with <code>cancelByUniqueName</code>, do not duplicate); the second reaches the callback so it knows what to do.</li>
-    <li><strong>6 hours is a request.</strong> With Doze and buckets it can be 7 or 9. Minimum 15 minutes. If you need a set time, it is <code>zonedSchedule</code> (yesterday) or an alarm.</li>
-    <li><strong>Same database, two isolates</strong>: drift opens another connection. The open app sees the new data when the user refreshes, or straight away if it observes the table with <code>watch()</code>.</li>
-    <li><code>return true</code> is done; <code>return false</code> is retry with backoff; an uncaught exception is a silent failure in release. Catch everything and log it.</li>
-    <li><strong>See and force</strong>: <code>adb shell dumpsys jobscheduler | grep tempoacores</code> lists what is scheduled; <code>registerOneOffTask</code> with an <code>initialDelay</code> of 10 s runs right away. The <code>print</code> calls from the isolate show up in the normal <code>flutter run</code>.</li>
-    <li><strong>iOS</strong>: <code>BGTaskSchedulerPermittedIdentifiers</code> and <code>UIBackgroundModes</code> in <code>Info.plist</code>, registration in the <code>AppDelegate</code>, and the system calls <code>executeTask</code> when it wants. Not part of the project.</li>
-  </ul>
-  <div class="callout task"><strong>Exercise 1 (extra, only after the sprint essentials)</strong> A periodic task on Android that refreshes the cache of the favourites and fires the warning notification from lesson 22 without the app open. A "Refresh in the background" switch in the settings that calls <code>cancelByUniqueName</code>. Test with an <code>initialDelay</code> of 10 s, the app closed and the phone locked.</div>
-  <aside class="notes">Do the demo with the app closed and the phone locked, and show the log in the terminal when the task runs and the warning notification appearing on the lock screen. Then open the app: the "updated 0 min ago" proves that the cache was written by the isolate. Fifteen minutes in total; the rest of the lesson belongs to the groups.</aside>
+  <div class="callout"><strong>At 10:15</strong> Each group says in one sentence: which piece, and where the PR stands.</div>
+  <aside class="notes">PRs open for more than a day with no review get closed before starting a new piece. Whoever finishes a piece moves on to the next one on the path.</aside>
 </section>
 
 <section class="slide" data-part="End">
   <h2>See you tomorrow</h2>
   <div class="cols">
     <div>
-      <h3>To do</h3>
-      <ul class="checklist">
-        <li>Sprint 2 continues: yesterday's PRs (warning notification and deep link) reviewed and merged; review on Wednesday 18/11 from <code>main</code>.</li>
-        <li>Decide today what goes into the review and close, with a justification, the issues that move to sprint 3.</li>
-        <li>Tomorrow at 16:00: hardware and sensors. Bring your phone with NFC turned on, if it has it.</li>
+      <h3>Tomorrow</h3>
+      <ul>
+        <li>Wednesday 11 November, 16:00 to 18:00: hardware and sensors, and sprint 2.</li>
+        <li>The camera and gallery are for piece 7, reports with a photo.</li>
+        <li>Bring today's PR merged, and the group app running on the phone.</li>
       </ul>
     </div>
     <div>
-      <h3>To read</h3>
+      <h3>For those who want to read more</h3>
       <ul>
-        <li><a href="https://developer.android.com/develop/background-work/background-tasks" target="_blank" rel="noopener">Background tasks overview</a> on Android: the decision tree between WorkManager, foreground service and alarms.</li>
-        <li><a href="https://developer.android.com/develop/background-work/background-tasks/persistent" target="_blank" rel="noopener">Persistent work with WorkManager</a>: constraints, periodic work, the 15-minute minimum and the backoff on failure.</li>
-        <li><a href="https://developer.apple.com/documentation/backgroundtasks" target="_blank" rel="noopener">BackgroundTasks</a> at Apple: <code>BGAppRefreshTask</code>, <code>BGProcessingTask</code> and how the system decides when to run them.</li>
-        <li><a href="https://developer.android.com/guide/components/activities/process-lifecycle" target="_blank" rel="noopener">Processes and app lifecycle</a>: the Android process hierarchy and the order in which the system kills processes when memory runs low.</li>
-        <li><a href="https://pub.dev/packages/workmanager" target="_blank" rel="noopener">workmanager</a>: the per-platform configuration, the constraints and what iOS does not support.</li>
+        <li><a href="https://developer.android.com/develop/background-work/background-tasks" target="_blank" rel="noopener">Background tasks</a>: the Android guide to choosing between WorkManager, services and alarms.</li>
+        <li><a href="https://developer.android.com/training/monitoring-device-state/doze-standby" target="_blank" rel="noopener">Doze and App Standby</a>: what Android does when the phone is still.</li>
+        <li><a href="https://developer.apple.com/documentation/backgroundtasks" target="_blank" rel="noopener">BackgroundTasks</a>: Apple's rules for background work.</li>
+        <li><a href="https://pub.dev/packages/workmanager" target="_blank" rel="noopener">workmanager</a> and <a href="https://pub.dev/packages/flutter_local_notifications" target="_blank" rel="noopener">flutter_local_notifications</a>: the two Flutter packages.</li>
+        <li><a href="https://dontkillmyapp.com" target="_blank" rel="noopener">Don't kill my app</a>: the brands that cut background apps the most.</li>
       </ul>
     </div>
   </div>
@@ -257,5 +566,6 @@ void callbackDispatcher() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../../assets/app.js"></script>
+<script src="../../assets/parsons.js"></script>
 </body>
 </html>
