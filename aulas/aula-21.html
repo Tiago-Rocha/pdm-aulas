@@ -158,10 +158,10 @@
 <section class="slide" data-part="Permissões">
   <h2>O mapa das permissões</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 388" role="img" aria-label="Grelha de permissões, Android à esquerda e iPhone à direita. Internet: dada ao instalar no Android, não é permissão no iPhone. Localização, câmara, microfone, contactos, notificações e Bluetooth: os dois perguntam. Uma foto: o seletor do sistema não pergunta nada. Rastreio entre apps: o Android não pergunta, o iPhone pergunta com a App Tracking Transparency.">
+  <svg viewBox="0 0 900 388" role="img" aria-label="Grelha de permissões, Android à esquerda e iPhone à direita. Internet: dada ao instalar no Android, não é permissão no iPhone. Localização, câmara, microfone, contactos, notificações e Bluetooth: os dois perguntam; na localização, os dois deixam escolher entre precisa e aproximada e dar só uma vez. Uma foto: o seletor do sistema não pergunta nada. Rastreio entre apps: o Android não pergunta, o iPhone pergunta com a App Tracking Transparency.">
 <text x="20" y="24" class="t s">O QUÊ</text><text x="226" y="24" class="t s">ANDROID</text><text x="566" y="24" class="t s">IPHONE</text>
 <text x="20" y="61" class="t b">Internet</text><rect x="210" y="40" width="335" height="31" rx="8" class="box ok"/><text x="224" y="61" class="t s">dada ao instalar</text><rect x="555" y="40" width="335" height="31" rx="8" class="box muted"/><text x="569" y="61" class="t s">não é permissão</text>
-<text x="20" y="99" class="t b">Localização</text><rect x="210" y="78" width="335" height="31" rx="8" class="box warn"/><text x="224" y="99" class="t s">pergunta · aproximada ou precisa</text><rect x="555" y="78" width="335" height="31" rx="8" class="box warn"/><text x="569" y="99" class="t s">pergunta · uma vez ou em uso</text>
+<text x="20" y="99" class="t b">Localização</text><rect x="210" y="78" width="335" height="31" rx="8" class="box warn"/><text x="224" y="99" class="t s">pergunta · precisa ou aproximada · uma vez</text><rect x="555" y="78" width="335" height="31" rx="8" class="box warn"/><text x="569" y="99" class="t s">pergunta · precisa ou aproximada · uma vez</text>
 <text x="20" y="137" class="t b">Câmara</text><rect x="210" y="116" width="335" height="31" rx="8" class="box warn"/><text x="224" y="137" class="t s">pergunta · só desta vez</text><rect x="555" y="116" width="335" height="31" rx="8" class="box warn"/><text x="569" y="137" class="t s">pergunta · sem razão, a app fecha</text>
 <text x="20" y="175" class="t b">Microfone</text><rect x="210" y="154" width="335" height="31" rx="8" class="box warn"/><text x="224" y="175" class="t s">pergunta · só desta vez</text><rect x="555" y="154" width="335" height="31" rx="8" class="box warn"/><text x="569" y="175" class="t s">pergunta</text>
 <text x="20" y="213" class="t b">Uma foto</text><rect x="210" y="192" width="335" height="31" rx="8" class="box ok"/><text x="224" y="213" class="t s">seletor do sistema: não pergunta</text><rect x="555" y="192" width="335" height="31" rx="8" class="box ok"/><text x="569" y="213" class="t s">seletor do sistema: não pergunta</text>
@@ -175,7 +175,7 @@
   <ul>
     <li><strong>No Android</strong> umas são dadas ao instalar e outras perguntadas em uso. <strong>No iPhone</strong> tudo o que é sensível se pergunta em uso, sempre com a frase de razão do <code>Info.plist</code>.</li>
   </ul>
-  <aside class="notes">Lê a grelha por linhas, não por colunas. A pergunta que interessa é "esta funcionalidade abre uma janela?". Internet não abre em lado nenhum: no Android é dada ao instalar, e no iPhone nem existe como permissão. A câmara no iPhone sem a frase NSCameraUsageDescription faz a app fechar logo, não é só a janela que falha. Os contactos no iPhone, desde o iOS 18, podem ficar limitados a alguns. As notificações no iPhone podem chegar "em silêncio" ao centro de notificações sem perguntar nada (autorização provisória). Pergunta à turma: "que linha da grelha vos surpreendeu?" Costuma ser a da foto: escolher uma foto não precisa de permissão nenhuma.</aside>
+  <aside class="notes">Lê a grelha por linhas, não por colunas. A localização é igual nos dois: a pessoa escolhe precisa ou aproximada (no Android com duas imagens, no iPhone com o interruptor "Precisa" no canto do mapa, desde o iOS 14) e escolhe entre só uma vez, em uso ou não permitir. No Flutter, <code>Geolocator.getLocationAccuracy()</code> diz qual das duas a pessoa deu. A pergunta que interessa é "esta funcionalidade abre uma janela?". Internet não abre em lado nenhum: no Android é dada ao instalar, e no iPhone nem existe como permissão. A câmara no iPhone sem a frase NSCameraUsageDescription faz a app fechar logo, não é só a janela que falha. Os contactos no iPhone, desde o iOS 18, podem ficar limitados a alguns. As notificações no iPhone podem chegar "em silêncio" ao centro de notificações sem perguntar nada (autorização provisória). Pergunta à turma: "que linha da grelha vos surpreendeu?" Costuma ser a da foto: escolher uma foto não precisa de permissão nenhuma.</aside>
 </section>
 
 <section class="slide">
@@ -620,7 +620,7 @@ Future&lt;void&gt; _goToMe() async {
       <ul>
         <li>Terça, 10 de novembro, das 08:30 às 10:30: sprint 2 no projeto, a começar pelo issue "Permissões".</li>
         <li>Tragam a app do grupo a correr no telemóvel.</li>
-        <li>A localização no código está nos slides Extra, com a solução no branch <code>passo-4</code> do <code>pdm-aula-21</code>.</li>
+        <li>A localização no código está nos slides Extra, com a solução no branch <code>passo-4</code> do <code>pdm-aula-21</code>. Para ver o código sem checkout: <a href="https://github.com/Tiago-Rocha/pdm-aula-21/tree/passo-4" target="_blank" rel="noopener">abrir o passo-4 no GitHub</a>.</li>
       </ul>
     </div>
     <div>

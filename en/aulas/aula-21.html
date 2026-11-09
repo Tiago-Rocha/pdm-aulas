@@ -158,10 +158,10 @@
 <section class="slide" data-part="Permissions">
   <h2>The permission map</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 388" role="img" aria-label="Permission grid, Android on the left and iPhone on the right. Internet: granted at install on Android, not a permission on iPhone. Location, camera, microphone, contacts, notifications and Bluetooth: both ask. One photo: the system picker asks nothing. Tracking across apps: Android does not ask, iPhone asks with App Tracking Transparency.">
+  <svg viewBox="0 0 900 388" role="img" aria-label="Permission grid, Android on the left and iPhone on the right. Internet: granted at install on Android, not a permission on iPhone. Location, camera, microphone, contacts, notifications and Bluetooth: both ask; for location, both let the person choose precise or approximate and allow it only once. One photo: the system picker asks nothing. Tracking across apps: Android does not ask, iPhone asks with App Tracking Transparency.">
 <text x="20" y="24" class="t s">WHAT</text><text x="226" y="24" class="t s">ANDROID</text><text x="566" y="24" class="t s">IPHONE</text>
 <text x="20" y="61" class="t b">Internet</text><rect x="210" y="40" width="335" height="31" rx="8" class="box ok"/><text x="224" y="61" class="t s">granted at install</text><rect x="555" y="40" width="335" height="31" rx="8" class="box muted"/><text x="569" y="61" class="t s">not a permission</text>
-<text x="20" y="99" class="t b">Location</text><rect x="210" y="78" width="335" height="31" rx="8" class="box warn"/><text x="224" y="99" class="t s">asks · approximate or precise</text><rect x="555" y="78" width="335" height="31" rx="8" class="box warn"/><text x="569" y="99" class="t s">asks · once or while using</text>
+<text x="20" y="99" class="t b">Location</text><rect x="210" y="78" width="335" height="31" rx="8" class="box warn"/><text x="224" y="99" class="t s">asks · precise or approximate · once</text><rect x="555" y="78" width="335" height="31" rx="8" class="box warn"/><text x="569" y="99" class="t s">asks · precise or approximate · once</text>
 <text x="20" y="137" class="t b">Camera</text><rect x="210" y="116" width="335" height="31" rx="8" class="box warn"/><text x="224" y="137" class="t s">asks · only this time</text><rect x="555" y="116" width="335" height="31" rx="8" class="box warn"/><text x="569" y="137" class="t s">asks · no reason, the app closes</text>
 <text x="20" y="175" class="t b">Microphone</text><rect x="210" y="154" width="335" height="31" rx="8" class="box warn"/><text x="224" y="175" class="t s">asks · only this time</text><rect x="555" y="154" width="335" height="31" rx="8" class="box warn"/><text x="569" y="175" class="t s">asks</text>
 <text x="20" y="213" class="t b">One photo</text><rect x="210" y="192" width="335" height="31" rx="8" class="box ok"/><text x="224" y="213" class="t s">system picker: does not ask</text><rect x="555" y="192" width="335" height="31" rx="8" class="box ok"/><text x="569" y="213" class="t s">system picker: does not ask</text>
@@ -175,7 +175,7 @@
   <ul>
     <li><strong>On Android</strong> some are granted at install and others are asked in use. <strong>On iPhone</strong> everything sensitive is asked in use, always with the reason sentence from <code>Info.plist</code>.</li>
   </ul>
-  <aside class="notes">Read the grid by rows, not by columns. The question that matters is "does this feature open a dialog?". Internet opens nothing anywhere: on Android it is granted at install, and on iPhone it does not even exist as a permission. The camera on iPhone without the NSCameraUsageDescription sentence makes the app close at once, it is not just the dialog that fails. Contacts on iPhone, since iOS 18, can be limited to a few. Notifications on iPhone can arrive "quietly" in the notification centre without asking anything (provisional authorization). Question for the class: "which row of the grid surprised you?" It is usually the photo one: picking a photo needs no permission at all.</aside>
+  <aside class="notes">Read the grid by rows, not by columns. Location is the same on both: the person picks precise or approximate (on Android with two pictures, on iPhone with the "Precise" switch in the corner of the map, since iOS 14) and picks only once, while using or don't allow. In Flutter, <code>Geolocator.getLocationAccuracy()</code> tells which of the two the person gave. The question that matters is "does this feature open a dialog?". Internet opens nothing anywhere: on Android it is granted at install, and on iPhone it does not even exist as a permission. The camera on iPhone without the NSCameraUsageDescription sentence makes the app close at once, it is not just the dialog that fails. Contacts on iPhone, since iOS 18, can be limited to a few. Notifications on iPhone can arrive "quietly" in the notification centre without asking anything (provisional authorization). Question for the class: "which row of the grid surprised you?" It is usually the photo one: picking a photo needs no permission at all.</aside>
 </section>
 
 <section class="slide">
@@ -620,7 +620,7 @@ Future&lt;void&gt; _goToMe() async {
       <ul>
         <li>Tuesday, 10 November, 08:30 to 10:30: sprint 2 on the project, starting with the "Permissions" issue.</li>
         <li>Bring the group's app running on the phone.</li>
-        <li>Location in code is in the Extra slides, with the solution on the <code>passo-4</code> branch of <code>pdm-aula-21</code>.</li>
+        <li>Location in code is in the Extra slides, with the solution on the <code>passo-4</code> branch of <code>pdm-aula-21</code>. To see the code without a checkout: <a href="https://github.com/Tiago-Rocha/pdm-aula-21/tree/passo-4" target="_blank" rel="noopener">open passo-4 on GitHub</a>.</li>
       </ul>
     </div>
     <div>
