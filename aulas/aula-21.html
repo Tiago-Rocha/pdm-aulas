@@ -27,23 +27,23 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 21 · Semana 10 · Segunda, 9 de novembro de 2026 · 16:00 às 18:00</p>
   <h1>Workshop: localização, mapas e permissões</h1>
-  <p class="lead">Teoria: de onde vem a posição do telemóvel, o que custa em bateria, as permissões e as quatro respostas possíveis, e um mapa feito de azulejos. Um jogo sobre as respostas da pessoa. Prática em dois passos no Tempo Açores: "Onde estou?" e a ilha mais próxima. O mapa com um pino por ilha fica para quem tiver tempo, e entra no projeto do grupo na sprint.</p>
+  <p class="lead">Primeiro, a localização: de onde vem a posição do telemóvel, as quatro respostas à permissão e um mapa feito de azulejos. Depois, as permissões no Android e no iPhone: quais há, a vida de uma permissão, os casos com regras próprias e o que as lojas conferem. Um jogo, e uma atividade sem código: as permissões do teu telemóvel e as do projeto do grupo.</p>
   <div class="meta"><span>Repositório: pdm-aula-21</span></div>
-  <aside class="notes">Versão de 2 horas, sem intervalo. Tempos de referência: teoria até às 16:25, jogo até às 16:40, arranque até às 16:45, passo 1 até às 17:15, passo 2 até às 17:40, passo 3 se houver tempo, fecho às 17:55. Pede logo no início que liguem a localização no telemóvel; quem usa o Chrome não precisa de nada. O passo 4 não se dá: fica no branch <code>passo-4</code>, e o mapa entra no projeto na sprint de amanhã.</aside>
+  <aside class="notes">Versão de 2 horas, sem intervalo e sem código. Tempos de referência: localização e mapas até às 16:25, permissões até às 16:55, jogo até às 17:10, o teu telemóvel até às 17:25, as permissões do projeto até às 17:45, fecho às 17:55. Pede logo no início que tenham o telemóvel à mão. Os slides Extra, com a prática da localização, não se dão: da atividade salta para o Fim, na barra das partes.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Explicar de onde vem a posição do telemóvel (GPS, Wi-Fi e antenas) e porque é que mais precisão custa mais bateria.</li>
-    <li>Pedir a permissão de localização no momento certo e tratar as quatro respostas, incluindo "nunca mais".</li>
-    <li>Calcular a distância a cada ilha e dizer qual é a mais próxima.</li>
+    <li>Explicar de onde vem a posição do telemóvel e porque é que mais precisão custa mais bateria.</li>
+    <li>Dizer que permissões abrem uma janela no Android e no iPhone, e quais não perguntam nada.</li>
+    <li>Descrever a vida de uma permissão, de declarar a mudar, e tratar as respostas, incluindo "nunca mais".</li>
+    <li>Escrever uma frase de razão que a pessoa e as lojas aceitam.</li>
     <li>Explicar como se monta um mapa com azulejos do OpenStreetMap e o que custa mostrá-lo.</li>
-    <li>Escolher entre Google Maps, Apple Maps e OpenStreetMap, e dizer o que cada um custa.</li>
   </ul>
 </section>
 
-<section class="slide" data-part="Teoria">
+<section class="slide" data-part="Localização">
   <h2>Depois do toque em "Onde estou?"</h2>
   <figure class="diagram">
   <svg viewBox="0 0 900 372" role="img" aria-label="Cinco linhas, do toque ao mapa. 1: o serviço está ligado? isLocationServiceEnabled, responde o sistema. 2: posso saber? checkPermission e requestPermission, responde a pessoa. 3: onde estou? getCurrentPosition, respondem o GPS, o Wi-Fi e as antenas. 4: que ilha? distanceBetween, responde a própria app. Depois, um segundo toque, no separador Mapa: 5, como mostro? FlutterMap, responde o servidor de mapas.">
@@ -155,27 +155,179 @@
   <aside class="notes">Não é para ler em voz alta: fica para estudarem. Se perguntarem pelo segundo plano e pelo geofencing: seguir a pessoa com o ecrã desligado (navegação, entregas) e uma cerca virtual em que o sistema acorda a app quando se entra ou sai. Nenhum entra no projeto.</aside>
 </section>
 
+<section class="slide" data-part="Permissões">
+  <h2>O mapa das permissões</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 388" role="img" aria-label="Grelha de permissões, Android à esquerda e iPhone à direita. Internet: dada ao instalar no Android, não é permissão no iPhone. Localização, câmara, microfone, contactos, notificações e Bluetooth: os dois perguntam. Uma foto: o seletor do sistema não pergunta nada. Rastreio entre apps: o Android não pergunta, o iPhone pergunta com a App Tracking Transparency.">
+<text x="20" y="24" class="t s">O QUÊ</text><text x="226" y="24" class="t s">ANDROID</text><text x="566" y="24" class="t s">IPHONE</text>
+<text x="20" y="61" class="t b">Internet</text><rect x="210" y="40" width="335" height="31" rx="8" class="box ok"/><text x="224" y="61" class="t s">dada ao instalar</text><rect x="555" y="40" width="335" height="31" rx="8" class="box muted"/><text x="569" y="61" class="t s">não é permissão</text>
+<text x="20" y="99" class="t b">Localização</text><rect x="210" y="78" width="335" height="31" rx="8" class="box warn"/><text x="224" y="99" class="t s">pergunta · aproximada ou precisa</text><rect x="555" y="78" width="335" height="31" rx="8" class="box warn"/><text x="569" y="99" class="t s">pergunta · uma vez ou em uso</text>
+<text x="20" y="137" class="t b">Câmara</text><rect x="210" y="116" width="335" height="31" rx="8" class="box warn"/><text x="224" y="137" class="t s">pergunta · só desta vez</text><rect x="555" y="116" width="335" height="31" rx="8" class="box warn"/><text x="569" y="137" class="t s">pergunta · sem razão, a app fecha</text>
+<text x="20" y="175" class="t b">Microfone</text><rect x="210" y="154" width="335" height="31" rx="8" class="box warn"/><text x="224" y="175" class="t s">pergunta · só desta vez</text><rect x="555" y="154" width="335" height="31" rx="8" class="box warn"/><text x="569" y="175" class="t s">pergunta</text>
+<text x="20" y="213" class="t b">Uma foto</text><rect x="210" y="192" width="335" height="31" rx="8" class="box ok"/><text x="224" y="213" class="t s">seletor do sistema: não pergunta</text><rect x="555" y="192" width="335" height="31" rx="8" class="box ok"/><text x="569" y="213" class="t s">seletor do sistema: não pergunta</text>
+<text x="20" y="251" class="t b">Contactos</text><rect x="210" y="230" width="335" height="31" rx="8" class="box warn"/><text x="224" y="251" class="t s">pergunta</text><rect x="555" y="230" width="335" height="31" rx="8" class="box warn"/><text x="569" y="251" class="t s">pergunta · pode dar só alguns</text>
+<text x="20" y="289" class="t b">Notificações</text><rect x="210" y="268" width="335" height="31" rx="8" class="box warn"/><text x="224" y="289" class="t s">pergunta desde o Android 13</text><rect x="555" y="268" width="335" height="31" rx="8" class="box warn"/><text x="569" y="289" class="t s">pergunta · ou chegam em silêncio</text>
+<text x="20" y="327" class="t b">Bluetooth</text><rect x="210" y="306" width="335" height="31" rx="8" class="box warn"/><text x="224" y="327" class="t s">pergunta · dispositivos próximos</text><rect x="555" y="306" width="335" height="31" rx="8" class="box warn"/><text x="569" y="327" class="t s">pergunta</text>
+<text x="20" y="365" class="t b">Rastreio</text><rect x="210" y="344" width="335" height="31" rx="8" class="box muted"/><text x="224" y="365" class="t s">não pergunta · está nas definições</text><rect x="555" y="344" width="335" height="31" rx="8" class="box danger"/><text x="569" y="365" class="t s">pergunta · App Tracking Transparency</text>
+</svg>
+  <figcaption>Verde: a pessoa nem dá por ela. Amarelo: aparece uma janela. A mesma funcionalidade pode ter regras diferentes em cada sistema.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>No Android</strong> umas são dadas ao instalar e outras perguntadas em uso. <strong>No iPhone</strong> tudo o que é sensível se pergunta em uso, sempre com a frase de razão do <code>Info.plist</code>.</li>
+  </ul>
+  <aside class="notes">Lê a grelha por linhas, não por colunas. A pergunta que interessa é "esta funcionalidade abre uma janela?". Internet não abre em lado nenhum: no Android é dada ao instalar, e no iPhone nem existe como permissão. A câmara no iPhone sem a frase NSCameraUsageDescription faz a app fechar logo, não é só a janela que falha. Os contactos no iPhone, desde o iOS 18, podem ficar limitados a alguns. As notificações no iPhone podem chegar "em silêncio" ao centro de notificações sem perguntar nada (autorização provisória). Pergunta à turma: "que linha da grelha vos surpreendeu?" Costuma ser a da foto: escolher uma foto não precisa de permissão nenhuma.</aside>
+</section>
+
+<section class="slide">
+  <h2>A vida de uma permissão</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 250" role="img" aria-label="Quatro fases em linha: declarar no Manifest e no Info.plist, pedir no toque que precisa, responder com uma de cinco respostas, e mudar, porque a pessoa pode tirar a permissão nas definições e o Android tira-a sozinho. Uma seta tracejada volta da quarta para a segunda: verifica antes de cada uso.">
+<rect x="10" y="10" width="200" height="130" rx="12" class="box "/><circle cx="40" cy="42" r="16" class="box accent"/><text x="40" y="47" text-anchor="middle" class="t b">1</text><text x="66" y="48" class="t b">Declarar</text><text x="26" y="86" class="t s">Manifest e Info.plist</text><text x="26" y="112" class="t s">a loja vê o que a app usa</text>
+<line x1="212" y1="75" x2="231" y2="75" class="arrow"/>
+<rect x="235" y="10" width="200" height="130" rx="12" class="box warn"/><circle cx="265" cy="42" r="16" class="box accent"/><text x="265" y="47" text-anchor="middle" class="t b">2</text><text x="291" y="48" class="t b">Pedir</text><text x="251" y="86" class="t s">no toque que precisa</text><text x="251" y="112" class="t s">com a razão à vista</text>
+<line x1="437" y1="75" x2="456" y2="75" class="arrow"/>
+<rect x="460" y="10" width="200" height="130" rx="12" class="box "/><circle cx="490" cy="42" r="16" class="box accent"/><text x="490" y="47" text-anchor="middle" class="t b">3</text><text x="516" y="48" class="t b">Responder</text><text x="476" y="86" class="t s">concedida, negada, para</text><text x="476" y="112" class="t s">sempre, limitada, restrita</text>
+<line x1="662" y1="75" x2="681" y2="75" class="arrow"/>
+<rect x="685" y="10" width="200" height="130" rx="12" class="box muted"/><circle cx="715" cy="42" r="16" class="box accent"/><text x="715" y="47" text-anchor="middle" class="t b">4</text><text x="741" y="48" class="t b">Mudar</text><text x="701" y="86" class="t s">a pessoa tira nas definições;</text><text x="701" y="112" class="t s">o Android tira sozinho</text>
+<line x1="790" y1="144" x2="790" y2="200" class="arrow dashed"/><line x1="790" y1="200" x2="335" y2="200" class="arrow dashed"/><line x1="335" y1="200" x2="335" y2="146" class="arrow dashed"/><text x="562" y="230" text-anchor="middle" class="t s">por isso: verifica antes de cada uso, nunca guardes "já tenho"</text>
+</svg>
+  <figcaption>Uma permissão não fica dada para sempre.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Em Flutter</strong>, o package <code>permission_handler</code> trata todas da mesma maneira: <code>Permission.camera.request()</code> responde <code>granted</code>, <code>denied</code>, <code>permanentlyDenied</code>, <code>limited</code> ou <code>restricted</code>.</li>
+    <li><strong>Restrita</strong> é só no iPhone: controlo parental ou telemóvel da empresa. A pessoa não pode mudar, por isso não vale a pena mandá-la para as definições.</li>
+  </ul>
+  <aside class="notes">A seta tracejada é a ideia do slide. A permissão muda fora da app: a pessoa tira-a nas definições, o "só desta vez" acaba quando a app sai de cena, e o Android repõe as permissões das apps que não se abrem há uns meses. Por isso a app verifica antes de cada uso, como o check() da localização. Pergunta à turma: "a app guardou num ficheiro que a câmara está concedida. A pessoa tirou-a nas definições. O que acontece?" A app tenta usar a câmara sem permissão e falha; no iPhone pode até fechar. Daí verificar sempre.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quatro casos com regras próprias</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 356" role="img" aria-label="Quatro casos especiais. Uma foto: o seletor do sistema não pede permissão. Notificações: o Android pergunta desde a versão 13, o iPhone pergunta sempre ou entrega em silêncio. Localização em segundo plano: pede-se depois do em uso e a Google Play exige justificação. Rastreio entre apps no iPhone: exige a pergunta da App Tracking Transparency.">
+<rect x="10" y="6" width="430" height="164" rx="12" class="box ok"/><text x="28" y="38" class="t b">Uma foto</text>
+<text x="28" y="70" class="t s">O seletor do sistema corre fora da app:</text>
+<text x="28" y="96" class="t s">a pessoa escolhe, a app só recebe essas.</text>
+<text x="28" y="122" class="t s">Sem pergunta nenhuma. A galeria toda pergunta,</text>
+<text x="28" y="148" class="t s">e a pessoa pode dar só algumas.</text>
+<rect x="460" y="6" width="430" height="164" rx="12" class="box warn"/><text x="478" y="38" class="t b">Notificações</text>
+<text x="478" y="70" class="t s">Android 13 em diante: pergunta,</text>
+<text x="478" y="96" class="t s">como a localização.</text>
+<text x="478" y="122" class="t s">iPhone: pergunta sempre, ou entrega em</text>
+<text x="478" y="148" class="t s">silêncio até a pessoa decidir.</text>
+<rect x="10" y="182" width="430" height="164" rx="12" class="box danger"/><text x="28" y="214" class="t b">Localização em segundo plano</text>
+<text x="28" y="246" class="t s">Primeiro "em uso"; o "sempre" vem depois.</text>
+<text x="28" y="272" class="t s">No Android 11 em diante, só nas definições.</text>
+<text x="28" y="298" class="t s">A Google Play pede formulário e vídeo</text>
+<text x="28" y="324" class="t s">a mostrar porquê.</text>
+<rect x="460" y="182" width="430" height="164" rx="12" class="box danger"/><text x="478" y="214" class="t b">Rastreio entre apps (iPhone)</text>
+<text x="478" y="246" class="t s">Seguir a pessoa noutras apps e sites</text>
+<text x="478" y="272" class="t s">exige a pergunta da Apple (ATT).</text>
+<text x="478" y="298" class="t s">Sem "sim", nada de identificador</text>
+<text x="478" y="324" class="t s">de publicidade.</text>
+</svg>
+  <figcaption>Os dois primeiros facilitam a vida. Os dois últimos complicam.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>No Chrome</strong> quem pergunta é o browser, site a site. Para repor, o cadeado ao lado do endereço.</li>
+  </ul>
+  <aside class="notes">Uma foto: é o caso mais comum em projetos e o mais mal feito; muita gente pede acesso à galeria toda para escolher uma foto de perfil. Notificações: no Android 13 em diante, uma app que nunca pede deixa de mostrar notificações em telemóveis novos. Segundo plano: nenhum projeto da cadeira precisa. Rastreio: só existe no iPhone; no Android o identificador de publicidade apaga-se nas definições, sem janela. Pergunta à turma: "qual destes quatro o vosso projeto vai usar?" Quase todos: uma foto ou notificações.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quem confere: as lojas</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Em cima, duas frases de razão: Precisamos da sua localização, rejeitada porque não diz para quê; Para mostrar a ilha mais próxima de ti, aceite porque diz o que a pessoa ganha. Em baixo, o que cada loja revê. Google Play: formulário para segundo plano e SMS, justificar o acesso a todas as fotos, a secção Segurança dos dados e pedir só o que a app usa. App Store: uma frase clara por permissão, não obrigar a aceitar para usar o resto, a etiqueta de privacidade na loja, e rejeita a app se faltar a razão no Info.plist.">
+<rect x="10" y="10" width="430" height="110" rx="14" class="box danger"/><text x="28" y="40" class="t s">rejeitada: não diz para quê</text><text x="28" y="74" class="t b">"Precisamos da sua localização."</text><text x="28" y="102" class="t s">a pessoa não sabe o que ganha</text>
+<rect x="460" y="10" width="430" height="110" rx="14" class="box ok"/><text x="478" y="40" class="t s">aceite: diz o que a pessoa ganha</text><text x="478" y="74" class="t b">"Para mostrar a ilha mais próxima de ti."</text><text x="478" y="102" class="t s">é a frase do Info.plist da app de hoje</text>
+<rect x="10" y="140" width="430" height="180" rx="12" class="box"/><text x="28" y="172" class="t b">Google Play</text>
+<text x="28" y="206" class="t s">· formulário para segundo plano e SMS</text>
+<text x="28" y="236" class="t s">· justificar o acesso a todas as fotos</text>
+<text x="28" y="266" class="t s">· secção "Segurança dos dados"</text>
+<text x="28" y="296" class="t s">· pedir só o que a app usa</text>
+<rect x="460" y="140" width="430" height="180" rx="12" class="box"/><text x="478" y="172" class="t b">App Store</text>
+<text x="478" y="206" class="t s">· uma frase clara por permissão</text>
+<text x="478" y="236" class="t s">· não obrigar a aceitar para usar o resto</text>
+<text x="478" y="266" class="t s">· etiqueta de privacidade na loja</text>
+<text x="478" y="296" class="t s">· Info.plist sem razão: rejeitada</text>
+</svg>
+  <figcaption>Antes de chegar à pessoa, a app passa por uma revisão.</figcaption>
+  </figure>
+  <aside class="notes">As duas lojas leem as frases de razão e comparam o que a app declara com o que faz. Uma permissão a mais é das razões de rejeição mais comuns. A Apple não deixa obrigar a pessoa a aceitar uma coisa de que a app não precisa para a deixar entrar. Pergunta à turma: "reescrevam a frase da esquerda para uma app de corridas." Por exemplo: "Para gravar o percurso da tua corrida."</aside>
+</section>
+
+<section class="slide">
+  <h2>Para os testes: permissões</h2>
+  <ul>
+    <li>No Android há permissões dadas ao instalar (<code>INTERNET</code>) e perguntadas em uso; no iPhone, tudo o que é sensível se pergunta em uso.</li>
+    <li>Declara-se antes (Manifest e <code>Info.plist</code> com a razão), pede-se no toque que precisa, verifica-se antes de cada uso.</li>
+    <li>Respostas: concedida, negada, negada para sempre, limitada (só algumas fotos ou contactos) e restrita (iPhone, controlo parental).</li>
+    <li>"Nunca mais": no iPhone à primeira recusa, no Android à segunda. Depois, só nas definições da app.</li>
+    <li>Escolher uma foto com o seletor do sistema não precisa de permissão.</li>
+    <li>Notificações: permissão no Android desde a versão 13; no iPhone sempre, ou em silêncio sem perguntar.</li>
+    <li>A frase de razão diz o que a pessoa ganha. As lojas rejeitam permissões a mais e frases vagas.</li>
+  </ul>
+  <aside class="notes">Fica para estudarem, não é para ler em voz alta.</aside>
+</section>
+
 <section class="slide" data-part="Jogos">
-  <h2>Jogo: o que responde a pessoa?</h2>
+  <h2>Jogo: o que faz a app?</h2>
   <p class="how"><strong>Um cenário de cada vez, todos ao mesmo tempo.</strong> Vota, discute com o colega do lado, vota outra vez.</p>
   <div class="pz-seq" data-id="a21-porta" data-word="Cenário">
   <div class="pz-mcq" data-id="a21-p1" data-label="Primeira recusa" data-revote><script type="application/json">{"q": "No Android, a pessoa carrega em \"Não permitir\" pela primeira vez. O que faz a app?", "options": ["Mostra a lista na mesma; mais tarde pode voltar a pedir, explicando porquê", "Pede outra vez logo a seguir, até ela aceitar", "Fecha, porque sem posição não funciona", "Abre as definições da app"], "why": "Negada uma vez é \"agora não\". A app continua útil, e quando a pessoa tocar outra vez no botão pode voltar a perguntar, com a razão à vista. Pedir em ciclo é o caminho mais curto para o \"nunca mais\"."}</script></div>
   <div class="pz-mcq" data-id="a21-p2" data-label="Duas recusas" data-revote><script type="application/json">{"q": "No Android 11, a pessoa recusou duas vezes seguidas. Agora o que acontece quando a app pede?", "options": ["Nada: o diálogo já não aparece; só nas definições da app", "O diálogo aparece outra vez, com um aviso", "O sistema dá uma posição aproximada", "A app recebe uma posição vazia"], "why": "Negada para sempre: requestPermission() responde logo, sem diálogo. A única saída é um botão que abre as definições da app, com openAppSettings()."}</script></div>
   <div class="pz-mcq" data-id="a21-p3" data-label="Serviço desligado" data-revote><script type="application/json">{"q": "A localização está desligada no telemóvel inteiro. A permissão da app está concedida. O que faz a app?", "options": ["Diz que a localização está desligada e oferece abrir as definições de localização do sistema", "Abre as definições da app, como no \"nunca mais\"", "Pede a permissão outra vez", "Usa a última posição conhecida e não diz nada"], "why": "Não é uma permissão: é o serviço desligado. Resolve-se nas definições de localização do telemóvel (openLocationSettings), não nas da app. São dois ecrãs diferentes."}</script></div>
-  <div class="pz-mcq" data-id="a21-p4" data-label="iOS sem razão" data-revote><script type="application/json">{"q": "No iOS, a app pede a permissão e o diálogo nunca aparece. A causa mais provável?", "options": ["Falta a frase NSLocationWhenInUseUsageDescription no Info.plist", "O iPhone não tem GPS", "A app não está na App Store", "Falta o INTERNET no manifesto"], "why": "Sem a razão escrita no Info.plist, o iOS nem mostra o diálogo. E a frase é lida pela pessoa e pela revisão da Apple: diz o que ela ganha."}</script></div>
   <div class="pz-mcq" data-id="a21-p5" data-label="Quando pedir" data-revote><script type="application/json">{"q": "Quando é que a app deve pedir a permissão de localização?", "options": ["Quando a pessoa toca em \"Onde estou?\", com a razão à vista", "No arranque, para ficar despachado", "No ecrã de login, junto com a password", "Nunca: usa-se a ilha por defeito"], "why": "No momento em que se usa, não no arranque. No arranque ninguém sabe para que serve; ao tocar no botão a razão é evidente, e mais gente aceita."}</script></div>
+  <div class="pz-mcq" data-id="a21-p6" data-label="Foto de perfil" data-revote><script type="application/json">{"q": "A app só precisa que a pessoa escolha uma foto de perfil. Que permissão pede?", "options": ["Nenhuma: usa o seletor de fotos do sistema", "Acesso a todas as fotos", "Câmara e fotos, para ficar despachado", "Acesso a todos os ficheiros do telemóvel"], "why": "O seletor do sistema corre fora da app: a pessoa escolhe e a app só recebe essa foto. Não há janela de permissão, e é o caminho que a Google Play e a Apple preferem."}</script></div>
+  <div class="pz-mcq" data-id="a21-p7" data-label="Android 13" data-revote><script type="application/json">{"q": "A app foi compilada para o Android 13. Nos telemóveis novos, as notificações deixaram de aparecer. Porquê?", "options": ["Agora é preciso pedir POST_NOTIFICATIONS, e a app nunca pede", "O Android 13 bloqueia notificações de apps grátis", "Falta a frase no Info.plist", "O canal das notificações expirou"], "why": "Desde o Android 13 as notificações são uma permissão como a localização: declara-se no manifesto e pede-se no momento certo, por exemplo quando a pessoa marca um favorito."}</script></div>
+  <div class="pz-mcq" data-id="a21-p8" data-label="Aceitar para entrar" data-revote><script type="application/json">{"q": "Uma app de meteorologia pede a câmara no arranque e só deixa entrar quem aceita. O que diz a revisão da App Store?", "options": ["Provavelmente rejeita: obriga a aceitar algo de que a app não precisa", "Aprova: a frase está no Info.plist", "Aprova, mas só nos EUA", "Só rejeita se a câmara for usada em segundo plano"], "why": "A Apple não aceita apps que obrigam a dar acesso ao que não precisam. Pede-se no toque que precisa, e a app funciona sem."}</script></div>
   </div>
-  <aside class="notes">O cenário do serviço desligado é o que mais confunde: muita gente responde "abre as definições da app". Insiste nos dois ecrãs: definições de localização do sistema para o serviço, definições da app para a permissão.</aside>
+  <aside class="notes">Sete cenários, uns dois minutos cada. O cenário do serviço desligado é o que mais confunde: muita gente responde "abre as definições da app". Insiste nos dois ecrãs: definições de localização do sistema para o serviço, definições da app para a permissão. O da foto de perfil costuma surpreender: não há permissão nenhuma.</aside>
 </section>
 
 <section class="slide">
-  <h2>O que responde a pessoa? A turma</h2>
+  <h2>O que faz a app? A turma</h2>
   <div class="pz-poll" data-track="a21-porta"></div>
   <aside class="notes">Pega no cenário com menos respostas certas. Pergunta a quem acertou como pensou, e só depois explica.</aside>
 </section>
 
-<section class="slide" data-part="Prática">
-  <h2>Hoje, na app</h2>
+<section class="slide" data-part="Atividade">
+  <h2>No teu telemóvel: quem sabe o quê?</h2>
+  <div class="cols">
+    <div>
+      <h3>Android</h3>
+      <p>Definições · Segurança e privacidade · Privacidade · <strong>Gestor de autorizações</strong>. Escolhe Localização, Câmara ou Microfone e vê as apps por modo.</p>
+    </div>
+    <div>
+      <h3>iPhone</h3>
+      <p>Definições · <strong>Privacidade e segurança</strong>. Em Localização, cada app diz Nunca, Perguntar, Durante a utilização ou Sempre.</p>
+    </div>
+  </div>
+  <ol class="steps">
+    <li>Escolhe três apps que usas todos os dias.</li>
+    <li>Para cada uma: que permissões tem, e em que modo.</li>
+    <li>Encontra uma que te surpreenda e diz ao colega do lado para que achas que ela a usa.</li>
+  </ol>
+  <div class="callout"><strong>Pergunta à turma</strong> Quem encontrou uma app com a localização em "Sempre"? Precisa mesmo?</div>
+  <aside class="notes">15 minutos. O caminho muda um pouco de marca para marca: na Samsung está em Segurança e privacidade, noutras em Privacidade; procurar "autorizações" nas definições resolve. Quem não tiver telemóvel faz o mesmo no Chrome: Definições, Privacidade e segurança, Definições de sites. <strong>Resposta à pergunta.</strong> Costumam aparecer apps de redes sociais, lojas ou bancos em "Sempre". Raramente precisam: a pergunta certa é "o que é que eu ganho com isto quando a app está fechada?". Se ninguém souber, a permissão está a mais.</aside>
+</section>
+
+<section class="slide">
+  <h2>No projeto: as permissões da vossa app</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Permissão</th><th>Quando se pede</th><th>Frase de razão</th><th>Se a pessoa disser não</th></tr></thead>
+    <tbody><tr><td>Localização</td><td>Toque em "Onde estou?"</td><td>"Para mostrar a ilha mais próxima de ti."</td><td>O cartão explica e a lista continua.</td></tr></tbody>
+  </table></div>
+  <ol class="steps">
+    <li>Em grupo, listem o que a vossa app usa do telemóvel: mapa, posição, fotos, câmara, notificações.</li>
+    <li>Uma linha por permissão, como a de cima, que é a da app de hoje.</li>
+    <li>Ponham a tabela num issue do repositório do grupo, com o título "Permissões".</li>
+  </ol>
+  <div class="callout tip"><strong>Amanhã</strong> A sprint começa por este issue: a primeira tarefa é a permissão que a vossa app mais usa.</div>
+  <aside class="notes">20 minutos. O issue faz-se no site do GitHub, sem branches nem terminal. Passa pelos grupos e pergunta pela última coluna: é a que costuma ficar em branco. Uma app que não funciona sem uma permissão que não é essencial vai ser rejeitada.</aside>
+</section>
+
+<section class="slide" data-part="Extra">
+  <h2>Extra: a localização na app</h2>
   <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;max-width:880px;margin:0 auto">
     <figure style="margin:0">
       <img src="../assets/img/aula-21/inicio.webp" alt="A lista das ilhas com um cartão por cima: o botão Onde estou? e a frase Sem a tua posição não há ilha mais próxima." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
@@ -197,10 +349,10 @@
   <ol class="steps">
     <li>Pedir a permissão e tratar as quatro respostas: a posição aparece no cartão.</li>
     <li>Medir a distância a cada ilha e ficar com a mais curta.</li>
-    <li>Se houver tempo: um pino com o nome em cada ilha do mapa; tocar abre a folha da ilha.</li>
-    <li>Fica no branch <code>passo-4</code>: o botão "A minha posição" leva o mapa até ti.</li>
+    <li>Um pino com o nome em cada ilha do mapa; tocar abre a folha da ilha.</li>
+    <li>O botão "A minha posição" leva o mapa até ti.</li>
   </ol>
-  <aside class="notes">Hoje são dois passos, cada um com uma coisa nova a ver na app: as linhas 1 a 4 da história. O passo 3 é para quem acabar cedo; o 4 fica no branch. O mapa entra no projeto do grupo na sprint de amanhã.</aside>
+  <aside class="notes">Não se dá na aula: fica para quem quiser fazer a localização no código. Quatro passos, cada um com uma coisa nova a ver na app; a solução de cada um está no branch com o mesmo número.</aside>
 </section>
 
 <section class="slide">
@@ -213,7 +365,7 @@ flutter pub get</code></pre>
     <li>Entra com a tua conta. Por cima da lista está um cartão novo com o botão <strong>Onde estou?</strong>. Toca-lhe: "Sem a tua posição não há ilha mais próxima". É o ponto de partida.</li>
     <li>Na barra de cima há um botão novo, o mapa. Abre-o: os Açores em azulejos, com nove pinos pequenos sem nome.</li>
   </ol>
-  <p>Hoje trabalhas nos comentários <code>TODO 1</code> e <code>TODO 2</code>; o <code>TODO 3</code> se houver tempo. Abre um segundo terminal para os comandos <code>git</code>. No Chrome, a janela de permissão é a do próprio browser; para voltar a testar, carrega no cadeado ao lado do endereço e repõe a permissão.</p>
+  <p>Trabalhas nos comentários <code>TODO 1</code> a <code>TODO 4</code>. Abre um segundo terminal para os comandos <code>git</code>. No Chrome, a janela de permissão é a do próprio browser; para voltar a testar, carrega no cadeado ao lado do endereço e repõe a permissão.</p>
   <aside class="notes">Dá 5 minutos ao clone e ao arranque. Os três packages de hoje já estão no <code>pubspec.yaml</code>: <code>geolocator</code>, <code>flutter_map</code> e <code>latlong2</code>. Quem corre no telemóvel Android tem de ter a localização ligada; o manifesto já tem as permissões. O F5 do VS Code não passa os <code>--dart-define</code>. Se o Chrome não der posição (Windows com a localização desligada, ou sem Wi-Fi): F12, os três pontos, More tools, Sensors, e em Location escolhe Other com 37.74 e -25.67.</aside>
 </section>
 
@@ -325,11 +477,11 @@ Nearest nearestIsland(Position position, List&lt;Island&gt; islands) {
   <div class="callout task"><strong>Faz</strong> Escreve o ciclo: começa com a primeira ilha e uma distância infinita, e troca sempre que encontras uma mais curta. Depois, no notifier, guarda o resultado logo a seguir à posição.</div>
   <p><strong>Na app:</strong> toca em "Onde estou?". O cartão passa a dizer "Estás a 16 km de São Miguel".</p>
   <div class="callout"><strong>Pergunta à turma</strong> Um colega com o emulador na Califórnia toca no botão. O que diz o cartão?</div>
-  <aside class="notes"><strong>Respostas às perguntas.</strong> "Estás a 7500 km de Corvo", ou perto disso: o ciclo devolve sempre a mais curta, mesmo longe. Uma app a sério dizia "fora dos Açores" acima de uns 300 km; fica como extra para quem acabar cedo. O <code>double.infinity</code> garante que a primeira medição ganha sempre. Se faltarem menos de 15 minutos, não começam o passo 3: passa ao fecho.</aside>
+  <aside class="notes"><strong>Respostas às perguntas.</strong> "Estás a 7500 km de Corvo", ou perto disso: o ciclo devolve sempre a mais curta, mesmo longe. Uma app a sério dizia "fora dos Açores" acima de uns 300 km; fica como extra para quem acabar cedo. O <code>double.infinity</code> garante que a primeira medição ganha sempre.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. Se houver tempo: um pino por ilha</h2>
+  <h2>3. Um pino por ilha</h2>
   <figure class="diagram">
   <svg viewBox="0 0 900 220" role="img" aria-label="Três camadas empilhadas, de baixo para cima: os azulejos do OpenStreetMap, os pinos das ilhas e a atribuição. À direita, um pino é uma coluna com um ícone e o nome, dentro de um detetor de toques.">
     <rect x="40" y="130" width="400" height="60" rx="10" class="box muted"/><text x="240" y="156" text-anchor="middle" class="t b">1. Azulejos</text><text x="240" y="178" text-anchor="middle" class="t mono">TileLayer · já lá está</text>
@@ -396,7 +548,7 @@ Marker _marker(BuildContext context, Island island) {
 </section>
 
 <section class="slide">
-  <h2>Passo 4, no branch: a minha posição no mapa</h2>
+  <h2>Passo 4: a minha posição no mapa</h2>
 <pre class="term"><code class="language-bash">git stash -u
 git checkout passo-3
 flutter pub get</code></pre>
@@ -457,7 +609,7 @@ Future&lt;void&gt; _goToMe() async {
     <li>Um PR por grupo, com um revisor. A definição de pronto: corre no telemóvel, a permissão negada não rebenta a app, e a atribuição do OSM está visível.</li>
   </ol>
   <div class="callout tip"><strong>Dividir o trabalho</strong> Uma pessoa faz os packages e as permissões, outra o mapa e a rota, outra o cartão e o notifier. Três commits pequenos no mesmo branch, um PR.</div>
-  <aside class="notes">Hoje só se mostra, no fecho: o trabalho é na sprint de amanhã. O objetivo é cada grupo sair com o PR aberto, não só com o repositório de hoje feito. Quem tem o projeto sem <code>go_router</code> ainda usa o <code>Navigator.push</code> como no de hoje; não é razão para parar. Se sobrar tempo, conta como se troca o endereço dos azulejos por um fornecedor com chave: muda uma linha.</aside>
+  <aside class="notes">Não se dá na aula. O objetivo é cada grupo sair com o PR aberto, não só com o repositório de hoje feito. Quem tem o projeto sem <code>go_router</code> ainda usa o <code>Navigator.push</code> como no de hoje; não é razão para parar. Se sobrar tempo, conta como se troca o endereço dos azulejos por um fornecedor com chave: muda uma linha.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -466,14 +618,15 @@ Future&lt;void&gt; _goToMe() async {
     <div>
       <h3>Amanhã</h3>
       <ul>
-        <li>Terça, 10 de novembro, das 08:30 às 10:30: sprint 2 no projeto. O separador Mapa é a primeira tarefa.</li>
-        <li>Tragam a app do grupo a correr no telemóvel e o repositório de hoje no passo 2, pelo menos.</li>
-        <li>O estado final de hoje fica no branch <code>passo-4</code>: <code>git stash -u</code> e depois <code>git checkout passo-4</code>.</li>
+        <li>Terça, 10 de novembro, das 08:30 às 10:30: sprint 2 no projeto, a começar pelo issue "Permissões".</li>
+        <li>Tragam a app do grupo a correr no telemóvel.</li>
+        <li>A localização no código está nos slides Extra, com a solução no branch <code>passo-4</code> do <code>pdm-aula-21</code>.</li>
       </ul>
     </div>
     <div>
       <h3>Para quem quiser ler mais</h3>
       <ul>
+        <li><a href="https://pub.dev/packages/permission_handler" target="_blank" rel="noopener">permission_handler</a>: pedir e verificar qualquer permissão, com o que cada uma exige no Manifest e no Info.plist.</li>
         <li><a href="https://pub.dev/packages/geolocator" target="_blank" rel="noopener">geolocator</a>: as precisões por plataforma, os erros de cada método e o que cada sistema exige.</li>
         <li><a href="https://developer.android.com/develop/sensors-and-location/location/permissions" target="_blank" rel="noopener">Location permissions</a> no Android: precisa vs aproximada, em uso vs segundo plano, o que mudou em cada versão.</li>
         <li><a href="https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services" target="_blank" rel="noopener">Requesting authorization to use location services</a>: as regras da Apple para "em uso" e "sempre".</li>
