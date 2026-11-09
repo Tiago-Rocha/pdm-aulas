@@ -458,28 +458,29 @@
   <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;max-width:880px;margin:0 auto">
     <figure style="margin:0">
       <img src="../../assets/img/aula-21/inicio.webp" alt="The list of islands with a card on top: the button Onde estou? and the sentence Sem a tua posição não há ilha mais próxima." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>Starting point.</strong> The card and the button are already there, but the permission always says "no".</figcaption>
+      <figcaption><strong>No permission.</strong> The card explains and the list carries on.</figcaption>
     </figure>
     <figure style="margin:0">
       <img src="../../assets/img/aula-21/final.webp" alt="The same list, with the card saying Estás a 16 km de São Miguel." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>After step 2.</strong> The app knows where you are and which island is the nearest.</figcaption>
+      <figcaption><strong>With permission.</strong> The app knows where you are and which island is the nearest.</figcaption>
     </figure>
     <figure style="margin:0">
       <img src="../../assets/img/aula-21/mapa.webp" alt="The map of the Azores, with a pin and the name on each of the nine islands." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>After step 3.</strong> A pin with the name on each island.</figcaption>
+      <figcaption><strong>The map.</strong> A pin with the name on each island.</figcaption>
     </figure>
     <figure style="margin:0">
       <img src="../../assets/img/aula-21/mapa-eu.webp" alt="The map centred on São Miguel, with a red pin in Ponta Delgada." style="width:100%;display:block;border:1px solid var(--border);border-radius:12px">
-      <figcaption><strong>After step 4.</strong> The map takes you to yourself, with a red pin.</figcaption>
+      <figcaption><strong>My position.</strong> The map takes you to yourself, with a red pin.</figcaption>
     </figure>
   </div>
+  <p>The app is finished on <code>main</code> of <code>pdm-aula-21</code>. The next slides show only the four pieces where the magic happens:</p>
   <ol class="steps">
-    <li>Ask for the permission and handle the four answers: the position appears on the card.</li>
-    <li>Measure the distance to each island and keep the shortest.</li>
-    <li>A pin with the name on each island of the map; a tap opens the island's sheet.</li>
-    <li>The "A minha posição" (my position) button takes the map to you.</li>
+    <li><code>check()</code> asks for the permission and translates the four answers.</li>
+    <li><code>nearestIsland()</code> measures the distance to each island and keeps the shortest.</li>
+    <li><code>_marker()</code> puts a pin with the name on each island; a tap opens the sheet.</li>
+    <li><code>_goToMe()</code> takes the map to you.</li>
   </ol>
-  <aside class="notes">Not taught in class: it is for whoever wants to do location in code. Four steps, each with something new to see in the app; the solution of each is on the branch with the same number.</aside>
+  <aside class="notes">Not taught in class: it is for whoever wants to see location in code. There are no steps and no branches: run the finished app and read the code alongside it, with VS Code open on each slide's file.</aside>
 </section>
 
 <section class="slide">
@@ -489,44 +490,51 @@ cd pdm-aula-21
 flutter pub get</code></pre>
   <ol class="steps">
     <li>Run the app, all on one line: <code>flutter run -d chrome --dart-define=CLIENT_ID=... --dart-define=CLIENT_SECRET=...</code>. The <code>clientId</code> and <code>clientSecret</code> are the ones in issue #1 of your <code>pdm-miniprojeto</code>, or your group's.</li>
-    <li>Log in with your account. Above the list there is a new card with the <strong>Onde estou?</strong> button. Tap it: "Sem a tua posição não há ilha mais próxima" (without your position there is no nearest island). That is the starting point.</li>
-    <li>In the top bar there is a new button, the map. Open it: the Azores in tiles, with nine small pins without names.</li>
+    <li>Log in with your account. Above the list there is a card with the <strong>Onde estou?</strong> (where am I?) button. Tap it and accept: the card says which island is the nearest.</li>
+    <li>In the top bar there is a new button, the map. Open it: the Azores in tiles, a pin with the name on each island and the "A minha posição" (my position) button.</li>
   </ol>
-  <p>You work on the comments <code>TODO 1</code> to <code>TODO 4</code>. Open a second terminal for the <code>git</code> commands. In Chrome, the permission dialog is the browser's own; to test again, click the padlock next to the address and reset the permission.</p>
-  <aside class="notes">Give 5 minutes for the clone and startup. Today's three packages are already in <code>pubspec.yaml</code>: <code>geolocator</code>, <code>flutter_map</code> and <code>latlong2</code>. Anyone running on an Android phone must have location on; the manifest already has the permissions. F5 in VS Code does not pass the <code>--dart-define</code> values. If Chrome gives no position (Windows with location off, or no Wi-Fi): F12, the three dots, More tools, Sensors, and under Location choose Other with 37.74 and -25.67.</aside>
+  <p>Everything is on <code>main</code>: no steps and no branches. Open each slide's file in VS Code and read it alongside the app. In Chrome, the permission dialog is the browser's own; to test again, click the padlock next to the address and reset the permission.</p>
+  <aside class="notes">Today's three packages are already in <code>pubspec.yaml</code>: <code>geolocator</code>, <code>flutter_map</code> and <code>latlong2</code>. Anyone running on an Android phone must have location on; the manifest already has the permissions. F5 in VS Code does not pass the <code>--dart-define</code> values. If Chrome gives no position (Windows with location off, or no Wi-Fi): F12, the three dots, More tools, Sensors, and under Location choose Other with 37.74 and -25.67.</aside>
 </section>
 
 <section class="slide">
   <h2>1. May I know where you are?</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 165" role="img" aria-label="Before: the Onde estou? button reaches TODO 1, which always answers denied, and the card says there is no position. After: the button reaches the permission, which gives one of four answers, and the card shows the position.">
-    <text x="10" y="40" class="t b">Before</text>
-    <rect x="90" y="16" width="200" height="40" rx="20" class="box"/><text x="190" y="42" text-anchor="middle" class="t s">Onde estou?</text>
-    <line x1="294" y1="36" x2="326" y2="36" class="arrow"/>
-    <rect x="330" y="14" width="230" height="44" rx="10" class="box warn"/><text x="445" y="42" text-anchor="middle" class="t s">TODO 1: always answers "no"</text>
-    <line x1="564" y1="36" x2="596" y2="36" class="arrow danger dashed"/>
-    <rect x="600" y="14" width="280" height="44" rx="10" class="box danger"/><text x="740" y="42" text-anchor="middle" class="t s">"Sem a tua posição…"</text>
-    <text x="10" y="134" class="t b">After</text>
-    <rect x="90" y="110" width="200" height="40" rx="20" class="box"/><text x="190" y="136" text-anchor="middle" class="t s">Onde estou?</text>
-    <line x1="294" y1="130" x2="326" y2="130" class="arrow"/>
-    <rect x="330" y="108" width="230" height="44" rx="10" class="box ok"/><text x="445" y="136" text-anchor="middle" class="t s">the permission: one of 4 answers</text>
-    <line x1="564" y1="130" x2="596" y2="130" class="arrow ok"/>
-    <rect x="600" y="108" width="280" height="44" rx="10" class="box ok"/><text x="740" y="136" text-anchor="middle" class="t s">"Estás em 37.74, -25.67."</text>
-  </svg>
-  <figcaption>The card, the notifier and the position are already done. The permission is missing: the <code>check()</code> of <code>LocationService</code>.</figcaption>
+  <svg viewBox="0 0 900 230" role="img" aria-label="A tap on Onde estou? reaches check(), which looks at the service and the permission and gives one of four answers, each with its own sentence on the card: ready, you are 16 km from São Miguel; serviceOff, location is off on the phone; denied, without your position there is no nearest island; deniedForever, no permission, change it in the settings.">
+<rect x="10" y="95" width="150" height="40" rx="20" class="box"/><text x="85" y="121" text-anchor="middle" class="t s">Onde estou?</text>
+<line x1="164" y1="115" x2="196" y2="115" class="arrow"/>
+<rect x="200" y="82" width="150" height="66" rx="12" class="box accent"/><text x="275" y="110" text-anchor="middle" class="t b mono">check()</text><text x="275" y="132" text-anchor="middle" class="t s">service and permission</text>
+<line x1="354" y1="115" x2="386" y2="30" class="arrow"/>
+<rect x="390" y="6" width="500" height="48" rx="10" class="box ok"/>
+<text x="406" y="36" class="t b mono">ready</text>
+<text x="560" y="36" class="t">"Estás a 16 km de São Miguel."</text>
+<line x1="354" y1="115" x2="386" y2="86" class="arrow"/>
+<rect x="390" y="62" width="500" height="48" rx="10" class="box warn"/>
+<text x="406" y="92" class="t b mono">serviceOff</text>
+<text x="560" y="92" class="t">"A localização está desligada no telemóvel."</text>
+<line x1="354" y1="115" x2="386" y2="142" class="arrow"/>
+<rect x="390" y="118" width="500" height="48" rx="10" class="box warn"/>
+<text x="406" y="148" class="t b mono">denied</text>
+<text x="560" y="148" class="t">"Sem a tua posição não há ilha mais próxima."</text>
+<line x1="354" y1="115" x2="386" y2="198" class="arrow"/>
+<rect x="390" y="174" width="500" height="48" rx="10" class="box danger"/>
+<text x="406" y="204" class="t b mono">deniedForever</text>
+<text x="560" y="204" class="t">"Sem permissão. Muda isso nas definições."</text>
+</svg>
+  <figcaption>One tap, one of four answers, one sentence on the card. The <code>check()</code> of <code>LocationService</code> decides which.</figcaption>
   </figure>
-<pre data-title="lib/location/location_service.dart · the possible answers, already there"><code class="language-dart">/// What the phone answered when the app asked for the position.
+<pre data-title="lib/location/location_service.dart · the four possible answers"><code class="language-dart">/// What the phone answered when the app asked for the position.
 enum LocationStatus { ready, serviceOff, denied, deniedForever }</code></pre>
   <ul>
     <li><code>LocationNotifier</code> calls <code>check()</code> and, if the answer is <code>ready</code>, asks for the position. For each other answer it has a sentence ready for the card.</li>
     <li><code>geolocator</code> talks to the system: <code>isLocationServiceEnabled</code> (is the service on?), <code>checkPermission</code> (what did it answer last time?) and <code>requestPermission</code> (the dialog).</li>
   </ul>
-  <aside class="notes">Ask them to open <code>locate()</code> in <code>location_notifier.dart</code> in VS Code: the <code>switch</code> in <code>message</code> has the four sentences, one per answer. Today they only write <code>check()</code>.</aside>
+  <aside class="notes">The sentences in the diagram are in the <code>switch</code> of <code>message</code>, in <code>location_notifier.dart</code>: one per answer. <code>locate()</code> in the same file calls <code>check()</code> and only asks for the position when the answer is <code>ready</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 1: the four answers</h2>
-<pre data-title="lib/location/location_service.dart · check, in place of TODO 1"><code class="language-dart">/// Asks for permission, if needed, and says which answer came back.
+  <h2>Where the magic happens: <code>check()</code></h2>
+<pre data-title="lib/location/location_service.dart · check"><code class="language-dart">/// Asks for permission, if needed, and says which answer came back.
 Future&lt;LocationStatus&gt; check() async {
   if (!await Geolocator.isLocationServiceEnabled()) {
     return LocationStatus.serviceOff; // off for every app, not just ours
@@ -542,10 +550,10 @@ Future&lt;LocationStatus&gt; check() async {
     _ =&gt; LocationStatus.denied,
   };
 }</code></pre>
-  <div class="callout task"><strong>Do</strong> Replace the body of <code>check()</code>: first the service, then the permission, and at the end the <code>switch</code> that translates the system's answer into ours.</div>
-  <p><strong>In the app:</strong> tap "Onde estou?". Chrome asks; accept, and the card says "Estás em 37.74, -25.67". Reset the permission at the padlock, refuse, and the card says "Sem permissão. Muda isso nas definições" (no permission, change it in the settings). Nothing crashes. In Chrome, refusing counts as "never again" straight away; on the phone, the first refusal is only "not now".</p>
+  <div class="callout tip"><strong>The idea</strong> First the service, then the permission, and at the end a <code>switch</code> that translates the system's answer into our four.</div>
+  <p><strong>In the app:</strong> tap "Onde estou?". Chrome asks; accept, and the card says "Estás a 16 km de São Miguel" (you are 16 km from São Miguel). Reset the permission at the padlock, refuse, and the card says "Sem permissão. Muda isso nas definições" (no permission, change it in the settings). Nothing crashes. In Chrome, refusing counts as "never again" straight away; on the phone, the first refusal is only "not now".</p>
   <div class="callout"><strong>Ask the class</strong> Why is <code>requestPermission()</code> only called when the previous answer was <code>denied</code>?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> Because in the other cases the dialog is no use: granted is already done, "never again" shows no dialog, and the service being off is not a permission. Only "not now" allows asking again. The <code>_</code> in the <code>switch</code> catches <code>denied</code> and <code>unableToDetermine</code>. The solution is on the <code>passo-1</code> branch. Give 25 minutes; ask each group to show you the refusal path.</aside>
+  <aside class="notes"><strong>Answers to the questions.</strong> Because in the other cases the dialog is no use: granted is already done, "never again" shows no dialog, and the service being off is not a permission. Only "not now" allows asking again. The <code>_</code> in the <code>switch</code> catches <code>denied</code> and <code>unableToDetermine</code>.</aside>
 </section>
 
 <section class="slide">
@@ -567,7 +575,7 @@ Future&lt;LocationStatus&gt; check() async {
   </svg>
   <figcaption>You measure the distance to each island and keep the shortest. Nine measurements, one winner.</figcaption>
   </figure>
-<pre data-title="lib/location/nearest.dart · the ruler, already there"><code class="language-dart">double distanceTo(Position position, Island island) {
+<pre data-title="lib/location/nearest.dart · the ruler"><code class="language-dart">double distanceTo(Position position, Island island) {
   return Geolocator.distanceBetween(
     position.latitude,
     position.longitude,
@@ -583,11 +591,8 @@ Future&lt;LocationStatus&gt; check() async {
 </section>
 
 <section class="slide">
-  <h2>Step 2: measure and keep the shortest</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-1
-flutter pub get</code></pre>
-<pre data-title="lib/location/nearest.dart · nearestIsland, in place of TODO 2"><code class="language-dart">/// Measures the distance to every island; the shortest wins.
+  <h2>Where the magic happens: <code>nearestIsland()</code></h2>
+<pre data-title="lib/location/nearest.dart · nearestIsland"><code class="language-dart">/// Measures the distance to every island; the shortest wins.
 Nearest nearestIsland(Position position, List&lt;Island&gt; islands) {
   var best = islands.first;
   var shortest = double.infinity;
@@ -600,20 +605,19 @@ Nearest nearestIsland(Position position, List&lt;Island&gt; islands) {
   }
   return (island: best, metres: shortest);
 }</code></pre>
-<pre data-title="lib/state/location_notifier.dart · locate, in place of TODO 2"><code class="language-dart">nearest = nearestIsland(found, islands);</code></pre>
-  <div class="callout task"><strong>Do</strong> Write the loop: start with the first island and an infinite distance, and swap whenever you find a shorter one. Then, in the notifier, store the result right after the position.</div>
-  <p><strong>In the app:</strong> tap "Onde estou?". The card now says "Estás a 16 km de São Miguel" (you are 16 km from São Miguel).</p>
+  <div class="callout tip"><strong>The idea</strong> Start with the first island and an infinite distance, and swap whenever a shorter one turns up. The notifier's <code>locate()</code> calls it right after the position: <code>nearest = nearestIsland(found, islands);</code></div>
+  <p><strong>In the app:</strong> tap "Onde estou?". The card says "Estás a 16 km de São Miguel" (you are 16 km from São Miguel).</p>
   <div class="callout"><strong>Ask the class</strong> A colleague with the emulator in California taps the button. What does the card say?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> "Estás a 7500 km de Corvo", or close to it: the loop always returns the shortest, even far away. A real app would say "outside the Azores" above some 300 km; it stays as an extra for whoever finishes early. <code>double.infinity</code> guarantees the first measurement always wins.</aside>
+  <aside class="notes"><strong>Answers to the questions.</strong> "Estás a 7500 km de Corvo", or close to it: the loop always returns the shortest, even far away. A real app would say "outside the Azores" above some 300 km; it stays as a challenge. <code>double.infinity</code> guarantees the first measurement always wins.</aside>
 </section>
 
 <section class="slide">
   <h2>3. A pin per island</h2>
   <figure class="diagram">
   <svg viewBox="0 0 900 220" role="img" aria-label="Three stacked layers, from bottom to top: the OpenStreetMap tiles, the island pins and the attribution. On the right, a pin is a column with an icon and the name, inside a tap detector.">
-    <rect x="40" y="130" width="400" height="60" rx="10" class="box muted"/><text x="240" y="156" text-anchor="middle" class="t b">1. Tiles</text><text x="240" y="178" text-anchor="middle" class="t mono">TileLayer · already there</text>
-    <rect x="70" y="80" width="400" height="60" rx="10" class="box accent"/><text x="270" y="106" text-anchor="middle" class="t b">2. Pins</text><text x="270" y="128" text-anchor="middle" class="t mono">MarkerLayer · TODO 3</text>
-    <rect x="100" y="30" width="400" height="60" rx="10" class="box muted"/><text x="300" y="56" text-anchor="middle" class="t b">3. Attribution</text><text x="300" y="78" text-anchor="middle" class="t mono">RichAttributionWidget · already there</text>
+    <rect x="40" y="130" width="400" height="60" rx="10" class="box muted"/><text x="240" y="156" text-anchor="middle" class="t b">1. Tiles</text><text x="240" y="178" text-anchor="middle" class="t mono">TileLayer · the images</text>
+    <rect x="70" y="80" width="400" height="60" rx="10" class="box accent"/><text x="270" y="106" text-anchor="middle" class="t b">2. Pins</text><text x="270" y="128" text-anchor="middle" class="t mono">MarkerLayer · one per island</text>
+    <rect x="100" y="30" width="400" height="60" rx="10" class="box muted"/><text x="300" y="56" text-anchor="middle" class="t b">3. Attribution</text><text x="300" y="78" text-anchor="middle" class="t mono">RichAttributionWidget · OSM</text>
     <text x="270" y="212" text-anchor="middle" class="t s">what comes later in the list goes on top</text>
     <rect x="560" y="30" width="310" height="160" rx="12" class="box"/>
     <text x="715" y="58" text-anchor="middle" class="t b">A pin is any widget</text>
@@ -624,7 +628,7 @@ Nearest nearestIsland(Position position, List&lt;Island&gt; islands) {
   </svg>
   <figcaption>A <code>FlutterMap</code> is a stack of layers. The pin is a normal widget attached to a latitude and longitude.</figcaption>
   </figure>
-<pre data-title="lib/screens/map_screen.dart · the layers, already there"><code class="language-dart">children: [
+<pre data-title="lib/screens/map_screen.dart · the layers"><code class="language-dart">children: [
   TileLayer(
     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     userAgentPackageName: 'pt.uac.tempo_acores',
@@ -644,13 +648,8 @@ Nearest nearestIsland(Position position, List&lt;Island&gt; islands) {
 </section>
 
 <section class="slide">
-  <h2>Step 3: a pin with the name</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-2
-flutter pub get</code></pre>
-<pre data-title="lib/screens/map_screen.dart · a new import, and _marker in place of TODO 3"><code class="language-dart">import '../widgets/island_sheet.dart';
-
-/// A pin with the name; a tap opens the sheet.
+  <h2>Where the magic happens: <code>_marker()</code></h2>
+<pre data-title="lib/screens/map_screen.dart · _marker"><code class="language-dart">/// A pin with the name; a tap opens the sheet.
 Marker _marker(BuildContext context, Island island) {
   final theme = Theme.of(context);
   return Marker(
@@ -669,17 +668,14 @@ Marker _marker(BuildContext context, Island island) {
     ),
   );
 }</code></pre>
-  <div class="callout task"><strong>Do</strong> Replace the body of <code>_marker</code>: a <code>GestureDetector</code> with a <code>Column</code> inside, the icon on top and the name below. The sheet, <code>showIslandSheet</code>, is already done in <code>widgets/island_sheet.dart</code>.</div>
+  <div class="callout tip"><strong>The idea</strong> A pin is a normal widget: a <code>GestureDetector</code> with a <code>Column</code>, the icon on top and the name below. The tap opens the sheet, <code>showIslandSheet</code>, from <code>widgets/island_sheet.dart</code>.</div>
   <p><strong>In the app:</strong> nine pins with names. Tap one: the sheet opens with the photo and, if you have already tapped "Onde estou?", the distance to you. Zoom in on the central group to separate the five islands.</p>
-  <aside class="notes">The <code>width</code> and <code>height</code> of the <code>Marker</code> are the widget's space in pixels, not metres: that is why the name fits. Anyone who wants can swap the icon for today's temperature. Solution on the <code>passo-3</code> branch.</aside>
+  <aside class="notes">The <code>width</code> and <code>height</code> of the <code>Marker</code> are the widget's space in pixels, not metres: that is why the name fits. Challenge: swap the icon for today's temperature.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 4: my position on the map</h2>
-<pre class="term"><code class="language-bash">git stash -u
-git checkout passo-3
-flutter pub get</code></pre>
-<pre data-title="lib/screens/map_screen.dart · _goToMe, in place of TODO 4"><code class="language-dart">/// Asks for the position and moves the map there.
+  <h2>Where the magic happens: <code>_goToMe()</code></h2>
+<pre data-title="lib/screens/map_screen.dart · _goToMe"><code class="language-dart">/// Asks for the position and moves the map there.
 Future&lt;void&gt; _goToMe() async {
   final location = context.read&lt;LocationNotifier&gt;();
   await location.locate(context.read&lt;ForecastNotifier&gt;().islands);
@@ -693,10 +689,10 @@ Future&lt;void&gt; _goToMe() async {
   // the red pin is already there: the screen watches the notifier
   _controller.move(LatLng(position.latitude, position.longitude), 9);
 }</code></pre>
-  <div class="callout task"><strong>Do</strong> The round button already calls <code>_goToMe</code>. Ask <code>LocationNotifier</code> for the position, the same one as the card, and move the camera there with the <code>MapController</code>.</div>
+  <div class="callout tip"><strong>The idea</strong> The round button calls <code>_goToMe</code>. It asks <code>LocationNotifier</code> for the position, the same one as the card, and moves the camera there with the <code>MapController</code>.</div>
   <p><strong>In the app:</strong> tap the round button. The map centres on you, with a red pin. If the permission is denied, the card's sentence appears at the bottom.</p>
   <div class="callout"><strong>Ask the class</strong> The red pin is not placed here. Where does it appear, and why?</div>
-  <aside class="notes"><strong>Answers to the questions.</strong> In <code>build</code>: the screen does <code>watch</code> on <code>LocationNotifier</code> and, when there is a position, <code>MarkerLayer</code> gains <code>_mePin</code>. One place for the state; the button only asks and moves the camera. <code>if (!mounted) return</code> is the same care as in the login: after an <code>await</code> the person may have left the screen. Solution on the <code>passo-4</code> branch.</aside>
+  <aside class="notes"><strong>Answers to the questions.</strong> In <code>build</code>: the screen does <code>watch</code> on <code>LocationNotifier</code> and, when there is a position, <code>MarkerLayer</code> gains <code>_mePin</code>. One place for the state; the button only asks and moves the camera. <code>if (!mounted) return</code> is the same care as in the login: after an <code>await</code> the person may have left the screen.</aside>
 </section>
 
 <section class="slide">
@@ -705,12 +701,12 @@ Future&lt;void&gt; _goToMe() async {
   <svg viewBox="0 0 900 230" role="img" aria-label="The card and the map screen talk to LocationNotifier, which talks to LocationService, which talks to geolocator and the system. The map screen also talks to flutter_map, which asks OpenStreetMap for the tiles.">
     <rect x="10" y="20" width="170" height="70" rx="12" class="box"/><text x="95" y="50" text-anchor="middle" class="t b">Card and Map</text><text x="95" y="72" text-anchor="middle" class="t s">the screens</text>
     <rect x="215" y="20" width="190" height="70" rx="12" class="box"/><text x="310" y="50" text-anchor="middle" class="t b mono">Location</text><text x="310" y="72" text-anchor="middle" class="t s">Notifier · the sentence</text>
-    <rect x="440" y="20" width="190" height="70" rx="12" class="box accent"/><text x="535" y="50" text-anchor="middle" class="t b mono">Location</text><text x="535" y="72" text-anchor="middle" class="t s">Service · steps 1 and 2</text>
+    <rect x="440" y="20" width="190" height="70" rx="12" class="box accent"/><text x="535" y="50" text-anchor="middle" class="t b mono">Location</text><text x="535" y="72" text-anchor="middle" class="t s">Service · check()</text>
     <rect x="665" y="20" width="110" height="70" rx="12" class="box"/><text x="720" y="50" text-anchor="middle" class="t b">geolocator</text><text x="720" y="72" text-anchor="middle" class="t s">the package</text>
     <rect x="800" y="20" width="90" height="70" rx="12" class="box muted"/><text x="845" y="60" text-anchor="middle" class="t b">📍</text>
     <line x1="184" y1="55" x2="211" y2="55" class="arrow"/><line x1="409" y1="55" x2="436" y2="55" class="arrow"/>
     <line x1="634" y1="55" x2="661" y2="55" class="arrow"/><line x1="779" y1="55" x2="796" y2="55" class="arrow"/>
-    <rect x="215" y="140" width="190" height="70" rx="12" class="box accent"/><text x="310" y="170" text-anchor="middle" class="t b mono">MapScreen</text><text x="310" y="192" text-anchor="middle" class="t s">steps 3 and 4</text>
+    <rect x="215" y="140" width="190" height="70" rx="12" class="box accent"/><text x="310" y="170" text-anchor="middle" class="t b mono">MapScreen</text><text x="310" y="192" text-anchor="middle" class="t s">_marker and _goToMe</text>
     <rect x="440" y="140" width="190" height="70" rx="12" class="box"/><text x="535" y="170" text-anchor="middle" class="t b">flutter_map</text><text x="535" y="192" text-anchor="middle" class="t s">the layers</text>
     <rect x="665" y="140" width="225" height="70" rx="12" class="box muted"/><text x="777" y="170" text-anchor="middle" class="t b">🧱 OpenStreetMap</text><text x="777" y="192" text-anchor="middle" class="t s">the tiles</text>
     <line x1="95" y1="94" x2="95" y2="175" class="arrow dashed"/><line x1="95" y1="175" x2="211" y2="175" class="arrow dashed"/>
@@ -719,12 +715,12 @@ Future&lt;void&gt; _goToMe() async {
   <figcaption>Where each piece of the story sits in the code.</figcaption>
   </figure>
   <ol class="steps">
-    <li><code>check()</code> asks for the permission and translates the four answers (step 1).</li>
-    <li><code>nearestIsland</code> measures and keeps the shortest; the notifier stores it (step 2).</li>
-    <li>A pin per island, with the name and the sheet (step 3).</li>
-    <li>"A minha posição" asks the notifier and moves the camera (step 4).</li>
+    <li><code>check()</code> asks for the permission and translates the four answers.</li>
+    <li><code>nearestIsland</code> measures and keeps the shortest; the notifier stores it.</li>
+    <li><code>_marker</code> puts a pin per island, with the name and the sheet.</li>
+    <li><code>_goToMe</code> asks the notifier and moves the camera.</li>
   </ol>
-  <p>The <code>passo-4</code> branch is the final state. The <code>location/</code> folder, <code>LocationNotifier</code>, the card, the sheet and <code>MapScreen</code> go to the group's project as they are.</p>
+  <p><code>main</code> of <code>pdm-aula-21</code> is the final state. The <code>location/</code> folder, <code>LocationNotifier</code>, the card, the sheet and <code>MapScreen</code> go to the group's project as they are.</p>
 </section>
 
 <section class="slide">
@@ -747,7 +743,7 @@ Future&lt;void&gt; _goToMe() async {
       <ul>
         <li>Tuesday, 10 November, 08:30 to 10:30: sprint 2 on the project, starting with the "Permissions" issue.</li>
         <li>Bring the group's app running on the phone.</li>
-        <li>Location in code is in the Extra slides, with the solution on the <code>passo-4</code> branch of <code>pdm-aula-21</code>. To see the code without a checkout: <a href="https://github.com/Tiago-Rocha/pdm-aula-21/tree/passo-4" target="_blank" rel="noopener">open passo-4 on GitHub</a>.</li>
+        <li>Location in code is in the Extra slides, with the finished app on <code>main</code> of <code>pdm-aula-21</code>: <a href="https://github.com/Tiago-Rocha/pdm-aula-21" target="_blank" rel="noopener">open it on GitHub</a>.</li>
       </ul>
     </div>
     <div>
