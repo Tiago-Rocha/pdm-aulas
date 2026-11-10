@@ -26,15 +26,16 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 24 · Semana 10 · Quarta, 11 de novembro de 2026 · 16:00 às 18:00</p>
   <h1>Hardware e sensores, e sprint 2</h1>
-  <p class="lead">Teoria (30 minutos): acesso ao hardware: câmara, sensores de movimento, NFC, Bluetooth Low Energy, biometria e haptics; permissões, consumo e diferenças entre iOS e Android. Prática: sprint 2, a uma semana da review.</p>
+  <p class="lead">Teoria (60 minutos): o telemóvel por dentro, sensor a sensor: movimento, bússola, barómetro, GPS, câmara e LiDAR, NFC, Bluetooth Low Energy, Face ID, proximidade e luz; que permissão pede cada sensor no iOS e no Android, e os sensores de um iPhone ao vivo. Prática: sprint 2, a uma semana da review.</p>
   <div class="meta"><span>Review da sprint 2: quarta 18/11</span></div>
-  <aside class="notes">Traz uma tag NFC gravada com um texto NDEF (uma etiqueta de 20 cêntimos chega) para a demo. À entrada pergunta quem tem NFC no telemóvel: quase todos os Android têm, o iPhone lê desde o 7. Nos primeiros três minutos cada grupo diz em uma frase onde está na sprint 2; isso decide por onde começas a circular na parte prática.</aside>
+  <aside class="notes">Traz uma tag NFC gravada com um texto NDEF (uma etiqueta de 20 cêntimos chega) para a demo, e o iPhone carregado, com o phyphox instalado e o cabo USB-C, para os sensores ao vivo. À entrada pergunta quem tem NFC no telemóvel: quase todos os Android têm, o iPhone lê desde o 7. Nos primeiros três minutos cada grupo diz em uma frase onde está na sprint 2; isso decide por onde começas a circular na parte prática.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Escolher o package certo para câmara, sensores, NFC, BLE e biometria, e dizer que permissão cada um exige em Android e iOS.</li>
+    <li>Dizer onde fica cada sensor no telemóvel, que package o lê e que permissão exige em Android e iOS.</li>
+    <li>Explicar como cada sensor mede o que mede, e porque alguns, como o GPS, dependem de coisas fora do telemóvel.</li>
     <li>Explicar a diferença entre ler uma tag NDEF e emular um cartão (HCE), e porque o iOS é mais restritivo.</li>
     <li>Distinguir o papel de central e de periférico em BLE e justificar porque o Android pede localização para fazer scan.</li>
     <li>Usar haptics e biometria como detalhes de qualidade, não como funcionalidades centrais.</li>
@@ -43,15 +44,10 @@
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>Câmara e galeria</h2>
-  <ul>
-    <li><strong><code>image_picker</code></strong> abre a câmara ou a galeria do sistema e devolve um ficheiro. Chega para a maioria dos casos: foto de perfil, anexar uma imagem a um formulário. É o que o WhatsApp faz quando anexas uma foto.</li>
-    <li><strong><code>camera</code></strong> dá o preview ao vivo dentro da app, controlo de foco, flash e vídeo. Precisas dele para ler códigos QR ou aplicar filtros. Custa mais código e mais permissões.</li>
-    <li><strong>Permissões:</strong> Android 13+ usa o Photo Picker e não pede permissão para escolher da galeria; a câmara exige <code>CAMERA</code>. iOS exige <code>NSCameraUsageDescription</code> e <code>NSPhotoLibraryUsageDescription</code> no <code>Info.plist</code>, com texto de justificação, ou a app crasha.</li>
-    <li><strong>Tamanho:</strong> uma foto de 12 MP tem 4 a 6 MB. Antes de enviar, reduz com <code>maxWidth</code> e <code>imageQuality</code> do <code>image_picker</code> ou com <code>flutter_image_compress</code>. Um upload de 6 MB em 3G falha; um de 300 KB não.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> <code>image_picker</code> delega no sistema e não tem preview; <code>camera</code> tem preview e custa mais permissões e código.</p>
-  <aside class="notes">Pergunta: para uma app de reportar buracos na estrada, image_picker ou camera? Resposta: image_picker, só precisam da foto. Insiste na compressão: quem já teve uploads a falhar em rede fraca percebe logo.</aside>
+  <h2>O telemóvel por dentro</h2>
+  <div class="figura-iso alta"><iframe data-fig="../assets/fig/telemovel" title="Figura interativa: um telemóvel aberto em camadas, com cada sensor e a permissão que pede" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> que sensor vai usar a app do vosso projeto, e que permissão pede?</p>
+  <aside class="notes">Este slide é o mapa: a seguir cada sensor tem o seu slide e a sua figura. Deixa a figura abrir sozinha e passar pelos sensores; depois escolhe com os botões ou com as setas para cima e para baixo (as dos lados continuam a mudar de slide). Repara que o movimento todo cabe em chips de poucos milímetros na placa, e que o que vê a cara está no módulo da frente, colado ao ecrã. A bobina do carregamento sem fios e a antena NFC são a mesma folha por baixo das costas. Respostas esperadas: localização, para o tempo do sítio onde estão, que pergunta nas duas plataformas; câmara, se houver fotos, que também pergunta. Se alguém disser acelerómetro, pergunta para quê: não pede nada, mas gasta bateria. As medidas são as do iPhone 17 Pro que vais mostrar mais à frente; o desenho é genérico.</aside>
 </section>
 
 <section class="slide">
@@ -65,11 +61,65 @@
   <tr><td>Barómetro</td><td>Pressão atmosférica</td><td>Altitude relativa, andares subidos; podia dar a pressão local no Tempo Açores</td></tr>
   </tbody></table></div>
   <ul>
-    <li><code>sensors_plus</code> expõe cada sensor como um <code>Stream</code>: <code>accelerometerEventStream()</code>, <code>gyroscopeEventStream()</code>, <code>magnetometerEventStream()</code>, <code>barometerEventStream()</code>. Sem permissões em nenhuma plataforma.</li>
+    <li><code>sensors_plus</code> expõe cada sensor como um <code>Stream</code>: <code>accelerometerEventStream()</code>, <code>gyroscopeEventStream()</code>, <code>magnetometerEventStream()</code>, <code>barometerEventStream()</code>. O acelerómetro, o giroscópio e o magnetómetro não pedem permissão; o barómetro, no iOS, pede a de Movimento e fitness.</li>
     <li>Um stream a 100 Hz mantém o CPU acordado. Escolhe o <code>samplingPeriod</code>, cancela a subscrição no <code>dispose</code> e quando a app vai para segundo plano.</li>
   </ul>
-  <p><strong>Para os testes:</strong> os sensores de movimento não pedem permissão, mas custam bateria; cancela o stream quando ninguém está a olhar.</p>
+  <p><strong>Para os testes:</strong> os sensores de movimento não pedem permissão (o barómetro no iOS é a exceção), mas custam bateria; cancela o stream quando ninguém está a olhar.</p>
   <div class="callout"><strong>Analogia</strong> Os sensores são os sentidos do telemóvel. O acelerómetro e o giroscópio são o ouvido interno: dão o equilíbrio e o movimento sem pedir licença a ninguém. A câmara é a vista. O NFC é o toque: só funciona a centímetros e num instante. O BLE é a voz: alcança dezenas de metros e mantém uma conversa. Cada sentido tem a sua permissão e o seu custo em bateria.</div>
+</section>
+
+<section class="slide">
+  <h2>Dentro do acelerómetro</h2>
+  <div class="figura-iso"><iframe id="fig-acel" data-fig="../assets/fig/acelerometro" title="Figura interativa: o acelerómetro de um telemóvel num carrinho" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> com o telemóvel pousado na mesa, parado, quanto lê o z? E se o deixarmos cair?</p>
+  <aside class="notes">Deixa a figura andar sozinha uns segundos e depois pega no rato: quando o carrinho arranca para a direita, a massa fica para trás e o x sobe; quando trava, a massa vai para a frente e o x fica negativo; a velocidade constante, o x volta a 0. O chip só sente mudanças de velocidade, não a velocidade. Respostas: parado, o z lê 9,8, porque a gravidade puxa a massa contra as molas tal como uma aceleração para cima; em queda livre lê perto de 0 nos três eixos, porque a massa cai junto com o chip e deixa de puxar as molas. A deteção de quedas do Apple Watch e a de acidentes de carro do iPhone e do Pixel partem do acelerómetro. O desvio da massa está muito exagerado: no chip verdadeiro são nanómetros, medidos pela capacidade entre os pentes.</aside>
+</section>
+
+<section class="slide">
+  <h2>Magnetómetro: a bússola do telemóvel</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/magnetometro" title="Figura interativa: o telemóvel roda numa mesa e o magnetómetro mede o campo da Terra; um íman baralha a leitura" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> porque é que o Google Maps às vezes pede para fazer um 8 no ar?</p>
+  <aside class="notes">O que dizer: o chip mede o campo magnético da Terra nos três eixos, e é fraco: uns 44 µT nos Açores. Quando o telemóvel roda, o campo fica parado e mudam o x e o y; daí sai o rumo da seta do Google Maps, da Bússola e do Sky Guide. Para a demo do íman: carrega em 270° Oeste e depois em M; virado a Este o desvio é pequeno. Respostas: ímanes, capas magnéticas, o MagSafe, colunas e metal perto baralham a leitura. Ao rodar o telemóvel em todas as direções, o sistema percebe que parte do campo vem do próprio aparelho e desconta-a: é a calibração. Dentro de carros e de prédios com estrutura metálica a seta também se engana. Não pede permissão em nenhuma plataforma.</aside>
+</section>
+
+<section class="slide">
+  <h2>Barómetro: em que andar estás</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/barometro" title="Figura interativa: um prédio de cinco andares com o telemóvel lá dentro; a cada andar a pressão desce e a membrana do chip dobra menos" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> a pressão também muda com o tempo que faz lá fora. Porque é que a app Saúde não conta andares quando chega uma frente fria?</p>
+  <aside class="notes">O que dizer: dentro do chip há uma membrana fina por cima de uma cavidade quase vazia, e o ar empurra-a. Quanto mais alto, menos ar por cima e menos ela dobra: um andar, 3 m, são uns 0,36 hPa a menos. Para a demo: passa o rato pelo prédio ou usa as teclas para cima e para baixo. Respostas: uma frente muda a pressão devagar, cerca de 1 hPa por hora; um andar muda-a 0,36 hPa em poucos segundos. O telemóvel compara com a pressão de há pouco e só conta mudanças rápidas, e ao mesmo tempo o acelerómetro vê passos. A app só conta um andar quando as duas coisas batem certo. Exemplos reais: andares subidos na app Saúde, a altitude no Strava, o andar numa chamada de emergência e a previsão do tempo. Permissão: no iOS, ler a altitude relativa pede Movimento e fitness (NSMotionUsageDescription); no Android o sensor de pressão lê-se sem pedir nada, mas há telemóveis baratos sem barómetro.</aside>
+</section>
+
+<section class="slide">
+  <h2>GPS: o telemóvel só ouve</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/gps" title="Figura interativa: quatro satélites enviam a hora e a posição, e o telemóvel calcula onde está; dentro de casa usa o Wi-Fi e as antenas" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> porque é que o Android e o iOS chamam a esta permissão "localização" e não "GPS"?</p>
+  <aside class="notes">O que dizer: cada satélite envia só a hora exata e onde está. O telemóvel mede quanto tempo o sinal demorou e daí tira a distância a cada um; com quatro satélites acerta o próprio relógio e sabe onde está, com uns 5 m de erro. Respostas: dentro de casa o sinal dos satélites quase não chega, e o sistema usa as redes Wi-Fi e as antenas da rede móvel à volta, com uns 25 m de erro e menos bateria. Por isso há localização aproximada e precisa: ACCESS_COARSE_LOCATION e ACCESS_FINE_LOCATION no Android, e o interruptor Localização precisa no iOS. Extra: o GPS não envia nada nem precisa de internet, por isso funciona em modo de voo; só o mapa precisa de dados. O terceiro passo mostra porque são precisos quatro: um milionésimo de segundo de erro no relógio do telemóvel são 300 m.</aside>
+</section>
+
+<section class="slide">
+  <h2>A câmara e o LiDAR</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/camara" title="Figura interativa: o módulo da câmara aberto em camadas até ao sensor, e o LiDAR a medir a distância aos móveis de uma sala" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> o iPhone 17 Pro tem três câmaras atrás. Quando fazes zoom de 1x para 4x, o que muda?</p>
+  <aside class="notes">O que dizer: uma câmara é uma pilha de lentes por cima de uma grelha de 48 milhões de pixels, e cada pixel só vê uma cor. O LiDAR dispara luz infravermelha e mede quanto tempo ela demora a voltar; as duas usam a mesma permissão, a da câmara. No LiDAR, passa o rato pelo sofá, pela mesa e pela parede para ver cada distância. Respostas: quase sempre muda de câmara, da principal para a teleobjetiva 4x; entre esses valores corta e amplia a imagem, e como as três são de 48 MP o corte perde pouco. Pergunta extra: porque é que o modo retrato e a app Medição funcionam no escuro com LiDAR? Porque o LiDAR traz a sua própria luz infravermelha. Apps: IKEA Place, Polycam, a app Medição.</aside>
+</section>
+
+<section class="slide">
+  <h2>Câmara e galeria</h2>
+  <ul>
+    <li><strong><code>image_picker</code></strong> abre a câmara ou a galeria do sistema e devolve um ficheiro. Chega para a maioria dos casos: foto de perfil, anexar uma imagem a um formulário. É o que o WhatsApp faz quando anexas uma foto.</li>
+    <li><strong><code>camera</code></strong> dá o preview ao vivo dentro da app, controlo de foco, flash e vídeo. Precisas dele para ler códigos QR ou aplicar filtros. Custa mais código e mais permissões.</li>
+    <li><strong>Permissões:</strong> Android 13+ usa o Photo Picker e não pede permissão para escolher da galeria; a câmara exige <code>CAMERA</code>. iOS exige <code>NSCameraUsageDescription</code> e <code>NSPhotoLibraryUsageDescription</code> no <code>Info.plist</code>, com texto de justificação, ou a app crasha.</li>
+    <li><strong>Tamanho:</strong> uma foto de 12 MP tem 4 a 6 MB. Antes de enviar, reduz com <code>maxWidth</code> e <code>imageQuality</code> do <code>image_picker</code> ou com <code>flutter_image_compress</code>. Um upload de 6 MB em 3G falha; um de 300 KB não.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> <code>image_picker</code> delega no sistema e não tem preview; <code>camera</code> tem preview e custa mais permissões e código.</p>
+  <aside class="notes">Pergunta: para uma app de reportar buracos na estrada, image_picker ou camera? Resposta: image_picker, só precisam da foto. Insiste na compressão: quem já teve uploads a falhar em rede fraca percebe logo.</aside>
+</section>
+
+<section class="slide">
+  <h2>NFC: só funciona encostado</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/nfc" title="Figura interativa: um cartão sem bateria aproxima-se das costas do telemóvel e só responde a menos de 4 cm" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> porque é que um cartão de transportes funciona anos sem nunca ser carregado?</p>
+  <aside class="notes">O que dizer: a tag não tem bateria: é o campo do telemóvel que a acorda e lhe dá energia para responder. O alcance de uns 4 cm é de propósito: ninguém paga sem querer do outro lado da sala. Respostas: não tem bateria. A bobina do cartão apanha o campo magnético do leitor, a 13,56 MHz, e isso chega para o chip ligar e enviar uns bytes (no telemóvel, uma mensagem NDEF). Longe do leitor está completamente desligado. O Apple Pay e o Google Pay, os cartões de acesso e as etiquetas dos museus funcionam igual. A distância curta é uma decisão de segurança: para pagar é preciso encostar. A antena do telemóvel é a bobina que viste nas costas, junto à do carregamento sem fios.</aside>
 </section>
 
 <section class="slide">
@@ -88,7 +138,7 @@
   <h2>Bluetooth Low Energy</h2>
   <ul>
     <li><strong>Central</strong> é quem procura e liga (o telemóvel). <strong>Periférico</strong> é quem anuncia (a pulseira, o sensor de temperatura, a fechadura). O telemóvel também pode ser periférico, mas raramente compensa.</li>
-    <li><strong>Fluxo:</strong> scan de anúncios → ligar → descobrir serviços → ler, escrever ou subscrever características. Cada característica é um UUID com bytes; o significado vem do standard (Heart Rate Service <code>0x180D</code>) ou do fabricante.</li>
+    <li><strong>Fluxo:</strong> scan de anúncios, ligar, descobrir serviços e, por fim, ler, escrever ou subscrever características. Cada característica é um UUID com bytes; o significado vem do standard (Heart Rate Service <code>0x180D</code>) ou do fabricante.</li>
     <li><code>flutter_blue_plus</code>: scan com filtros, ligação, <code>read()</code>, <code>write()</code> e <code>lastValueStream</code> por característica.</li>
     <li><strong>Permissões:</strong> até ao Android 11 o scan exige permissão de localização, porque beacons revelam onde estás. Android 12+ tem <code>BLUETOOTH_SCAN</code> e <code>BLUETOOTH_CONNECT</code>, com a flag <code>neverForLocation</code>. iOS pede <code>NSBluetoothAlwaysUsageDescription</code>.</li>
     <li>Exemplos: Mi Band, estações meteorológicas domésticas, AirTags, o sistema de rastreio de contactos da pandemia.</li>
@@ -97,15 +147,63 @@
 </section>
 
 <section class="slide">
+  <h2>O Face ID por dentro</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/faceid" title="Figura interativa: o módulo TrueDepth lança pontos infravermelhos numa cara e numa fotografia, e só a cara passa" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> uma app de banco usa o Face ID. O que é que a app fica a saber da tua cara?</p>
+  <aside class="notes">O que dizer: o telemóvel não tira uma fotografia à cara: lança mais de 30 000 pontos infravermelhos e mede onde caem. Por isso funciona no escuro e uma fotografia não chega; a cara nunca sai do Secure Enclave. Respostas: nada. O mapa 3D é comparado no Secure Enclave, um chip à parte, e a app só recebe sim ou não. Uma fotografia não engana porque não tem relevo: os pontos ficam numa grelha direita. Funciona no escuro graças ao iluminador infravermelho. A Apple diz que a hipótese de outra pessoa desbloquear é de 1 em 1 000 000. No Flutter é o local_auth: no iOS precisa de NSFaceIDUsageDescription e o sistema pergunta na primeira vez; no Android basta USE_BIOMETRIC no manifesto, sem pergunta.</aside>
+</section>
+
+<section class="slide">
   <h2>Biometria, haptics, widgets de ecrã inicial</h2>
   <ul>
-    <li><strong><code>local_auth</code></strong>: Face ID, Touch ID, impressão digital, com <code>authenticate(localizedReason: ...)</code>. Desbloqueia algo local: mostrar o token guardado, entrar num ecrã sensível. Não substitui a autenticação no servidor (aula 17).</li>
+    <li><strong><code>local_auth</code></strong>: Face ID, Touch ID, impressão digital, com <code>authenticate(localizedReason: ...)</code>. Desbloqueia algo local: mostrar o token guardado, entrar num ecrã sensível. Não substitui a autenticação no servidor.</li>
     <li><strong>Haptics:</strong> <code>HapticFeedback.lightImpact()</code>, <code>mediumImpact()</code>, <code>heavyImpact()</code>, <code>selectionClick()</code>. Sem permissão, sem package, e é dos detalhes que mais fazem uma app parecer nativa. O iOS tem o motor Taptic; no Android depende do hardware.</li>
     <li><strong>Widgets de ecrã inicial:</strong> <code>home_widget</code> faz a ponte com App Widgets (Android) e WidgetKit (iOS). A UI do widget é nativa; o Flutter só escreve os dados. Caso perfeito: a previsão de hoje da localidade favorita.</li>
     <li><strong>Live Activities</strong> (iOS 16.1+) e Dynamic Island em uma frase: uma notificação viva cujos dados atualizas; código Swift obrigatório. Exemplos: entregas, voos, resultados desportivos.</li>
   </ul>
   <p><strong>Para os testes:</strong> biometria é desbloqueio local; um widget de ecrã inicial é desenhado em código nativo e o Flutter só lhe dá dados.</p>
   <aside class="notes">Pergunta à turma onde faria sentido um haptic no Tempo Açores. Respostas boas: ao adicionar favorito, ao completar o pull-to-refresh, ao chegar um aviso vermelho. Dúvida comum: "a biometria prova ao servidor quem sou?" Não: prova ao telemóvel, e o servidor continua a ver só o token.</aside>
+</section>
+
+<section class="slide">
+  <h2>Proximidade e luz ambiente</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/proximidade" title="Figura interativa: uma orelha aproxima-se e o ecrã apaga-se; a luz à volta muda e o brilho do ecrã acompanha" loading="lazy"></iframe></div>
+  <p><strong>Pergunta à turma:</strong> porque é que o ecrã se apaga numa chamada, mas não quando vês um vídeo com o telemóvel perto da cara?</p>
+  <aside class="notes">O que dizer: junto ao topo do ecrã há um emissor de infravermelhos e um recetor: se a luz volta, há alguma coisa a menos de 3 cm e o ecrã apaga-se. Ao lado, um fotodíodo mede a luz em lux, e o brilho acompanha. Respostas: o sensor de proximidade só está ligado quando é preciso, numa chamada ou quando uma app o pede (no iOS, isProximityMonitoringEnabled). Se estivesse sempre ligado, gastava bateria e apagava o ecrã por engano, no bolso ou a ler na cama. Exemplo real: no WhatsApp, ao ouvir uma mensagem de voz e encostar o telemóvel à orelha, o som passa para o altifalante de chamada e o ecrã apaga-se. Os lux: 5 num quarto escuro, 300 num escritório, 30 000 ao sol. No iOS nenhuma app os lê, não há API; no Android leem-se sem pedir nada.</aside>
+</section>
+
+<section class="slide">
+  <h2>Permissões: quem pergunta e quem não</h2>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Sensor</th><th>iOS (Info.plist)</th><th>Android (manifesto)</th></tr></thead>
+  <tbody>
+  <tr><td>Acelerómetro, giroscópio, magnetómetro</td><td>Nada</td><td>Nada; acima de 200 Hz, <code>HIGH_SAMPLING_RATE_SENSORS</code></td></tr>
+  <tr><td>Barómetro</td><td><code>NSMotionUsageDescription</code>, <strong>pergunta</strong></td><td>Nada</td></tr>
+  <tr><td>Localização</td><td><code>NSLocationWhenInUseUsageDescription</code>, <strong>pergunta</strong></td><td><code>ACCESS_FINE_LOCATION</code>, <strong>pergunta</strong></td></tr>
+  <tr><td>Câmara e LiDAR</td><td><code>NSCameraUsageDescription</code>, <strong>pergunta</strong></td><td><code>CAMERA</code>, <strong>pergunta</strong></td></tr>
+  <tr><td>Bluetooth LE</td><td><code>NSBluetoothAlwaysUsageDescription</code>, <strong>pergunta</strong></td><td><code>BLUETOOTH_SCAN</code>, <strong>pergunta</strong></td></tr>
+  <tr><td>Face ID, impressão digital</td><td><code>NSFaceIDUsageDescription</code>, <strong>pergunta</strong></td><td><code>USE_BIOMETRIC</code>, sem pergunta</td></tr>
+  <tr><td>NFC</td><td><code>NFCReaderUsageDescription</code>, folha do sistema</td><td><code>NFC</code>, sem pergunta</td></tr>
+  <tr><td>Proximidade, luz ambiente</td><td>Proximidade: nada; luz: sem API</td><td>Nada</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> no iOS, cada chave leva uma frase que o utilizador lê; se faltar, a app fecha ou o pedido falha. No Android, o que é perigoso também se pede em tempo de execução.</p>
+  <p><strong>Pergunta à turma:</strong> uma app de lanterna pede a localização. Desconfiam? E porque é que o barómetro pergunta no iOS e o acelerómetro não?</p>
+  <aside class="notes">Respostas: a lanterna não precisa de saber onde estás; quando uma app pede mais do que precisa, quase sempre é para vender dados. Caso real: em 2013 a FTC americana processou a Brightest Flashlight, uma lanterna para Android, por enviar a localização dos utilizadores a anunciantes. O barómetro: a Apple trata a altitude e os andares subidos como atividade física, como os passos, e desde o iOS 17.4 pede a autorização de Movimento e fitness. O acelerómetro continua livre, mas não é inofensivo: a partir do Android 12 a frequência fica limitada a 200 Hz por razões de privacidade. O iPhone tem sensor de luz ambiente, mas a Apple não a dá às apps; no Android lê-se sem pedir nada.</aside>
+</section>
+
+<section class="slide">
+  <h2>Ao vivo: os sensores de um iPhone 17 Pro</h2>
+  <ul>
+    <li>A app <strong>phyphox</strong> (grátis, da universidade RWTH Aachen) mostra cada sensor em gráfico: os mesmos números que o <code>sensors_plus</code> vos dá num <code>Stream</code>.</li>
+    <li><strong>Pousado na mesa:</strong> o z do acelerómetro lê 9,8; o x e o y ficam perto de 0.</li>
+    <li><strong>A cair para uma almofada:</strong> os três eixos vão a 0 durante a queda.</li>
+    <li><strong>A rodar sobre a mesa:</strong> o giroscópio sobe enquanto roda e volta a 0 quando para.</li>
+    <li><strong>Um íman ao lado:</strong> o magnetómetro dispara e a bússola perde o norte.</li>
+    <li><strong>Do chão ao teto:</strong> a pressão desce uns 0,3 hPa, cerca de 0,12 hPa por metro.</li>
+  </ul>
+  <p>Na primeira vez que o phyphox lê o barómetro, o iOS pergunta pelo Movimento e fitness: é a linha do barómetro na tabela anterior.</p>
+  <p><strong>Pergunta à turma:</strong> o que faz a pressão mudar sem ninguém mexer no telemóvel?</p>
+  <aside class="notes">Antes da aula: phyphox instalado, iPhone carregado, cabo USB-C. Para projetar, abre a experiência e, no menu dos três pontos, liga o acesso remoto; aparece um endereço como http://192.168.1.20:8080 para abrir no browser do computador da sala. Os dois têm de estar na mesma rede; se o Wi-Fi da universidade não deixar os aparelhos falarem entre si, liga o computador ao hotspot do iPhone. Plano B: espelha o ecrã pelo cabo com o QuickTime no Mac (Ficheiro, Nova gravação de filme, e escolhe o iPhone como câmara). Experiências a abrir, por esta ordem: Aceleração com g, Giroscópio, Magnetómetro, Pressão. Se já deste a autorização ao phyphox, mostra-a em Definições, Privacidade e segurança, Movimento e fitness. Extra: a app Bússola e o Nível, dentro da app Medição. A luz ambiente não aparece no phyphox do iPhone, porque não há API; num Android aparece. Respostas: o tempo (uma descida rápida da pressão anuncia chuva e vento, e o Tempo Açores podia mostrá-la), a porta da sala a abrir e fechar, o ar condicionado, um carro a entrar num túnel. Dez minutos no máximo.</aside>
 </section>
 
 <section class="slide" data-part="Sprint">
@@ -194,6 +292,7 @@ class NfcService {
         <li><a href="https://developer.apple.com/documentation/corenfc" target="_blank" rel="noopener">Core NFC</a> na Apple: sessões de leitura, NDEF e o que o iOS deixa uma app fazer.</li>
         <li><a href="https://pub.dev/packages/sensors_plus" target="_blank" rel="noopener">sensors_plus</a>: os streams de cada sensor e o <code>samplingPeriod</code>.</li>
         <li><a href="https://pub.dev/packages/nfc_manager" target="_blank" rel="noopener">nfc_manager</a>: configuração Android e iOS, leitura e escrita NDEF.</li>
+        <li><a href="https://phyphox.org" target="_blank" rel="noopener">phyphox</a>: a app dos sensores ao vivo, para Android e iOS, com o acesso remoto pelo browser.</li>
       </ul>
     </div>
   </div>
@@ -206,5 +305,27 @@ class NfcService {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../assets/app.js"></script>
+<script>
+(function () {
+  var frames = Array.prototype.slice.call(document.querySelectorAll(".figura-iso iframe[data-fig]"));
+  if (!frames.length) return;
+  function pick() {
+    var t = document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    frames.forEach(function (f) {
+      var src = f.getAttribute("data-fig") + (t === "light" ? "-light" : "") + ".html";
+      if (f.getAttribute("src") !== src) f.setAttribute("src", src);
+    });
+  }
+  pick();
+  new MutationObserver(pick).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  window.addEventListener("message", function (e) {
+    if (!e.data || !e.data.altura) return;
+    frames.forEach(function (f) {
+      var nome = f.getAttribute("data-fig").split("/").pop().replace(/-en$/, "");
+      if (e.source === f.contentWindow || e.data.figura === nome) { f.style.aspectRatio = "auto"; f.style.height = e.data.altura + "px"; }
+    });
+  });
+})();
+</script>
 </body>
 </html>
