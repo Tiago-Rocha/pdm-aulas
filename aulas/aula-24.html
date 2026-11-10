@@ -231,13 +231,17 @@ class NfcService {
       throw StateError('NFC indisponível ou desligado neste telemóvel');
     }
     await NfcManager.instance.startSession(
-      pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
+      pollingOptions: {
+        NfcPollingOption.iso14443,
+        NfcPollingOption.iso15693,
+      },
       onDiscovered: (NfcTag tag) async {
         final mensagem = await Ndef.from(tag)?.read();
         final registo = mensagem?.records.firstOrNull;
+        // payload.skip(3): salta o cabeçalho do Text Record
         final texto = registo == null
             ? 'tag sem conteúdo NDEF'
-            : String.fromCharCodes(registo.payload.skip(3)); // salta o cabeçalho do Text Record
+            : String.fromCharCodes(registo.payload.skip(3));
         await HapticFeedback.heavyImpact();
         aoLer(texto);
         await NfcManager.instance.stopSession();
