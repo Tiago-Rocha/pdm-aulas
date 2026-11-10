@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 23 · A app fora do ecrã, e sprint 2 · PDM</title>
+<title>Aula 23 · A app fora do ecrã, e o design system · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="../assets/parsons.css">
@@ -26,9 +26,9 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 23 · Semana 10 · Terça, 10 de novembro de 2026 · 08:30 às 10:30</p>
-  <h1>A app fora do ecrã, e sprint 2</h1>
-  <p class="lead">Primeiro, o que acontece a uma app quando sai do ecrã, porque é que o sistema a trava, e as quatro formas de trabalhar lá fora, com apps que usas todos os dias. Um jogo. Depois, a sprint 2: o que se vê nos repositórios e a próxima peça de cada grupo.</p>
-  <aside class="notes">Sem código e sem repositório da aula. Tempos de referência: teoria até às 09:05, jogo até às 09:20, sprint até às 10:25 (issue Permissões até às 09:30, a peça até às 10:15, ronda dos PRs até às 10:25). Peçam que tenham a app do grupo aberta no computador desde o início.</aside>
+  <h1>A app fora do ecrã, e o design system</h1>
+  <p class="lead">Primeiro, o que acontece a uma app quando sai do ecrã, porque é que o sistema a trava, e as quatro formas de trabalhar lá fora, com apps que usas todos os dias. Um jogo. Depois, o design system do Tempo Açores, do Figma para o código, numa app catálogo com duas peças por acabar. No fim, a sprint 2: a próxima peça de cada grupo.</p>
+  <aside class="notes">Repositório da aula: pdm-aula-23, o catálogo do design system. Tempos de referência: teoria até às 09:05, jogo até às 09:20, design system até às 09:35, as duas peças até às 09:50, issue Permissões até às 10:00, a peça do grupo até às 10:15, ronda dos PRs até às 10:25. Peçam que tenham o Figma do Tempo Açores aberto e o Chrome pronto para o flutter run.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -37,6 +37,7 @@
     <li>Dizer o que acontece a uma app quando sai do ecrã, e quem decide.</li>
     <li>Explicar porque é que o Android e o iPhone limitam o trabalho em segundo plano.</li>
     <li>Escolher o mecanismo certo para um caso: tarefa agendada, serviço em primeiro plano, push ou notificação local.</li>
+    <li>Encontrar no código uma variable do Figma pelo nome, e usar um componente do design system em vez de cores e medidas soltas.</li>
     <li>Levar a próxima peça do projeto do grupo por um PR até ao merge.</li>
   </ul>
 </section>
@@ -364,6 +365,213 @@
   <aside class="notes">Pega no cenário com menos respostas certas. Pergunta a quem acertou como pensou, e só depois explica.</aside>
 </section>
 
+<section class="slide" data-part="Design system">
+  <h2>O design system em quatro camadas</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 290" role="img" aria-label="Do Figma ao catálogo, em cinco caixas ligadas. Figma: as variables, Primitivas, Cor e Dimensões. Tokens, tokens.dart: os mesmos nomes, escritos uma vez. Tema, theme.dart: o Material passa a segui-los. Componentes, DsButton: sem cores nem medidas soltas. Catálogo: a app, cada peça com as variantes e os estados. Em baixo: muda o acento num sítio e todos os botões, interruptores e ligações mudam juntos.">
+<rect x="10" y="20" width="150" height="180" rx="12" class="box muted"/>
+<text x="85" y="58" class="t b" text-anchor="middle">Figma</text>
+<text x="85" y="92" class="t" text-anchor="middle">as variables</text>
+<text x="85" y="128" class="t s" text-anchor="middle">Primitivas</text>
+<text x="85" y="150" class="t s" text-anchor="middle">Cor</text>
+<text x="85" y="172" class="t s" text-anchor="middle">Dimensões</text>
+<rect x="192" y="20" width="150" height="180" rx="12" class="box accent"/>
+<text x="267" y="58" class="t b" text-anchor="middle">1 · Tokens</text>
+<text x="267" y="92" class="t mono s" text-anchor="middle">tokens.dart</text>
+<text x="267" y="140" class="t" text-anchor="middle">os mesmos nomes,</text>
+<text x="267" y="162" class="t" text-anchor="middle">escritos uma vez</text>
+<rect x="374" y="20" width="150" height="180" rx="12" class="box accent"/>
+<text x="449" y="58" class="t b" text-anchor="middle">2 · Tema</text>
+<text x="449" y="92" class="t mono s" text-anchor="middle">theme.dart</text>
+<text x="449" y="140" class="t" text-anchor="middle">o Material passa</text>
+<text x="449" y="162" class="t" text-anchor="middle">a segui-los</text>
+<rect x="556" y="20" width="150" height="180" rx="12" class="box ok"/>
+<text x="631" y="58" class="t b" text-anchor="middle">3 · Componentes</text>
+<text x="631" y="92" class="t mono s" text-anchor="middle">DsButton</text>
+<text x="631" y="140" class="t" text-anchor="middle">sem cores nem</text>
+<text x="631" y="162" class="t" text-anchor="middle">medidas soltas</text>
+<rect x="738" y="20" width="150" height="180" rx="12" class="box ok"/>
+<text x="813" y="58" class="t b" text-anchor="middle">4 · Catálogo</text>
+<text x="813" y="92" class="t s" text-anchor="middle">a própria app</text>
+<text x="813" y="140" class="t" text-anchor="middle">cada peça, com</text>
+<text x="813" y="162" class="t" text-anchor="middle">variantes e estados</text>
+<line x1="160" y1="110" x2="188" y2="110" class="arrow"/>
+<line x1="342" y1="110" x2="370" y2="110" class="arrow"/>
+<line x1="524" y1="110" x2="552" y2="110" class="arrow"/>
+<line x1="706" y1="110" x2="734" y2="110" class="arrow"/>
+<text x="450" y="248" class="t" text-anchor="middle">Muda o acento num sítio: todos os botões, interruptores e ligações mudam juntos.</text>
+<text x="450" y="274" class="t s" text-anchor="middle">Sem design system, a mesma cor está copiada em cada ecrã.</text>
+</svg>
+  </figure>
+  <p class="lead">Pergunta à turma: no vosso projeto, quantos sítios têm de mudar para trocar a cor de todos os botões?</p>
+  <aside class="notes">Resposta esperada: tantos quantos os ecrãs, porque a cor foi copiada do Inspect do Figma, uma a uma. Com tokens, um sítio. Exemplos reais: o Material 3 da Google, o Polaris da Shopify e o Primer do GitHub são design systems públicos. O catálogo é o que as equipas usam para ver cada peça sozinha: o Widgetbook no Flutter, o Storybook na web.</aside>
+</section>
+
+<section class="slide">
+  <h2>Do Figma para o código: o mesmo nome</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Quatro variables do Figma e o nome no código. Primitivas teal/600 é Primitivas.teal600. Cor acento, que no claro é teal/600 e no escuro teal/200, é Cor.of(context).acento. Cor fundo/ecra é Cor.of(context).fundoEcra. Dimensões espaco/md, 16, é Dimensoes.espacoMd. A barra desaparece e a palavra seguinte começa com maiúscula.">
+<text x="20" y="24" class="t s" style="letter-spacing:.06em">NO FIGMA</text>
+<text x="300" y="24" class="t s" style="letter-spacing:.06em">VALOR</text>
+<text x="560" y="24" class="t s" style="letter-spacing:.06em">NO CÓDIGO</text>
+<rect x="10" y="40" width="250" height="56" rx="10" class="box muted"/>
+<text x="24" y="64" class="t s">Primitivas</text>
+<text x="24" y="86" class="t mono b">teal/600</text>
+<text x="300" y="74" class="t">#1B6D80</text>
+<rect x="550" y="40" width="340" height="56" rx="10" class="box accent"/>
+<text x="566" y="74" class="t mono">Primitivas.teal600</text>
+<rect x="10" y="110" width="250" height="56" rx="10" class="box muted"/>
+<text x="24" y="134" class="t s">Cor</text>
+<text x="24" y="156" class="t mono b">acento</text>
+<text x="300" y="134" class="t">claro: teal/600</text>
+<text x="300" y="156" class="t">escuro: teal/200</text>
+<rect x="550" y="110" width="340" height="56" rx="10" class="box ok"/>
+<text x="566" y="144" class="t mono">Cor.of(context).acento</text>
+<rect x="10" y="180" width="250" height="56" rx="10" class="box muted"/>
+<text x="24" y="204" class="t s">Cor</text>
+<text x="24" y="226" class="t mono b">fundo/ecra</text>
+<text x="300" y="204" class="t">claro: sand/100</text>
+<text x="300" y="226" class="t">escuro: night/900</text>
+<rect x="550" y="180" width="340" height="56" rx="10" class="box ok"/>
+<text x="566" y="214" class="t mono">Cor.of(context).fundoEcra</text>
+<rect x="10" y="250" width="250" height="56" rx="10" class="box muted"/>
+<text x="24" y="274" class="t s">Dimensões</text>
+<text x="24" y="296" class="t mono b">espaco/md</text>
+<text x="300" y="284" class="t">16</text>
+<rect x="550" y="250" width="340" height="56" rx="10" class="box ok"/>
+<text x="566" y="284" class="t mono">Dimensoes.espacoMd</text>
+<line x1="470" y1="68" x2="544" y2="68" class="arrow"/>
+<line x1="470" y1="138" x2="544" y2="138" class="arrow"/>
+<line x1="470" y1="208" x2="544" y2="208" class="arrow"/>
+<line x1="470" y1="278" x2="544" y2="278" class="arrow"/>
+</svg>
+  <figcaption>A barra desaparece e a palavra seguinte começa com maiúscula. Quem tem o Figma aberto encontra o nome no código sem traduzir nada.</figcaption>
+  </figure>
+  <p><strong>Primitivas:</strong> a paleta em bruto, que os componentes nunca usam. <strong>Cor:</strong> para que serve cada cor, com os mesmos nomes no claro e no escuro.</p>
+  <aside class="notes">Pergunta: porque é que um componente não usa Primitivas.teal600 diretamente? Resposta: no escuro o acento passa a teal/200; quem escreveu teal600 fica com a cor errada no tema escuro. É por isso que o tema escuro sai quase de graça. No plano gratuito do Figma, quem só vê o ficheiro pode não ver as variables: o tokens.dart e a página Tokens do catálogo mostram-nas todas.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde a magia acontece: <code>Cor.of(context)</code></h2>
+<pre data-title="lib/ds/tokens.dart · Cor"><code class="language-dart">  /// The colours of the current theme, light or dark.
+  static Cor of(BuildContext context) =&gt;
+      Theme.of(context).brightness == Brightness.dark ? escuro : claro;
+
+  /// Collection "Cor", mode "Claro".
+  static const claro = Cor._(
+    fundoEcra: Primitivas.sand100,
+    fundoCartao: Primitivas.white,
+    fundoFolha: Primitivas.sand50,
+    // ...</code></pre>
+  <p>Um componente pede <code>Cor.of(context).acento</code> e recebe a cor do tema em uso. O <code>Cor.escuro</code>, logo abaixo, é a coleção "Cor (escuro)". Espaços e cantos: <code>Dimensoes.espacoMd</code>, <code>Dimensoes.raioLg</code>.</p>
+  <aside class="notes">Abre o tokens.dart com eles e faz o salto: carrega em Cor.of num componente, vai à definição, e daí ao Primitivas. A regra que fica: fora do tokens.dart não há nenhum Color(0x...) nem números soltos de espaço ou de canto.</aside>
+</section>
+
+<section class="slide">
+  <h2>O tema: os tokens entram no Material</h2>
+<pre data-title="lib/ds/theme.dart · dsTheme"><code class="language-dart">ThemeData dsTheme(Brightness brightness) {
+  final cor = brightness == Brightness.dark ? Cor.escuro : Cor.claro;
+
+  final colors = ColorScheme(
+    brightness: brightness,
+    primary: cor.fundoInverso,
+    onPrimary: cor.textoInverso,
+    secondary: cor.acento,
+    // ...</code></pre>
+  <p>No <code>main.dart</code>: <code>theme: dsTheme(Brightness.light)</code>. A partir daí, cada <code>FilledButton</code> e cada <code>Switch</code> da app já sai com o design system.</p>
+  <aside class="notes">Mais abaixo no theme.dart, o filledButtonTheme, o outlinedButtonTheme e o switchTheme dão a altura, o canto e a letra de cada botão e do interruptor. O ColorScheme é a ponte: o Material só conhece primary, surface, outline e afins, e o tema diz qual Cor é cada um. Por isso o FilledButton, que nunca ouviu falar de fundoInverso, sai com a cor certa.</aside>
+</section>
+
+<section class="slide">
+  <h2>Antes e depois: o botão</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Antes, em cada ecrã: um Container com altura 50, cor 0xFF10242C, canto 16 e um GestureDetector; três ecrãs, três cópias, e uma já tem 48 e outra 14. Depois: DsButton com label Entrar e onPressed entrar; a cor, o canto, a altura e a letra vêm do tema.">
+<rect x="10" y="10" width="430" height="310" rx="12" class="box danger"/>
+<text x="30" y="44" class="t b">Antes: em cada ecrã</text>
+<text x="30" y="88" class="t mono s">Container(</text>
+<text x="48" y="112" class="t mono s">height: 50,</text>
+<text x="48" y="136" class="t mono s">decoration: BoxDecoration(</text>
+<text x="66" y="160" class="t mono s">color: Color(0xFF10242C),</text>
+<text x="66" y="184" class="t mono s">borderRadius: ...circular(16),</text>
+<text x="48" y="208" class="t mono s">),</text>
+<text x="48" y="232" class="t mono s">child: GestureDetector(...),</text>
+<text x="30" y="256" class="t mono s">)</text>
+<text x="30" y="298" class="t">Três ecrãs, três cópias: uma já tem 48, outra 14.</text>
+<rect x="460" y="10" width="430" height="310" rx="12" class="box ok"/>
+<text x="480" y="44" class="t b">Depois</text>
+<text x="480" y="88" class="t mono">DsButton(</text>
+<text x="498" y="114" class="t mono">label: 'Entrar',</text>
+<text x="498" y="140" class="t mono">onPressed: entrar,</text>
+<text x="480" y="166" class="t mono">)</text>
+<text x="480" y="220" class="t">A cor, o canto, a altura e a letra</text>
+<text x="480" y="244" class="t">vêm do tema. E já tem secundário,</text>
+<text x="480" y="268" class="t">perigo, ícone, a carregar e desativado.</text>
+</svg>
+  </figure>
+  <p>Abram o <code>ds_button.dart</code>: não há lá nenhuma cor, nenhum canto, nenhuma letra. O componente só escolhe qual dos botões do Material e o que vai lá dentro.</p>
+  <aside class="notes">É aqui que muitos grupos encravam: o primeiro botão feito à mão, com GestureDetector, sem estado de carregar nem de desativado, e copiado para os outros ecrãs. A exceção no ds_button.dart é o perigo, que pede Cor.of(context).erro. O interruptor (ds_switch.dart) segue a mesma ideia: as cores vêm do switchTheme e o componente põe a linha toda a reagir ao toque.</aside>
+</section>
+
+<section class="slide">
+  <h2>O catálogo: a app é o design system</h2>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;max-width:880px;margin:0 auto">
+    <figure style="margin:0">
+      <img src="../assets/img/aula-23/lista.webp" alt="A lista do catálogo: Tokens pronto; Botão e Interruptor prontos; Chip de dificuldade e Estado do ecrã a completar; Campo de texto, Chip de filtro, Cartão da ilha e Aviso por fazer." style="width:100%;max-height:52vh;object-fit:contain;object-position:top;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>A lista</strong>, com o estado de cada peça.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="../assets/img/aula-23/botao.webp" alt="A página do Botão: principal, secundário, perigo, com ícone, a carregar e desativado." style="width:100%;max-height:52vh;object-fit:contain;object-position:top;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>Uma página por peça</strong>, com as variantes.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="../assets/img/aula-23/chip.webp" alt="A página do Chip de dificuldade: Fácil, Médio e Difícil, os três verdes." style="width:100%;max-height:52vh;object-fit:contain;object-position:top;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>O erro vê-se:</strong> tudo verde.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="../assets/img/aula-23/tokens-escuro.webp" alt="A página Tokens no tema escuro: cada cor com o nome do Figma, como fundo/ecra e texto/principal, e o valor." style="width:100%;max-height:52vh;object-fit:contain;object-position:top;display:block;border:1px solid var(--border);border-radius:12px">
+      <figcaption><strong>Os tokens</strong>, no escuro.</figcaption>
+    </figure>
+  </div>
+  <p>No topo, um botão aumenta a letra para 130 % e a lua passa ao tema escuro. Cada peça tem de ficar bem nos dois.</p>
+  <aside class="notes">É o que o Widgetbook faz, sem o package: a app abre numa lista e cada componente tem a sua página. A vantagem de ver a peça sozinha: o erro do chip salta à vista, coisa que num ecrã cheio passava. As peças por fazer são de onde cada grupo escolhe a próxima.</aside>
+</section>
+
+<section class="slide">
+  <h2>O repositório de hoje</h2>
+<pre class="term"><code class="language-bash">git clone https://github.com/Tiago-Rocha/pdm-aula-23.git
+cd pdm-aula-23
+flutter pub get
+flutter run -d chrome</code></pre>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Ficheiro</th><th>Onde a magia acontece</th></tr></thead>
+    <tbody>
+      <tr><td><code>lib/ds/tokens.dart</code></td><td>As variables do Figma, com os mesmos nomes.</td></tr>
+      <tr><td><code>lib/ds/theme.dart</code></td><td>O tema do Material, feito com os tokens.</td></tr>
+      <tr><td><code>lib/ds/components/</code></td><td>Os componentes, sem cores escritas à mão.</td></tr>
+      <tr><td><code>lib/catalog/entries.dart</code></td><td>Cada peça do catálogo, com um exemplo por variante.</td></tr>
+    </tbody>
+  </table></div>
+  <aside class="notes">O main tem a versão para completar; não há solução publicada por agora. A pasta lib/ds é o design system e é a que se copia para o projeto; a pasta lib/catalog é só o catálogo. Corre no Chrome, sem chaves nem login.</aside>
+</section>
+
+<section class="slide">
+  <h2>Duas peças por acabar</h2>
+  <div class="cols">
+    <div>
+      <h3>Chip de dificuldade</h3>
+      <p>No catálogo, "Médio" e "Difícil" estão verdes, como "Fácil". As cores certas estão nas variables do Figma, nos grupos <code>aviso</code> e <code>erro</code>, e com os mesmos nomes no <code>Cor</code>.</p>
+      <p class="muted">Ficheiro: <code>ds_difficulty_chip.dart</code></p>
+    </div>
+    <div>
+      <h3>Estado do ecrã</h3>
+      <p>O erro mostra a mensagem mas deixa a pessoa presa. Falta o botão "Tentar outra vez": um <code>DsButton</code> secundário, à largura do texto, que chama o <code>onRetry</code>.</p>
+      <p class="muted">Ficheiro: <code>ds_state_view.dart</code></p>
+    </div>
+  </div>
+  <div class="callout tip"><strong>Depois, no projeto do grupo</strong> A pasta <code>lib/ds</code> passa para o <code>lib/</code> do projeto, o <code>dsTheme</code> entra no <code>MaterialApp</code>, e os botões trocam-se por <code>DsButton</code>, um ecrã de cada vez.</div>
+  <aside class="notes">Vinte minutos para as duas. Pista para o chip: o Fácil usa calmoFundo e calmoTexto; os outros dois seguem o mesmo padrão. Pista para o estado: o DsButton está no ficheiro ao lado, com a variante secondary e expand a false. Confirmem no catálogo com a lua: no escuro os chips mudam sozinhos, porque vêm do Cor. O estado do ecrã é o requisito 8 do projeto: a carregar, vazio e erro.</aside>
+</section>
+
 <section class="slide" data-part="Sprint 2">
   <h2>Sprint 2: o que se vê nos repositórios</h2>
   <figure class="diagram">
@@ -518,7 +726,7 @@
 <text x="580" y="370" class="t s" style="font-family:var(--mono,monospace)">POST /v1/reports</text>
 </svg>
   </figure>
-  <div class="callout tip"><strong>Hoje</strong> Primeiro, o que já está num branch ou num PR entra no <code>main</code>. Depois, encontrem-se no caminho: a primeira peça que ainda não está no <code>main</code> é a de hoje. Copiem do repositório indicado, adaptem, e levem-na por um PR até ao merge.</div>
+  <div class="callout tip"><strong>Hoje</strong> Primeiro, o que já está num branch ou num PR entra no <code>main</code>. Quem não tem o design system no <code>main</code> começa por aí: a pasta <code>lib/ds</code> do repositório de hoje é a peça. Os outros encontram-se no caminho: a primeira peça que ainda não está no <code>main</code> é a de hoje. Copiem do repositório indicado, adaptem, e levem-na por um PR até ao merge.</div>
   <aside class="notes">Ordem pensada para que cada peça use a anterior: sem login não há favoritos, sem navegação não há onde pôr os trilhos. Os avisos não têm repositório: o endpoint está na página da API e o modelo é igual ao das ilhas. Os relatos com foto ficam para amanhã, com a câmara e a galeria. Circula pelos grupos que estão nas peças 1 e 2 primeiro.</aside>
 </section>
 
