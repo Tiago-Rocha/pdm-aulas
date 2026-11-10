@@ -188,7 +188,10 @@
   });
   var nextUp = document.getElementById("next-up");
   if (nextUp) {
-    var nx = LESSONS.filter(function (l) { return l.d >= iso; })[0];
+    // A aula de hoje deixa de ser a próxima quando acaba (hora de fim em h, "16:00-18:00").
+    var now = new Date();
+    var nowStr = iso + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+    var nx = LESSONS.filter(function (l) { return l.d + " " + l.h.split("-")[1] > nowStr; })[0];
     if (nx) {
       nextUp.innerHTML = "<strong>" + T.nextUp + "</strong> " + T.lesson + " " + pad(nx.n) + " · " + fmtDate(nx.d) + " · " + nx.h + " · " + title(nx);
     } else {
