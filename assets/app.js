@@ -27,7 +27,7 @@
     { n: 19, d: "2026-11-02", h: "16:00-18:00", t: "Projeto e revisões para o teste 1", te: "Project and revision for test 1", repo: null, kind: "" },
     { n: 20, d: "2026-11-04", h: "16:00-18:00", t: "Teste escrito 1", te: "Written test 1", repo: null, kind: "test" },
     { n: 21, d: "2026-11-06", h: "08:30-12:30", t: "IA e o futuro do desenvolvimento, e projeto", te: "AI and the future of software development, and project", repo: null, kind: "sprint" },
-    { n: 22, d: "2026-11-09", h: "16:00-18:00", t: "Localização, mapas e permissões", te: "Location, maps and permissions", repo: "pdm-aula-21", kind: "" },
+    { n: 22, d: "2026-11-09", h: "16:00-18:00", t: "Localização, mapas e permissões", te: "Location, maps and permissions", repo: "pdm-aula-22", kind: "" },
     { n: 23, d: "2026-11-10", h: "08:30-10:30", t: "A app fora do ecrã, e sprint 2", te: "The app off screen, and sprint 2", repo: null, kind: "sprint" },
     { n: 24, d: "2026-11-11", h: "16:00-18:00", t: "Hardware e sensores, e sprint 2", te: "Hardware and sensors, and sprint 2", repo: null, kind: "sprint" },
     { n: 25, d: "2026-11-16", h: "16:00-18:00", t: "Testes automatizados e CI", te: "Automated tests and CI", repo: "pdm-aula-25", kind: "" },
