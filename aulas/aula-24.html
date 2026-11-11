@@ -28,7 +28,7 @@
   <h1>Hardware e sensores, e sprint 2</h1>
   <p class="lead">Teoria (60 minutos): o telemóvel por dentro, sensor a sensor: movimento, bússola, barómetro, GPS, câmara e LiDAR, NFC, Bluetooth Low Energy, Face ID, proximidade e luz; que permissão pede cada sensor no iOS e no Android, os sensores no vosso telemóvel, e porque é que um telemóvel custa dez vezes mais do que outro. Prática: sprint 2, a uma semana da review.</p>
   <div class="meta"><span>Review da sprint 2: quarta 18/11</span></div>
-  <aside class="notes">Traz uma tag NFC gravada com um texto NDEF (uma etiqueta de 20 cêntimos chega) para a demo, e o iPhone carregado, com o phyphox instalado e o cabo USB-C, para os sensores ao vivo. À entrada pergunta quem tem NFC no telemóvel: quase todos os Android têm, o iPhone lê desde o 7. Nos primeiros três minutos cada grupo diz em uma frase onde está na sprint 2; isso decide por onde começas a circular na parte prática.</aside>
+  <aside class="notes">Traz o iPhone carregado, com o phyphox instalado e o cabo USB-C, para os sensores ao vivo. À entrada pergunta quem tem NFC no telemóvel: quase todos os Android têm, o iPhone lê desde o 7. Nos primeiros três minutos cada grupo diz em uma frase onde está na sprint 2; isso decide por onde começas a circular na parte prática.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -73,20 +73,17 @@
 
 <section class="slide">
   <h2>Sensores de movimento</h2>
-  <div class="table-wrap"><table>
+  <div class="table-wrap"><table class="compacta">
   <thead><tr><th>Sensor</th><th>Mede</th><th>Usos reais</th></tr></thead>
   <tbody>
-  <tr><td>Acelerómetro</td><td>Aceleração em x, y, z, incluindo a gravidade</td><td>Detetar abanão, orientação do ecrã, contar passos de forma grosseira</td></tr>
-  <tr><td>Giroscópio</td><td>Velocidade angular</td><td>Rotação fina, realidade aumentada, jogos</td></tr>
+  <tr><td>Acelerómetro</td><td>Aceleração em x, y, z</td><td>Rodar o ecrã, passos, quedas do Apple Watch</td></tr>
+  <tr><td>Giroscópio</td><td>Velocidade angular</td><td>Vídeo sem tremer, Pokémon GO, jogos de carros</td></tr>
   <tr><td>Magnetómetro</td><td>Campo magnético</td><td>A seta da bússola no Google Maps</td></tr>
-  <tr><td>Barómetro</td><td>Pressão atmosférica</td><td>Altitude relativa, andares subidos; podia dar a pressão local no Tempo Açores</td></tr>
+  <tr><td>Barómetro</td><td>Pressão atmosférica</td><td>Andares subidos no Saúde</td></tr>
   </tbody></table></div>
-  <ul>
-    <li><code>sensors_plus</code> expõe cada sensor como um <code>Stream</code>: <code>accelerometerEventStream()</code>, <code>gyroscopeEventStream()</code>, <code>magnetometerEventStream()</code>, <code>barometerEventStream()</code>. O acelerómetro, o giroscópio e o magnetómetro não pedem permissão; o barómetro, no iOS, pede a de Movimento e fitness.</li>
-    <li>Um stream a 100 Hz mantém o CPU acordado. Escolhe o <code>samplingPeriod</code>, cancela a subscrição no <code>dispose</code> e quando a app vai para segundo plano.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> os sensores de movimento não pedem permissão (o barómetro no iOS é a exceção), mas custam bateria; cancela o stream quando ninguém está a olhar.</p>
-  <div class="callout"><strong>Analogia</strong> Os sensores são os sentidos do telemóvel. O acelerómetro e o giroscópio são o ouvido interno: dão o equilíbrio e o movimento sem pedir licença a ninguém. A câmara é a vista. O NFC é o toque: só funciona a centímetros e num instante. O BLE é a voz: alcança dezenas de metros e mantém uma conversa. Cada sentido tem a sua permissão e o seu custo em bateria.</div>
+  <p><strong>Para os testes:</strong> não pedem permissão (exceto o barómetro no iOS), mas gastam bateria.</p>
+  <div class="callout"><strong>Analogia</strong> Os sensores são os sentidos do telemóvel: o acelerómetro e o giroscópio são o ouvido interno, a câmara a vista, o NFC o toque, o BLE a voz.</div>
+  <aside class="notes">O que dizer: o acelerómetro mede também a gravidade, por isso parado marca 1 g. Os passos aparecem no Saúde e no Google Fit; abanar para desfazer também é ele. O giroscópio está na estabilização do vídeo, nos filtros de realidade aumentada do Instagram e no Rodopio do laboratório. O barómetro dá a altitude relativa e podia dar a pressão local no Tempo Açores. <code>sensors_plus</code> expõe cada sensor como um <code>Stream</code>: <code>accelerometerEventStream()</code>, <code>gyroscopeEventStream()</code>, <code>magnetometerEventStream()</code>, <code>barometerEventStream()</code>. O acelerómetro, o giroscópio e o magnetómetro não pedem permissão; o barómetro, no iOS, pede a de Movimento e fitness. Um stream a 100 Hz mantém o CPU acordado. Escolhe o <code>samplingPeriod</code>, cancela a subscrição no <code>dispose</code> e quando a app vai para segundo plano. Na analogia: o ouvido interno dá o equilíbrio e o movimento sem pedir licença a ninguém; o NFC é o toque porque só funciona a centímetros e num instante; o BLE é a voz porque alcança dezenas de metros e mantém uma conversa. Cada sentido tem a sua permissão e o seu custo em bateria. Pergunta rápida: que app do telemóvel deles usa o giroscópio sem pedir nada? Quase todas as de câmara.</aside>
 </section>
 
 <section class="slide">
@@ -126,14 +123,15 @@
 
 <section class="slide">
   <h2>Câmara e galeria</h2>
-  <ul>
-    <li><strong><code>image_picker</code></strong> abre a câmara ou a galeria do sistema e devolve um ficheiro. Chega para a maioria dos casos: foto de perfil, anexar uma imagem a um formulário. É o que o WhatsApp faz quando anexas uma foto.</li>
-    <li><strong><code>camera</code></strong> dá o preview ao vivo dentro da app, controlo de foco, flash e vídeo. Precisas dele para ler códigos QR ou aplicar filtros. Custa mais código e mais permissões.</li>
-    <li><strong>Permissões:</strong> Android 13+ usa o Photo Picker e não pede permissão para escolher da galeria; a câmara exige <code>CAMERA</code>. iOS exige <code>NSCameraUsageDescription</code> e <code>NSPhotoLibraryUsageDescription</code> no <code>Info.plist</code>, com texto de justificação, ou a app crasha.</li>
-    <li><strong>Tamanho:</strong> uma foto de 12 MP tem 4 a 6 MB. Antes de enviar, reduz com <code>maxWidth</code> e <code>imageQuality</code> do <code>image_picker</code> ou com <code>flutter_image_compress</code>. Um upload de 6 MB em 3G falha; um de 300 KB não.</li>
-  </ul>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Pacote</th><th>O que faz</th><th>Exemplos</th></tr></thead>
+  <tbody>
+  <tr><td><code>image_picker</code></td><td>Abre a câmara ou a galeria do sistema e devolve um ficheiro</td><td>Anexar uma foto no WhatsApp, foto de perfil</td></tr>
+  <tr><td><code>camera</code></td><td>Preview ao vivo dentro da app, foco, flash, vídeo</td><td>Leitor de QR, filtros do Instagram</td></tr>
+  </tbody></table></div>
+  <p><strong>Tamanho:</strong> reduz antes de enviar. 6 MB em 3G falha, 300 KB não.</p>
   <p><strong>Para os testes:</strong> <code>image_picker</code> delega no sistema e não tem preview; <code>camera</code> tem preview e custa mais permissões e código.</p>
-  <aside class="notes">Pergunta: para uma app de reportar buracos na estrada, image_picker ou camera? Resposta: image_picker, só precisam da foto. Insiste na compressão: quem já teve uploads a falhar em rede fraca percebe logo.</aside>
+  <aside class="notes">O que dizer: o image_picker chega para a maioria dos casos; o camera só quando a app precisa de ver o que a câmara vê enquanto filma. Permissões: no Android 13 ou mais recente o Photo Picker escolhe da galeria sem pedir permissão; a câmara exige CAMERA. No iOS são precisos NSCameraUsageDescription e NSPhotoLibraryUsageDescription no Info.plist, com o texto da justificação, senão a app crasha. Tamanho: uma foto de 12 MP tem 4 a 6 MB; reduz com maxWidth e imageQuality do image_picker ou com o flutter_image_compress. Pergunta: para uma app de reportar buracos na estrada, image_picker ou camera? Resposta: image_picker, só precisam da foto. Insiste na compressão: quem já teve uploads a falhar em rede fraca percebe logo.</aside>
 </section>
 
 <section class="slide">
@@ -145,26 +143,51 @@
 
 <section class="slide">
   <h2>NFC</h2>
-  <ul>
-    <li><strong>Tags NDEF</strong> são a linguagem comum das etiquetas: texto, URL, vCard, configuração de Wi-Fi. Leitura e escrita com <code>nfc_manager</code>. Exemplos: etiquetas em museus, cartões de visita, autocolantes que abrem uma app.</li>
-    <li><strong>Android:</strong> lê e escreve tags em segundo plano, sem ecrã do sistema; precisa de <code>android.permission.NFC</code> no manifesto, sem prompt ao utilizador. Faz <strong>HCE</strong> (Host Card Emulation): o telemóvel finge ser um cartão, com um serviço nativo.</li>
-    <li><strong>iOS:</strong> lê desde o iOS 11 e escreve desde o 13, mas sempre numa sessão com a folha do sistema visível ("Ready to Scan"); precisa de <code>NFCReaderUsageDescription</code> e da capability no Xcode. HCE só desde o iOS 17.4, só na UE e com autorização da Apple.</li>
-    <li><strong>Pagamentos</strong> (Apple Pay, Google Wallet) usam NFC com Secure Element. Uma app normal não imita isso; um "cartão de transportes" caseiro não é possível.</li>
-  </ul>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th></th><th>Android</th><th>iOS</th></tr></thead>
+  <tbody>
+  <tr><td>Ler e escrever</td><td>Em segundo plano, sem folha</td><td>Só com a folha "Ready to Scan" visível</td></tr>
+  <tr><td>O que pede</td><td>Só o manifesto, sem pergunta</td><td>Texto no Info.plist e capability</td></tr>
+  <tr><td>HCE (cartão)</td><td>Sim</td><td>iOS 17.4+, só UE, com aval da Apple</td></tr>
+  </tbody></table></div>
+  <p><strong>NDEF:</strong> texto, URL ou contacto numa etiqueta. Etiquetas em museus, cartões de visita, autocolantes que abrem uma app.</p>
   <p><strong>Para os testes:</strong> em NFC, o Android faz leitura, escrita e HCE; o iOS lê e escreve numa sessão do sistema e HCE é caso especial.</p>
-  <aside class="notes">Mostra a folha "Ready to Scan" no teu iPhone; quem tem Android estranha que não haja modo silencioso. Dúvida frequente: "posso fazer um cartão de acesso ao ginásio?" Só se o leitor aceitar NDEF ou HCE; cartões de transportes exigem Secure Element e acordos com o operador.</aside>
+  <aside class="notes">O que dizer: NDEF é a linguagem comum das etiquetas (texto, URL, vCard, configuração de Wi-Fi); em Flutter lê-se e escreve-se com <code>nfc_manager</code>. No Android basta <code>android.permission.NFC</code> no manifesto, sem prompt. No iOS lê desde o 11 e escreve desde o 13, sempre numa sessão com a folha do sistema; pede <code>NFCReaderUsageDescription</code> no Info.plist e a capability no Xcode. HCE (Host Card Emulation) é o telemóvel fingir que é um cartão, com um serviço nativo. Pagamentos (Apple Pay, Google Wallet) usam NFC com Secure Element: uma app normal não imita isso, um "cartão de transportes" caseiro não é possível. Mostra a folha "Ready to Scan" no teu iPhone; quem tem Android estranha que não haja modo silencioso. Dúvida frequente: "posso fazer um cartão de acesso ao ginásio?" Só se o leitor aceitar NDEF ou HCE; cartões de transportes exigem Secure Element e acordos com o operador.</aside>
+</section>
+
+<section class="slide">
+  <h2>NFC: como uma app lê uma etiqueta</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 170" role="img" aria-label="Quatro passos em linha: verificar se o telemóvel tem NFC ligado, abrir uma sessão de leitura, encostar a etiqueta e ler a mensagem NDEF, e fechar a sessão com uma vibração.">
+<rect x="10" y="10" width="200" height="140" rx="12" class="box "/><circle cx="40" cy="42" r="16" class="box accent"/><text x="40" y="47" text-anchor="middle" class="t b">1</text><text x="66" y="48" class="t b">Verificar</text><text x="26" y="88" class="t s">o telemóvel tem NFC?</text><text x="26" y="116" class="t s">está ligado?</text>
+<line x1="212" y1="80" x2="231" y2="80" class="arrow"/>
+<rect x="235" y="10" width="200" height="140" rx="12" class="box warn"/><circle cx="265" cy="42" r="16" class="box accent"/><text x="265" y="47" text-anchor="middle" class="t b">2</text><text x="291" y="48" class="t b">Abrir sessão</text><text x="251" y="88" class="t s">Android: em silêncio</text><text x="251" y="116" class="t s">iPhone: folha do sistema</text>
+<line x1="437" y1="80" x2="456" y2="80" class="arrow"/>
+<rect x="460" y="10" width="200" height="140" rx="12" class="box ok"/><circle cx="490" cy="42" r="16" class="box accent"/><text x="490" y="47" text-anchor="middle" class="t b">3</text><text x="516" y="48" class="t b">Encostar e ler</text><text x="476" y="88" class="t s">a etiqueta acorda</text><text x="476" y="116" class="t s">e envia o NDEF</text>
+<line x1="662" y1="80" x2="681" y2="80" class="arrow"/>
+<rect x="685" y="10" width="200" height="140" rx="12" class="box "/><circle cx="715" cy="42" r="16" class="box accent"/><text x="715" y="47" text-anchor="middle" class="t b">4</text><text x="741" y="48" class="t b">Fechar</text><text x="701" y="88" class="t s">a sessão termina</text><text x="701" y="116" class="t s">vibra a confirmar</text>
+</svg>
+  <figcaption>A app não procura etiquetas o tempo todo: abre uma sessão, lê uma vez e fecha.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Onde se vê:</strong> etiquetas nos museus, cartões de visita, autocolantes que abrem uma app, as automações NFC do Atalhos no iPhone.</li>
+    <li><strong>Para os testes:</strong> antes de ler, verificar se há NFC; no iPhone a leitura só acontece com a folha "Ready to Scan" aberta e fecha sozinha ao fim de 60 segundos.</li>
+  </ul>
+  <aside class="notes">O que dizer: é a sequência de qualquer app que lê etiquetas. Em Flutter, com o <code>nfc_manager</code>: <code>isAvailable()</code> primeiro, porque sem NFC, ou com o NFC desligado nas definições, a sessão nunca abre (mostra-se uma mensagem, não um erro); depois <code>startSession</code> com um <code>onDiscovered</code> que recebe a etiqueta; lê-se a mensagem NDEF e no fim <code>stopSession</code>. A vibração (<code>HapticFeedback.heavyImpact()</code>) é o feedback: a pessoa sente que leu antes de olhar para o ecrã. No Android a leitura acontece sem nada no ecrã; no iPhone aparece a folha "Ready to Scan" e a sessão fecha sozinha ao fim de 60 segundos. Configuração: <code>android.permission.NFC</code> no manifesto; no iOS, <code>NFCReaderUsageDescription</code> no Info.plist e a capability "Near Field Communication Tag Reading" no Xcode. Pormenor: num registo de texto, os primeiros bytes são o estado e o código da língua (pt, en), por isso a app salta-os antes de mostrar o texto. Pergunta à turma: "o cartão do banco tem NFC; uma app vossa podia lê-lo?" Não: não traz NDEF, e o iPhone não deixa uma app normal falar com cartões de pagamento. Quem quiser experimentar compra autocolantes NTAG215 e grava-os com a app NFC Tools.</aside>
 </section>
 
 <section class="slide">
   <h2>Bluetooth Low Energy</h2>
-  <ul>
-    <li><strong>Central</strong> é quem procura e liga (o telemóvel). <strong>Periférico</strong> é quem anuncia (a pulseira, o sensor de temperatura, a fechadura). O telemóvel também pode ser periférico, mas raramente compensa.</li>
-    <li><strong>Fluxo:</strong> scan de anúncios, ligar, descobrir serviços e, por fim, ler, escrever ou subscrever características. Cada característica é um UUID com bytes; o significado vem do standard (Heart Rate Service <code>0x180D</code>) ou do fabricante.</li>
-    <li><code>flutter_blue_plus</code>: scan com filtros, ligação, <code>read()</code>, <code>write()</code> e <code>lastValueStream</code> por característica.</li>
-    <li><strong>Permissões:</strong> até ao Android 11 o scan exige permissão de localização, porque beacons revelam onde estás. Android 12+ tem <code>BLUETOOTH_SCAN</code> e <code>BLUETOOTH_CONNECT</code>, com a flag <code>neverForLocation</code>. iOS pede <code>NSBluetoothAlwaysUsageDescription</code>.</li>
-    <li>Exemplos: Mi Band, estações meteorológicas domésticas, AirTags, o sistema de rastreio de contactos da pandemia.</li>
-  </ul>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Papel</th><th>O que faz</th><th>Exemplos</th></tr></thead>
+  <tbody>
+  <tr><td>Central</td><td>Procura e liga</td><td>O telemóvel</td></tr>
+  <tr><td>Periférico</td><td>Anuncia que existe</td><td>Mi Band, AirTag, fechadura, estação meteorológica</td></tr>
+  </tbody></table></div>
+  <p><strong>Fluxo:</strong> scan, ligar, descobrir serviços, ler ou subscrever características.</p>
+  <p><strong>Permissões:</strong> até ao Android 11 o scan pede localização; a partir do 12 pede Bluetooth; o iOS pede um texto no Info.plist.</p>
   <p><strong>Para os testes:</strong> BLE em Android antigo pede localização para o scan; não é um bug, é privacidade.</p>
+  <aside class="notes">O que dizer: o telemóvel também pode ser periférico, mas raramente compensa. Cada característica é um UUID com bytes; o significado vem do standard (o Heart Rate Service é o <code>0x180D</code>, igual em todas as pulseiras) ou do fabricante. Em Flutter usa-se o <code>flutter_blue_plus</code>: scan com filtros, ligação, <code>read()</code>, <code>write()</code> e <code>lastValueStream</code> por característica. Permissões: no Android 12 ou mais recente são <code>BLUETOOTH_SCAN</code> e <code>BLUETOOTH_CONNECT</code>; com a flag <code>neverForLocation</code> a app promete que não usa o scan para saber onde estás e deixa de pedir localização. No iOS é o <code>NSBluetoothAlwaysUsageDescription</code>. O sistema de rastreio de contactos da pandemia era BLE: cada telemóvel anunciava um identificador que mudava de tempos a tempos. Na analogia o BLE é a voz: alcança dezenas de metros e mantém uma conversa, ao contrário do NFC, que é um toque. Pergunta à turma: porque é que uma app de Bluetooth pedia a localização? Resposta: porque os beacons estão em sítios fixos (lojas, museus, aeroportos) e quem vê os beacons sabe onde estás.</aside>
 </section>
 
 <section class="slide">
@@ -176,14 +199,16 @@
 
 <section class="slide">
   <h2>Biometria, haptics, widgets de ecrã inicial</h2>
-  <ul>
-    <li><strong><code>local_auth</code></strong>: Face ID, Touch ID, impressão digital, com <code>authenticate(localizedReason: ...)</code>. Desbloqueia algo local: mostrar o token guardado, entrar num ecrã sensível. Não substitui a autenticação no servidor.</li>
-    <li><strong>Haptics:</strong> <code>HapticFeedback.lightImpact()</code>, <code>mediumImpact()</code>, <code>heavyImpact()</code>, <code>selectionClick()</code>. Sem permissão, sem package, e é dos detalhes que mais fazem uma app parecer nativa. O iOS tem o motor Taptic; no Android depende do hardware.</li>
-    <li><strong>Widgets de ecrã inicial:</strong> <code>home_widget</code> faz a ponte com App Widgets (Android) e WidgetKit (iOS). A UI do widget é nativa; o Flutter só escreve os dados. Caso perfeito: a previsão de hoje da localidade favorita.</li>
-    <li><strong>Live Activities</strong> (iOS 16.1+) e Dynamic Island em uma frase: uma notificação viva cujos dados atualizas; código Swift obrigatório. Exemplos: entregas, voos, resultados desportivos.</li>
-  </ul>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>O quê</th><th>Como</th><th>Exemplos</th></tr></thead>
+  <tbody>
+  <tr><td>Biometria</td><td><code>local_auth</code>, desbloqueio local</td><td>Bancos, gestores de passwords</td></tr>
+  <tr><td>Haptics</td><td><code>HapticFeedback</code>, sem permissão</td><td>Teclado do iPhone, puxar para atualizar</td></tr>
+  <tr><td>Widgets</td><td><code>home_widget</code>, UI nativa</td><td>Tempo e Calendário no ecrã inicial</td></tr>
+  <tr><td>Live Activities</td><td>Só iOS, código Swift</td><td>Uber, voos, resultados desportivos</td></tr>
+  </tbody></table></div>
   <p><strong>Para os testes:</strong> biometria é desbloqueio local; um widget de ecrã inicial é desenhado em código nativo e o Flutter só lhe dá dados.</p>
-  <aside class="notes">Pergunta à turma onde faria sentido um haptic no Tempo Açores. Respostas boas: ao adicionar favorito, ao completar o pull-to-refresh, ao chegar um aviso vermelho. Dúvida comum: "a biometria prova ao servidor quem sou?" Não: prova ao telemóvel, e o servidor continua a ver só o token.</aside>
+  <aside class="notes">O que dizer: o <code>local_auth</code> faz Face ID, Touch ID e impressão digital com <code>authenticate(localizedReason: ...)</code>; desbloqueia algo local (mostrar o token guardado, entrar num ecrã sensível) e não substitui a autenticação no servidor. Haptics: <code>HapticFeedback.lightImpact()</code>, <code>mediumImpact()</code>, <code>heavyImpact()</code> e <code>selectionClick()</code>, sem pacote, já vêm no Flutter; é dos detalhes que mais fazem uma app parecer nativa. O iOS tem o motor Taptic; no Android depende do hardware. Widgets: o <code>home_widget</code> faz a ponte com App Widgets (Android) e WidgetKit (iOS). Caso perfeito: a previsão de hoje da localidade favorita. Live Activities (iOS 16.1+) e Dynamic Island: uma notificação viva cujos dados a app atualiza. Pergunta à turma onde faria sentido um haptic no Tempo Açores. Respostas boas: ao adicionar favorito, ao completar o pull-to-refresh, ao chegar um aviso vermelho. Dúvida comum: "a biometria prova ao servidor quem sou?" Não: prova ao telemóvel, e o servidor continua a ver só o token.</aside>
 </section>
 
 <section class="slide">
@@ -257,51 +282,7 @@
   <aside class="notes">Dá 10 minutos ao ponto de situação. Anota num papel um bloqueio por grupo e começa a circular pelos que estão pior. Grupos que dizem "está tudo bem" são os primeiros a visitar: pede para ver o board.</aside>
 </section>
 
-<section class="slide">
-  <h2>Demo: ler uma tag NFC e vibrar</h2>
-  <p>No telemóvel do docente. O código é curto, e o que interessa é a sequência: verificar disponibilidade, abrir sessão, tratar a tag, fechar sessão.</p>
-<pre data-title="lib/services/nfc_service.dart"><code class="language-dart">import 'package:flutter/services.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 
-class NfcService {
-  Future&lt;void&gt; lerTag({required void Function(String) aoLer}) async {
-    if (!await NfcManager.instance.isAvailable()) {
-      throw StateError('NFC indisponível ou desligado neste telemóvel');
-    }
-    await NfcManager.instance.startSession(
-      pollingOptions: {
-        NfcPollingOption.iso14443,
-        NfcPollingOption.iso15693,
-      },
-      onDiscovered: (NfcTag tag) async {
-        final mensagem = await Ndef.from(tag)?.read();
-        final registo = mensagem?.records.firstOrNull;
-        // payload.skip(3): salta o cabeçalho do Text Record
-        final texto = registo == null
-            ? 'tag sem conteúdo NDEF'
-            : String.fromCharCodes(registo.payload.skip(3));
-        await HapticFeedback.heavyImpact();
-        aoLer(texto);
-        await NfcManager.instance.stopSession();
-      },
-    );
-  }
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Demo: o que interessa</h2>
-  <ul>
-    <li><code>isAvailable()</code> primeiro: sem NFC, ou com NFC desligado nas definições, a sessão nunca abre. Mostra uma mensagem, não um crash.</li>
-    <li>No Android, <code>onDiscovered</code> dispara em silêncio. No iOS aparece a folha do sistema e a sessão fecha sozinha ao fim de 60 segundos.</li>
-    <li>O payload de um Text Record começa com um byte de estado e o código da língua (<code>pt</code>, <code>en</code>): daí o <code>skip(3)</code>.</li>
-    <li>Configuração: <code>&lt;uses-permission android:name="android.permission.NFC"/&gt;</code> no <code>AndroidManifest.xml</code>; no iOS, <code>NFCReaderUsageDescription</code> no <code>Info.plist</code> e a capability "Near Field Communication Tag Reading" no Xcode.</li>
-    <li>O <code>HapticFeedback.heavyImpact()</code> é o feedback: o utilizador sente que a leitura aconteceu antes de ler o ecrã.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Se o vosso projeto tem um gesto que merece feedback (adicionar favorito, terminar o pull-to-refresh, receber um aviso vermelho), abre um PR de cinco linhas com <code>HapticFeedback.selectionClick()</code> ou <code>mediumImpact()</code> nesse ponto. Testa no telemóvel, não no emulador: o emulador não vibra.</div>
-  <aside class="notes">Grava a tag antes da aula com a app "NFC Tools" (texto "Tempo Açores"). Se a leitura falhar ao vivo, o plano B é mostrar o vídeo de 20 segundos que gravaste. Dá 5 minutos ao exercício e volta ao acompanhamento.</aside>
-</section>
 
 <section class="slide">
   <h2>Checklist para a review de quarta</h2>
@@ -324,21 +305,18 @@ class NfcService {
       <ul class="checklist">
         <li>A sprint 2 fecha na próxima quarta, 18/11: demo de 5 minutos preparada, com a checklist do slide anterior cumprida.</li>
         <li>PRs abertos revistos por um colega do grupo até terça à noite; nada entra em <code>main</code> sem revisão.</li>
-        <li>Quem fez o exercício dos haptics: pede a revisão do PR e faz merge ainda hoje.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview" target="_blank" rel="noopener">Sensors overview</a> no Android: as categorias de sensores, as taxas de amostragem e o custo em bateria.</li>
-        <li><a href="https://developer.android.com/develop/connectivity/bluetooth/ble/ble-overview" target="_blank" rel="noopener">Bluetooth Low Energy overview</a> no Android: central, periférico, GATT e as permissões por versão.</li>
-        <li><a href="https://developer.apple.com/documentation/corenfc" target="_blank" rel="noopener">Core NFC</a> na Apple: sessões de leitura, NDEF e o que o iOS deixa uma app fazer.</li>
-        <li><a href="https://pub.dev/packages/sensors_plus" target="_blank" rel="noopener">sensors_plus</a>: os streams de cada sensor e o <code>samplingPeriod</code>.</li>
-        <li><a href="https://pub.dev/packages/nfc_manager" target="_blank" rel="noopener">nfc_manager</a>: configuração Android e iOS, leitura e escrita NDEF.</li>
-        <li><a href="https://phyphox.org" target="_blank" rel="noopener">phyphox</a>: a app dos sensores ao vivo, para Android e iOS, com o acesso remoto pelo browser.</li>
+        <li><a href="https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview" target="_blank" rel="noopener">Sensors overview</a> no Android: tipos de sensores e custo em bateria.</li>
+        <li><a href="https://developer.apple.com/documentation/corenfc" target="_blank" rel="noopener">Core NFC</a> na Apple: o que o iOS deixa uma app fazer.</li>
+        <li><a href="https://pub.dev/packages/sensors_plus" target="_blank" rel="noopener">sensors_plus</a>: um stream por sensor.</li>
       </ul>
     </div>
   </div>
+  <aside class="notes">O que dizer: o que conta esta semana é a sprint 2. A review é na quarta 18/11, e o que não estiver em <code>main</code> até terça à noite não entra na demo. As leituras são para quem quiser ir mais fundo, não saem no teste tal e qual. Quem quiser mais: o <a href="https://developer.android.com/develop/connectivity/bluetooth/ble/ble-overview" target="_blank" rel="noopener">Bluetooth Low Energy overview</a> no Android (central, periférico, GATT, permissões por versão), o <a href="https://pub.dev/packages/nfc_manager" target="_blank" rel="noopener">nfc_manager</a> (configuração e leitura NDEF) e o <a href="https://phyphox.org" target="_blank" rel="noopener">phyphox</a>, a app para ver os sensores ao vivo, com o acesso remoto pelo browser. Segunda é a aula de testes e CI, que vão querer usar no projeto antes da review.</aside>
   <nav class="pager" id="pager"></nav>
 </section>
 
