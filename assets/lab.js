@@ -157,6 +157,137 @@
   };
   var T = TX[LANG];
 
+  /* Mais exemplos reais e ideias para o projeto, por separador.
+     Cada ideia: [título, o que faz na vossa app, package Flutter, nível 0 a 2]. */
+  var MORE = {
+    pt: {
+      exTitle: "Mais exemplos reais",
+      idTitle: "Ideias para a vossa app",
+      idNote: "Para quem já tem os mínimos no main. Uma destas conta como extra se a combinarem comigo numa review.",
+      lvl: ["fácil", "médio", "difícil"],
+      queda: {
+        ex: ["O Apple Watch e o Pixel Watch percebem que caíste e, se não respondes, ligam ao 112.",
+          "O Garmin percebe uma queda a meio de uma corrida ou de um passeio de bicicleta e avisa um contacto.",
+          "O iPhone conta os passos na app Saúde só com o acelerómetro, sem GPS.",
+          "Abanar o iPhone desfaz o que escreveste; no Google Maps abre o relato de um problema."],
+        id: [["Abanar para relatar", "Abanar o telemóvel em qualquer ecrã abre o formulário de novo relato. Basta um limiar na força e um intervalo para não abrir duas vezes.", "sensors_plus", 0],
+          ["Passos no trilho", "No detalhe do trilho, um botão Começar conta os passos e mostra quantos faltam, a partir da distância do trilho.", "pedometer", 1],
+          ["Estás bem?", "Durante um trilho: queda livre, pico de força e depois nada se mexe durante 30\u00a0s. A app pergunta \"Estás bem?\" com contagem e mostra as coordenadas e o 112.", "sensors_plus + geolocator", 2]]
+      },
+      nivel: {
+        ex: ["Os jogos de labirinto em que inclinas o telemóvel para a bola rolar.",
+          "As apps de montanhismo medem o declive de uma encosta com o telemóvel pousado nela.",
+          "O ecrã do iPhone que mexe o fundo quando inclinas (efeito de paralaxe).",
+          "Virar o telemóvel com o ecrã para baixo silencia uma chamada em muitos Android."],
+        id: [["Cartão da ilha com profundidade", "A fotografia de fundo do cartão da ilha mexe-se um pouco ao inclinar o telemóvel. Pequeno, visual e fica bem numa review.", "sensors_plus", 0],
+          ["Declive do trilho", "Pousar o telemóvel no chão a meio da subida e guardar o declive em graus no relato desse trilho.", "sensors_plus", 1],
+          ["Jogo no ecrã de espera", "Enquanto a previsão carrega, uma bola rola com a inclinação até um buraco. O estado de carregamento passa a ter graça.", "sensors_plus", 1]]
+      },
+      rodopio: {
+        ex: ["As fotos 360 do Facebook e o Street View mudam de vista quando rodas o telemóvel.",
+          "O modo de realidade aumentada do Pokémon GO segura o Pokémon no sítio enquanto viras.",
+          "As câmaras de ação e os gimbals usam o giroscópio para o vídeo não tremer.",
+          "Nos jogos de corridas, o telemóvel serve de volante."],
+        id: [["Miradouro em 360", "No detalhe do trilho, uma fotografia panorâmica do miradouro que se vê rodando o telemóvel, como o Street View.", "sensors_plus", 1],
+          ["Torcer para atualizar", "Um gesto rápido de pulso atualiza a previsão, além de puxar para baixo.", "sensors_plus", 0]]
+      },
+      bussola: {
+        ex: ["O PeakFinder diz o nome da montanha para onde apontas.",
+          "O Star Walk e o Sky Guide mostram as estrelas na direção do telemóvel.",
+          "As apps de navegação à vela e de caça submarina marcam o rumo com a bússola.",
+          "O Google Maps vira o mapa e a seta para onde estás a olhar."],
+        id: [["Que ilha estou a ver?", "No miradouro, apontar o telemóvel e a app diz que ilha está nessa direção e a que distância. É o que este separador faz com Lisboa e o Corvo.", "flutter_compass + geolocator", 1],
+          ["Seta para o início do trilho", "No detalhe do trilho, uma seta e a distância até ao ponto de partida, que se atualizam enquanto andas.", "flutter_compass + geolocator", 1]]
+      },
+      gps: {
+        ex: ["O Wikiloc e o AllTrails gravam o percurso de um trilho e a subida acumulada.",
+          "O Find My e o Google Find Hub mostram onde ficou o telemóvel ou o AirTag.",
+          "Os lembretes do iPhone podem disparar ao chegar a um sítio (geofencing).",
+          "O Pokémon GO e o Strava são o GPS a ler a tua posição muitas vezes por minuto."],
+        id: [["Relato com sítio", "Ao criar um relato, a app preenche sozinha a ilha mais próxima. A pessoa só confirma.", "geolocator", 0],
+          ["Gravar o trilho", "Começar e Parar no detalhe do trilho: desenha a linha no mapa e mostra a distância, o tempo e a subida.", "geolocator + flutter_map", 2],
+          ["Chegaste ao trilho", "Notificação quando estás a menos de 200\u00a0m do início de um trilho favorito. Com a app fechada é o mais difícil da lista.", "geolocator + flutter_local_notifications", 2]]
+      },
+      som: {
+        ex: ["O Shazam e a pesquisa por trautear do Google reconhecem música pelo microfone.",
+          "O Sleep Cycle ouve a noite toda para saber quando ressonas.",
+          "Os afinadores de guitarra leem a frequência da nota que tocas.",
+          "\"Ei Siri\" e \"Ok Google\" estão sempre a ouvir só aquelas palavras."],
+        id: [["Ditar o relato", "Um botão de microfone no formulário do relato passa a voz a texto. Dá jeito no trilho, com luvas ou com o telemóvel numa mão.", "speech_to_text", 1],
+          ["Barulho do sítio", "Ao criar um relato, medir o som durante 3\u00a0s e juntar uma etiqueta: calmo, com gente, muito barulho.", "noise_meter", 1]]
+      }
+    },
+    en: {
+      exTitle: "More real examples",
+      idTitle: "Ideas for your app",
+      idNote: "For groups that already have the minimum on main. One of these counts as an extra if you agree it with me at a review.",
+      lvl: ["easy", "medium", "hard"],
+      queda: {
+        ex: ["An Apple Watch or a Pixel Watch notices you fell and, if you do not answer, calls emergency services.",
+          "Garmin notices a crash in the middle of a run or a bike ride and alerts a contact.",
+          "An iPhone counts your steps in the Health app with the accelerometer alone, no GPS.",
+          "Shaking an iPhone undoes your typing; in Google Maps it opens a problem report."],
+        id: [["Shake to report", "Shaking the phone on any screen opens the new report form. All it takes is a force threshold and a pause so it does not open twice.", "sensors_plus", 0],
+          ["Steps on the trail", "On the trail detail, a Start button counts steps and shows how many are left, from the trail distance.", "pedometer", 1],
+          ["Are you OK?", "During a trail: free fall, a force spike and then nothing moves for 30\u00a0s. The app asks \"Are you OK?\" with a countdown and shows the coordinates and 112.", "sensors_plus + geolocator", 2]]
+      },
+      nivel: {
+        ex: ["Maze games where you tilt the phone to roll the ball.",
+          "Mountaineering apps measure the slope of a hill with the phone laid on it.",
+          "The iPhone home screen that moves the wallpaper when you tilt it (parallax effect).",
+          "Turning the phone face down silences a call on many Android phones."],
+        id: [["Island card with depth", "The background photo of the island card moves a little as you tilt the phone. Small, visual and it looks good at a review.", "sensors_plus", 0],
+          ["Trail slope", "Lay the phone on the ground halfway up a climb and save the slope in degrees in that trail's report.", "sensors_plus", 1],
+          ["Game on the loading screen", "While the forecast loads, a ball rolls with the tilt into a hole. The loading state becomes fun.", "sensors_plus", 1]]
+      },
+      rodopio: {
+        ex: ["Facebook 360 photos and Street View change the view as you turn the phone.",
+          "Pokémon GO AR mode keeps the Pokémon in place while you turn.",
+          "Action cameras and gimbals use the gyroscope to keep video steady.",
+          "In racing games the phone becomes the steering wheel."],
+        id: [["Viewpoint in 360", "On the trail detail, a panoramic photo of the viewpoint that you look around by turning the phone, like Street View.", "sensors_plus", 1],
+          ["Twist to refresh", "A quick twist of the wrist refreshes the forecast, besides pull to refresh.", "sensors_plus", 0]]
+      },
+      bussola: {
+        ex: ["PeakFinder names the mountain you point at.",
+          "Star Walk and Sky Guide show the stars in the direction of the phone.",
+          "Sailing and spearfishing apps mark the bearing with the compass.",
+          "Google Maps turns the map and the arrow to where you are looking."],
+        id: [["Which island am I looking at?", "At a viewpoint, point the phone and the app says which island is in that direction and how far. It is what this tab does with Lisbon and Corvo.", "flutter_compass + geolocator", 1],
+          ["Arrow to the trailhead", "On the trail detail, an arrow and the distance to the starting point, updated as you walk.", "flutter_compass + geolocator", 1]]
+      },
+      gps: {
+        ex: ["Wikiloc and AllTrails record the route of a trail and the total climb.",
+          "Find My and Google Find Hub show where the phone or the AirTag was left.",
+          "iPhone reminders can fire when you arrive somewhere (geofencing).",
+          "Pokémon GO and Strava are the GPS reading your position many times a minute."],
+        id: [["Report with a place", "When creating a report, the app fills in the nearest island by itself. The person only confirms.", "geolocator", 0],
+          ["Record the trail", "Start and Stop on the trail detail: draws the line on the map and shows distance, time and climb.", "geolocator + flutter_map", 2],
+          ["You reached the trail", "A notification when you are less than 200\u00a0m from the start of a favourite trail. With the app closed it is the hardest on the list.", "geolocator + flutter_local_notifications", 2]]
+      },
+      som: {
+        ex: ["Shazam and Google hum to search recognise music through the microphone.",
+          "Sleep Cycle listens all night to know when you snore.",
+          "Guitar tuners read the frequency of the note you play.",
+          "\"Hey Siri\" and \"OK Google\" are always listening for just those words."],
+        id: [["Dictate the report", "A microphone button on the report form turns speech into text. Handy on a trail, with gloves or the phone in one hand.", "speech_to_text", 1],
+          ["Noise of the place", "When creating a report, measure the sound for 3\u00a0s and add a tag: quiet, people around, very loud.", "noise_meter", 1]]
+      }
+    }
+  }[LANG];
+
+  function moreHtml(k) {
+    var m = MORE[k];
+    var ex = m.ex.map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    var id = m.id.map(function (d) {
+      return '<li class="idea"><div class="ih"><b>' + d[0] + '</b><span class="lv lv' + d[3] + '">' + MORE.lvl[d[3]] + "</span></div>" +
+        "<p>" + d[1] + '</p><code>' + d[2] + "</code></li>";
+    }).join("");
+    return '<details class="more"><summary>' + MORE.exTitle + '</summary><ul class="ex">' + ex + "</ul></details>" +
+      '<details class="more ideas"><summary>' + MORE.idTitle + ' <span class="n">' + m.id.length + "</span></summary>" +
+      '<p class="lbl">' + MORE.idNote + '</p><ul class="id">' + id + "</ul></details>";
+  }
+
   var ESTA = { lat: 37.7478, lon: -25.6636 };
   var PLACES = [
     { lat: 38.7223, lon: -9.1393, c: "#ff6b4a" },
@@ -479,6 +610,9 @@
       '<button class="ghost" id="mic-reset" type="button">' + so.reset + "</button>" +
       '<p class="real">' + so.real + "</p></section>"));
 
+    app.querySelectorAll(".view").forEach(function (v) {
+      v.insertAdjacentHTML("beforeend", moreHtml(v.getAttribute("data-v")));
+    });
     var tabs = el('<nav class="tabs"><div class="in"></div></nav>');
     ["queda", "nivel", "rodopio", "bussola", "gps", "som"].forEach(function (k) {
       var bt = el('<button type="button" data-t="' + k + '">' + ICONS[k] + "<span>" + T.tabs[k] + "</span></button>");
