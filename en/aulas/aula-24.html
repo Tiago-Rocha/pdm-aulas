@@ -26,7 +26,7 @@
 <section class="slide title" data-part="Start">
   <p class="kicker">Lesson 24 · Week 10 · Wednesday, 11 November 2026 · 16:00 to 18:00</p>
   <h1>Hardware and sensors, and sprint 2</h1>
-  <p class="lead">Theory (60 minutes): inside the phone, sensor by sensor: motion, compass, barometer, GPS, camera and LiDAR, NFC, Bluetooth Low Energy, Face ID, proximity and light; which permission each sensor asks for on iOS and on Android, and the sensors of an iPhone, live. Practice: sprint 2, one week before the review.</p>
+  <p class="lead">Theory (60 minutes): inside the phone, sensor by sensor: motion, compass, barometer, GPS, camera and LiDAR, NFC, Bluetooth Low Energy, Face ID, proximity and light; which permission each sensor asks for on iOS and on Android, the sensors in your own phone, and why one phone costs ten times more than another. Practice: sprint 2, one week before the review.</p>
   <div class="meta"><span>Sprint 2 review: Wednesday 18/11</span></div>
   <aside class="notes">Bring an NFC tag written with an NDEF text (a 20-cent sticker is enough) for the demo, and the iPhone charged, with phyphox installed and the USB-C cable, for the live sensors. As they come in, ask who has NFC on their phone: almost every Android has it, the iPhone reads since the 7. In the first three minutes each group says in one sentence where they are in sprint 2; that decides where you start going round in the practical part.</aside>
 </section>
@@ -39,6 +39,7 @@
     <li>Explain the difference between reading an NDEF tag and emulating a card (HCE), and why iOS is more restrictive.</li>
     <li>Tell the central role from the peripheral role in BLE and justify why Android asks for location in order to scan.</li>
     <li>Use haptics and biometrics as quality details, not as core features.</li>
+    <li>Say what changes, sensor by sensor, between a 150 € phone and a 1500 € one, and what the app does when a sensor is missing.</li>
     <li>Close the sprint 2 status check with the review demo already planned.</li>
   </ul>
 </section>
@@ -48,6 +49,24 @@
   <div class="figura-iso alta"><iframe data-fig="../../assets/fig/telemovel-en" title="Interactive figure: a phone taken apart in layers, with each sensor and the permission it asks for" loading="lazy"></iframe></div>
   <p><strong>Question for the class:</strong> which sensor will your project app use, and which permission does it ask for?</p>
   <aside class="notes">This slide is the map: after it each sensor has its own slide and its own figure. Let the figure open by itself and go through the sensors; then pick with the buttons or with the up and down arrow keys (the side ones still change slides). Notice that all the motion sensing fits in chips a few millimetres wide on the board, and that what sees your face sits in the front module, right against the screen. The wireless charging coil and the NFC antenna are the same sheet under the back. Expected answers: location, for the weather where they are, which asks on both platforms; camera, if there are photos, which also asks. If someone says accelerometer, ask what for: it asks for nothing, but it costs battery. The measurements are those of the iPhone 17 Pro you will show later on; the drawing is generic.</aside>
+</section>
+
+<section class="slide">
+  <h2>Lab: the sensors in your phone</h2>
+  <div class="lab-qr">
+    <img src="../../assets/img/lab-qr-en.svg" alt="QR code for the sensor lab page">
+    <div>
+      <p class="lab-url"><code>tiago-rocha.github.io/pdm-aulas/en/lab</code></p>
+      <ul>
+        <li><strong>Drop:</strong> drop the phone onto a jacket and the page tells you how high it fell from.</li>
+        <li><strong>Level:</strong> get it straight to the degree.</li>
+        <li><strong>Compass:</strong> point at Lisbon and at Pico.</li>
+        <li><strong>GPS:</strong> the accuracy in the middle of the room and by the window.</li>
+      </ul>
+    </div>
+  </div>
+  <p><strong>Question for the class:</strong> before you drop it: while falling, what does the accelerometer read? More than 1 g, 1 g, or almost 0?</p>
+  <aside class="notes">Give them two minutes to open the page and tap Turn on sensors. On an iPhone a request for motion access appears: it is a permission, the same idea as the permissions table later on. Ask before they drop: they vote with their fingers (1, 2 or 3), discuss in pairs for a minute and vote again; only then do they drop. Answer: almost 0. In free fall the phone falls with gravity and the chip feels nothing, like an astronaut on the space station. Lying on the table it reads 1 g because the table pushes it up. The page measures how long the force stays near zero and works out the height: half of g times the time squared. Challenge: who gets 50 cm. Always onto a jacket, backpack or cushion, never the floor. Then, for each sensor, they go back to its tab. The page was made in HTML and JavaScript with DeviceMotionEvent and Geolocation: the same numbers sensors_plus and geolocator give you in Flutter. If the room network fails, use phyphox on your iPhone (Live slide).</aside>
 </section>
 
 <section class="slide">
@@ -72,14 +91,14 @@
   <h2>Inside the accelerometer</h2>
   <div class="figura-iso"><iframe id="fig-acel" data-fig="../../assets/fig/acelerometro-en" title="Interactive figure: a phone accelerometer on a carriage" loading="lazy"></iframe></div>
   <p><strong>Question for the class:</strong> with the phone lying still on the table, what does z read? And if we drop it?</p>
-  <aside class="notes">Let the figure run on its own for a few seconds, then take the mouse: when the carriage sets off to the right, the mass lags behind and x goes up; when it brakes, the mass moves forward and x goes negative; at constant speed, x goes back to 0. The chip only feels changes in speed, not speed. Answers: lying still, z reads 9.8, because gravity pulls the mass against the springs just like an upward acceleration; in free fall all three axes read close to 0, because the mass falls together with the chip and stops pulling on the springs. Fall detection on the Apple Watch and car crash detection on the iPhone and the Pixel start from the accelerometer. The shift of the mass is hugely exaggerated: in the real chip it is nanometres, measured by the capacitance between the combs.</aside>
+  <aside class="notes">Let the figure run on its own for a few seconds, then take the mouse: when the carriage sets off to the right, the mass lags behind and x goes up; when it brakes, the mass moves forward and x goes negative; at constant speed, x goes back to 0. The chip only feels changes in speed, not speed. Answers: lying still, z reads 9.8, because gravity pulls the mass against the springs just like an upward acceleration; in free fall all three axes read close to 0, because the mass falls together with the chip and stops pulling on the springs. Fall detection on the Apple Watch and car crash detection on the iPhone and the Pixel start from the accelerometer. The shift of the mass is hugely exaggerated: in the real chip it is nanometres, measured by the capacitance between the combs. In the lab: the Drop and Level tabs, both are this chip.</aside>
 </section>
 
 <section class="slide">
   <h2>Magnetometer: the phone's compass</h2>
   <div class="figura-iso"><iframe data-fig="../../assets/fig/magnetometro-en" title="Interactive figure: the phone turns on a table and the magnetometer measures the Earth's field; a magnet throws the reading off" loading="lazy"></iframe></div>
   <p><strong>Question for the class:</strong> why does Google Maps sometimes ask you to wave the phone in a figure 8?</p>
-  <aside class="notes">What to say: the chip measures the Earth's magnetic field on three axes, and it is weak: about 44 µT in the Azores. When the phone turns, the field stays put and x and y change; that gives the heading behind the arrow in Google Maps, the Compass app and Sky Guide. For the magnet demo: press 270° West and then M; facing East the deflection is small. Answers: magnets, magnetic cases, MagSafe, speakers and nearby metal throw the reading off. Turning the phone in every direction lets the system work out which part of the field comes from the device itself and subtract it: that is calibrating. Inside cars and buildings with a steel structure the arrow also goes wrong. It asks for no permission on either platform.</aside>
+  <aside class="notes">What to say: the chip measures the Earth's magnetic field on three axes, and it is weak: about 44 µT in the Azores. When the phone turns, the field stays put and x and y change; that gives the heading behind the arrow in Google Maps, the Compass app and Sky Guide. For the magnet demo: press 270° West and then M; facing East the deflection is small. Answers: magnets, magnetic cases, MagSafe, speakers and nearby metal throw the reading off. Turning the phone in every direction lets the system work out which part of the field comes from the device itself and subtract it: that is calibrating. Inside cars and buildings with a steel structure the arrow also goes wrong. It asks for no permission on either platform. In the lab: Compass tab. Turn slowly, then put the phone next to the laptop.</aside>
 </section>
 
 <section class="slide">
@@ -93,7 +112,7 @@
   <h2>GPS: the phone only listens</h2>
   <div class="figura-iso"><iframe data-fig="../../assets/fig/gps-en" title="Interactive figure: four satellites send the time and their position, and the phone works out where it is; indoors it uses Wi-Fi and cell towers" loading="lazy"></iframe></div>
   <p><strong>Question for the class:</strong> why do Android and iOS call this permission "location" and not "GPS"?</p>
-  <aside class="notes">What to say: each satellite sends only the exact time and where it is. The phone measures how long the signal took and turns that into a distance to each one; with four satellites it fixes its own clock and knows where it is, within about 5 m. Answers: indoors the satellite signal barely gets through, and the system uses the Wi-Fi networks and cell towers around you, within about 25 m and with less battery. That is why there is approximate and precise location: ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION on Android, and the Precise Location switch on iOS. Bonus: GPS sends nothing and needs no internet, so it works in airplane mode; only the map needs data. The third step shows why four are needed: a millionth of a second off in the phone clock is 300 m.</aside>
+  <aside class="notes">What to say: each satellite sends only the exact time and where it is. The phone measures how long the signal took and turns that into a distance to each one; with four satellites it fixes its own clock and knows where it is, within about 5 m. Answers: indoors the satellite signal barely gets through, and the system uses the Wi-Fi networks and cell towers around you, within about 25 m and with less battery. That is why there is approximate and precise location: ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION on Android, and the Precise Location switch on iOS. Bonus: GPS sends nothing and needs no internet, so it works in airplane mode; only the map needs data. The third step shows why four are needed: a millionth of a second off in the phone clock is 300 m. In the lab: GPS tab. Compare the accuracy in the middle of the room and by the window.</aside>
 </section>
 
 <section class="slide">
@@ -173,6 +192,24 @@
 </section>
 
 <section class="slide">
+  <h2>150 € or 1500 €: what changes inside</h2>
+  <div class="table-wrap"><table class="preco">
+  <thead><tr><th></th><th>In a 150 € phone</th><th>In a 1500 € phone</th><th>Where you notice</th></tr></thead>
+  <tbody>
+  <tr><td>Camera</td><td>2 MP lenses for show</td><td>Optical zoom, LiDAR</td><td>Photos at night</td></tr>
+  <tr><td>GPS</td><td>One frequency</td><td>Two frequencies</td><td>Between tall buildings</td></tr>
+  <tr><td>Barometer</td><td>Missing</td><td>Present</td><td>Floors, trails</td></tr>
+  <tr><td>Gyroscope</td><td>Sometimes missing</td><td>Precise</td><td>Augmented reality</td></tr>
+  <tr><td>Face</td><td>2D photo</td><td>3D Face ID</td><td>Paying with your face</td></tr>
+  <tr><td>Proximity</td><td>Virtual</td><td>Infrared</td><td>Screen lights up on a call</td></tr>
+  <tr><td>Vibration</td><td>Spinning motor</td><td>Linear motor</td><td>Buzz or crisp tap</td></tr>
+  <tr><td>UWB</td><td>Missing</td><td>Present</td><td>AirTag to the centimetre</td></tr>
+  </tbody></table></div>
+  <p><strong>Question for the class:</strong> if a sensor is missing, what does your app do?</p>
+  <aside class="notes">What to say: the accelerometer costs cents and every phone has one; the money goes on the screen, the processor and the cameras. The 150 € column is what often happens, not always. On paper almost every phone has "GPS, camera, sensors"; the difference is the quality of each part and the ones that are missing. Camera: cheap phones add 2 MP macro or depth lenses that are barely useful, so the box can say "three cameras". Dual-frequency GPS (L1 and L5): the signal bouncing off buildings fools it less, and the arrow on the map does not jump streets. Barometer: many low and mid-range Androids do not have one, so they do not count floors. Gyroscope: some very cheap phones lack it, and augmented reality and 360 videos do not work or work badly. Face: face unlock with the normal camera can be fooled by a photo, so Android classes it as weak biometrics and banking apps ask for the PIN or a finger; Face ID projects more than 30,000 dots and measures the face in 3D, and it is good enough to pay. Proximity: many cheap phones use a virtual sensor (ultrasound from the earpiece or software), and sometimes the screen lights up during a call and the ear presses buttons. Vibration: a motor with a spinning weight buzzes; the linear motor (the Taptic Engine on the iPhone) gives short, crisp taps, the haptics we talked about. Ultra-wideband (UWB): measures the distance to another device to the centimetre; it is used to find an AirTag and for digital car keys. Before the question, each student says which rows their phone has (the lab shows what the browser gives; on Android, phyphox lists every sensor). If the sensor is missing, the app must not crash or keep waiting: check first, and hide the feature or show an alternative. That is what the lab's Compass tab does when there is no compass.</aside>
+</section>
+
+<section class="slide">
   <h2>Permissions: who asks and who does not</h2>
   <div class="table-wrap"><table>
   <thead><tr><th>Sensor</th><th>iOS (Info.plist)</th><th>Android (manifest)</th></tr></thead>
@@ -203,7 +240,7 @@
   </ul>
   <p>The first time phyphox reads the barometer, iOS asks for Motion &amp; Fitness: that is the barometer row in the previous table.</p>
   <p><strong>Question for the class:</strong> what makes the pressure change without anyone touching the phone?</p>
-  <aside class="notes">Before class: phyphox installed, iPhone charged, USB-C cable. To project, open the experiment and, in the three-dot menu, turn on remote access; an address like http://192.168.1.20:8080 shows up, to open in the browser on the classroom computer. Both must be on the same network; if the university Wi-Fi does not let devices talk to each other, connect the computer to the iPhone hotspot. Plan B: mirror the screen over the cable with QuickTime on the Mac (File, New Movie Recording, and pick the iPhone as the camera). Experiments to open, in this order: Acceleration with g, Gyroscope, Magnetometer, Pressure. If you already gave phyphox the authorisation, show it in Settings, Privacy &amp; Security, Motion &amp; Fitness. Extra: the Compass app and the Level, inside the Measure app. Ambient light does not show up in phyphox on the iPhone, because there is no API; on an Android it does. Answers: the weather (a fast drop in pressure announces rain and wind, and Tempo Açores could show it), the classroom door opening and closing, the air conditioning, a car going into a tunnel. Ten minutes at most.</aside>
+  <aside class="notes">If the lab went well, go through this slide quickly: show only what the page cannot read. Before class: phyphox installed, iPhone charged, USB-C cable. To project, open the experiment and, in the three-dot menu, turn on remote access; an address like http://192.168.1.20:8080 shows up, to open in the browser on the classroom computer. Both must be on the same network; if the university Wi-Fi does not let devices talk to each other, connect the computer to the iPhone hotspot. Plan B: mirror the screen over the cable with QuickTime on the Mac (File, New Movie Recording, and pick the iPhone as the camera). Experiments to open, in this order: Elevator, under Everyday life: a student takes your iPhone up one floor by the stairs, and the class watches the height rise about 3 m on the projector, from pressure alone. Depth Sensor (LiDAR / ToF), under Camera: point it at the class and the wall and read the distances; only the Pro iPhones have it, it is the camera row on the 150 € or 1500 € slide. Applause Meter, under Everyday life: the class claps and phyphox gives a score; it wakes the room up and shows that the microphone is a sensor too, with its own permission. Proximity Stopwatch, under Timers: wave your hand over the screen and it times it; it is the sensor that turns the screen off during calls, the proximity row on the price slide. Point out that Light and Optical Stopwatch are greyed out: the iPhone has a light sensor, but Apple does not give it to apps. If there is time left, Acoustic Stopwatch, under Timers: you clap, a student claps back as fast as they can, and the app measures the reaction time; the lowest wins. If you already gave phyphox the authorisation, show it in Settings, Privacy &amp; Security, Motion &amp; Fitness. Extra: the Compass app and the Level, inside the Measure app. Ambient light does not show up in phyphox on the iPhone, because there is no API; on an Android it does. Answers: the weather (a fast drop in pressure announces rain and wind, and Tempo Açores could show it), the classroom door opening and closing, the air conditioning, a car going into a tunnel. Ten minutes at most.</aside>
 </section>
 
 <section class="slide" data-part="Sprint">
@@ -313,22 +350,87 @@ class NfcService {
 (function () {
   var frames = Array.prototype.slice.call(document.querySelectorAll(".figura-iso iframe[data-fig]"));
   if (!frames.length) return;
+  var root = document.documentElement, deck = document.getElementById("deck");
+  var NAT = 732; // largura natural de uma figura: 700 de desenho e 16 de margem de cada lado
+  var alturas = new Map();
+  frames.forEach(function (f) { f.closest(".slide").classList.add("com-fig"); });
   function pick() {
-    var t = document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    var t = root.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     frames.forEach(function (f) {
       var src = f.getAttribute("data-fig") + (t === "light" ? "-light" : "") + ".html";
-      if (f.getAttribute("src") !== src) f.setAttribute("src", src);
+      if (f.getAttribute("src") !== src) { f.setAttribute("src", src); alturas.delete(f); }
     });
   }
   pick();
-  new MutationObserver(pick).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  new MutationObserver(pick).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // Sem escolha guardada, em modo projeção a figura abre logo em ecrã inteiro.
+  var guardado = null;
+  try { guardado = localStorage.getItem("pdm-fig-palco"); } catch (e) {}
+  var palco = guardado === null ? root.classList.contains("proj") : guardado === "1";
+  function largo() { return !deck.classList.contains("doc") && innerWidth >= 1000 && innerWidth > innerHeight * 1.2; }
+  // Em grande, a legenda comprida sai da figura (fica nas notas); só dá para mexer quando a página e a figura têm a mesma origem.
+  function legenda(f, esconder) {
+    try {
+      var d = f.contentDocument; if (!d || !d.head) return;
+      var st = d.getElementById("fig-grande");
+      if (!st) { st = d.createElement("style"); st.id = "fig-grande"; st.textContent = "html.grande .iso-caption{display:none}html.grande .iso-figure{margin:6px 0 4px}html.grande .iso-plate-corner[data-corner=hint]{display:none}html.grande .iso-plate-corner{font-size:12px}html.grande .iso-plate-corner[data-corner=readout]{font-size:14px;color:var(--anatomy-strong)}"; d.head.appendChild(st); }
+      d.documentElement.classList.toggle("grande", esconder);
+    } catch (e) {}
+  }
+  function layout() {
+    var on = largo(), ativa = deck.querySelector(".slide.active");
+    var comFig = !!(ativa && ativa.classList.contains("com-fig"));
+    root.classList.toggle("fig-grande", on);
+    root.classList.toggle("fig-ativa", on && comFig);
+    root.classList.toggle("fig-palco", on && comFig && palco);
+    if (btn) btn.classList.toggle("on", palco);
+    frames.forEach(function (f) {
+      var box = f.parentNode, h = alturas.get(f);
+      var aqui = on && f.closest(".slide") === ativa;
+      legenda(f, on);
+      if (!aqui || !h) {
+        f.classList.remove("escalada"); f.style.transform = ""; f.style.width = ""; box.style.width = ""; box.style.height = "";
+        if (h) { f.style.aspectRatio = "auto"; f.style.height = h + "px"; }
+        return;
+      }
+      var bar = document.querySelector(".deckbar");
+      var topo = palco ? 0 : Math.max(0, bar ? bar.getBoundingClientRect().bottom : 118);
+      var altoUtil = innerHeight - topo - (palco ? innerHeight * 0.04 : 24);
+      var largUtil = ativa.clientWidth - Math.max(340, ativa.clientWidth * 0.26);
+      var s = Math.max(0.4, Math.min(largUtil / NAT, altoUtil / h));
+      f.classList.add("escalada");
+      f.style.aspectRatio = "auto"; f.style.width = NAT + "px"; f.style.height = h + "px";
+      f.style.transform = "scale(" + s.toFixed(4) + ")";
+      box.style.width = Math.floor(NAT * s) + "px"; box.style.height = Math.floor(h * s) + "px";
+    });
+  }
   window.addEventListener("message", function (e) {
     if (!e.data || !e.data.altura) return;
     frames.forEach(function (f) {
       var nome = f.getAttribute("data-fig").split("/").pop().replace(/-en$/, "");
-      if (e.source === f.contentWindow || e.data.figura === nome) { f.style.aspectRatio = "auto"; f.style.height = e.data.altura + "px"; }
+      if (e.source === f.contentWindow || e.data.figura === nome) alturas.set(f, e.data.altura);
     });
+    layout();
   });
+  frames.forEach(function (f) { f.addEventListener("load", layout); });
+  var mo = new MutationObserver(layout);
+  mo.observe(deck, { attributes: true, attributeFilter: ["class"] });
+  Array.prototype.forEach.call(deck.querySelectorAll(".slide"), function (sl) { mo.observe(sl, { attributes: true, attributeFilter: ["class"] }); });
+  window.addEventListener("resize", layout);
+  function alternar() { palco = !palco; try { localStorage.setItem("pdm-fig-palco", palco ? "1" : "0"); } catch (e) {} layout(); }
+  var btn = null, ctrl = document.querySelector(".deckbar .ctrl");
+  if (ctrl) {
+    btn = document.createElement("button"); btn.type = "button"; btn.textContent = "Z"; btn.title = "Figure full screen (Z)";
+    btn.addEventListener("click", alternar);
+    var n = ctrl.querySelector('[data-act="notes"]'); ctrl.insertBefore(btn, n ? n.nextSibling : null);
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "z" || e.key === "Z") alternar();
+    else if (e.key === "Escape" && palco) alternar();
+  });
+  layout();
 })();
 </script>
 </body>

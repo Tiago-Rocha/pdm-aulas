@@ -1,0 +1,101 @@
+/* Laboratório de sensores · PDM. Página para o telemóvel dos alunos. */
+:root {
+  --bg: #0b0f14; --card: #131a23; --line: #222c39; --fg: #eef3f8; --muted: #8d9aab;
+  --queda: #ff6b4a; --nivel: #b6f36a; --bussola: #4cc9f0; --gps: #b69cff;
+  --c: var(--queda);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, Roboto, sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+body { min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+
+#app { max-width: 520px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+#app[data-tab="queda"] { --c: var(--queda); }
+#app[data-tab="nivel"] { --c: var(--nivel); }
+#app[data-tab="bussola"] { --c: var(--bussola); }
+#app[data-tab="gps"] { --c: var(--gps); }
+
+/* Início */
+.intro { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 32px 24px 40px; gap: 18px; }
+.intro .dots { display: flex; gap: 8px; }
+.intro .dots i { width: 14px; height: 14px; border-radius: 50%; display: block; animation: pulse 1.6s ease-in-out infinite; }
+.intro .dots i:nth-child(1) { background: var(--queda); }
+.intro .dots i:nth-child(2) { background: var(--nivel); animation-delay: .2s; }
+.intro .dots i:nth-child(3) { background: var(--bussola); animation-delay: .4s; }
+.intro .dots i:nth-child(4) { background: var(--gps); animation-delay: .6s; }
+@keyframes pulse { 50% { transform: scale(.6); opacity: .5; } }
+.intro h1 { font-size: 40px; line-height: 1.05; margin: 0; letter-spacing: -.03em; }
+.intro p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.45; }
+.intro .go { margin-top: 10px; background: var(--fg); color: var(--bg); border: 0; border-radius: 18px; padding: 18px 22px; font-size: 20px; font-weight: 700; }
+.intro .go:active { transform: scale(.98); }
+.intro .small { font-size: 14px; }
+.intro .qr { display: none; background: #fff; border-radius: 18px; padding: 14px; width: 220px; }
+.intro .qr img { display: block; width: 100%; }
+.intro.desk .qr { display: block; }
+.intro .err { color: var(--queda); font-size: 16px; }
+
+/* Barra de cima */
+.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 4px; padding-top: max(14px, env(safe-area-inset-top)); }
+.top b { font-size: 15px; letter-spacing: .02em; }
+.top .chip { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; }
+.top .chip .num { color: var(--c); font-weight: 700; }
+.top a { color: var(--muted); font-size: 13px; text-decoration: none; border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; }
+
+/* Separadores */
+.view { flex: 1; padding: 6px 18px 110px; display: none; flex-direction: column; gap: 14px; }
+.view.on { display: flex; }
+.view h2 { font-size: 30px; margin: 6px 0 0; letter-spacing: -.02em; color: var(--c); }
+.view .what { margin: 0; font-size: 16px; color: var(--muted); line-height: 1.45; }
+.big { font-size: 76px; font-weight: 800; line-height: 1; }
+.big small { font-size: 26px; font-weight: 600; color: var(--muted); margin-left: 6px; }
+.lbl { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 16px; }
+.card.hl { border-color: var(--c); box-shadow: 0 0 0 1px var(--c) inset; }
+canvas { display: block; width: 100%; }
+.real { font-size: 15px; line-height: 1.45; color: #c7d1dc; border-left: 3px solid var(--c); padding: 2px 0 2px 12px; margin: 0; }
+.real b { color: var(--fg); }
+.row { display: flex; gap: 12px; }
+.row > .card { flex: 1; }
+.mid { font-size: 30px; font-weight: 750; }
+
+/* Queda */
+.live { display: flex; align-items: baseline; justify-content: space-between; }
+.live .state { font-size: 15px; font-weight: 700; padding: 6px 12px; border-radius: 99px; background: var(--line); color: var(--muted); }
+.live .state.fall { background: var(--queda); color: #1a0d09; }
+.result .big { color: var(--queda); }
+.result .target { font-size: 16px; margin-top: 8px; color: var(--fg); }
+.drops { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.drops li { font-size: 14px; background: var(--line); border-radius: 99px; padding: 5px 11px; }
+
+/* Nível */
+.level svg { width: 100%; height: auto; display: block; }
+.level .deg { text-align: center; }
+.ok-text { color: var(--nivel); }
+
+/* Bússola */
+.dial svg { width: 100%; height: auto; display: block; }
+.targets { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.targets li { display: flex; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px; font-size: 16px; }
+.targets li.hit { border-color: var(--bussola); background: #0f2a33; }
+.targets li span:last-child { color: var(--muted); font-size: 14px; }
+.targets i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+
+/* GPS */
+.gps-btn { background: var(--gps); color: #140f24; border: 0; border-radius: 16px; padding: 16px; font-size: 18px; font-weight: 700; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid2 .card { padding: 12px 14px; }
+.grid2 .v { font-size: 20px; font-weight: 700; }
+
+/* Barra de baixo */
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; background: rgba(11,15,20,.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.tabs .in { display: flex; width: 100%; max-width: 520px; }
+.tabs button { flex: 1; background: none; border: 0; padding: 10px 4px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.tabs button svg { width: 26px; height: 26px; }
+.tabs button[data-t="queda"].on { color: var(--queda); }
+.tabs button[data-t="nivel"].on { color: var(--nivel); }
+.tabs button[data-t="bussola"].on { color: var(--bussola); }
+.tabs button[data-t="gps"].on { color: var(--gps); }
+
+@media (min-width: 700px) { .big { font-size: 88px; } }
