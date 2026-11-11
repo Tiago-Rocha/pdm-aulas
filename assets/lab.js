@@ -24,6 +24,7 @@
       tabs: { queda: "Queda", nivel: "Nível", rodopio: "Rodopio", bussola: "Bússola", gps: "GPS", som: "Som" },
       queda: {
         h: "Queda livre",
+        sens: "acelerómetro",
         what: "Larga o telemóvel para cima de um casaco ou almofada, de 30 a 60 cm. Nada de chão.",
         live: "força que o acelerómetro sente agora",
         rest: "parado", fall: "a cair!",
@@ -34,6 +35,7 @@
       },
       nivel: {
         h: "Nível",
+        sens: "acelerómetro",
         what: "Pousa o telemóvel numa mesa, ou segura-o de pé, e põe-no direito.",
         flat: "deitado", up: "de pé",
         level: "direito!",
@@ -41,6 +43,7 @@
       },
       bussola: {
         h: "Bússola",
+        sens: "magnetómetro, acelerómetro, giroscópio",
         what: "Segura o telemóvel deitado e roda devagar. Depois encosta-o ao portátil e vê o que acontece.",
         none: "Sem bússola: este browser não dá a direção.",
         calib: "Se a seta parecer errada, desenha um 8 no ar com o telemóvel.",
@@ -52,6 +55,7 @@
       },
       gps: {
         h: "GPS",
+        sens: "GPS, Wi-Fi, rede móvel",
         what: "Mede no meio da sala e depois junto à janela. O círculo é o que o telemóvel não sabe.",
         on: "Ligar GPS",
         wait: "À procura de satélites…",
@@ -63,6 +67,7 @@
       },
       rodopio: {
         h: "Rodopio",
+        sens: "giroscópio, acelerómetro",
         what: "Senta-te numa cadeira que rode, segura o telemóvel ao peito e dá voltas. Ou põe-no a rodar em cima da mesa.",
         turns: "voltas", now: "voltas por segundo agora", max: "o teu máximo", deg: "°/s",
         reset: "Recomeçar",
@@ -71,6 +76,7 @@
       },
       som: {
         h: "Som",
+        sens: "microfone",
         what: "Liga o microfone e batam palmas todos juntos. Quem chega mais alto?",
         on: "Ligar microfone",
         denied: "Recusaste o microfone. Muda nas definições do browser para este site.",
@@ -95,6 +101,7 @@
       tabs: { queda: "Drop", nivel: "Level", rodopio: "Spin", bussola: "Compass", gps: "GPS", som: "Sound" },
       queda: {
         h: "Free fall",
+        sens: "accelerometer",
         what: "Drop the phone onto a jacket or a cushion, from 30 to 60 cm. Never onto the floor.",
         live: "force the accelerometer feels right now",
         rest: "still", fall: "falling!",
@@ -105,6 +112,7 @@
       },
       nivel: {
         h: "Level",
+        sens: "accelerometer",
         what: "Lay the phone on a table, or hold it upright, and get it straight.",
         flat: "flat", up: "upright",
         level: "level!",
@@ -112,6 +120,7 @@
       },
       bussola: {
         h: "Compass",
+        sens: "magnetometer, accelerometer, gyroscope",
         what: "Hold the phone flat and turn slowly. Then put it next to a laptop and watch.",
         none: "No compass: this browser does not give the heading.",
         calib: "If the arrow looks wrong, draw a figure 8 in the air with the phone.",
@@ -123,6 +132,7 @@
       },
       gps: {
         h: "GPS",
+        sens: "GPS, Wi-Fi, cell network",
         what: "Measure in the middle of the room and then by the window. The circle is what the phone does not know.",
         on: "Turn on GPS",
         wait: "Looking for satellites…",
@@ -134,6 +144,7 @@
       },
       rodopio: {
         h: "Spin",
+        sens: "gyroscope, accelerometer",
         what: "Sit on a swivel chair, hold the phone to your chest and spin. Or spin it on the table.",
         turns: "turns", now: "turns per second now", max: "your best", deg: "°/s",
         reset: "Start over",
@@ -142,6 +153,7 @@
       },
       som: {
         h: "Sound",
+        sens: "microphone",
         what: "Turn on the microphone and clap all together. Who gets the loudest?",
         on: "Turn on microphone",
         denied: "You refused the microphone. Change it in the browser settings for this site.",
@@ -611,6 +623,7 @@
       '<p class="real">' + so.real + "</p></section>"));
 
     app.querySelectorAll(".view").forEach(function (v) {
+      $("h2", v).insertAdjacentHTML("beforeend", '<small class="sens">' + T[v.getAttribute("data-v")].sens + "</small>");
       v.insertAdjacentHTML("beforeend", moreHtml(v.getAttribute("data-v")));
     });
     var tabs = el('<nav class="tabs"><div class="in"></div></nav>');
