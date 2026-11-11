@@ -1,6 +1,7 @@
 /* Laboratório de sensores · PDM
    Lê os sensores do telemóvel no browser: DeviceMotionEvent (acelerómetro),
-   DeviceOrientationEvent (bússola) e Geolocation (GPS). Sem bibliotecas. */
+   rotationRate (giroscópio), DeviceOrientationEvent (bússola), Geolocation (GPS)
+   e getUserMedia com a Web Audio API (microfone). Sem bibliotecas. */
 (function () {
   "use strict";
   var app = document.getElementById("app");
@@ -13,14 +14,14 @@
   var TX = {
     pt: {
       title: "Laboratório de sensores",
-      intro: "O teu telemóvel tem mais de dez sensores. Aqui vês quatro a trabalhar, ao vivo.",
+      intro: "O teu telemóvel tem mais de dez sensores. Aqui vês cinco a trabalhar, ao vivo.",
       go: "Ligar sensores",
       perm: "No iPhone aparece um pedido de acesso ao movimento: é uma permissão, tal como as que a vossa app vai pedir.",
       denied: "Sem autorização não há dados. No iPhone: fecha o separador, abre outra vez e toca em Permitir.",
       desk: "Este computador não tem estes sensores. Abre no telemóvel:",
       other: "EN",
       hz: "leituras/s",
-      tabs: { queda: "Queda", nivel: "Nível", bussola: "Bússola", gps: "GPS" },
+      tabs: { queda: "Queda", nivel: "Nível", rodopio: "Rodopio", bussola: "Bússola", gps: "GPS", som: "Som" },
       queda: {
         h: "Queda livre",
         what: "Larga o telemóvel para cima de um casaco ou almofada, de 30 a 60 cm. Nada de chão.",
@@ -44,7 +45,7 @@
         none: "Sem bússola: este browser não dá a direção.",
         calib: "Se a seta parecer errada, desenha um 8 no ar com o telemóvel.",
         acc: "precisão",
-        from: "A partir da ESTA, em Angra. Liga o GPS para usares onde estás.",
+        from: "A partir da ESTA, em Ponta Delgada. Liga o GPS para usares onde estás.",
         fromGps: "A partir de onde estás (GPS).",
         hit: "Estás a apontar para ",
         real: "<b>No mundo real:</b> o Google Maps junta a bússola ao GPS para virar a seta para onde estás a olhar. Um íman ou o metal de um portátil engana-a."
@@ -60,18 +61,38 @@
         lat: "latitude", lon: "longitude", alt: "altitude", spd: "velocidade", upd: "leituras", noalt: "sem dado",
         real: "<b>No mundo real:</b> o Uber e o Bolt mostram este círculo. Dentro de casa o telemóvel ajuda-se com o Wi-Fi e as antenas, por isso o círculo cresce."
       },
-      places: ["Lisboa", "Nova Iorque", "Montanha do Pico", "Ponta Delgada"]
+      rodopio: {
+        h: "Rodopio",
+        what: "Senta-te numa cadeira que rode, segura o telemóvel ao peito e dá voltas. Ou põe-no a rodar em cima da mesa.",
+        turns: "voltas", now: "voltas por segundo agora", max: "o teu máximo", deg: "°/s",
+        reset: "Recomeçar",
+        none: "Sem giroscópio: este telemóvel não mede a rotação.",
+        real: "<b>No mundo real:</b> o giroscópio só mede a velocidade de rotação. A câmara usa-o para o vídeo não tremer e um drone para se manter direito. Para contar voltas a página soma a velocidade ao longo do tempo, e o erro vai-se acumulando."
+      },
+      som: {
+        h: "Som",
+        what: "Liga o microfone e batam palmas todos juntos. Quem chega mais alto?",
+        on: "Ligar microfone",
+        denied: "Recusaste o microfone. Muda nas definições do browser para este site.",
+        err: "Sem microfone: ",
+        live: "nível de som agora", peak: "pico dos últimos 3 s", rec: "o teu recorde", reset: "Recomeçar",
+        newRec: "Recorde novo!",
+        zones: [[30, "sussurro"], [60, "conversa"], [80, "rua com trânsito"], [100, "concerto"]],
+        approx: "Valor aproximado: o microfone do telemóvel não vem calibrado.",
+        real: "<b>No mundo real:</b> o Apple Watch avisa quando o ruído passa os 80 dB durante uns minutos, e o Shazam ouve pelo mesmo microfone. É o sensor que pede sempre permissão."
+      },
+      places: ["Lisboa", "Nova Iorque", "Montanha do Pico", "Corvo"]
     },
     en: {
       title: "Sensor lab",
-      intro: "Your phone has more than ten sensors. Here you can watch four of them working, live.",
+      intro: "Your phone has more than ten sensors. Here you can watch five of them working, live.",
       go: "Turn on sensors",
       perm: "On an iPhone you get a request for motion access: it is a permission, just like the ones your app will ask for.",
       denied: "No permission, no data. On an iPhone: close the tab, open it again and tap Allow.",
       desk: "This computer has none of these sensors. Open it on your phone:",
       other: "PT",
       hz: "readings/s",
-      tabs: { queda: "Drop", nivel: "Level", bussola: "Compass", gps: "GPS" },
+      tabs: { queda: "Drop", nivel: "Level", rodopio: "Spin", bussola: "Compass", gps: "GPS", som: "Sound" },
       queda: {
         h: "Free fall",
         what: "Drop the phone onto a jacket or a cushion, from 30 to 60 cm. Never onto the floor.",
@@ -95,7 +116,7 @@
         none: "No compass: this browser does not give the heading.",
         calib: "If the arrow looks wrong, draw a figure 8 in the air with the phone.",
         acc: "accuracy",
-        from: "From ESTA, in Angra. Turn on GPS to use where you are.",
+        from: "From ESTA, in Ponta Delgada. Turn on GPS to use where you are.",
         fromGps: "From where you are (GPS).",
         hit: "You are pointing at ",
         real: "<b>In the real world:</b> Google Maps combines the compass with GPS to turn the arrow to where you are looking. A magnet or the metal in a laptop fools it."
@@ -111,17 +132,37 @@
         lat: "latitude", lon: "longitude", alt: "altitude", spd: "speed", upd: "readings", noalt: "no data",
         real: "<b>In the real world:</b> Uber and Bolt show this circle. Indoors the phone helps itself with Wi-Fi and cell towers, so the circle grows."
       },
-      places: ["Lisbon", "New York", "Mount Pico", "Ponta Delgada"]
+      rodopio: {
+        h: "Spin",
+        what: "Sit on a swivel chair, hold the phone to your chest and spin. Or spin it on the table.",
+        turns: "turns", now: "turns per second now", max: "your best", deg: "°/s",
+        reset: "Start over",
+        none: "No gyroscope: this phone does not measure rotation.",
+        real: "<b>In the real world:</b> the gyroscope only measures how fast it turns. The camera uses it to keep video steady and a drone to stay level. To count turns the page adds up the speed over time, and the error keeps piling up."
+      },
+      som: {
+        h: "Sound",
+        what: "Turn on the microphone and clap all together. Who gets the loudest?",
+        on: "Turn on microphone",
+        denied: "You refused the microphone. Change it in the browser settings for this site.",
+        err: "No microphone: ",
+        live: "sound level now", peak: "peak in the last 3 s", rec: "your record", reset: "Start over",
+        newRec: "New record!",
+        zones: [[30, "whisper"], [60, "conversation"], [80, "busy street"], [100, "concert"]],
+        approx: "Rough value: the phone microphone is not calibrated.",
+        real: "<b>In the real world:</b> an Apple Watch warns you when noise stays above 80 dB for a few minutes, and Shazam listens through the same microphone. It is the sensor that always asks for permission."
+      },
+      places: ["Lisbon", "New York", "Mount Pico", "Corvo"]
     }
   };
   var T = TX[LANG];
 
-  var ESTA = { lat: 38.6545, lon: -27.2175 };
+  var ESTA = { lat: 37.7478, lon: -25.6636 };
   var PLACES = [
     { lat: 38.7223, lon: -9.1393, c: "#ff6b4a" },
     { lat: 40.7128, lon: -74.0060, c: "#b6f36a" },
     { lat: 38.4686, lon: -28.3994, c: "#ffd166" },
-    { lat: 37.7412, lon: -25.6756, c: "#b69cff" }
+    { lat: 39.6716, lon: -31.1114, c: "#b69cff" }
   ];
   PLACES.forEach(function (p, i) { p.name = T.places[i]; });
 
@@ -136,13 +177,17 @@
     ax: 0, ay: 0, az: G, mag: 1, hist: [],
     falling: false, fallStart: 0, cool: 0, drops: [],
     heading: null, headAcc: null, headSeen: false,
-    pos: null, track: [], gpsUpd: 0, gpsOn: false
+    pos: null, track: [], gpsUpd: 0, gpsOn: false,
+    gyro: false, spin: 0, spinW: 0, spinMax: 0, spinLast: 0, spinTurns: 0, spinHist: [],
+    micOn: false, db: null, dbHist: [], dbRec: 0, dbRecT: 0
   };
+  // Microfone sem calibração: dB ≈ dBFS + CAL. ?cal=N na morada acerta o valor contra um sonómetro.
+  var CAL = parseFloat((location.search.match(/[?&]cal=(-?\d+(?:\.\d+)?)/) || [])[1]) || 110;
 
   /* ---------- Ecrã inicial ---------- */
   function intro() {
     app.innerHTML = "";
-    var v = el('<section class="intro"><div class="dots"><i></i><i></i><i></i><i></i></div>' +
+    var v = el('<section class="intro"><div class="dots"><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
       "<h1>" + T.title + "</h1><p>" + T.intro + "</p>" +
       '<button class="go" type="button">' + T.go + "</button>" +
       '<p class="small">' + T.perm + "</p>" +
@@ -202,6 +247,28 @@
     S.hist.push([t, S.mag]);
     while (S.hist.length && t - S.hist[0][0] > 4000) S.hist.shift();
     detectDrop(t, S.mag);
+    spin(e, t);
+  }
+
+  // Rodopio: a rotação à volta da vertical é a projeção da velocidade angular na direção da gravidade.
+  function spin(e, t) {
+    var r = e.rotationRate;
+    if (!r || r.alpha == null || r.beta == null || r.gamma == null) return;
+    S.gyro = true;
+    var m = Math.sqrt(S.ax * S.ax + S.ay * S.ay + S.az * S.az) || G;
+    var w = (r.beta * S.ax + r.gamma * S.ay + r.alpha * S.az) / m;
+    var dt = S.spinLast ? Math.min(0.1, (t - S.spinLast) / 1000) : 0;
+    S.spinLast = t;
+    S.spinW = S.spinW * 0.8 + w * 0.2;
+    // Abaixo de 20 °/s conta como parado: é ruído e faria as voltas andar sozinhas.
+    if (Math.abs(w) > 20) S.spin += w * dt;
+    var turns = Math.floor(Math.abs(S.spin) / 360);
+    if (turns > S.spinTurns) vibrate(25);
+    S.spinTurns = turns;
+    var tps = Math.abs(S.spinW) / 360;
+    if (tps > S.spinMax) S.spinMax = tps;
+    S.spinHist.push([t, tps]);
+    while (S.spinHist.length && t - S.spinHist[0][0] > 6000) S.spinHist.shift();
   }
 
   // Queda livre: a força cai abaixo de 0,35 g e só volta acima de 0,75 g no impacto.
@@ -258,6 +325,48 @@
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   }
 
+  /* ---------- Microfone ---------- */
+  var mic = null;
+  function startMic() {
+    if (S.micOn) return;
+    var st = $("#mic-state"), Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !Ctx) {
+      st.textContent = T.som.err + "getUserMedia"; st.hidden = false; return;
+    }
+    S.micOn = true;
+    // O AudioContext tem de nascer dentro do toque, senão o Safari deixa-o suspenso.
+    var ac = new Ctx();
+    if (ac.resume) ac.resume();
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (stream) {
+      var an = ac.createAnalyser(); an.fftSize = 2048;
+      ac.createMediaStreamSource(stream).connect(an);
+      mic = { ac: ac, an: an, buf: new Float32Array(an.fftSize) };
+      st.hidden = true; $("#mic-btn").hidden = true;
+    }, function (err) {
+      S.micOn = false; ac.close && ac.close();
+      st.hidden = false;
+      st.textContent = err && err.name === "NotAllowedError" ? T.som.denied : T.som.err + (err && err.message || err);
+    });
+  }
+
+  function readMic(t) {
+    if (!mic) return;
+    if (mic.ac.state === "suspended" && mic.ac.resume) mic.ac.resume();
+    mic.an.getFloatTimeDomainData(mic.buf);
+    var sum = 0, b = mic.buf;
+    for (var i = 0; i < b.length; i++) sum += b[i] * b[i];
+    var rms = Math.sqrt(sum / b.length);
+    var db = Math.max(20, Math.min(130, 20 * Math.log10(rms || 1e-9) + CAL));
+    // Sobe logo, desce devagar: os números não tremem e as palmas ficam no ecrã.
+    S.db = S.db == null || db > S.db ? db : S.db * 0.9 + db * 0.1;
+    S.dbHist.push([t, db]);
+    while (S.dbHist.length && t - S.dbHist[0][0] > 6000) S.dbHist.shift();
+    if (db > S.dbRec && t - S.micT0 > 800) {
+      if (S.dbRec > 0 && db > S.dbRec + 1) { S.dbRecT = t; vibrate(60); }
+      S.dbRec = db;
+    }
+  }
+
   /* ---------- Geografia ---------- */
   function bearing(a, b) {
     var y = Math.sin((b.lon - a.lon) * RAD) * Math.cos(b.lat * RAD);
@@ -280,7 +389,9 @@
     queda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="8" y="2" width="8" height="12" rx="2"/><path d="M12 17v5M9 19l3 3 3-3"/></svg>',
     nivel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="8" width="20" height="8" rx="4"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>',
     bussola: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>',
-    gps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>'
+    gps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+    rodopio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M18 2.5v4h-4"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>',
+    som: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>'
   };
 
   function lab() {
@@ -310,6 +421,21 @@
       '<line x1="-60" y1="0" x2="-30" y2="0" stroke="#fff" stroke-width="2"/><line x1="30" y1="0" x2="60" y2="0" stroke="#fff" stroke-width="2"/></g>' +
       '</svg><div class="deg"><div class="big num" id="deg">0°</div><div class="lbl" id="lvmode"></div></div></div>' +
       '<p class="real">' + n.real + "</p></section>"));
+
+    var r = T.rodopio;
+    app.appendChild(el('<section class="view" data-v="rodopio"><h2>' + r.h + '</h2><p class="what">' + r.what + "</p>" +
+      '<div class="card spin"><svg viewBox="-110 -110 220 220">' +
+      '<circle r="92" fill="none" stroke="#1d2631" stroke-width="16"/>' +
+      '<circle id="spin-arc" r="92" fill="none" stroke="var(--rodopio)" stroke-width="16" stroke-linecap="round" transform="rotate(-90)" stroke-dasharray="0 578"/>' +
+      '<g id="spin-dot"><circle cx="0" cy="-92" r="13" fill="#eef3f8" stroke="#0b0f14" stroke-width="4"/></g>' +
+      '<text id="turns" x="0" y="22" text-anchor="middle" font-size="76" font-weight="800" fill="#eef3f8" class="num">0</text>' +
+      '<text x="0" y="50" text-anchor="middle" font-size="16" fill="#8d9aab">' + r.turns + "</text></svg>" +
+      '<div class="lbl" id="spin-none"></div></div>' +
+      '<div class="row"><div class="card"><div class="mid num" id="tps">0</div><div class="lbl">' + r.now + '</div><div class="lbl num" id="dps"></div></div>' +
+      '<div class="card"><div class="mid num" id="tpsmax">0</div><div class="lbl">' + r.max + "</div></div></div>" +
+      '<div class="card"><canvas id="spin-graph" height="120"></canvas></div>' +
+      '<button class="ghost" id="spin-reset" type="button">' + r.reset + "</button>" +
+      '<p class="real">' + r.real + "</p></section>"));
 
     var b = T.bussola;
     var ticks = "";
@@ -341,14 +467,29 @@
       '<div class="card"><div class="lbl">' + g.spd + '</div><div class="v num" id="spd">--</div></div></div>' +
       '<div class="lbl" id="upd"></div><p class="real">' + g.real + "</p></section>"));
 
+    var so = T.som;
+    app.appendChild(el('<section class="view" data-v="som"><h2>' + so.h + '</h2><p class="what">' + so.what + "</p>" +
+      '<button class="gps-btn mic-btn" id="mic-btn" type="button">' + so.on + '</button><div class="lbl" id="mic-state" hidden></div>' +
+      '<div class="card"><div class="live"><div><div class="big num" id="db">--<small>dB</small></div><div class="lbl">' + so.live + "</div></div>" +
+      '<span class="state" id="dbzone"></span></div>' +
+      '<div class="meter"><i id="dbbar"></i></div>' +
+      '<canvas id="db-graph" height="170" style="margin-top:14px"></canvas><div class="lbl">' + so.approx + "</div></div>" +
+      '<div class="row"><div class="card"><div class="mid num" id="dbpeak">--</div><div class="lbl">' + so.peak + "</div></div>" +
+      '<div class="card" id="dbrec-card"><div class="mid num" id="dbrec">--</div><div class="lbl" id="dbrec-lbl">' + so.rec + "</div></div></div>" +
+      '<button class="ghost" id="mic-reset" type="button">' + so.reset + "</button>" +
+      '<p class="real">' + so.real + "</p></section>"));
+
     var tabs = el('<nav class="tabs"><div class="in"></div></nav>');
-    ["queda", "nivel", "bussola", "gps"].forEach(function (k) {
+    ["queda", "nivel", "rodopio", "bussola", "gps", "som"].forEach(function (k) {
       var bt = el('<button type="button" data-t="' + k + '">' + ICONS[k] + "<span>" + T.tabs[k] + "</span></button>");
       bt.addEventListener("click", function () { go(k); });
       $(".in", tabs).appendChild(bt);
     });
     app.appendChild(tabs);
     $("#gps-btn").addEventListener("click", startGps);
+    $("#mic-btn").addEventListener("click", function () { S.micT0 = performance.now(); startMic(); });
+    $("#spin-reset").addEventListener("click", function () { S.spin = 0; S.spinTurns = 0; S.spinMax = 0; });
+    $("#mic-reset").addEventListener("click", function () { S.dbRec = 0; S.dbRecT = 0; S.micT0 = performance.now(); });
     if (navigator.wakeLock) { navigator.wakeLock.request("screen").catch(function () {}); }
     go(S.tab);
     renderTargets();
@@ -504,8 +645,64 @@
     x.beginPath(); x.arc(cx, cy, 8, 0, Math.PI * 2); x.stroke(); x.fill();
   }
 
+  // Gráfico de linha dos últimos 6 s, com linhas de referência e etiquetas.
+  function lineGraph(c, hist, lo, hi, refs, color) {
+    if (!c || !c.clientWidth) return;
+    var o = sizeCanvas(c), x = o.x, w = o.w, h = o.h, L = 0, now = performance.now();
+    x.clearRect(0, 0, w, h);
+    x.font = "12px -apple-system, sans-serif";
+    var Y = function (v) { return h - 4 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * (h - 18); };
+    refs.forEach(function (r) {
+      var y = Y(r[0]);
+      x.strokeStyle = "#1d2631"; x.lineWidth = 1; x.beginPath(); x.moveTo(L, y); x.lineTo(w, y); x.stroke();
+      x.fillStyle = "#5b6b7d"; x.fillText(r[1], L + 2, y - 4);
+    });
+    if (hist.length < 2) return;
+    x.strokeStyle = color; x.lineWidth = 3; x.lineJoin = "round"; x.beginPath();
+    hist.forEach(function (p, i) {
+      var px = L + (1 - (now - p[0]) / 6000) * (w - L), py = Y(p[1]);
+      if (i) x.lineTo(px, py); else x.moveTo(px, py);
+    });
+    x.stroke();
+  }
+
+  function drawSpin() {
+    var none = $("#spin-none");
+    none.textContent = !S.gyro && S.motion > 0 && performance.now() - S.labT > 2500 ? T.rodopio.none : "";
+    var a = Math.abs(S.spin), frac = (a % 360) / 360, C = 2 * Math.PI * 92;
+    $("#spin-arc").setAttribute("stroke-dasharray", (frac * C).toFixed(1) + " " + C.toFixed(1));
+    $("#spin-dot").setAttribute("transform", "rotate(" + (frac * 360).toFixed(1) + ")");
+    $("#turns").textContent = S.spinTurns;
+    var tps = Math.abs(S.spinW) / 360;
+    $("#tps").textContent = fmt(tps < 0.06 ? 0 : tps, 1);
+    $("#dps").textContent = Math.round(Math.abs(S.spinW)) + " " + T.rodopio.deg;
+    $("#tpsmax").textContent = fmt(S.spinMax, 1);
+    var top = Math.max(2, Math.ceil(S.spinMax));
+    var refs = []; for (var v = 1; v <= top; v++) refs.push([v, v + (LANG === "en" ? " turn/s" : " volta/s")]);
+    lineGraph($("#spin-graph"), S.spinHist, 0, top, refs, "#f478c4");
+  }
+
+  function drawSom(t) {
+    if (S.db == null) return;
+    var db = S.db, so = T.som;
+    $("#db").innerHTML = Math.round(db) + "<small>dB</small>";
+    var z = so.zones.reduce(function (acc, q) { return db >= q[0] - 5 ? q[1] : acc; }, so.zones[0][1]);
+    $("#dbzone").textContent = z;
+    $("#dbzone").classList.toggle("loud", db >= 80);
+    $("#dbbar").style.width = Math.max(0, Math.min(100, (db - 20) / 100 * 100)).toFixed(1) + "%";
+    var pk = 0; S.dbHist.forEach(function (p) { if (t - p[0] < 3000 && p[1] > pk) pk = p[1]; });
+    $("#dbpeak").innerHTML = Math.round(pk) + "<small> dB</small>";
+    $("#dbrec").innerHTML = S.dbRec ? Math.round(S.dbRec) + "<small> dB</small>" : "--";
+    var fresh = S.dbRecT && t - S.dbRecT < 1500;
+    $("#dbrec-card").classList.toggle("hl", !!fresh);
+    $("#dbrec-lbl").textContent = fresh ? so.newRec : so.rec;
+    lineGraph($("#db-graph"), S.dbHist, 20, 120, so.zones.map(function (q) { return [q[0], q[0] + " dB " + q[1]]; }), "#ffd166");
+  }
+
   function loop() {
     var hz = $("#hz"); if (hz) hz.textContent = S.hz;
+    var now = performance.now();
+    readMic(now);
     if (S.tab === "queda") {
       $("#g").innerHTML = fmt(S.mag, 2) + "<small>g</small>";
       var st = $("#fstate"); st.textContent = S.falling ? T.queda.fall : T.queda.rest; st.classList.toggle("fall", S.falling);
@@ -513,6 +710,8 @@
     } else if (S.tab === "nivel") drawLevel();
     else if (S.tab === "bussola") drawCompass();
     else if (S.tab === "gps") drawMap();
+    else if (S.tab === "rodopio") drawSpin();
+    else if (S.tab === "som") drawSom(now);
     requestAnimationFrame(loop);
   }
 
