@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 25 · Testes automatizados e CI · PDM</title>
+<title>Aula 25 · Caça aos bugs: testes, CI e logs · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,379 +25,245 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 25 · Semana 11 · Segunda, 16 de novembro de 2026 · 16:00 às 18:00</p>
-  <h1>Testes automatizados e CI</h1>
-  <p class="lead">Teoria: pirâmide de testes, o que vale a pena testar em mobile, mocks e fakes, golden tests e integração contínua. Prática: testes unitários com mocktail, testes de widget, e um workflow do GitHub Actions que bloqueia pull requests com falhas.</p>
-  <div class="meta"><span>Repo: pdm-aula-25</span></div>
-  <aside class="notes">Começa por perguntar quem já escreveu um teste automatizado em qualquer linguagem. Costuma ser menos de metade. Diz que no fim da aula cada um vai ter um workflow a correr no GitHub e um badge no README, e que a review de quarta valoriza CI verde. Confirma que todos têm o repo da aula clonado antes de arrancar a teoria.</aside>
+  <h1>Caça aos bugs: testes, CI e logs</h1>
+  <p class="lead">O Tempo Açores está no vosso telemóvel e tem seis bugs que já chegaram em queixas. Primeiro as três redes que os apanham: testes, integração contínua e logs. Depois a caça: um teste que falha, a correção, um pull request com o CI verde, e a correção a aparecer no telemóvel de todos.</p>
+  <div class="meta"><span>Repositório: <a href="https://github.com/Tiago-Rocha/pdm-aula-25" target="_blank" rel="noopener">pdm-aula-25</a></span><span>Review da sprint 2: quarta 18/11</span></div>
+  <aside class="notes">Tempos de referência: bugs no telemóvel até às 16:10, teoria até às 16:45, caça até às 17:50, fecho até às 18:00. Antes da aula: o OpenObserve aberto no portátil do projetor na stream apps (logs.sublimecipher.com), o repositório com os seis issues abertos, e o Chrome com o README. Peçam que tenham o Flutter e o VS Code prontos e a sessão do GitHub aberta.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Desenhar a pirâmide de testes e dizer o custo e a velocidade de cada nível.</li>
-    <li>Escolher o que testar numa app móvel (parsing, lógica de estado, estados de UI) e o que não compensa.</li>
-    <li>Substituir um repository por um fake ou por um mock com <code>mocktail</code> e testar um notifier sem rede.</li>
-    <li>Escrever um teste de widget com <code>pumpWidget</code>, <code>find</code>, <code>tap</code> e <code>pumpAndSettle</code>.</li>
-    <li>Configurar o GitHub Actions para correr <code>flutter analyze</code> e <code>flutter test</code> em cada PR e proteger o <code>main</code>.</li>
+    <li>Dizer o que o <code>flutter analyze</code>, os testes e os logs apanham, e o que cada um deixa passar.</li>
+    <li>Escolher entre um teste unitário, de estado e de widget para um bug concreto.</li>
+    <li>Escrever um teste em três partes com um repositório falso, e vê-lo falhar antes de corrigir.</li>
+    <li>Ler o que o CI diz de um pull request e decidir se pode entrar no <code>main</code>.</li>
+    <li>Ler uma linha de log e dizer onde, a quem e em que versão aconteceu o erro.</li>
   </ul>
+  <aside class="notes">O que dizer: hoje não há matéria nova de Flutter. É a forma como as equipas trabalham numa app que já está nas mãos das pessoas: alguém se queixa, a equipa encontra, prova, corrige e publica sem partir outra coisa. Tudo o que fizerem hoje serve para a sprint 3 do projeto, onde o CI passa a ser obrigatório.</aside>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>A pirâmide de testes</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 390" role="img" aria-label="Pirâmide de testes: muitos testes unitários na base, alguns de widget no meio, poucos de integração no topo; ao lado, o que cada nível apanha no Tempo Açores; em baixo, a CI corre analyze e test em cada pull request">
-    <polygon points="195,40 365,40 425,120 135,120" class="box warn"/>
-    <text x="280" y="72" class="t b" text-anchor="middle">Integração / E2E</text>
-    <text x="280" y="94" class="t s" text-anchor="middle">poucos · lentos · telemóvel real</text>
-    <polygon points="135,120 425,120 480,210 80,210" class="box accent"/>
-    <text x="280" y="157" class="t b" text-anchor="middle">Widget</text>
-    <text x="280" y="179" class="t s" text-anchor="middle">alguns · pumpWidget, sem telemóvel</text>
-    <polygon points="80,210 480,210 535,300 25,300" class="box ok"/>
-    <text x="280" y="247" class="t b" text-anchor="middle">Unitários</text>
-    <text x="280" y="269" class="t s" text-anchor="middle">muitos · rápidos · sem rede · sem Flutter</text>
-    <text x="560" y="26" class="t s b">O que cada nível apanha no Tempo Açores</text>
-    <path d="M400 80H554" class="arrow dashed"/>
-    <rect x="560" y="52" width="300" height="56" rx="10" class="box"/>
-    <text x="574" y="75" class="t">A app não arranca no Android 12</text>
-    <text x="574" y="96" class="t s">integration_test · emulador ou telemóvel</text>
-    <path d="M458 165H554" class="arrow dashed"/>
-    <rect x="560" y="137" width="300" height="56" rx="10" class="box"/>
-    <text x="574" y="160" class="t">O botão de atualizar desapareceu</text>
-    <text x="574" y="181" class="t s">pumpWidget · tester.tap · find.text</text>
-    <path d="M513 255H554" class="arrow dashed"/>
-    <rect x="560" y="227" width="300" height="56" rx="10" class="box"/>
-    <text x="574" y="250" class="t">fromJson errado, estado do notifier</text>
-    <text x="574" y="271" class="t s">sem rede: fakes e mocks, em milissegundos</text>
-    <rect x="40" y="322" width="820" height="56" rx="10" class="box accent"/>
-    <text x="60" y="345" class="t b">CI: flutter analyze + flutter test em cada pull request</text>
-    <text x="60" y="366" class="t s">GitHub Actions; com o main protegido, um teste a falhar bloqueia o merge</text>
-  </svg>
-  <figcaption>Muitos unitários, alguns de widget, poucos de integração: quanto mais alto, mais lento e mais caro.</figcaption>
-  </figure>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Nível</th><th>O que verifica</th><th>Quantos</th><th>Velocidade</th><th>Custo de manutenção</th></tr></thead>
+  <h2>A app está no vosso telemóvel</h2>
+  <div class="lab-qr">
+    <img src="../assets/img/bugs-qr.svg" alt="Código QR para a app Tempo Açores na web">
+    <div>
+      <p class="lab-url"><code>tiago-rocha.github.io/pdm-aula-25</code></p>
+      <ul>
+        <li>Criem conta, com o vosso nome: é ele que aparece nos logs.</li>
+        <li>Abram as ilhas, a previsão de cada uma, os favoritos, o "Onde estou?" e o tema.</li>
+        <li>Fechem a página e voltem a abrir.</li>
+        <li>Tudo o que parecer estranho, anotem: em que ecrã, o que fizeram, o que esperavam.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="pergunta">Em cinco minutos, quantos bugs encontram?</p>
+  <aside class="notes">Dá-lhes cinco minutos, em silêncio, cada um no seu telemóvel. É a app que conhecem, agora com um ecrã de previsão a cinco dias (toca numa ilha). A conta é desta app: as contas do projeto não servem aqui, porque cada app tem as suas. Enquanto exploram, deixa o OpenObserve no projetor: as linhas começam a cair com os nomes deles, e é isso que prende a sala. Não digas quantos bugs há. Depois pergunta quantos encontraram e escreve no quadro os que disserem. Normalmente aparecem logo o Corvo (ecrã cinzento) e a mínima maior que a máxima; o tema e os favoritos só quem experimenta com calma. O "Tentar de novo" quase ninguém encontra sem desligar a rede.</aside>
+</section>
+
+<section class="slide">
+  <h2>Seis queixas</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>#</th><th>O que a pessoa viu</th><th>Onde</th></tr></thead>
   <tbody>
-  <tr><td><strong>Unitário</strong></td><td>Uma função ou classe Dart, sem Flutter: <code>fromJson</code>, cálculos, o notifier</td><td>Muitos</td><td>Milissegundos</td><td>Baixo</td></tr>
-  <tr><td><strong>Widget</strong></td><td>Um widget ou ecrã numa árvore de teste, sem telemóvel: aparece o texto, o botão faz o que deve</td><td>Alguns</td><td>Décimos de segundo</td><td>Médio: parte quando muda a UI</td></tr>
-  <tr><td><strong>Integração / E2E</strong></td><td>A app inteira num telemóvel ou emulador, com rede real ou simulada</td><td>Poucos</td><td>Minutos</td><td>Alto: frágil, lento, precisa de dispositivo</td></tr>
+  <tr><td>1</td><td>Ao abrir o Corvo, o ecrã fica cinzento</td><td>Previsão</td></tr>
+  <tr><td>2</td><td>A mínima é maior do que a máxima, e a amplitude é negativa</td><td>Previsão</td></tr>
+  <tr><td>3</td><td>Sem rede aparece "Tentar de novo"; com a rede de volta, o botão não faz nada</td><td>Ilhas</td></tr>
+  <tr><td>4</td><td>Toco no coração e ele não muda; se mudar de tema, já está vermelho</td><td>Ilhas</td></tr>
+  <tr><td>5</td><td>Em Ponta Delgada diz "Estás a 519 km de Corvo"</td><td>Onde estou?</td></tr>
+  <tr><td>6</td><td>Escolho o tema escuro e, quando volto a abrir, está claro outra vez</td><td>Tema</td></tr>
   </tbody></table></div>
-  <ul>
-    <li>Os unitários apanham a maioria dos bugs de lógica. Os de widget apanham "o botão desapareceu". Os E2E apanham "a app não arranca no Android 12".</li>
-    <li>Uma pirâmide invertida (só E2E) é o erro clássico: cada teste demora minutos, falha por razões alheias ao código, e ninguém o corre.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> muitos unitários, alguns de widget, poucos de integração; quanto mais alto na pirâmide, mais lento e mais caro.</p>
-  <div class="callout"><strong>Analogia</strong> O controlo de qualidade numa fábrica de carros. Testar cada parafuso à saída da máquina (unitário) é rápido, barato e apanha quase tudo. Montar o painel e carregar em cada botão (widget) apanha os problemas de encaixe. Conduzir o carro completo na estrada (integração) é o teste mais real e o mais caro, por isso faz-se poucas vezes e no fim.</div>
-  <aside class="notes">Pergunta: "se tivessem 30 minutos para escrever testes para o Tempo Açores, onde os gastavam?" Guia para: fromJson dos três modelos, estados do notifier, um widget test do ecrã de previsão. Nada de E2E.</aside>
+  <p class="pergunta">Quantos destes o <code>flutter analyze</code> apanhava?</p>
+  <aside class="notes">Resposta: nenhum. O código compila, os tipos batem certo e não há avisos. O analyze vê se o código está bem escrito; não sabe o que a app devia fazer. Estes são os bugs que chegam às pessoas: a app abre, não rebenta, e faz a coisa errada. Cada linha é um issue no repositório, com o que a pessoa viu e uma pista. Pergunta quantos destes encontraram nos cinco minutos.</aside>
 </section>
 
 <section class="slide">
-  <h2>O que testar em mobile</h2>
+  <h2>Três redes, três buracos diferentes</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 200" role="img" aria-label="Três redes em linha: o analyze apanha o que não compila ou está mal escrito; os testes apanham o que não faz o que devia; os logs mostram o que aconteceu no telemóvel de alguém.">
+<rect x="10" y="10" width="270" height="170" rx="12" class="box"/><text x="30" y="46" class="t b">flutter analyze</text><text x="30" y="84" class="t s">Apanha: tipos errados, imports</text><text x="30" y="108" class="t s">a mais, código que nunca corre</text><text x="30" y="148" class="t s">Quando: enquanto escreves</text>
+<line x1="282" y1="95" x2="311" y2="95" class="arrow"/>
+<rect x="315" y="10" width="270" height="170" rx="12" class="box ok"/><text x="335" y="46" class="t b">Testes</text><text x="335" y="84" class="t s">Apanham: a app não faz</text><text x="335" y="108" class="t s">o que devia</text><text x="335" y="148" class="t s">Quando: antes do merge</text>
+<line x1="587" y1="95" x2="616" y2="95" class="arrow"/>
+<rect x="620" y="10" width="270" height="170" rx="12" class="box warn"/><text x="640" y="46" class="t b">Logs</text><text x="640" y="84" class="t s">Mostram: o que aconteceu</text><text x="640" y="108" class="t s">no telemóvel de alguém</text><text x="640" y="148" class="t s">Quando: depois de publicar</text>
+</svg>
+  <figcaption>Cada rede apanha o que passou pela anterior. Nenhuma apanha tudo.</figcaption>
+  </figure>
   <ul>
-    <li><strong>Parsing:</strong> <code>fromJson</code> com JSON real da API, com campos em falta, com <code>null</code>, com tipos errados. É onde a app crasha em produção quando o backend muda.</li>
-    <li><strong>Lógica de estado:</strong> o notifier passa de <code>Loading</code> para <code>Dados</code>; para <code>Erro</code> quando o repository falha; para <code>Vazio</code> com lista vazia. Sem UI, sem rede.</li>
-    <li><strong>Estados de UI:</strong> o ecrã mostra o spinner, a mensagem de erro, o botão "Tentar de novo", a lista. Um teste de widget por estado.</li>
-    <li><strong>Regras de negócio:</strong> amplitude térmica, cor do aviso, "atualizado há 12 min", conversão °C/°F.</li>
+    <li><strong>Mundo real:</strong> o repositório do Flutter não aceita um pull request sem testes; o Instagram e o Spotify recebem os crashes de milhões de telemóveis pelo Crashlytics e pelo Sentry.</li>
+    <li>O teste diz que o bug existe; o log diz a quem aconteceu, onde e em que versão.</li>
   </ul>
-  <div class="callout warn"><strong>O que não vale a pena</strong> Testar que um <code>Text</code> tem a cor do tema, testar getters triviais, testar o package <code>http</code>, ou escrever E2E para cada ecrã. Testa o teu código, não o do Flutter.</div>
-  <p><strong>Para os testes:</strong> em mobile testa-se primeiro o parsing e a lógica de estado, porque é o que falha quando a API muda ou a rede cai.</p>
+  <aside class="notes">O que dizer: o analyze é o corretor ortográfico, apanha o que está mal escrito. O teste é o revisor que sabe o que o texto devia dizer. O log é o leitor que liga a dizer que a página 40 não faz sentido: só sabes depois de publicar, mas sabes o que nenhum teste previu. Pergunta à turma: qual das três redes é a mais barata? O analyze, porque corre sozinho. E a mais cara? O log, porque o bug já chegou a alguém. É por isso que se tenta apanhar o mais cedo possível.</aside>
 </section>
 
 <section class="slide">
-  <h2>Mocks e fakes: testar sem rede</h2>
+  <h2>A pirâmide dos testes</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 225" role="img" aria-label="Uma pirâmide com três camadas: em baixo, muitos testes unitários, que correm em milissegundos; no meio, alguns testes de widget, em décimas de segundo; em cima, poucos testes de integração no telemóvel, em minutos.">
+<polygon points="290,10 390,10 440,75 240,75" class="box warn"/><text x="340" y="50" text-anchor="middle" class="t b">Integração</text>
+<polygon points="240,80 440,80 490,145 190,145" class="box accent"/><text x="340" y="120" text-anchor="middle" class="t b">Widget</text>
+<polygon points="190,150 490,150 540,215 140,215" class="box ok"/><text x="340" y="190" text-anchor="middle" class="t b">Unitários</text>
+<text x="520" y="36" class="t">Poucos · minutos · num telemóvel</text><text x="520" y="60" class="t s">a app inteira, com rede e GPS a sério</text>
+<text x="570" y="106" class="t">Alguns · décimas de segundo</text><text x="570" y="130" class="t s">um ecrã, com toques e dados falsos</text>
+<text x="620" y="176" class="t">Muitos · milissegundos</text><text x="620" y="200" class="t s">uma função, um modelo, um notifier</text>
+</svg>
+  <figcaption>Em baixo é barato e rápido; em cima é lento, mas é mais parecido com a pessoa a usar a app.</figcaption>
+  </figure>
   <ul>
-    <li>O notifier depende de um <code>PrevisaoRepository</code>. No teste, injetas outra implementação. Foi para isto que fizemos a interface na aula 13.</li>
-    <li><strong>Fake:</strong> uma classe tua que implementa a interface com lógica simples (devolve uma lista fixa, ou lança). Legível, sem package, chega para a maioria dos casos.</li>
-    <li><strong>Mock</strong> com <code>mocktail</code>: <code>class MockRepo extends Mock implements PrevisaoRepository {}</code>; programas respostas com <code>when(() => repo.previsao(any())).thenAnswer(...)</code> e verificas chamadas com <code>verify</code>.</li>
-    <li>Mocktail não precisa de geração de código (ao contrário do <code>mockito</code> com <code>build_runner</code>). Por isso o usamos.</li>
-    <li>Nunca deixes um teste bater na API do curso: é lento, depende da rede, e enche a telemetria do grupo com pedidos de teste.</li>
+    <li><strong>Mundo real:</strong> a Google aponta para 70% unitários, 20% de integração entre peças e 10% ponta a ponta; o Firebase Test Lab corre os de cima em dezenas de telemóveis reais.</li>
   </ul>
-  <p><strong>Para os testes:</strong> um fake é uma implementação simplificada escrita à mão; um mock é programado no próprio teste e regista as chamadas.</p>
+  <aside class="notes">O que dizer: a pirâmide é uma forma de gastar bem o tempo. Um teste unitário corre em milissegundos e diz exatamente onde está o erro; um teste de integração liga a app num telemóvel, demora minutos e quando falha pode ser a rede, o GPS ou o código. No repositório de hoje: unitários em test/models, test/location e test/state, de widget em test/screens. Os 12 testes correm todos em cerca de um segundo. Os de cima, em Flutter, são o pacote integration_test. Há ainda os golden tests: tiram uma fotografia a um widget e comparam com a guardada, píxel a píxel; servem para o design system e incomodam quando muda a fonte. Pergunta à turma: o bug da mínima e da máxima, em que camada se apanha? Unitário: é o fromJson. E o "Tentar de novo"? Widget: precisa de um toque.</aside>
 </section>
 
 <section class="slide">
-  <h2>Golden tests</h2>
-  <ul>
-    <li>Um golden test renderiza um widget e compara os pixels com uma imagem de referência guardada no repo (<code>matchesGoldenFile('previsao_card.png')</code>).</li>
-    <li>Apanha regressões visuais que nenhum <code>find.text</code> apanha: padding que mudou, cor errada no tema escuro, texto cortado com letra grande.</li>
-    <li>Quando usam: design systems, componentes reutilizados em muitos ecrãs, apps onde o aspeto é produto. O Flutter usa-os para os próprios widgets Material.</li>
-    <li>Quando incomodam: a renderização de fontes difere entre macOS, Linux e o CI, e cada mudança legítima de UI obriga a regenerar as imagens (<code>flutter test --update-goldens</code>). Sem revisão, as imagens de referência são atualizadas sem verificação.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> golden tests comparam pixels com uma imagem de referência; são valiosos para componentes visuais e frágeis entre máquinas diferentes.</p>
+  <h2>Onde a magia acontece: um teste em três partes</h2>
+<pre><code class="language-dart">test('offline, load keeps the error for the screen', () async {
+  final repository = FakeForecastRepository()..failing = true;
+  final notifier = ForecastNotifier(repository);
+
+  await notifier.load();
+
+  expect(notifier.error, contains('Sem ligação'));
+});</code></pre>
+  <p><strong>A ideia:</strong> Preparar, fazer, verificar. O nome diz, numa frase, o que devia acontecer.</p>
+  <aside class="notes">Está em test/state/forecast_notifier_test.dart. As três partes vão separadas por uma linha em branco; quando falha, lês o nome e sabes o que se partiu. Preparar: um repositório falso que falha, como um telemóvel sem rede, e o notifier com ele. Fazer: uma coisa só, o load. Verificar: o erro ficou guardado para o ecrã mostrar. O expect compara o que aconteceu com o que devia acontecer; contains, isNull, isTrue, closeTo são os matchers. Não há rede, nem ecrã, nem telemóvel: corre em milissegundos. Pergunta à turma: se o load não apanhasse a exceção, o que dizia o teste? Falhava com a exceção e o nome do teste, e não com "expected ... but was null".</aside>
 </section>
 
 <section class="slide">
-  <h2>Integração contínua</h2>
+  <h2>Onde a magia acontece: um repositório falso</h2>
+<pre><code class="language-dart">class FakeForecastRepository implements ForecastRepository {
+  bool failing = false;
+  int islandCalls = 0; // how many times the islands were asked for
+  @override
+  Future&lt;List&lt;Island&gt;&gt; fetchIslands() async {
+    islandCalls++;
+    if (failing) throw Exception('Sem ligação');
+    return islands;
+  }</code></pre>
+  <p><strong>A ideia:</strong> Responde logo, sempre igual, e falha quando se quer.</p>
+  <aside class="notes">O notifier recebe o repositório de fora, por isso o teste dá-lhe um falso; o islandCalls conta quantas vezes foi chamado. Está em test/fakes.dart, com o FakeFavoritesRepository e as ilhas de teste (São Miguel, Terceira e Corvo, com as coordenadas reais). É aqui que se paga a separação em camadas: como o ForecastNotifier recebe um ForecastRepository e não cria um HttpForecastRepository lá dentro, o teste troca-o sem tocar no código da app. Um fake é uma implementação a sério, mas simples; um mock (mocktail) é gerado e diz-se em cada teste o que responde. Para nós o fake chega e lê-se melhor. Pergunta à turma: para que serve o islandCalls? Para provar que um botão pediu as ilhas outra vez. Vai ser útil num dos bugs.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde a magia acontece: um ecrã num teste</h2>
+<pre><code class="language-dart">testWidgets('offline, shows the error and a button', (tester) async {
+  final repository = FakeForecastRepository()..failing = true;
+
+  await pumpScreen(tester, const IslandsScreen(), forecast: repository);
+
+  expect(find.textContaining('Sem ligação'), findsOneWidget);
+  expect(find.text('Tentar de novo'), findsOneWidget);
+});</code></pre>
+  <p><strong>A ideia:</strong> O ecrã desenhado em memória; o <code>find</code> procura como uns olhos.</p>
+  <aside class="notes">Está em test/screens/islands_screen_test.dart; o pumpScreen está em test/fakes.dart e faz o que o main.dart faz, com peças falsas: dados falsos e a Ana com sessão iniciada. Num teste de widget não há telemóvel: o Flutter desenha o ecrã em memória, e o tester avança o tempo. pumpAndSettle espera que as animações e os futures acabem. Para tocar: await tester.tap(find.text('Tentar de novo')) e depois pumpAndSettle. Se o find não encontra nada, o tap falha a dizer que não há esse widget. Pergunta à turma: este teste passa hoje, com o bug do "Tentar de novo" lá dentro. Porquê? Porque só verifica que o botão aparece, não o que faz quando se toca.</aside>
+</section>
+
+<section class="slide">
+  <h2>Primeiro vermelho, depois verde</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 170" role="img" aria-label="Cinco passos em linha: reproduzir o bug, escrever um teste que falha, corrigir o código, ver o teste passar, abrir o pull request.">
+<rect x="10" y="10" width="160" height="140" rx="12" class="box"/><circle cx="40" cy="42" r="16" class="box accent"/><text x="40" y="47" text-anchor="middle" class="t b">1</text><text x="26" y="88" class="t b">Reproduzir</text><text x="26" y="116" class="t s">no Chrome, com</text><text x="26" y="136" class="t s">os logs abertos</text>
+<line x1="172" y1="80" x2="189" y2="80" class="arrow"/>
+<rect x="193" y="10" width="160" height="140" rx="12" class="box danger"/><circle cx="223" cy="42" r="16" class="box accent"/><text x="223" y="47" text-anchor="middle" class="t b">2</text><text x="209" y="88" class="t b">Teste vermelho</text><text x="209" y="116" class="t s">falha por causa</text><text x="209" y="136" class="t s">do bug</text>
+<line x1="355" y1="80" x2="372" y2="80" class="arrow"/>
+<rect x="376" y="10" width="160" height="140" rx="12" class="box"/><circle cx="406" cy="42" r="16" class="box accent"/><text x="406" y="47" text-anchor="middle" class="t b">3</text><text x="392" y="88" class="t b">Corrigir</text><text x="392" y="116" class="t s">uma ou duas</text><text x="392" y="136" class="t s">linhas</text>
+<line x1="538" y1="80" x2="555" y2="80" class="arrow"/>
+<rect x="559" y="10" width="160" height="140" rx="12" class="box ok"/><circle cx="589" cy="42" r="16" class="box accent"/><text x="589" y="47" text-anchor="middle" class="t b">4</text><text x="575" y="88" class="t b">Verde</text><text x="575" y="116" class="t s">o teste novo e</text><text x="575" y="136" class="t s">todos os outros</text>
+<line x1="721" y1="80" x2="738" y2="80" class="arrow"/>
+<rect x="742" y="10" width="148" height="140" rx="12" class="box"/><circle cx="772" cy="42" r="16" class="box accent"/><text x="772" y="47" text-anchor="middle" class="t b">5</text><text x="758" y="88" class="t b">Pull request</text><text x="758" y="116" class="t s">com o teste</text><text x="758" y="136" class="t s">e a correção</text>
+</svg>
+  <figcaption>Um teste que nunca esteve vermelho não prova nada: podia passar com o bug lá dentro.</figcaption>
+  </figure>
+  <p class="pergunta">Corrigiram o bug e só depois escreveram o teste. Passou à primeira. Que garantia têm de que ele apanha o bug?</p>
+  <aside class="notes">Resposta: nenhuma. Pode estar a testar outra coisa, ou o mesmo caminho que já funcionava. Por isso a ordem: vê-lo falhar com o bug, corrigir, vê-lo passar. A partir daí o teste fica no repositório para sempre: se alguém voltar a partir a mesma coisa daqui a um ano, o CI fica vermelho antes de chegar às pessoas. Chama-se teste de regressão. Cada ficheiro de teste já tem um teste vizinho do bug; o mais rápido é copiar esse e mudar o caso. Se o teste novo não falhar com o bug, não está a testar o bug: voltem ao log e ao issue.</aside>
+</section>
+
+<section class="slide">
+  <h2>Integração contínua: o CI</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 190" role="img" aria-label="O caminho de uma correção: o pull request faz correr o analyze e os testes no GitHub Actions; se ficar verde, o docente faz merge; o merge faz correr outra vez os testes, constrói a app web e publica-a; a página no telemóvel passa a ter a correção.">
+<rect x="10" y="20" width="150" height="70" rx="12" class="box"/><text x="85" y="62" text-anchor="middle" class="t b">Pull request</text>
+<line x1="162" y1="55" x2="189" y2="55" class="arrow"/>
+<rect x="193" y="20" width="210" height="70" rx="12" class="box accent"/><text x="298" y="50" text-anchor="middle" class="t b">GitHub Actions</text><text x="298" y="74" text-anchor="middle" class="t s">analyze e test</text>
+<line x1="405" y1="55" x2="432" y2="55" class="arrow"/>
+<rect x="436" y="20" width="130" height="70" rx="12" class="box ok"/><text x="501" y="62" text-anchor="middle" class="t b">Verde</text>
+<line x1="568" y1="55" x2="595" y2="55" class="arrow"/>
+<rect x="599" y="20" width="130" height="70" rx="12" class="box"/><text x="664" y="62" text-anchor="middle" class="t b">Merge</text>
+<line x1="664" y1="92" x2="664" y2="115" class="arrow"/>
+<rect x="436" y="120" width="293" height="60" rx="12" class="box accent"/><text x="582" y="146" text-anchor="middle" class="t b">Testes, build web, publicar</text><text x="582" y="168" text-anchor="middle" class="t s">uns três minutos</text>
+<line x1="434" y1="150" x2="407" y2="150" class="arrow"/>
+<rect x="193" y="120" width="210" height="60" rx="12" class="box ok"/><text x="298" y="146" text-anchor="middle" class="t b">O vosso telemóvel</text><text x="298" y="168" text-anchor="middle" class="t s">recarregam e já está</text>
+</svg>
+  <figcaption>Vermelho não entra. O <code>main</code> fica sempre verde, por isso o que está publicado passou nos testes.</figcaption>
+  </figure>
   <ul>
-    <li>CI: um servidor corre <code>flutter analyze</code> e <code>flutter test</code> em cada push e em cada PR. Se falha, o PR fica vermelho e não pode entrar em <code>main</code>.</li>
-    <li>O <strong>badge verde</strong> no README é a definição de pronto tornada visível: "corre no telemóvel, sem avisos, PR revisto" passa a incluir "CI verde".</li>
-    <li><strong>GitHub Actions</strong> é grátis para repos públicos e para os do Classroom; usa <code>subosito/flutter-action</code> para instalar o Flutter no runner.</li>
-    <li>Builds de iOS precisam de macOS: no Actions, <code>runs-on: macos-latest</code> custa 10 vezes mais minutos. Alternativas feitas para mobile: <strong>Codemagic</strong> e Bitrise, com máquinas Mac, assinatura e upload às lojas incluídos.</li>
-    <li>Regra: o CI corre o que corres localmente. Se o <code>flutter analyze</code> avisa no teu portátil, avisa no CI.</li>
+    <li><strong>Mundo real:</strong> GitHub Actions, Codemagic e Bitrise para Flutter; para iPhone o CI precisa de um Mac.</li>
   </ul>
-  <p><strong>Para os testes:</strong> CI corre analyze e test em cada PR; builds iOS exigem um runner macOS, que o GitHub cobra mais caro e o Codemagic inclui.</p>
-  <aside class="notes">Mostra um PR real teu com checks vermelhos e depois verdes. Dúvida frequente: "e o CI compila a app?" Só se pedires (flutter build apk), e isso demora 5 a 8 minutos; na aula fazemos só analyze e test.</aside>
+  <p class="pergunta">São 17:55, a review é às 18:00 e o CI do vosso PR está vermelho. Fazem merge?</p>
+  <aside class="notes">O ficheiro é .github/workflows/ci.yml, tem duas partes. A primeira, test, corre em cada pull request e em cada push para o main: instala o Flutter, flutter pub get, flutter analyze, flutter test. A segunda, deploy, só corre depois de um merge e só se a primeira passou: flutter build web com o clientId da app desta aula e a versão igual ao commit, e publica no GitHub Pages. A versão publicada é o commit: nos logs, a coluna version muda quando a correção chega. Os segredos (clientId e clientSecret) estão nas definições do repositório, não no código. Mostra no GitHub um PR com o visto verde e um com a cruz vermelha, e o separador Actions com o log de um teste a falhar. Resposta à pergunta: não. Um merge vermelho parte o main de todos os colegas, e na review o que conta é o que funciona. Melhor apresentar menos e verde. Nos projetos, o CI entra na sprint 3: é este ficheiro, só com a parte test.</aside>
+</section>
+
+<section class="slide">
+  <h2>Uma linha de log que ajuda</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Campo</th><th>Exemplo</th><th>Quem põe</th></tr></thead>
+  <tbody>
+  <tr><td>level, message</td><td><code>error</code>, Null check operator used on a null value</td><td>A app</td></tr>
+  <tr><td>where, stack</td><td>o widget e a linha onde rebentou</td><td>A app</td></tr>
+  <tr><td>island, run</td><td><code>corvo</code>; o mesmo run nas linhas de um telemóvel</td><td>A app</td></tr>
+  <tr><td>version</td><td><code>a1b2c3d</code>, o commit publicado</td><td>O CI</td></tr>
+  <tr><td>user_name, client_id</td><td>Ana, a app desta aula</td><td>A API</td></tr>
+  </tbody></table></div>
+  <p><strong>Nunca no log:</strong> passwords, tokens, a posição exata, o que a pessoa escreveu.</p>
+  <p class="pergunta">Um log diz só "Erro!". O que falta para o conseguirem corrigir?</p>
+  <aside class="notes">Resposta: falta tudo. Que erro, em que ecrã, com que dados, a quem, em que versão. Com as linhas da tabela sabem que foi no ecrã da previsão, na ilha do Corvo, numa versão concreta; o run junta as linhas do mesmo telemóvel, por ordem. Mundo real: o Crashlytics e o Sentry juntam as linhas iguais num só problema e dizem quantas pessoas apanharam; o Datadog e o OpenObserve guardam linhas soltas e deixam pesquisar. O nosso é o OpenObserve, instalado num servidor nosso: paga-se só o servidor. O log do "Onde estou?" diz a ilha e os quilómetros, não onde a pessoa está. A privacidade é lei: o RGPD conta um email ou uma posição num log como dado pessoal. O nome aparece hoje porque é uma aula e vocês escolheram-no; numa app a sério seria um id.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde a magia acontece: nenhum erro escapa</h2>
+<pre><code class="language-dart">FlutterError.onError = (details) {
+  FlutterError.presentError(details); // still red in the console
+  log.error(details.exception, details.stack, {
+    'where': details.context?.toDescription() ?? details.library,
+  });
+};</code></pre>
+  <p><strong>A ideia:</strong> Um widget rebenta: o erro vai para a consola e para o log.</p>
+  <aside class="notes">Está no lib/main.dart, que faz o mesmo para os erros dos futures que ninguém apanhou (platformDispatcher.onError). Em debug, um widget que rebenta fica vermelho com o erro; em release (a app publicada) fica cinzento, sem mensagem: a pessoa vê um ecrã vazio e não sabe porquê. Sem esta função, ninguém da equipa sabia. O log está em lib/telemetry/app_log.dart: junta as linhas, manda de cinco em cinco segundos e, sem rede, guarda-as até haver. A app nunca fala com o OpenObserve: manda para a API do curso (POST /v1/logs), que junta o nome e a app e passa ao OpenObserve. Assim a password do servidor de logs nunca vai para dentro da app, onde qualquer pessoa a podia ler. É o que o Crashlytics e o Sentry fazem por dentro, com mais cuidado.</aside>
+</section>
+
+<section class="slide">
+  <h2>Os logs ao vivo</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 140" role="img" aria-label="O caminho de uma linha de log: a app no telemóvel manda para a API do curso, que junta quem mandou e passa ao OpenObserve, que o docente tem no projetor.">
+<rect x="10" y="20" width="240" height="100" rx="12" class="box"/><text x="130" y="62" text-anchor="middle" class="t b">A app</text><text x="130" y="90" text-anchor="middle" class="t s">log.info, log.error</text>
+<line x1="252" y1="70" x2="321" y2="70" class="arrow"/>
+<rect x="325" y="20" width="240" height="100" rx="12" class="box accent"/><text x="445" y="62" text-anchor="middle" class="t b">API do curso</text><text x="445" y="90" text-anchor="middle" class="t s">junta o nome e a app</text>
+<line x1="567" y1="70" x2="636" y2="70" class="arrow"/>
+<rect x="640" y="20" width="250" height="100" rx="12" class="box warn"/><text x="765" y="62" text-anchor="middle" class="t b">OpenObserve</text><text x="765" y="90" text-anchor="middle" class="t s">no projetor</text>
+</svg>
+  </figure>
+  <ul>
+    <li>Procurem as vossas linhas pelo nome: o que fizeram, em que ilha e em que versão.</li>
+    <li>Em cada bug, o log é a primeira pista: o que a app fez, e o que devia ter feito a seguir.</li>
+  </ul>
+  <p class="pergunta">Abram o Corvo no telemóvel. Que linhas aparecem no projetor, e qual delas diz a ilha?</p>
+  <aside class="notes">No OpenObserve: Logs, stream apps, últimos 15 minutos, ordem mais recente primeiro. Mostra a coluna user_name, message, level, island, version. Para filtrar só os erros: level = 'error'. Para uma pessoa: user_name = 'Ana'. As linhas que não são erros dizem o que a app fez: islands loaded, favorite saved, theme saved. Resposta: a linha info "forecast opened" com island corvo e, logo a seguir, com o mesmo run, a linha error "Null check operator used on a null value". Nesta, o where diz "building Widget", o error_type "minified:BG" e a stack aponta para main.dart.js: a versão publicada tem os nomes encolhidos (minificada) para ser mais pequena. É por isso que a pista é a linha anterior. No Chrome do PC, com flutter run, o where diz ForecastScreen e a stack diz forecast_screen.dart e a linha. O Sentry e o Crashlytics resolvem isto guardando o mapa dos nomes de cada versão (source maps, --split-debug-info) e traduzindo a stack. Mostra também a linha "app started" com o tema: vai servir a quem pegar no bug do tema. Deixa o projetor nos logs durante toda a caça.</aside>
 </section>
 
 <section class="slide" data-part="Prática">
-  <h2>Prática: testes e CI no Tempo Açores</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-25.git
-cd pdm-aula-25/starter
-flutter pub get
-flutter run</code></pre>
-  <p>O <code>starter/</code> tem a app da aula 14 (estados de UI com <code>sealed class</code>) com TODOs numerados e uma pasta <code>test/</code> com testes a falhar. O <code>solucao/</code> tem o estado final, incluindo o workflow do Actions. Corre <code>flutter test</code> agora e conta os vermelhos: são os teus objetivos.</p>
-  <p>Quatro blocos: teste unitário do modelo, teste do notifier com fake e com mock, teste de widget, e CI.</p>
-  <div class="callout task"><strong>Antes de começar</strong> Confirma no <code>pubspec.yaml</code> que <code>mocktail</code> está em <code>dev_dependencies</code>. Se não, <code>flutter pub add dev:mocktail</code>.</div>
-</section>
-
-<section class="slide">
-  <h2>1. Teste unitário do modelo</h2>
-<pre data-title="test/models/previsao_test.dart"><code class="language-dart">import 'dart:convert';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:tempo_acores/models/previsao.dart';
-
-const amostra = '''
-{"locationId": "3420300", "forecastDate": "2026-11-16",
- "tMin": 14.2, "tMax": 19.8, "weatherType": "rain", "precipProb": 65}
-''';
-
-void main() {
-  group('Previsao.fromJson', () {
-    test('lê os campos do JSON v1 da API', () {
-      final p = Previsao.fromJson(jsonDecode(amostra) as Map&lt;String, dynamic&gt;);
-      expect(p.localidadeId, '3420300');
-      expect(p.dia, DateTime(2026, 11, 16));
-      expect(p.tipo, TipoTempo.chuva);
-    });
-
-    test('calcula a amplitude térmica', () {
-      final p = Previsao.fromJson(jsonDecode(amostra) as Map&lt;String, dynamic&gt;);
-      expect(p.amplitude, closeTo(5.6, 0.001));
-    });
-  });
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. Teste unitário: o que interessa</h2>
-  <ul>
-    <li>Um ficheiro em <code>test/</code> que termina em <code>_test.dart</code>, com um <code>main()</code>. <code>flutter test</code> encontra-os todos; <code>flutter test test/models</code> corre só uma pasta.</li>
-    <li><code>group</code> agrupa, <code>test</code> é um caso, <code>expect(valor, matcher)</code> verifica. Matchers úteis: <code>equals</code>, <code>isA&lt;T&gt;()</code>, <code>closeTo</code>, <code>isNull</code>, <code>throwsA</code>, <code>contains</code>.</li>
-    <li>Nunca compares <code>double</code> com <code>==</code>: <code>19.8 - 14.2</code> não é exatamente <code>5.6</code>. Usa <code>closeTo</code>.</li>
-    <li>Um teste, uma razão para falhar. Se o nome do teste tem "e", provavelmente são dois.</li>
-    <li>O JSON de teste vem da API real: copia uma resposta do Swagger para uma constante, não inventes campos.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1</strong> Faz passar os dois testes acima e escreve o terceiro: sem <code>tMax</code> no mapa, <code>Previsao.fromJson</code> lança <code>FormatException</code> com uma mensagem útil (<code>expect(() => Previsao.fromJson(semTMax), throwsA(isA&lt;FormatException&gt;()))</code>; TODO 1 no modelo). Depois um quarto: <code>weatherType</code> desconhecido cai em <code>TipoTempo.desconhecido</code>, sem lançar.</div>
-  <aside class="notes">Dá 15 minutos. A dúvida do costume é o cast do jsonDecode: explica que devolve dynamic e que o "as Map&lt;String, dynamic&gt;" é obrigatório. Quem terminar cedo escreve o teste do Localidade.fromJson.</aside>
-</section>
-
-<section class="slide">
-  <h2>2. Teste do notifier com um fake (1 de 2)</h2>
-<pre data-title="test/state/previsao_notifier_test.dart"><code class="language-dart">import 'package:flutter_test/flutter_test.dart';
-import 'package:tempo_acores/data/previsao_repository.dart';
-import 'package:tempo_acores/models/previsao.dart';
-import 'package:tempo_acores/state/previsao_notifier.dart';
-
-class FakePrevisaoRepository implements PrevisaoRepository {
-  FakePrevisaoRepository({this.resposta = const [], this.erro});
-  final List&lt;Previsao&gt; resposta;
-  final Object? erro;
-
-  @override
-  Future&lt;List&lt;Previsao&gt;&gt; previsao(String localidadeId) async {
-    if (erro != null) throw erro!;
-    return resposta;
-  }
-}
-
-final previsaoTeste = Previsao(
-  localidadeId: '3420300', dia: DateTime(2026, 11, 16),
-  tMin: 14.2, tMax: 19.8, tipo: TipoTempo.chuva,
-);</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. Teste do notifier com um fake (2 de 2)</h2>
-<pre data-title="test/state/previsao_notifier_test.dart (continuação)"><code class="language-dart">void main() {
-  test('loading → dados quando o repository responde', () async {
-    final notifier = PrevisaoNotifier(FakePrevisaoRepository(resposta: [previsaoTeste]));
-    final estados = &lt;PrevisaoEstado&gt;[];
-    notifier.addListener(() => estados.add(notifier.estado));
-
-    await notifier.carregar('3420300');
-
-    expect(estados.first, isA&lt;Loading&gt;());
-    expect(estados.last, isA&lt;Dados&gt;());
-    expect((estados.last as Dados).lista, hasLength(1));
-  });
-
-  test('loading → vazio quando a lista vem vazia', () async {
-    final notifier = PrevisaoNotifier(FakePrevisaoRepository());
-    await notifier.carregar('3420300');
-    expect(notifier.estado, isA&lt;Vazio&gt;());
-  });
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. O mesmo com mocktail: loading → erro</h2>
-<pre data-title="test/state/previsao_notifier_mock_test.dart"><code class="language-dart">import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:tempo_acores/data/api_exception.dart';
-import 'package:tempo_acores/data/previsao_repository.dart';
-import 'package:tempo_acores/state/previsao_notifier.dart';
-
-class MockPrevisaoRepository extends Mock implements PrevisaoRepository {}
-
-void main() {
-  late MockPrevisaoRepository repo;
-  late PrevisaoNotifier notifier;
-
-  setUp(() {
-    repo = MockPrevisaoRepository();
-    notifier = PrevisaoNotifier(repo);
-  });
-
-  test('loading → erro quando a API falha', () async {
-    when(() => repo.previsao(any()))
-        .thenAnswer((_) async => throw ApiException('Sem ligação', podeRepetir: true));
-    await notifier.carregar('3420300');
-    expect(notifier.estado, isA&lt;Erro&gt;().having((e) => e.mensagem, 'mensagem', 'Sem ligação'));
-    verify(() => repo.previsao('3420300')).called(1);
-  });
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>2. Notifier: o que interessa</h2>
-  <ul>
-    <li>O teste não sabe de HTTP, de JSON nem de Flutter. Só existe porque o notifier recebe o repository pelo construtor.</li>
-    <li>Registar os estados com <code>addListener</code> deixa-te afirmar a <strong>sequência</strong> (primeiro <code>Loading</code>, depois <code>Dados</code>), não só o fim.</li>
-    <li><code>when(...).thenAnswer((_) async => ...)</code> para métodos assíncronos; <code>thenThrow</code> lança de forma síncrona e pode fugir ao teu <code>try</code>. <code>any()</code> aceita qualquer argumento.</li>
-    <li><code>verify(...).called(1)</code> apanha o notifier a chamar a API duas vezes por engano. <code>verifyNever</code> apanha o contrário.</li>
-    <li>Fake para cenários simples e legíveis; mock quando queres verificar chamadas ou variar respostas dentro do mesmo teste.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> TODO 2: faz passar os três testes. Depois escreve o quarto: <code>carregar</code> chamado duas vezes seguidas não deixa o estado em <code>Loading</code> no fim. Dica: <code>verify(...).called(2)</code> e <code>expect(notifier.estado, isNot(isA&lt;Loading&gt;()))</code>.</div>
-  <aside class="notes">15 minutos. Onde encravam: esquecer o "late" com setUp, e o registerFallbackValue quando o argumento não é um tipo primitivo (aqui é String, por isso não é preciso; diz-lhes que vão precisar quando passarem um objeto Localidade).</aside>
-</section>
-
-<section class="slide">
-  <h2>3. Teste de widget (1 de 2)</h2>
-<pre data-title="test/ui/previsao_screen_test.dart"><code class="language-dart">import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:provider/provider.dart';
-import 'package:tempo_acores/state/previsao_notifier.dart';
-import 'package:tempo_acores/ui/previsao_screen.dart';
-import 'package:tempo_acores/ui/widgets/previsao_card.dart';
-import '../helpers.dart'; // MockPrevisaoRepository, previsaoTeste, ApiException
-
-Widget appDeTeste(MockPrevisaoRepository repo) => ChangeNotifierProvider(
-      create: (_) => PrevisaoNotifier(repo)..carregar('3420300'),
-      child: const MaterialApp(home: PrevisaoScreen(localidadeId: '3420300')),
-    );
-
-void main() {
-  testWidgets('mostra a mensagem de erro e o botão Tentar de novo', (tester) async {
-    final repo = MockPrevisaoRepository();
-    when(() => repo.previsao(any()))
-        .thenAnswer((_) async => throw ApiException('Sem ligação', podeRepetir: true));
-    await tester.pumpWidget(appDeTeste(repo));
-    await tester.pumpAndSettle();
-    expect(find.text('Sem ligação'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Tentar de novo'), findsOneWidget);
-  });
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>3. Teste de widget (2 de 2): o tap</h2>
-<pre data-title="test/ui/previsao_screen_test.dart (continuação)"><code class="language-dart">  testWidgets('Tentar de novo volta a carregar e mostra a lista', (tester) async {
-    final repo = MockPrevisaoRepository();
-    when(() => repo.previsao(any()))
-        .thenAnswer((_) async => throw ApiException('Sem ligação', podeRepetir: true));
-    await tester.pumpWidget(appDeTeste(repo));
-    await tester.pumpAndSettle();
-
-    // A partir daqui a API "recupera"
-    when(() => repo.previsao(any())).thenAnswer((_) async => [previsaoTeste]);
-
-    await tester.tap(find.text('Tentar de novo'));
-    await tester.pumpAndSettle();              // até não haver mais frames agendados
-
-    expect(find.text('Sem ligação'), findsNothing);
-    expect(find.byType(PrevisaoCard), findsOneWidget);
-    verify(() => repo.previsao('3420300')).called(2);
-  });</code></pre>
-</section>
-
-<section class="slide">
-  <h2>3. Teste de widget: o que interessa</h2>
-  <ul>
-    <li><code>pumpWidget</code> monta a árvore; precisa de um <code>MaterialApp</code> à volta, senão não há tema, direção de texto nem <code>Navigator</code>.</li>
-    <li>O <code>Provider</code> entra no teste como na app: o ecrã não sabe que o repository é um mock.</li>
-    <li><code>pump()</code> avança um frame; <code>pumpAndSettle()</code> avança até a árvore estabilizar. Se o ecrã tem uma animação infinita (o spinner) e o estado nunca muda, <code>pumpAndSettle</code> falha por timeout: usa <code>pump(const Duration(seconds: 1))</code>.</li>
-    <li><code>find.text</code>, <code>find.byType</code>, <code>find.byKey</code>, <code>find.widgetWithText</code>. Para elementos repetidos, dá-lhes uma <code>Key</code>.</li>
-    <li>Para testar o estado <code>Loading</code>, faz o mock devolver um <code>Completer&lt;List&lt;Previsao&gt;&gt;().future</code> que nunca completas, dá um <code>pump()</code> e procura o <code>CircularProgressIndicator</code>. Se deixasses o mock responder logo, o loading passava entre dois frames e não o apanhavas.</li>
-    <li>O mock e o <code>previsaoTeste</code> vivem em <code>test/helpers.dart</code>, partilhados por todos os testes. Um teste de widget corre no portátil, sem emulador, em décimos de segundo.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 3</strong> TODO 3: faz passar os dois testes. Depois escreve o do estado <code>Vazio</code>: com lista vazia aparece "Sem previsões para esta localidade" e não aparece nenhum <code>PrevisaoCard</code>.</div>
-  <aside class="notes">20 minutos. O erro mais comum é "A RenderFlex overflowed" no teste: o ecrã de teste tem 800x600 por defeito; diz-lhes para usar tester.view.physicalSize se precisarem de um telemóvel. O segundo é esquecer o await antes de pumpAndSettle.</aside>
-</section>
-
-<section class="slide">
-  <h2>4. GitHub Actions: o workflow</h2>
-<pre data-title=".github/workflows/ci.yml"><code class="language-yaml">name: CI
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  verificar:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - run: flutter --version
-      - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib test
-      - run: flutter analyze --fatal-infos
-      - run: flutter test --reporter expanded</code></pre>
-</section>
-
-<section class="slide">
-  <h2>4. CI: proteger o <code>main</code> e mostrar o badge</h2>
-  <ol class="steps">
-    <li><strong>Commit do workflow</strong> num branch, abre o PR. No separador Checks vês o job <code>verificar</code> a correr; a primeira execução demora 3 a 4 minutos (depois a cache acelera).</li>
-    <li><strong>Settings → Branches → Add branch ruleset</strong> para <code>main</code>: liga "Require a pull request before merging" e "Require status checks to pass", e escolhe o check <code>verificar</code>. A partir daqui um PR vermelho não tem botão de merge.</li>
-    <li><strong>Badge no README:</strong>
-<pre><code class="language-bash">![CI](https://github.com/pdm-daw-2026/tempo-acores-grupo-01/actions/workflows/ci.yml/badge.svg)</code></pre>
-      Substitui pelo nome do vosso repo. Verde no README é a definição de pronto visível a quem passa.</li>
-    <li><strong>Parte-o de propósito:</strong> comenta uma linha do <code>fromJson</code>, faz push, vê o PR ficar vermelho, repõe. Agora sabes o que o CI faz por ti.</li>
-  </ol>
-  <div class="callout task"><strong>Exercício 4</strong> TODO 4: cria o workflow no vosso repositório do projeto (não no da aula), protege o <code>main</code> e põe o badge no README. Um membro do grupo abre um PR de teste e outro confirma que o merge fica bloqueado com o CI vermelho.</div>
-  <aside class="notes">A cache do subosito guarda o SDK; a primeira execução sem cache demora mais. Se o Classroom criou repos privados na organização, os minutos do Actions são gratuitos na mesma para organizações educativas; confirma antes da aula. Alguns alunos não têm permissão para mexer em Settings do repo do grupo: o dono do repo tem de o fazer.</aside>
-</section>
-
-<section class="slide">
-  <h2>Exercício final: um teste por estado</h2>
-  <p>A app do projeto tem quatro estados em cada ecrã (aula 14). Cada estado merece um teste de widget que prova que a UI faz o que o design diz.</p>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Estado</th><th>O teste afirma</th></tr></thead>
+  <h2>A caça</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Issue</th><th>Pista no log</th><th>Teste vizinho</th></tr></thead>
   <tbody>
-  <tr><td><code>Loading</code></td><td>Existe um <code>CircularProgressIndicator</code> ou skeleton e não existe lista</td></tr>
-  <tr><td><code>Erro</code></td><td>Aparece a mensagem humana e o botão "Tentar de novo"; o tap chama o repository outra vez</td></tr>
-  <tr><td><code>Vazio</code></td><td>Aparece o texto de vazio com a ação sugerida</td></tr>
-  <tr><td><code>Dados</code></td><td>Aparecem tantos cartões quantas previsões; o primeiro tem a temperatura certa</td></tr>
+  <tr><td>Corvo</td><td>A linha vermelha e a anterior</td><td><code>forecast_screen_test.dart</code></td></tr>
+  <tr><td>Mínima e máxima</td><td>Compara com o JSON da API em /docs</td><td><code>forecast_test.dart</code></td></tr>
+  <tr><td>Tentar de novo</td><td>Depois do toque, que linha devia vir?</td><td><code>islands_screen_test.dart</code></td></tr>
+  <tr><td>Coração</td><td>Ficou guardado ou não?</td><td><code>favorites_notifier_test.dart</code></td></tr>
+  <tr><td>Onde estou</td><td>A ilha e os quilómetros</td><td><code>nearest_test.dart</code></td></tr>
+  <tr><td>Tema</td><td>O que se gravou e o que se leu ao abrir</td><td><code>settings_test.dart</code></td></tr>
   </tbody></table></div>
-  <div class="callout task"><strong>Exercício 5</strong> No repositório do projeto: um teste de widget por estado para o ecrã de previsão, mais o teste do <code>fromJson</code> de cada modelo. Com o CI a correr, é isto que dá o "CI verde com pelo menos cinco testes" pedido para quarta.</div>
+  <p>Aos pares, um issue de cada vez, dito no issue. Os passos estão no README do <a href="https://github.com/Tiago-Rocha/pdm-aula-25" target="_blank" rel="noopener">pdm-aula-25</a>.</p>
+  <aside class="notes">Tempo: até às 17:50. Quem fechar um issue pega no seguinte ou ajuda outro par. Os testes vizinhos estão em test/screens, test/models, test/state e test/location. Pares, para cinco ou seis pares haver um issue para cada. Quem chega primeiro ao issue fica com ele; se dois pares quiserem o mesmo, o segundo escolhe outro. Do mais fácil para o mais difícil: mínima e máxima, onde estou, tema, Corvo, coração, tentar de novo. Precisam de fork do repositório, de correr flutter test (verde no início: os testes que existem não olham para os bugs) e de flutter run no Chrome com o clientId do grupo; criam conta nessa app também. O pull request vai do fork deles para o teu repositório, com "Fixes #N" na descrição: quando fazes merge, o issue fecha sozinho e fica o nome deles. O CI do primeiro PR de cada pessoa pode pedir aprovação (Approve and run): aprova. Revês o diff no GitHub antes do merge: o teste novo tem de falhar sem a correção, senão pede-o. Depois do merge, o deploy demora uns três minutos: diz-lhes para recarregarem a página no telemóvel e verem a version nova no log. Pistas se encalharem: Corvo, o mapa _nicknames em forecast_screen.dart; mínima e máxima, o fromJson em models/forecast.dart; tentar de novo, o onPressed em islands_screen.dart, um teste que toca e verifica o islandCalls; coração, o toggle em favorites_notifier.dart, um teste com addListener que conta; onde estou, o nearestIsland, com positionAt(37.74, -25.67); tema, as chaves em settings.dart. As soluções estão no branch local solucao.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -406,26 +272,22 @@ jobs:
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>CI verde no repositório do projeto com pelo menos cinco testes: os <code>fromJson</code> dos modelos e um teste por estado de UI.</li>
-        <li><code>main</code> protegido: PR obrigatório e check <code>verificar</code> obrigatório. Badge no README.</li>
-        <li>Quarta é a review da sprint 2: demo de 5 minutos preparada, com o CI verde como parte do que mostram.</li>
+        <li>A sprint 2 fecha na quarta, 18/11, ao meio-dia, no <code>main</code>, e na review a app corre em Android (telemóvel ou emulador).</li>
+        <li>Na sprint 3 o projeto tem CI: o <code>ci.yml</code> desta aula, só com a parte dos testes, e um teste por cada bug que corrigirem.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/testing/overview" target="_blank" rel="noopener">Testing Flutter apps</a>: unitários, widget e integração, com exemplos.</li>
-        <li><a href="https://docs.flutter.dev/cookbook/testing/widget/introduction" target="_blank" rel="noopener">An introduction to widget testing</a>: <code>pumpWidget</code>, finders, <code>tap</code> e <code>pumpAndSettle</code> passo a passo.</li>
-        <li><a href="https://pub.dev/packages/mocktail" target="_blank" rel="noopener">mocktail</a>: <code>when</code>, <code>verify</code>, <code>registerFallbackValue</code>.</li>
-        <li><a href="https://github.com/subosito/flutter-action" target="_blank" rel="noopener">subosito/flutter-action</a>: a ação que instala o Flutter no runner do GitHub Actions, com cache do SDK.</li>
+        <li><a href="https://docs.flutter.dev/testing/overview" target="_blank" rel="noopener">Testing Flutter apps</a>: unitários, de widget e de integração.</li>
+        <li><a href="https://docs.flutter.dev/testing/errors" target="_blank" rel="noopener">Handling errors in Flutter</a>: FlutterError.onError e os erros que ninguém apanhou.</li>
       </ul>
     </div>
   </div>
+  <aside class="notes">Antes de fechar: abre o repositório e conta os issues fechados, com os nomes. Mostra no log a version a mudar, e que o Corvo já não dá erro na versão nova. O que fica por fechar fica aberto: quem quiser acaba em casa e o PR continua a contar como treino. Na quarta é a review: o CI no projeto é da sprint 3, não da 2. Quem quiser mais: An introduction to widget testing (docs.flutter.dev/cookbook/testing/widget/introduction), o subosito/flutter-action no GitHub (o passo que instala o Flutter no CI) e a documentação do Sentry para Flutter, que é o que estas linhas de log seriam numa app com milhares de pessoas.</aside>
   <nav class="pager" id="pager"></nav>
 </section>
-
 </div>
-
 <footer class="site"><div class="wrap">PDM · CTeSP DAW · ESTA, Universidade dos Açores · 2026/27</div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
