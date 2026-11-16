@@ -37,7 +37,7 @@
     <li>Dizer o que ainda falta no <code>main</code> do vosso projeto para a review de quarta, e quem faz o quê.</li>
     <li>Distinguir um log de um evento de analytics, e ler numa linha de erro onde, a quem e em que versão aconteceu.</li>
     <li>Escrever um teste em três partes com um repositório falso, e vê-lo falhar antes de corrigir.</li>
-    <li>Ler o que o CI diz de um pull request e decidir se pode entrar no <code>main</code>.</li>
+    <li>Corrigir um bug num pull request, ler o que o CI diz e rever o PR de um colega.</li>
   </ul>
   <aside class="notes">O que dizer: a primeira parte é do projeto, porque a review é já na quarta. Na segunda parte não há matéria nova de Flutter: é a forma como as equipas trabalham numa app que já está nas mãos das pessoas: alguém se queixa, a equipa encontra, prova, corrige e publica sem partir outra coisa. Tudo o que fizerem hoje serve para a sprint 3 do projeto, onde o CI passa a ser obrigatório.</aside>
 </section>
@@ -70,8 +70,7 @@
   <tr><td>Quem lê</td><td>Quem programa, quando algo falha</td><td>Quem decide o produto: que ecrãs se usam, onde desistem</td></tr>
   <tr><td>No mercado</td><td>Sentry, Crashlytics, Datadog</td><td>PostHog, Firebase Analytics, Mixpanel</td></tr>
   </tbody></table></div>
-  <p class="pergunta">Alguém abre a previsão de uma ilha e a app rebenta. Isto é log ou analytics?</p>
-  <aside class="notes">Às 16:40, antes de pegarem na app. Dois minutos. As duas coisas viajam pelo mesmo cano: a app junta as linhas, manda-as em lotes para a API do curso e a API passa-as ao OpenObserve, na mesma stream apps. O que as separa é o campo kind: log ou event. Não precisam de dois servidores para ter as duas coisas; precisam de as distinguir no código, para no fim não terem um monte de linhas onde o erro se perde entre os toques. Os eventos têm um nome por ação, no passado, em snake_case, sempre igual: é com ele que se conta. As apps grandes usam ferramentas diferentes para cada lado: o Spotify ou a Revolut medem com analytics o que as pessoas fazem e apanham os crashes com o Crashlytics ou o Sentry. Resposta: as duas. Abrir a previsão é um evento de analytics (forecast_opened, com a ilha). O rebentar é um erro, uma linha de log. E a linha do erro leva o last_event: o que a pessoa tinha acabado de fazer.</aside>
+  <aside class="notes">Às 16:40, logo a seguir ao projeto. Dois minutos. As duas coisas viajam pelo mesmo cano: a app junta as linhas, manda-as em lotes para a API do curso e a API passa-as ao OpenObserve, na mesma stream apps. O que as separa é o campo kind: log ou event. Não precisam de dois servidores para ter as duas coisas; precisam de as distinguir no código, para no fim não terem um monte de linhas onde o erro se perde entre os toques. Os eventos têm um nome por ação, no passado, em snake_case, sempre igual: é com ele que se conta. As apps grandes usam ferramentas diferentes para cada lado: o Spotify ou a Revolut medem com analytics o que as pessoas fazem e apanham os crashes com o Crashlytics ou o Sentry. Um exemplo com as duas: alguém abre a previsão de uma ilha e a app rebenta. Abrir a previsão é um evento de analytics (forecast_opened, com a ilha); o rebentar é um erro, uma linha de log. E a linha do erro leva o last_event: o que a pessoa tinha acabado de fazer.</aside>
 </section>
 
 <section class="slide">
@@ -86,7 +85,7 @@
   <tr><td><code>name</code></td><td><code>Grupo: Leandro e Martim</code></td><td>a API, pelo token</td></tr>
   </tbody></table></div>
   <p><strong>A ideia:</strong> Uma linha, no <code>initState</code> do ecrã da previsão. O resto junta-se pelo caminho, e é com isso que no OpenObserve se conta e filtra.</p>
-  <aside class="notes">Está em lib/screens/forecast_screen.dart: o initState corre uma vez, quando o ecrã abre, e é aí que se diz "abriram a previsão desta ilha". O nome vai no passado e em snake_case, sempre igual: é com ele que se conta. Como funciona por dentro (lib/telemetry/analytics.dart e telemetry.dart), para quem perguntar. Além destes campos, cada linha leva version (o commit do deploy), platform e run (um por arranque): o analytics.event põe a linha na mesma fila dos logs, com kind event; a fila junta a versão, a plataforma e o run e vai para a API em lotes de cinco em cinco segundos; sem rede, guarda. A API acrescenta quem mandou e passa ao OpenObserve. O analytics também guarda o último evento como texto (forecast_opened island=corvo): se a seguir houver um erro, a linha do erro leva last_event. É o que o Sentry chama breadcrumb, o rasto de migalhas. O log.info('islands loaded', {'count': islands.length}) faz o mesmo com kind log. Pergunta à turma: o "Tentar de novo" sem rede é um evento ou um log? O aviso "islands failed" é log (warn: algo correu mal e a app aguentou); o toque no botão seria um evento, e não existe: fica como ideia para quem acabar.</aside>
+  <aside class="notes">Está em lib/screens/forecast_screen.dart: o initState corre uma vez, quando o ecrã abre, e é aí que se diz "abriram a previsão desta ilha". O nome vai no passado e em snake_case, sempre igual: é com ele que se conta. Como funciona por dentro (lib/telemetry/analytics.dart e telemetry.dart), para quem perguntar. Além destes campos, cada linha leva version (o commit do deploy), platform e run (um por arranque): o analytics.event põe a linha na mesma fila dos logs, com kind event; a fila junta a versão, a plataforma e o run e vai para a API em lotes de cinco em cinco segundos; sem rede, guarda. A API acrescenta quem mandou e passa ao OpenObserve. O analytics também guarda o último evento como texto (forecast_opened island=corvo): se a seguir houver um erro, a linha do erro leva last_event. É o que o Sentry chama breadcrumb, o rasto de migalhas. O log.info('islands loaded', {'count': islands.length}) faz o mesmo com kind log.</aside>
 </section>
 
 <section class="slide">
@@ -105,42 +104,7 @@
     <li>Procurem as vossas linhas pelo nome: o que fizeram, em que ilha e em que versão.</li>
     <li>Em cada bug, o log é a primeira pista: o que a app fez, e o que devia ter feito a seguir.</li>
   </ul>
-  <p class="pergunta">Daqui a nada abrem a app. Quando tocarem numa ilha, o que vai aparecer em cada separador?</p>
-  <aside class="notes">No OpenObserve, o dashboard "PDM · a API e a app ao vivo", com 1 hora e atualização de 10 em 10 segundos. Separador "App: analytics": arranques, previsões abertas, favoritos, "Onde estou?", as ilhas mais abertas e os últimos eventos com o nome de quem os fez. Separador "App: logs e erros": erros, avisos e a tabela dos erros com o depois_de (o last_event) e a versão. Por baixo é tudo a stream apps; no menu Logs filtra-se com kind = 'event' ou kind = 'log', e só os erros com level = 'error'. O que nunca vai para o log nem para os eventos: passwords, tokens, emails, a posição exata; o "Onde estou?" regista a ilha e os quilómetros. O nome aparece hoje porque é uma aula; numa app a sério seria um id. Resposta: em analytics, o app_opened quando abrem e o forecast_opened com a ilha e o vosso nome; em logs e erros, o islands loaded quando a lista chega. Se alguma coisa rebentar, aparece uma linha de erro com o depois_de: o que a pessoa tinha acabado de fazer. Não digas onde rebenta: é o que vão procurar a seguir. Mostra também o app_opened com o tema: vai servir a quem pegar no bug do tema. Deixa o projetor no dashboard durante toda a caça.</aside>
-</section>
-
-<section class="slide">
-  <h2>A app está no vosso telemóvel</h2>
-  <div class="lab-qr">
-    <img src="../assets/img/bugs-qr.svg" alt="Código QR para a app Tempo Açores na web">
-    <div>
-      <p class="lab-url"><code>tiago-rocha.github.io/pdm-aula-25</code></p>
-      <ul>
-        <li>Criem conta, com o vosso nome: é ele que aparece nos logs.</li>
-        <li>Abram as ilhas, a previsão de cada uma, os favoritos, o "Onde estou?" e o tema.</li>
-        <li>Fechem a página e voltem a abrir.</li>
-        <li>Tudo o que parecer estranho, anotem: em que ecrã, o que fizeram, o que esperavam.</li>
-      </ul>
-    </div>
-  </div>
-  <p class="pergunta">Em cinco minutos, quantos bugs encontram?</p>
-  <aside class="notes">Às 16:50. Dá-lhes cinco minutos, em silêncio, cada um no seu telemóvel. É a app que conhecem, agora com um ecrã de previsão a cinco dias (toca numa ilha). A conta é desta app: as contas do projeto não servem aqui, porque cada app tem as suas. Enquanto exploram, deixa o OpenObserve no projetor: as linhas começam a cair com os nomes deles, e é isso que prende a sala. Não digas quantos bugs há. Depois pergunta quantos encontraram e escreve no quadro os que disserem. Normalmente aparecem logo o Corvo (ecrã cinzento) e a mínima maior que a máxima; o tema e os favoritos só quem experimenta com calma. O "Tentar de novo" quase ninguém encontra sem desligar a rede. Quando alguém disser o Corvo, passa ao separador "App: logs e erros": a linha "Null check operator used on a null value" com o depois_de "forecast_opened island=corvo". A ilha está no evento e o erro aponta para ele. O where diz "building Widget" e a stack aponta para main.dart.js: a versão publicada tem os nomes encolhidos (minificada) para ser mais pequena, por isso o last_event é a melhor pista. No Chrome do PC, com flutter run, a stack diz forecast_screen.dart e a linha. O Sentry e o Crashlytics resolvem isto guardando o mapa dos nomes de cada versão (source maps, --split-debug-info).</aside>
-</section>
-
-<section class="slide">
-  <h2>Seis queixas</h2>
-  <div class="table-wrap"><table class="compacta">
-  <thead><tr><th>#</th><th>O que a pessoa viu</th><th>Onde</th></tr></thead>
-  <tbody>
-  <tr><td>1</td><td>Ao abrir o Corvo, o ecrã fica cinzento</td><td>Previsão</td></tr>
-  <tr><td>2</td><td>A mínima é maior do que a máxima, e a amplitude é negativa</td><td>Previsão</td></tr>
-  <tr><td>3</td><td>Sem rede aparece "Tentar de novo"; com a rede de volta, o botão não faz nada</td><td>Ilhas</td></tr>
-  <tr><td>4</td><td>Toco no coração e ele não muda; se mudar de tema, já está vermelho</td><td>Ilhas</td></tr>
-  <tr><td>5</td><td>Em Ponta Delgada diz "Estás a 519 km de Corvo"</td><td>Onde estou?</td></tr>
-  <tr><td>6</td><td>Escolho o tema escuro e, quando volto a abrir, está claro outra vez</td><td>Tema</td></tr>
-  </tbody></table></div>
-  <p class="pergunta">Quantos destes o <code>flutter analyze</code> apanhava?</p>
-  <aside class="notes">Resposta: nenhum. O código compila, os tipos batem certo e não há avisos. O analyze vê se o código está bem escrito; não sabe o que a app devia fazer. Estes são os bugs que chegam às pessoas: a app abre, não rebenta, e faz a coisa errada. Cada linha é um issue no repositório, com o que a pessoa viu e uma pista. Pergunta quantos destes encontraram nos cinco minutos. Daqui até às 17:00 é a teoria, curta: o teste, o vermelho e verde, o CI e os logs.</aside>
+  <aside class="notes">No OpenObserve, o dashboard "PDM · a API e a app ao vivo", com 1 hora e atualização de 10 em 10 segundos. Separador "App: analytics": arranques, previsões abertas, favoritos, "Onde estou?", as ilhas mais abertas e os últimos eventos com o nome de quem os fez. Separador "App: logs e erros": erros, avisos e a tabela dos erros com o depois_de (o last_event) e a versão. Por baixo é tudo a stream apps; no menu Logs filtra-se com kind = 'event' ou kind = 'log', e só os erros com level = 'error'. O que nunca vai para o log nem para os eventos: passwords, tokens, emails, a posição exata; o "Onde estou?" regista a ilha e os quilómetros. O nome aparece hoje porque é uma aula; numa app a sério seria um id. O que vão ver quando abrirem a app: em analytics, o app_opened quando abrem e o forecast_opened com a ilha e o vosso nome; em logs e erros, o islands loaded quando a lista chega. Se alguma coisa rebentar, aparece uma linha de erro com o depois_de: o que a pessoa tinha acabado de fazer. Não digas onde rebenta: é o que vão procurar a seguir. Mostra também o app_opened com o tema: vai servir a quem pegar no bug do tema. Deixa o projetor no dashboard durante toda a caça.</aside>
 </section>
 
 <section class="slide">
@@ -154,7 +118,7 @@
   expect(notifier.error, contains('Sem ligação'));
 });</code></pre>
   <p><strong>A ideia:</strong> Preparar, fazer, verificar. O nome diz, numa frase, o que devia acontecer.</p>
-  <aside class="notes">Está em test/state/forecast_notifier_test.dart. As três partes vão separadas por uma linha em branco; quando falha, lês o nome e sabes o que se partiu. Preparar: um repositório falso que falha, como um telemóvel sem rede, e o notifier com ele. Fazer: uma coisa só, o load. Verificar: o erro ficou guardado para o ecrã mostrar. O expect compara o que aconteceu com o que devia acontecer; contains, isNull, isTrue, closeTo são os matchers. Não há rede, nem ecrã, nem telemóvel: corre em milissegundos. Pergunta à turma: se o load não apanhasse a exceção, o que dizia o teste? Falhava com a exceção e o nome do teste, e não com "expected ... but was null".</aside>
+  <aside class="notes">Está em test/state/forecast_notifier_test.dart. As três partes vão separadas por uma linha em branco; quando falha, lês o nome e sabes o que se partiu. Preparar: um repositório falso que falha, como um telemóvel sem rede, e o notifier com ele. Fazer: uma coisa só, o load. Verificar: o erro ficou guardado para o ecrã mostrar. O expect compara o que aconteceu com o que devia acontecer; contains, isNull, isTrue, closeTo são os matchers. Não há rede, nem ecrã, nem telemóvel: corre em milissegundos. Se o load não apanhasse a exceção, o teste falhava com a exceção e o nome do teste, e não com "expected ... but was null".</aside>
 </section>
 
 <section class="slide">
@@ -173,21 +137,20 @@
 </svg>
   <figcaption>Um teste que nunca esteve vermelho não prova nada: podia passar com o bug lá dentro.</figcaption>
   </figure>
-  <p class="pergunta">Corrigiram o bug e só depois escreveram o teste. Passou à primeira. Que garantia têm de que ele apanha o bug?</p>
-  <aside class="notes">Resposta: nenhuma. Pode estar a testar outra coisa, ou o mesmo caminho que já funcionava. Por isso a ordem: vê-lo falhar com o bug, corrigir, vê-lo passar. A partir daí o teste fica no repositório para sempre: se alguém voltar a partir a mesma coisa daqui a um ano, o CI fica vermelho antes de chegar às pessoas. Chama-se teste de regressão. Cada ficheiro de teste já tem um teste vizinho do bug; o mais rápido é copiar esse e mudar o caso. Se o teste novo não falhar com o bug, não está a testar o bug: voltem ao log e ao issue.</aside>
+  <aside class="notes">Se corrigem primeiro e o teste passa à primeira, não há garantia de que apanhe o bug: pode estar a testar outra coisa, ou o mesmo caminho que já funcionava. Por isso a ordem: vê-lo falhar com o bug, corrigir, vê-lo passar. A partir daí o teste fica no repositório para sempre: se alguém voltar a partir a mesma coisa daqui a um ano, o CI fica vermelho antes de chegar às pessoas. Chama-se teste de regressão. Cada ficheiro de teste já tem um teste vizinho do bug; o mais rápido é copiar esse e mudar o caso. Se o teste novo não falhar com o bug, não está a testar o bug: voltem ao log.</aside>
 </section>
 
 <section class="slide">
   <h2>Integração contínua: o CI</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 190" role="img" aria-label="O caminho de uma correção: o pull request faz correr o analyze e os testes no GitHub Actions; se ficar verde, o docente faz merge; o merge faz correr outra vez os testes, constrói a app web e publica-a; a página no telemóvel passa a ter a correção.">
+  <svg viewBox="0 0 900 190" role="img" aria-label="O caminho de uma correção: o pull request faz correr o analyze e os testes no GitHub Actions; se ficar verde, o colega de grupo revê e faz merge; o merge faz correr outra vez os testes, constrói a app web e publica-a; a página no telemóvel passa a ter a correção.">
 <rect x="10" y="20" width="150" height="70" rx="12" class="box"/><text x="85" y="62" text-anchor="middle" class="t b">Pull request</text>
 <line x1="162" y1="55" x2="189" y2="55" class="arrow"/>
 <rect x="193" y="20" width="210" height="70" rx="12" class="box accent"/><text x="298" y="50" text-anchor="middle" class="t b">GitHub Actions</text><text x="298" y="74" text-anchor="middle" class="t s">analyze e test</text>
 <line x1="405" y1="55" x2="432" y2="55" class="arrow"/>
 <rect x="436" y="20" width="130" height="70" rx="12" class="box ok"/><text x="501" y="62" text-anchor="middle" class="t b">Verde</text>
 <line x1="568" y1="55" x2="595" y2="55" class="arrow"/>
-<rect x="599" y="20" width="130" height="70" rx="12" class="box"/><text x="664" y="62" text-anchor="middle" class="t b">Merge</text>
+<rect x="599" y="20" width="130" height="70" rx="12" class="box"/><text x="664" y="50" text-anchor="middle" class="t b">Merge</text><text x="664" y="74" text-anchor="middle" class="t s">o colega revê</text>
 <line x1="664" y1="92" x2="664" y2="115" class="arrow"/>
 <rect x="436" y="120" width="293" height="60" rx="12" class="box accent"/><text x="582" y="146" text-anchor="middle" class="t b">Testes, build web, publicar</text><text x="582" y="168" text-anchor="middle" class="t s">uns três minutos</text>
 <line x1="434" y1="150" x2="407" y2="150" class="arrow"/>
@@ -198,21 +161,38 @@
   <ul>
     <li><strong>Mundo real:</strong> GitHub Actions, Codemagic e Bitrise para Flutter; para iPhone o CI precisa de um Mac.</li>
   </ul>
-  <p class="pergunta">São 17:55, a review é às 18:00 e o CI do vosso PR está vermelho. Fazem merge?</p>
-  <aside class="notes">O ficheiro é .github/workflows/ci.yml, tem duas partes. A primeira, test, corre em cada pull request e em cada push para o main: instala o Flutter, flutter pub get, flutter analyze, flutter test. A segunda, deploy, só corre depois de um merge e só se a primeira passou: flutter build web com o clientId da app desta aula e a versão igual ao commit, e publica no GitHub Pages. A versão publicada é o commit: nos logs, a coluna version muda quando a correção chega. Os segredos (clientId e clientSecret) estão nas definições do repositório, não no código. Mostra no GitHub um PR com o visto verde e um com a cruz vermelha, e o separador Actions com o log de um teste a falhar. Resposta à pergunta: não. Um merge vermelho parte o main de todos os colegas, e na review o que conta é o que funciona. Melhor apresentar menos e verde. Nos projetos, o CI entra na sprint 3: é este ficheiro, só com a parte test.</aside>
+  <aside class="notes">O ficheiro é .github/workflows/ci.yml, tem duas partes. A primeira, test, corre em cada pull request e em cada push para o main: instala o Flutter, flutter pub get, flutter analyze, flutter test. A segunda, deploy, só corre depois de um merge e só se a primeira passou: flutter build web com o clientId da app desta aula e a versão igual ao commit, e publica no GitHub Pages. A versão publicada é o commit: nos logs, a coluna version muda quando a correção chega. Os segredos (clientId e clientSecret) estão nas definições do repositório, não no código. Mostra no GitHub um PR com o visto verde e um com a cruz vermelha, e o separador Actions com o log de um teste a falhar. Com o CI vermelho não há merge, nem a cinco minutos da review: um merge vermelho parte o main de todos os colegas, e na review o que conta é o que funciona. Melhor apresentar menos e verde. Nos projetos, o CI entra na sprint 3: é este ficheiro, só com a parte test.</aside>
 </section>
 
 <section class="slide" data-part="Prática">
+  <h2>A app está no vosso telemóvel</h2>
+  <div class="lab-qr">
+    <img src="../assets/img/bugs-qr.svg" alt="Código QR para a app Tempo Açores na web">
+    <div>
+      <p class="lab-url"><code>tiago-rocha.github.io/pdm-aula-25</code></p>
+      <ul>
+        <li>Criem conta, com o vosso nome: é ele que aparece nos logs.</li>
+        <li>Experimentem tudo: as ilhas, a previsão de cada uma, os favoritos, o "Onde estou?" e o tema. Fechem a página e voltem a abrir.</li>
+        <li>Encontraram um bug? Digam-no em voz alta: fica vosso, e mais ninguém pega nele.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Às 17:05, acabada a teoria. É a app que conhecem, agora com um ecrã de previsão a cinco dias (toca numa ilha). A conta é desta app: as contas do projeto não servem aqui, porque cada app tem as suas. Há seis bugs; não digas quantos. Quando alguém disser um em voz alta, escreve-o no quadro com o nome: é dele, e mais ninguém pega nesse. Deixa o OpenObserve no projetor: as linhas começam a cair com os nomes deles, e é isso que prende a sala. Os seis: o Corvo (ecrã cinzento), a mínima maior do que a máxima, o "Tentar de novo" que não faz nada quando a rede volta, o coração que só muda ao mudar de tema, o "Onde estou?" que em Ponta Delgada diz 519 km de Corvo e o tema escuro que não fica. Normalmente aparecem logo o Corvo e a mínima; o tema e os favoritos só quem experimenta com calma; o "Tentar de novo" quase ninguém encontra sem desligar a rede. Nenhum deles o flutter analyze apanhava: o código compila e não tem avisos, a app é que faz a coisa errada. Quando alguém disser o Corvo, passa ao separador "App: logs e erros": a linha "Null check operator used on a null value" com o depois_de "forecast_opened island=corvo". A ilha está no evento e o erro aponta para ele. O where diz "building Widget" e a stack aponta para main.dart.js: a versão publicada tem os nomes encolhidos (minificada) para ser mais pequena, por isso o last_event é a melhor pista. No Chrome do PC, com flutter run, a stack diz forecast_screen.dart e a linha. O Sentry e o Crashlytics resolvem isto guardando o mapa dos nomes de cada versão (source maps, --split-debug-info).</aside>
+</section>
+
+<section class="slide">
   <h2>A caça</h2>
   <div class="table-wrap"><table class="compacta">
-  <thead><tr><th>Issue</th><th>Pista no log</th><th>Teste vizinho</th></tr></thead>
+  <thead><tr><th></th><th>O quê</th><th>Porquê</th></tr></thead>
   <tbody>
-  <tr><td>Mínima e máxima</td><td>Compara com o JSON da API em /docs</td><td><code>forecast_test.dart</code></td></tr>
-  <tr><td>Onde estou</td><td>A ilha e os quilómetros</td><td><code>nearest_test.dart</code></td></tr>
-  <tr><td>Corvo</td><td>A linha vermelha e o <code>last_event</code></td><td><code>forecast_screen_test.dart</code></td></tr>
+  <tr><td>1</td><td>Dizer o bug em voz alta</td><td>Ninguém trabalha no mesmo bug</td></tr>
+  <tr><td>2</td><td>Reproduzir no Chrome, com o log aberto</td><td>O log é a primeira pista</td></tr>
+  <tr><td>3</td><td>Teste vermelho, correção, verde</td><td>O teste prova que era aquele o bug</td></tr>
+  <tr><td>4</td><td>Um branch e um pull request</td><td>O <code>main</code> só aceita PRs</td></tr>
+  <tr><td>5</td><td>O colega de grupo revê e faz merge</td><td>Outros olhos antes de publicar</td></tr>
   </tbody></table></div>
-  <p>Aos pares, um issue de cada vez, dito no issue, do mais fácil ao mais difícil. Quem acabar: o tema, o coração e o "Tentar de novo". Os passos estão no README do <a href="https://github.com/Tiago-Rocha/pdm-aula-25" target="_blank" rel="noopener">pdm-aula-25</a>.</p>
-  <aside class="notes">Tempo: das 17:00 às 17:50. Hoje são três issues: mínima e máxima, onde estou e Corvo, por esta ordem. Se houver mais pares do que issues, dois pares podem pegar no mesmo: o primeiro PR com o CI verde é o que entra, o outro compara a solução. O tema, o coração e o "Tentar de novo" ficam abertos para quem acabar ou quiser treinar em casa. Os testes vizinhos estão em test/screens, test/models, test/state e test/location. Cada um aceita primeiro o convite para colaborador (github.com/Tiago-Rocha/pdm-aula-25/invitations, ou o email do GitHub), faz clone do teu repositório, sem fork, e corre flutter test (verde no início: os testes que existem não olham para os bugs) e de flutter run no Chrome com o clientId do grupo; criam conta nessa app também. Trabalham num branch no próprio repositório (fix/N-nome) e abrem o pull request para o main, com "Fixes #N" na descrição. Ninguém faz push direto para o main: está protegido e só aceita PRs com o CI verde: quando fazes merge, o issue fecha sozinho e fica o nome deles. Revês o diff no GitHub antes do merge: o teste novo tem de falhar sem a correção, senão pede-o. Depois do merge, o deploy demora uns três minutos: diz-lhes para recarregarem a página no telemóvel e verem a version nova no log. Pistas se encalharem: Corvo, o mapa _nicknames em forecast_screen.dart; mínima e máxima, o fromJson em models/forecast.dart; tentar de novo, o onPressed em islands_screen.dart, um teste que toca e verifica o islandCalls; coração, o toggle em favorites_notifier.dart, um teste com addListener que conta; onde estou, o nearestIsland, com positionAt(37.74, -25.67); tema, as chaves em settings.dart. As soluções estão no branch local solucao.</aside>
+  <p><strong>A ideia:</strong> Quem revê só aprova com o CI verde e um teste novo que falha sem a correção. Clonar e correr: README do <a href="https://github.com/Tiago-Rocha/pdm-aula-25" target="_blank" rel="noopener">pdm-aula-25</a>.</p>
+  <aside class="notes">Das 17:05 às 17:50. Antes de procurarem no código, cada um aceita o convite para colaborador (github.com/Tiago-Rocha/pdm-aula-25/invitations, ou o email do GitHub), faz clone do teu repositório, sem fork, corre flutter test (verde no início: os testes que existem não olham para os bugs) e flutter run no Chrome com o clientId do grupo; criam conta nessa app também. Cada um trabalha no bug que disse, num branch no próprio repositório (fix/nome-curto), e abre o pull request para o main com o que a pessoa via e o que mudou. Quem revê é o colega de grupo: lê o diff no GitHub, confirma que há um teste novo e que ele falharia sem a correção, aprova (Review changes, Approve) e faz merge com o CI verde. Se o colega estiver a meio do seu bug, revê na mesma: rever faz parte do trabalho. Ninguém faz push direto para o main: está protegido e só aceita PRs com o CI verde. Depois do merge, o deploy demora uns três minutos: diz-lhes para recarregarem a página no telemóvel e verem a version nova no log. Cada ficheiro de teste já tem um teste vizinho do bug (test/screens, test/models, test/state, test/location): o mais rápido é copiar esse e mudar o caso. Pistas se encalharem: Corvo, o mapa _nicknames em forecast_screen.dart; mínima e máxima, o fromJson em models/forecast.dart, comparado com o JSON da API em /docs; tentar de novo, o onPressed em islands_screen.dart, um teste que toca e verifica o islandCalls; coração, o toggle em favorites_notifier.dart, um teste com addListener que conta; onde estou, o nearestIsland, com positionAt(37.74, -25.67); tema, as chaves em settings.dart. As soluções estão no branch local solucao.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -233,7 +213,7 @@
       </ul>
     </div>
   </div>
-  <aside class="notes">Antes de fechar: abre o repositório e conta os issues fechados, com os nomes. Mostra no log a version a mudar, e que o Corvo já não dá erro na versão nova. O que fica por fechar fica aberto: quem quiser acaba em casa e o PR continua a contar como treino. Na quarta é a review: o CI no projeto é da sprint 3, não da 2. Quem quiser mais: An introduction to widget testing (docs.flutter.dev/cookbook/testing/widget/introduction), o subosito/flutter-action no GitHub (o passo que instala o Flutter no CI) e a documentação do Sentry para Flutter, que é o que estas linhas de log seriam numa app com milhares de pessoas.</aside>
+  <aside class="notes">Antes de fechar: abre o repositório e conta os PRs com merge, com o nome de quem corrigiu e de quem reviu. Mostra no log a version a mudar, e que o Corvo já não dá erro na versão nova. Os bugs que ficaram por encontrar ou por corrigir ficam para casa: o PR continua a contar como treino. Na quarta é a review: o CI no projeto é da sprint 3, não da 2. Quem quiser mais: An introduction to widget testing (docs.flutter.dev/cookbook/testing/widget/introduction), o subosito/flutter-action no GitHub (o passo que instala o Flutter no CI) e a documentação do Sentry para Flutter, que é o que estas linhas de log seriam numa app com milhares de pessoas.</aside>
   <nav class="pager" id="pager"></nav>
 </section>
 </div>
