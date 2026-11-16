@@ -35,9 +35,9 @@
   <h2>No fim desta aula consegues</h2>
   <ul>
     <li>Dizer o que ainda falta no <code>main</code> do vosso projeto para a review de quarta, e quem faz o quê.</li>
+    <li>Distinguir um log de um evento de analytics, e ler numa linha de erro onde, a quem e em que versão aconteceu.</li>
     <li>Escrever um teste em três partes com um repositório falso, e vê-lo falhar antes de corrigir.</li>
     <li>Ler o que o CI diz de um pull request e decidir se pode entrar no <code>main</code>.</li>
-    <li>Distinguir um log de um evento de analytics, e ler numa linha de erro onde, a quem e em que versão aconteceu.</li>
   </ul>
   <aside class="notes">O que dizer: a primeira parte é do projeto, porque a review é já na quarta. Na segunda parte não há matéria nova de Flutter: é a forma como as equipas trabalham numa app que já está nas mãos das pessoas: alguém se queixa, a equipa encontra, prova, corrige e publica sem partir outra coisa. Tudo o que fizerem hoje serve para a sprint 3 do projeto, onde o CI passa a ser obrigatório.</aside>
 </section>
@@ -60,6 +60,56 @@
 </section>
 
 <section class="slide" data-part="Teoria">
+  <h2>Logs e analytics</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th></th><th>Log</th><th>Analytics</th></tr></thead>
+  <tbody>
+  <tr><td>Responde a</td><td>Porque é que partiu?</td><td>O que fazem as pessoas?</td></tr>
+  <tr><td>Na app</td><td><code>log.info</code>, <code>log.warn</code>, <code>log.error</code></td><td><code>analytics.event</code></td></tr>
+  <tr><td>Uma linha</td><td><code>islands loaded</code>, um erro com a stack</td><td><code>forecast_opened</code>, <code>favorite_saved</code></td></tr>
+  <tr><td>Quem lê</td><td>Quem programa, quando algo falha</td><td>Quem decide o produto: que ecrãs se usam, onde desistem</td></tr>
+  <tr><td>No mercado</td><td>Sentry, Crashlytics, Datadog</td><td>PostHog, Firebase Analytics, Mixpanel</td></tr>
+  </tbody></table></div>
+  <p class="pergunta">Alguém abre a previsão de uma ilha e a app rebenta. Isto é log ou analytics?</p>
+  <aside class="notes">Às 16:40, antes de pegarem na app. Dois minutos. As duas coisas viajam pelo mesmo cano: a app junta as linhas, manda-as em lotes para a API do curso e a API passa-as ao OpenObserve, na mesma stream apps. O que as separa é o campo kind: log ou event. Não precisam de dois servidores para ter as duas coisas; precisam de as distinguir no código, para no fim não terem um monte de linhas onde o erro se perde entre os toques. Os eventos têm um nome por ação, no passado, em snake_case, sempre igual: é com ele que se conta. As apps grandes usam ferramentas diferentes para cada lado: o Spotify ou a Revolut medem com analytics o que as pessoas fazem e apanham os crashes com o Crashlytics ou o Sentry. Resposta: as duas. Abrir a previsão é um evento de analytics (forecast_opened, com a ilha). O rebentar é um erro, uma linha de log. E a linha do erro leva o last_event: o que a pessoa tinha acabado de fazer.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde a magia acontece: um evento</h2>
+<pre><code class="language-dart">final analytics = Analytics();
+
+class Analytics {
+  void event(String name, [Map&lt;String, Object?&gt; properties = const {}]) {
+    telemetry.add('event', 'info', name, properties);
+    final detail = properties.entries.map((p) =&gt; '${p.key}=${p.value}');
+    telemetry.lastEvent = [name, ...detail].join(' ');
+  }
+}</code></pre>
+  <p><strong>A ideia:</strong> Um nome por ação, no passado. Segue pelo mesmo cano dos logs, marcado <code>event</code>, e fica guardado: se a seguir alguma coisa rebentar, o erro diz o que a pessoa tinha feito.</p>
+  <aside class="notes">Está em lib/telemetry/analytics.dart. O telemetry.add é o cano partilhado (lib/telemetry/telemetry.dart): junta a versão, a plataforma e o run a cada linha e manda em lotes de cinco em cinco segundos; sem rede, guarda. O log.info faz o mesmo com kind log. O lastEvent é o que o Sentry chama breadcrumb: o rasto de migalhas. No log.error, a linha do erro leva last_event. Na app ficam assim: analytics.event('forecast_opened', {'island': widget.island.id}) no ecrã da previsão, e log.info('islands loaded', {'count': islands.length}) quando a lista chega. Pergunta à turma: o "Tentar de novo" sem rede é um evento ou um log? O aviso "islands failed" é log (warn: algo correu mal e a app aguentou); o toque no botão seria um evento, e não existe: fica como ideia para quem acabar.</aside>
+</section>
+
+<section class="slide">
+  <h2>Logs e analytics ao vivo</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 140" role="img" aria-label="O caminho de uma linha de log ou de um evento: a app no telemóvel manda para a API do curso, que junta quem mandou e passa ao OpenObserve, que o docente tem no projetor.">
+<rect x="10" y="20" width="240" height="100" rx="12" class="box"/><text x="130" y="62" text-anchor="middle" class="t b">A app</text><text x="130" y="90" text-anchor="middle" class="t s">log e analytics</text>
+<line x1="252" y1="70" x2="321" y2="70" class="arrow"/>
+<rect x="325" y="20" width="240" height="100" rx="12" class="box accent"/><text x="445" y="62" text-anchor="middle" class="t b">API do curso</text><text x="445" y="90" text-anchor="middle" class="t s">junta o nome e a app</text>
+<line x1="567" y1="70" x2="636" y2="70" class="arrow"/>
+<rect x="640" y="20" width="250" height="100" rx="12" class="box warn"/><text x="765" y="62" text-anchor="middle" class="t b">OpenObserve</text><text x="765" y="90" text-anchor="middle" class="t s">no projetor</text>
+</svg>
+  </figure>
+  <ul>
+    <li>Dois separadores no projetor: analytics, o que fizeram, e logs e erros, o que partiu.</li>
+    <li>Procurem as vossas linhas pelo nome: o que fizeram, em que ilha e em que versão.</li>
+    <li>Em cada bug, o log é a primeira pista: o que a app fez, e o que devia ter feito a seguir.</li>
+  </ul>
+  <p class="pergunta">Daqui a nada abrem a app. Quando tocarem numa ilha, o que vai aparecer em cada separador?</p>
+  <aside class="notes">No OpenObserve, o dashboard "PDM · a API e a app ao vivo", com 1 hora e atualização de 10 em 10 segundos. Separador "App: analytics": arranques, previsões abertas, favoritos, "Onde estou?", as ilhas mais abertas e os últimos eventos com o nome de quem os fez. Separador "App: logs e erros": erros, avisos e a tabela dos erros com o depois_de (o last_event) e a versão. Por baixo é tudo a stream apps; no menu Logs filtra-se com kind = 'event' ou kind = 'log', e só os erros com level = 'error'. O que nunca vai para o log nem para os eventos: passwords, tokens, emails, a posição exata; o "Onde estou?" regista a ilha e os quilómetros. O nome aparece hoje porque é uma aula; numa app a sério seria um id. Resposta: em analytics, o app_opened quando abrem e o forecast_opened com a ilha e o vosso nome; em logs e erros, o islands loaded quando a lista chega. Se alguma coisa rebentar, aparece uma linha de erro com o depois_de: o que a pessoa tinha acabado de fazer. Não digas onde rebenta: é o que vão procurar a seguir. Mostra também o app_opened com o tema: vai servir a quem pegar no bug do tema. Deixa o projetor no dashboard durante toda a caça.</aside>
+</section>
+
+<section class="slide">
   <h2>A app está no vosso telemóvel</h2>
   <div class="lab-qr">
     <img src="../assets/img/bugs-qr.svg" alt="Código QR para a app Tempo Açores na web">
@@ -74,7 +124,7 @@
     </div>
   </div>
   <p class="pergunta">Em cinco minutos, quantos bugs encontram?</p>
-  <aside class="notes">Às 16:40. Dá-lhes cinco minutos, em silêncio, cada um no seu telemóvel. É a app que conhecem, agora com um ecrã de previsão a cinco dias (toca numa ilha). A conta é desta app: as contas do projeto não servem aqui, porque cada app tem as suas. Enquanto exploram, deixa o OpenObserve no projetor: as linhas começam a cair com os nomes deles, e é isso que prende a sala. Não digas quantos bugs há. Depois pergunta quantos encontraram e escreve no quadro os que disserem. Normalmente aparecem logo o Corvo (ecrã cinzento) e a mínima maior que a máxima; o tema e os favoritos só quem experimenta com calma. O "Tentar de novo" quase ninguém encontra sem desligar a rede.</aside>
+  <aside class="notes">Às 16:50. Dá-lhes cinco minutos, em silêncio, cada um no seu telemóvel. É a app que conhecem, agora com um ecrã de previsão a cinco dias (toca numa ilha). A conta é desta app: as contas do projeto não servem aqui, porque cada app tem as suas. Enquanto exploram, deixa o OpenObserve no projetor: as linhas começam a cair com os nomes deles, e é isso que prende a sala. Não digas quantos bugs há. Depois pergunta quantos encontraram e escreve no quadro os que disserem. Normalmente aparecem logo o Corvo (ecrã cinzento) e a mínima maior que a máxima; o tema e os favoritos só quem experimenta com calma. O "Tentar de novo" quase ninguém encontra sem desligar a rede. Quando alguém disser o Corvo, passa ao separador "App: logs e erros": a linha "Null check operator used on a null value" com o depois_de "forecast_opened island=corvo". A ilha está no evento e o erro aponta para ele. O where diz "building Widget" e a stack aponta para main.dart.js: a versão publicada tem os nomes encolhidos (minificada) para ser mais pequena, por isso o last_event é a melhor pista. No Chrome do PC, com flutter run, a stack diz forecast_screen.dart e a linha. O Sentry e o Crashlytics resolvem isto guardando o mapa dos nomes de cada versão (source maps, --split-debug-info).</aside>
 </section>
 
 <section class="slide">
@@ -150,56 +200,6 @@
   </ul>
   <p class="pergunta">São 17:55, a review é às 18:00 e o CI do vosso PR está vermelho. Fazem merge?</p>
   <aside class="notes">O ficheiro é .github/workflows/ci.yml, tem duas partes. A primeira, test, corre em cada pull request e em cada push para o main: instala o Flutter, flutter pub get, flutter analyze, flutter test. A segunda, deploy, só corre depois de um merge e só se a primeira passou: flutter build web com o clientId da app desta aula e a versão igual ao commit, e publica no GitHub Pages. A versão publicada é o commit: nos logs, a coluna version muda quando a correção chega. Os segredos (clientId e clientSecret) estão nas definições do repositório, não no código. Mostra no GitHub um PR com o visto verde e um com a cruz vermelha, e o separador Actions com o log de um teste a falhar. Resposta à pergunta: não. Um merge vermelho parte o main de todos os colegas, e na review o que conta é o que funciona. Melhor apresentar menos e verde. Nos projetos, o CI entra na sprint 3: é este ficheiro, só com a parte test.</aside>
-</section>
-
-<section class="slide">
-  <h2>Logs e analytics</h2>
-  <div class="table-wrap"><table class="compacta">
-  <thead><tr><th></th><th>Log</th><th>Analytics</th></tr></thead>
-  <tbody>
-  <tr><td>Responde a</td><td>Porque é que partiu?</td><td>O que fazem as pessoas?</td></tr>
-  <tr><td>Na app</td><td><code>log.info</code>, <code>log.warn</code>, <code>log.error</code></td><td><code>analytics.event</code></td></tr>
-  <tr><td>Uma linha</td><td><code>islands loaded</code>, um erro com a stack</td><td><code>forecast_opened</code>, <code>favorite_saved</code></td></tr>
-  <tr><td>Quem lê</td><td>Quem programa, quando algo falha</td><td>Quem decide o produto: que ecrãs se usam, onde desistem</td></tr>
-  <tr><td>No mercado</td><td>Sentry, Crashlytics, Datadog</td><td>PostHog, Firebase Analytics, Mixpanel</td></tr>
-  </tbody></table></div>
-  <p class="pergunta">Abrem o Corvo e o ecrã fica cinzento. Isto é log ou analytics?</p>
-  <aside class="notes">Dois minutos. As duas coisas viajam pelo mesmo cano: a app junta as linhas, manda-as em lotes para a API do curso e a API passa-as ao OpenObserve, na mesma stream apps. O que as separa é o campo kind: log ou event. Não precisam de dois servidores para ter as duas coisas; precisam de as distinguir no código, para no fim não terem um monte de linhas onde o erro se perde entre os toques. Os eventos têm um nome por ação, no passado, em snake_case, sempre igual: é com ele que se conta. As apps grandes usam ferramentas diferentes para cada lado: o Spotify ou a Revolut medem com analytics o que as pessoas fazem e apanham os crashes com o Crashlytics ou o Sentry. Resposta: as duas. Tocar no Corvo é um evento de analytics (forecast_opened, island corvo). O ecrã cinzento é um erro, uma linha de log. E a linha do erro leva o last_event: o que a pessoa tinha acabado de fazer.</aside>
-</section>
-
-<section class="slide">
-  <h2>Onde a magia acontece: um evento</h2>
-<pre><code class="language-dart">final analytics = Analytics();
-
-class Analytics {
-  void event(String name, [Map&lt;String, Object?&gt; properties = const {}]) {
-    telemetry.add('event', 'info', name, properties);
-    final detail = properties.entries.map((p) =&gt; '${p.key}=${p.value}');
-    telemetry.lastEvent = [name, ...detail].join(' ');
-  }
-}</code></pre>
-  <p><strong>A ideia:</strong> Um nome por ação, no passado. Segue pelo mesmo cano dos logs, marcado <code>event</code>, e fica guardado: se a seguir alguma coisa rebentar, o erro diz o que a pessoa tinha feito.</p>
-  <aside class="notes">Está em lib/telemetry/analytics.dart. O telemetry.add é o cano partilhado (lib/telemetry/telemetry.dart): junta a versão, a plataforma e o run a cada linha e manda em lotes de cinco em cinco segundos; sem rede, guarda. O log.info faz o mesmo com kind log. O lastEvent é o que o Sentry chama breadcrumb: o rasto de migalhas. No log.error, a linha do erro leva last_event. Na app ficam assim: analytics.event('forecast_opened', {'island': widget.island.id}) no ecrã da previsão, e log.info('islands loaded', {'count': islands.length}) quando a lista chega. Pergunta à turma: o "Tentar de novo" sem rede é um evento ou um log? O aviso "islands failed" é log (warn: algo correu mal e a app aguentou); o toque no botão seria um evento, e não existe: fica como ideia para quem acabar.</aside>
-</section>
-
-<section class="slide">
-  <h2>Logs e analytics ao vivo</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 140" role="img" aria-label="O caminho de uma linha de log ou de um evento: a app no telemóvel manda para a API do curso, que junta quem mandou e passa ao OpenObserve, que o docente tem no projetor.">
-<rect x="10" y="20" width="240" height="100" rx="12" class="box"/><text x="130" y="62" text-anchor="middle" class="t b">A app</text><text x="130" y="90" text-anchor="middle" class="t s">log e analytics</text>
-<line x1="252" y1="70" x2="321" y2="70" class="arrow"/>
-<rect x="325" y="20" width="240" height="100" rx="12" class="box accent"/><text x="445" y="62" text-anchor="middle" class="t b">API do curso</text><text x="445" y="90" text-anchor="middle" class="t s">junta o nome e a app</text>
-<line x1="567" y1="70" x2="636" y2="70" class="arrow"/>
-<rect x="640" y="20" width="250" height="100" rx="12" class="box warn"/><text x="765" y="62" text-anchor="middle" class="t b">OpenObserve</text><text x="765" y="90" text-anchor="middle" class="t s">no projetor</text>
-</svg>
-  </figure>
-  <ul>
-    <li>Dois separadores no projetor: analytics, o que fizeram, e logs e erros, o que partiu.</li>
-    <li>Procurem as vossas linhas pelo nome: o que fizeram, em que ilha e em que versão.</li>
-    <li>Em cada bug, o log é a primeira pista: o que a app fez, e o que devia ter feito a seguir.</li>
-  </ul>
-  <p class="pergunta">Abram o Corvo no telemóvel. O que aparece em cada separador, e onde está a ilha?</p>
-  <aside class="notes">No OpenObserve, o dashboard "PDM · a API e a app ao vivo", com 1 hora e atualização de 10 em 10 segundos. Separador "App: analytics": arranques, previsões abertas, favoritos, "Onde estou?", as ilhas mais abertas e os últimos eventos com o nome de quem os fez. Separador "App: logs e erros": erros, avisos e a tabela dos erros com o depois_de (o last_event) e a versão. Por baixo é tudo a stream apps; no menu Logs filtra-se com kind = 'event' ou kind = 'log', e só os erros com level = 'error'. O que nunca vai para o log nem para os eventos: passwords, tokens, emails, a posição exata; o "Onde estou?" regista a ilha e os quilómetros. O nome aparece hoje porque é uma aula; numa app a sério seria um id. Resposta: em analytics, o forecast_opened com island corvo; em logs e erros, a linha "Null check operator used on a null value", com o depois_de "forecast_opened island=corvo". A ilha está no evento, e o erro aponta para ele. O where diz "building Widget", o error_type "minified:BG" e a stack aponta para main.dart.js: a versão publicada tem os nomes encolhidos (minificada) para ser mais pequena. É por isso que o last_event é a melhor pista. No Chrome do PC, com flutter run, o where diz ForecastScreen e a stack diz forecast_screen.dart e a linha. O Sentry e o Crashlytics resolvem isto guardando o mapa dos nomes de cada versão (source maps, --split-debug-info) e traduzindo a stack. Mostra também o app_opened com o tema: vai servir a quem pegar no bug do tema. Deixa o projetor no dashboard durante toda a caça.</aside>
 </section>
 
 <section class="slide" data-part="Prática">
