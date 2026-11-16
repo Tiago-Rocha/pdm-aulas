@@ -76,17 +76,17 @@
 
 <section class="slide">
   <h2>Onde a magia acontece: um evento</h2>
-<pre><code class="language-dart">final analytics = Analytics();
-
-class Analytics {
-  void event(String name, [Map&lt;String, Object?&gt; properties = const {}]) {
-    telemetry.add('event', 'info', name, properties);
-    final detail = properties.entries.map((p) =&gt; '${p.key}=${p.value}');
-    telemetry.lastEvent = [name, ...detail].join(' ');
-  }
-}</code></pre>
-  <p><strong>A ideia:</strong> Um nome por ação, no passado. Segue pelo mesmo cano dos logs, marcado <code>event</code>, e fica guardado: se a seguir alguma coisa rebentar, o erro diz o que a pessoa tinha feito.</p>
-  <aside class="notes">Está em lib/telemetry/analytics.dart. O telemetry.add é o cano partilhado (lib/telemetry/telemetry.dart): junta a versão, a plataforma e o run a cada linha e manda em lotes de cinco em cinco segundos; sem rede, guarda. O log.info faz o mesmo com kind log. O lastEvent é o que o Sentry chama breadcrumb: o rasto de migalhas. No log.error, a linha do erro leva last_event. Na app ficam assim: analytics.event('forecast_opened', {'island': widget.island.id}) no ecrã da previsão, e log.info('islands loaded', {'count': islands.length}) quando a lista chega. Pergunta à turma: o "Tentar de novo" sem rede é um evento ou um log? O aviso "islands failed" é log (warn: algo correu mal e a app aguentou); o toque no botão seria um evento, e não existe: fica como ideia para quem acabar.</aside>
+<pre><code class="language-dart">analytics.event('forecast_opened', {'island': widget.island.id});</code></pre>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>O que chega ao OpenObserve</th><th>Valor</th><th>Quem põe</th></tr></thead>
+  <tbody>
+  <tr><td><code>message</code></td><td><code>forecast_opened</code></td><td>o código</td></tr>
+  <tr><td><code>island</code></td><td><code>corvo</code></td><td>o código</td></tr>
+  <tr><td><code>kind</code></td><td><code>event</code></td><td>o analytics</td></tr>
+  <tr><td><code>name</code></td><td><code>Grupo: Leandro e Martim</code></td><td>a API, pelo token</td></tr>
+  </tbody></table></div>
+  <p><strong>A ideia:</strong> Uma linha, no <code>initState</code> do ecrã da previsão. O resto junta-se pelo caminho, e é com isso que no OpenObserve se conta e filtra.</p>
+  <aside class="notes">Está em lib/screens/forecast_screen.dart: o initState corre uma vez, quando o ecrã abre, e é aí que se diz "abriram a previsão desta ilha". O nome vai no passado e em snake_case, sempre igual: é com ele que se conta. Como funciona por dentro (lib/telemetry/analytics.dart e telemetry.dart), para quem perguntar. Além destes campos, cada linha leva version (o commit do deploy), platform e run (um por arranque): o analytics.event põe a linha na mesma fila dos logs, com kind event; a fila junta a versão, a plataforma e o run e vai para a API em lotes de cinco em cinco segundos; sem rede, guarda. A API acrescenta quem mandou e passa ao OpenObserve. O analytics também guarda o último evento como texto (forecast_opened island=corvo): se a seguir houver um erro, a linha do erro leva last_event. É o que o Sentry chama breadcrumb, o rasto de migalhas. O log.info('islands loaded', {'count': islands.length}) faz o mesmo com kind log. Pergunta à turma: o "Tentar de novo" sem rede é um evento ou um log? O aviso "islands failed" é log (warn: algo correu mal e a app aguentou); o toque no botão seria um evento, e não existe: fica como ideia para quem acabar.</aside>
 </section>
 
 <section class="slide">

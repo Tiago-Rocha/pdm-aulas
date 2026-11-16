@@ -76,17 +76,17 @@
 
 <section class="slide">
   <h2>Where the magic happens: an event</h2>
-<pre><code class="language-dart">final analytics = Analytics();
-
-class Analytics {
-  void event(String name, [Map&lt;String, Object?&gt; properties = const {}]) {
-    telemetry.add('event', 'info', name, properties);
-    final detail = properties.entries.map((p) =&gt; '${p.key}=${p.value}');
-    telemetry.lastEvent = [name, ...detail].join(' ');
-  }
-}</code></pre>
-  <p><strong>The idea:</strong> One name per action, in the past tense. It goes down the same pipe as the logs, marked <code>event</code>, and it is kept: if something blows up next, the error says what the person had done.</p>
-  <aside class="notes">It is in lib/telemetry/analytics.dart. telemetry.add is the shared pipe (lib/telemetry/telemetry.dart): it adds the version, the platform and the run to each line and sends them in batches every five seconds; offline, it keeps them. log.info does the same with kind log. lastEvent is what Sentry calls a breadcrumb: the trail of crumbs. In log.error, the error line carries last_event. In the app they look like this: analytics.event('forecast_opened', {'island': widget.island.id}) on the forecast screen, and log.info('islands loaded', {'count': islands.length}) when the list arrives. Question for the class: is "Tentar de novo" with no network an event or a log? The "islands failed" warning is a log (warn: something went wrong and the app held up); the tap on the button would be an event, and it does not exist: it stays as an idea for whoever finishes.</aside>
+<pre><code class="language-dart">analytics.event('forecast_opened', {'island': widget.island.id});</code></pre>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>What reaches OpenObserve</th><th>Value</th><th>Who adds it</th></tr></thead>
+  <tbody>
+  <tr><td><code>message</code></td><td><code>forecast_opened</code></td><td>the code</td></tr>
+  <tr><td><code>island</code></td><td><code>corvo</code></td><td>the code</td></tr>
+  <tr><td><code>kind</code></td><td><code>event</code></td><td>analytics</td></tr>
+  <tr><td><code>name</code></td><td><code>Grupo: Leandro e Martim</code></td><td>the API, from the token</td></tr>
+  </tbody></table></div>
+  <p><strong>The idea:</strong> One line, in the forecast screen&#39;s <code>initState</code>. The rest is added along the way, and that is what lets you count and filter in OpenObserve.</p>
+  <aside class="notes">It is in lib/screens/forecast_screen.dart: initState runs once, when the screen opens, and that is where you say "they opened the forecast for this island". The name is in the past tense and in snake_case, always the same: that is how you count it. How it works inside (lib/telemetry/analytics.dart and telemetry.dart), for whoever asks. Besides these fields, each line carries version (the deploy commit), platform and run (one per launch): analytics.event puts the line in the same queue as the logs, with kind event; the queue adds the version, the platform and the run and goes to the API in batches every five seconds; offline, it keeps them. The API adds who sent it and passes it on to OpenObserve. analytics also keeps the last event as text (forecast_opened island=corvo): if an error follows, the error line carries last_event. That is what Sentry calls a breadcrumb, the trail of crumbs. log.info('islands loaded', {'count': islands.length}) does the same with kind log. Question for the class: is "Tentar de novo" with no network an event or a log? The "islands failed" warning is a log (warn: something went wrong and the app held up); the tap on the button would be an event, and it does not exist: it stays as an idea for whoever finishes.</aside>
 </section>
 
 <section class="slide">
