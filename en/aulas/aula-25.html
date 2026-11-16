@@ -37,7 +37,7 @@
     <li>Say what is still missing in your project's <code>main</code> for Wednesday's review, and who does what.</li>
     <li>Write a test in three parts with a fake repository, and watch it fail before fixing.</li>
     <li>Read what the CI says about a pull request and decide whether it can go into <code>main</code>.</li>
-    <li>Read a log line and say where, to whom and in which version the error happened.</li>
+    <li>Tell a log from an analytics event, and read in an error line where, to whom and in which version it happened.</li>
   </ul>
   <aside class="notes">What to say: the first part is about the project, because the review is this Wednesday. In the second part there is no new Flutter: this is how teams work on an app that is already in people's hands: someone complains, the team finds it, proves it, fixes it and ships it without breaking something else. Everything you do today is used in sprint 3 of the project, where CI becomes mandatory.</aside>
 </section>
@@ -153,10 +153,40 @@
 </section>
 
 <section class="slide">
-  <h2>The logs, live</h2>
+  <h2>Logs and analytics</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th></th><th>Log</th><th>Analytics</th></tr></thead>
+  <tbody>
+  <tr><td>Answers</td><td>Why did it break?</td><td>What do people do?</td></tr>
+  <tr><td>In the app</td><td><code>log.info</code>, <code>log.warn</code>, <code>log.error</code></td><td><code>analytics.event</code></td></tr>
+  <tr><td>A line</td><td><code>islands loaded</code>, an error with its stack</td><td><code>forecast_opened</code>, <code>favorite_saved</code></td></tr>
+  <tr><td>Who reads it</td><td>Whoever codes, when something fails</td><td>Whoever decides the product: which screens are used, where people give up</td></tr>
+  <tr><td>On the market</td><td>Sentry, Crashlytics, Datadog</td><td>PostHog, Firebase Analytics, Mixpanel</td></tr>
+  </tbody></table></div>
+  <p class="pergunta">You open Corvo and the screen turns grey. Is that log or analytics?</p>
+  <aside class="notes">Two minutes. Both travel down the same pipe: the app gathers the lines, sends them in batches to the course API and the API passes them on to OpenObserve, in the same apps stream. What sets them apart is the kind field: log or event. You do not need two servers to have both; you need to tell them apart in the code, so you do not end up with a pile of lines where the error gets lost among the taps. Events have one name per action, in the past tense, in snake_case, always the same: that is what you count by. Big apps use different tools for each side: Spotify or Revolut measure with analytics what people do and catch crashes with Crashlytics or Sentry. Answer: both. Tapping Corvo is an analytics event (forecast_opened, island corvo). The grey screen is an error, a log line. And the error line carries last_event: what the person had just done.</aside>
+</section>
+
+<section class="slide">
+  <h2>Where the magic happens: an event</h2>
+<pre><code class="language-dart">final analytics = Analytics();
+
+class Analytics {
+  void event(String name, [Map&lt;String, Object?&gt; properties = const {}]) {
+    telemetry.add('event', 'info', name, properties);
+    final detail = properties.entries.map((p) =&gt; '${p.key}=${p.value}');
+    telemetry.lastEvent = [name, ...detail].join(' ');
+  }
+}</code></pre>
+  <p><strong>The idea:</strong> One name per action, in the past tense. It goes down the same pipe as the logs, marked <code>event</code>, and it is kept: if something blows up next, the error says what the person had done.</p>
+  <aside class="notes">It is in lib/telemetry/analytics.dart. telemetry.add is the shared pipe (lib/telemetry/telemetry.dart): it adds the version, the platform and the run to each line and sends them in batches every five seconds; offline, it keeps them. log.info does the same with kind log. lastEvent is what Sentry calls a breadcrumb: the trail of crumbs. In log.error, the error line carries last_event. In the app they look like this: analytics.event('forecast_opened', {'island': widget.island.id}) on the forecast screen, and log.info('islands loaded', {'count': islands.length}) when the list arrives. Question for the class: is "Tentar de novo" with no network an event or a log? The "islands failed" warning is a log (warn: something went wrong and the app held up); the tap on the button would be an event, and it does not exist: it stays as an idea for whoever finishes.</aside>
+</section>
+
+<section class="slide">
+  <h2>Logs and analytics, live</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 140" role="img" aria-label="The path of a log line: the app on the phone sends it to the course API, which adds who sent it and passes it on to OpenObserve, which the teacher has on the projector.">
-<rect x="10" y="20" width="240" height="100" rx="12" class="box"/><text x="130" y="62" text-anchor="middle" class="t b">The app</text><text x="130" y="90" text-anchor="middle" class="t s">log.info, log.error</text>
+  <svg viewBox="0 0 900 140" role="img" aria-label="The path of a log line or an event: the app on the phone sends it to the course API, which adds who sent it and passes it on to OpenObserve, which the teacher has on the projector.">
+<rect x="10" y="20" width="240" height="100" rx="12" class="box"/><text x="130" y="62" text-anchor="middle" class="t b">The app</text><text x="130" y="90" text-anchor="middle" class="t s">log and analytics</text>
 <line x1="252" y1="70" x2="321" y2="70" class="arrow"/>
 <rect x="325" y="20" width="240" height="100" rx="12" class="box accent"/><text x="445" y="62" text-anchor="middle" class="t b">Course API</text><text x="445" y="90" text-anchor="middle" class="t s">adds the name and the app</text>
 <line x1="567" y1="70" x2="636" y2="70" class="arrow"/>
@@ -164,11 +194,12 @@
 </svg>
   </figure>
   <ul>
+    <li>Two tabs on the projector: analytics, what you did, and logs and errors, what broke.</li>
     <li>Look for your lines by name: what you did, on which island and in which version.</li>
     <li>For each bug, the log is the first clue: what the app did, and what it should have done next.</li>
   </ul>
-  <p class="pergunta">Open Corvo on your phone. Which lines show up on the projector, and which one says the island?</p>
-  <aside class="notes">In OpenObserve: Logs, apps stream, last 15 minutes, newest first. Show the columns user_name, message, level, island, version. To filter only errors: level = 'error'. For one person: user_name = 'Ana'. What never goes into a log: passwords, tokens, emails, the exact position; "Onde estou?" logs the island and the kilometres. The name shows up today because this is a lesson; in a real app it would be an id. Lines that are not errors say what the app did: islands loaded, favorite saved, theme saved. Answer: the info line "forecast opened" with island corvo and, right after it, with the same run, the error line "Null check operator used on a null value". On that one, where says "building Widget", error_type says "minified:BG" and the stack points to main.dart.js: the published version has shortened (minified) names to make it smaller. That is why the clue is the line before. In Chrome on the PC, with flutter run, where says ForecastScreen and the stack says forecast_screen.dart and the line. Sentry and Crashlytics solve this by keeping the name map for each version (source maps, --split-debug-info) and translating the stack. Show the "app started" line with the theme too: it helps whoever takes the theme bug. Keep the projector on the logs for the whole hunt.</aside>
+  <p class="pergunta">Open Corvo on your phone. What shows up in each tab, and where is the island?</p>
+  <aside class="notes">In OpenObserve, the dashboard "PDM · a API e a app ao vivo", with 1 hour and a refresh every 10 seconds. Tab "App: analytics": launches, forecasts opened, favourites, "Onde estou?", the most opened islands and the latest events with the name of whoever did them. Tab "App: logs e erros": errors, warnings and the error table with depois_de (the last_event) and the version. Underneath it is all the apps stream; in the Logs menu you filter with kind = 'event' or kind = 'log', and only errors with level = 'error'. What never goes into a log or an event: passwords, tokens, emails, the exact position; "Onde estou?" records the island and the kilometres. The name shows up today because this is a lesson; in a real app it would be an id. Answer: in analytics, forecast_opened with island corvo; in logs and errors, the line "Null check operator used on a null value", with depois_de "forecast_opened island=corvo". The island is in the event, and the error points to it. Where says "building Widget", error_type says "minified:BG" and the stack points to main.dart.js: the published version has shortened (minified) names to make it smaller. That is why last_event is the best clue. In Chrome on the PC, with flutter run, where says ForecastScreen and the stack says forecast_screen.dart and the line. Sentry and Crashlytics solve this by keeping the name map for each version (source maps, --split-debug-info) and translating the stack. Show app_opened with the theme too: it helps whoever takes the theme bug. Keep the projector on the dashboard for the whole hunt.</aside>
 </section>
 
 <section class="slide" data-part="Practice">
@@ -178,7 +209,7 @@
   <tbody>
   <tr><td>Min and max</td><td>Compare with the API JSON in /docs</td><td><code>forecast_test.dart</code></td></tr>
   <tr><td>Onde estou</td><td>The island and the kilometres</td><td><code>nearest_test.dart</code></td></tr>
-  <tr><td>Corvo</td><td>The red line and the one before</td><td><code>forecast_screen_test.dart</code></td></tr>
+  <tr><td>Corvo</td><td>The red line and its <code>last_event</code></td><td><code>forecast_screen_test.dart</code></td></tr>
   </tbody></table></div>
   <p>In pairs, one issue at a time, claimed in the issue, from easiest to hardest. Whoever finishes: the theme, the heart and "Tentar de novo". The steps are in the README of <a href="https://github.com/Tiago-Rocha/pdm-aula-25" target="_blank" rel="noopener">pdm-aula-25</a>.</p>
   <aside class="notes">Time: from 17:00 to 17:50. Today there are three issues: minimum and maximum, onde estou and Corvo, in this order. If there are more pairs than issues, two pairs can take the same one: the first PR with a green CI goes in, the other compares solutions. The theme, the heart and tentar de novo stay open for whoever finishes or wants to practise at home. The tests next door are in test/screens, test/models, test/state and test/location. Each of them first accepts the collaborator invitation (github.com/Tiago-Rocha/pdm-aula-25/invitations, or the GitHub email), clones your repository, no fork, and runs flutter test (green at the start: the existing tests do not look at the bugs) and flutter run in Chrome with their group's clientId; they create an account in that app too. They work on a branch in the repository itself (fix/N-name) and open the pull request to main, with "Fixes #N" in the description. Nobody pushes straight to main: it is protected and only takes PRs with the CI green: when you merge, the issue closes by itself and their name stays on it. Review the diff on GitHub before merging: the new test must fail without the fix, otherwise ask for it. After the merge, the deploy takes about three minutes: tell them to reload the page on their phone and see the new version in the log. Hints if they get stuck: Corvo, the _nicknames map in forecast_screen.dart; minimum and maximum, fromJson in models/forecast.dart; tentar de novo, onPressed in islands_screen.dart, a test that taps and checks islandCalls; heart, toggle in favorites_notifier.dart, a test with addListener that counts; onde estou, nearestIsland, with positionAt(37.74, -25.67); theme, the keys in settings.dart. The solutions are on the local solucao branch.</aside>
