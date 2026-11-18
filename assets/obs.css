@@ -1,0 +1,87 @@
+/* Laboratório de observabilidade · PDM. Uma mini app para o telemóvel dos alunos. */
+:root {
+  --bg: #0b0f14; --card: #131a23; --line: #222c39; --fg: #eef3f8; --muted: #8d9aab;
+  --c: #4cc9f0; --ok: #b6f36a; --bad: #ff6b4a; --star: #ffd166; --new: #f478c4;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, Roboto, sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+body { min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+
+#app { max-width: 520px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+/* Barra de cima */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px 6px; padding-top: max(14px, env(safe-area-inset-top)); }
+.top b { font-size: 15px; letter-spacing: .02em; }
+.top .live { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; }
+.top .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: block; }
+.top .live.on i { background: var(--ok); animation: pulse 1.6s ease-in-out infinite; }
+.top a { color: var(--muted); font-size: 13px; text-decoration: none; border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; }
+@keyframes pulse { 50% { transform: scale(.6); opacity: .5; } }
+
+/* Ecrãs */
+.view { flex: 1; padding: 6px 18px 110px; display: flex; flex-direction: column; gap: 12px; }
+.view h1 { font-size: 34px; margin: 6px 0 0; letter-spacing: -.03em; }
+.view .what { margin: 0; font-size: 15px; color: var(--muted); line-height: 1.45; }
+.back { align-self: flex-start; color: var(--muted); font-size: 15px; padding: 6px 0; }
+
+.ilhas { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.ilha { width: 100%; display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; text-align: left; }
+.ilha:active { transform: scale(.985); }
+.ilha .nome { flex: 1; font-size: 18px; font-weight: 600; }
+.ilha .ic { font-size: 22px; width: 28px; text-align: center; }
+.ilha .t { font-size: 22px; font-weight: 700; }
+.ilha .fav { color: var(--star); font-size: 15px; }
+
+.hero { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 18px; display: flex; align-items: center; gap: 16px; }
+.hero .ic { font-size: 54px; }
+.hero .t { font-size: 64px; font-weight: 800; line-height: 1; }
+.hero .t small { font-size: 22px; color: var(--muted); font-weight: 600; margin-left: 4px; }
+.hero .desc { color: var(--muted); font-size: 15px; margin-top: 4px; }
+.dias { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.dia { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px 4px; text-align: center; font-size: 13px; color: var(--muted); }
+.dia .ic { font-size: 22px; display: block; margin: 4px 0; }
+.dia b { color: var(--fg); font-size: 16px; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--fg); color: var(--bg); border-radius: 18px; padding: 16px 18px; font-size: 17px; font-weight: 700; }
+.btn:active { transform: scale(.98); }
+.btn.sec { background: var(--card); color: var(--fg); border: 1px solid var(--line); }
+.btn.on { background: var(--star); color: #1b1400; }
+
+.estado { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 40px 10px; }
+.estado .ic { font-size: 54px; }
+.estado h2 { margin: 0; font-size: 24px; }
+.estado p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; max-width: 320px; }
+.estado code { font-size: 12px; color: var(--bad); background: #1d1414; border-radius: 8px; padding: 6px 8px; word-break: break-word; }
+.spin { width: 40px; height: 40px; border-radius: 50%; border: 4px solid var(--line); border-top-color: var(--c); animation: roda .8s linear infinite; }
+@keyframes roda { to { transform: rotate(360deg); } }
+
+.trilhos { background: var(--card); border: 1px solid var(--new); border-radius: 20px; padding: 14px 16px; animation: chega .5s ease-out; }
+.trilhos h3 { margin: 0 0 6px; font-size: 16px; color: var(--new); display: flex; align-items: center; gap: 8px; }
+.trilhos h3 span { font-size: 11px; font-weight: 700; color: var(--bg); background: var(--new); border-radius: 99px; padding: 2px 8px; }
+.trilhos ul { margin: 0; padding-left: 18px; color: var(--fg); font-size: 15px; line-height: 1.6; }
+@keyframes chega { from { transform: translateY(8px) scale(.97); opacity: 0; } }
+
+.priv { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 6px 0 0; }
+
+/* Barra de baixo */
+.nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); }
+.nav div { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 6px; }
+.nav button { border-radius: 16px; padding: 10px 16px; font-size: 15px; color: var(--muted); font-weight: 600; }
+.nav button.on { background: var(--fg); color: var(--bg); }
+.nav button.novo { color: var(--new); animation: chega .5s ease-out; }
+.nav button.novo.on { background: var(--new); color: var(--bg); }
+
+/* No computador: o QR ao lado */
+.qrbox { display: none; }
+@media (min-width: 900px) and (pointer: fine) {
+  body { display: flex; justify-content: center; align-items: flex-start; gap: 48px; padding: 40px 24px; }
+  #app { margin: 0; width: 400px; height: min(820px, calc(100dvh - 80px)); min-height: 0; border: 1px solid var(--line); border-radius: 36px; overflow: hidden; position: relative; }
+  .view { overflow-y: auto; }
+  .nav { position: absolute; }
+  .qrbox { display: block; max-width: 320px; padding-top: 30px; }
+  .qrbox img { width: 100%; background: #fff; border-radius: 18px; padding: 14px; display: block; }
+  .qrbox p { color: var(--muted); font-size: 16px; line-height: 1.45; }
+  .qrbox code { color: var(--fg); font-size: 15px; }
+}
