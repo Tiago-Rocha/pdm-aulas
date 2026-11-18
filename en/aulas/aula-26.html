@@ -59,6 +59,12 @@
 </section>
 
 <section class="slide">
+  <h2>What you do in the app</h2>
+  <img class="captura-lab" src="../../assets/img/a26-app-en.jpg" alt="Four screens of the lab app numbered 1 to 4: opening islands, Corvo crashing, the save button and the Warnings tab">
+  <aside class="notes">Project this while they use the app. The numbers are the same in the next images: 1 open islands, 2 Corvo, 3 the save button, 4 the Warnings tab. Nobody sees the Warnings tab yet: only when you switch the flag on, later. The button in 3 depends on the phone: some see the star, others the pink heart, once you launch the experiment.</aside>
+</section>
+
+<section class="slide">
   <h2>Logs: what the server knows</h2>
 <pre data-title="pdm-api, Tuesday afternoon"><code class="language-plaintext">14:23:15  WARN  POST /v1/auth/login     401  52ms  Group: A
 14:23:22  WARN  POST /v1/auth/login     401  56ms  Group: A
@@ -66,24 +72,15 @@
 14:24:03  WARN  POST /v1/auth/register  400  26ms  (no token)</code></pre>
   <ul>
     <li>One line per request: route, code, time and who asked. A crash on the phone before the request leaves no trace.</li>
-    <li>OpenObserve (ours), Datadog (Peloton), Grafana, Google Cloud Logging.</li>
+    <li>On the dashboard: the A API tab, the requests from every group.</li>
   </ul>
-  <aside class="notes">What to say: these lines are real, from our pdm-api, with the group name swapped and without the IP. What it says: three failed logins in half a minute (401: wrong password or an account that does not exist) and then an attempt to create an account with invalid data (400). Blame does not show in one line. Nine in a row from the same group in two minutes already say it is the app sending the fields wrong, not a distracted user. That is what logs do: one line says nothing, a thousand lines together tell the story. Open OpenObserve and filter by <code>status &gt;= 400</code> over the last week: each group sees its own errors. Peloton uses Datadog to follow the bikes and the app during live classes; OpenObserve does the same and runs on our server, so we do not pay per line. Rule: tokens, passwords and personal data never go into logs.</aside>
+  <aside class="notes">What to say: these lines are real, from our pdm-api, with the group name swapped and without the IP. What it says: three failed logins in half a minute (401: wrong password or an account that does not exist) and then an attempt to create an account with invalid data (400). Blame does not show in one line. Nine in a row from the same group in two minutes already say it is the app sending the fields wrong, not a distracted user. That is what logs do: one line says nothing, a thousand lines together tell the story. Open OpenObserve and filter by <code>status &gt;= 400</code> over the last week: each group sees its own errors. OpenObserve runs on our server, so we do not pay per line.</aside>
 </section>
 
 <section class="slide">
-  <h2>Crashes: what arrives when the app blows up</h2>
-  <div class="table-wrap"><table class="compacta">
-  <thead><tr><th>In the report</th><th>In the lab</th></tr></thead>
-  <tbody>
-  <tr><td>The error</td><td><code>TypeError: Cannot read properties of undefined</code></td></tr>
-  <tr><td>Where</td><td>The function that draws the forecast, line by line</td></tr>
-  <tr><td>How many</td><td>How many people, how many times, on which phones</td></tr>
-  <tr><td>Before</td><td>The screens and taps before the error (breadcrumbs)</td></tr>
-  <tr><td>Version</td><td>Which version it started in, and whether the fix has arrived</td></tr>
-  </tbody></table></div>
-  <p><strong>Crashlytics</strong> (Firebase, free), at Gameloft · <strong>Sentry</strong>, at Disney+ · <strong>OpenObserve</strong>, the one we are using, with errors next to the events and the recordings.</p>
-  <aside class="notes">Open OpenObserve RUM in Error Tracking and show the Corvo error grouped: a single issue, with the number of people, occurrences and the crash-free sessions in the room. Open the issue and show the stack; the "Erros agrupados" table in the dashboard shows what the person did just before (depois_de). The island is Corvo: Corvo's forecast came with an empty list of days and the code reads the first day without checking. In the list it looked normal, because the list comes from somewhere else: the typical bug that only shows up with real data. The report gives the phone, the system, the browser, the time and the steps before; it does not say who the person is. In release Flutter is compiled, and without the symbol files the stack is a list of addresses: the symbols are uploaded at build time (<code>--split-debug-info</code>). The version is what decides whether you ship a hotfix today or it is already fixed. Disney+ has a published case on Sentry's site; Gameloft and Tapps Games appear in Firebase's case studies.</aside>
+  <h2>What reaches the dashboard</h2>
+  <img class="captura-lab" src="../../assets/img/a26-painel-en.jpg" alt="Laboratório tab of the OpenObserve dashboard with the numbers 1 to 4 on the panels">
+  <aside class="notes">Open the dashboard on the Laboratório tab (refreshes every 10 s) and let the room watch the numbers move. 1: "Telemóveis ligados" and "Os últimos toques", each tap within seconds. 2: "Erros" and "Erros agrupados": Corvo is a single row, with how many people and what they did before (depois_de). 3 and 4 stay at zero until you switch the flags on in PostHog. The Corvo error: the forecast came with an empty list of days and the code reads the first day without checking. The list looked normal, because it comes from somewhere else: a bug that only shows with real data. In release Flutter is compiled, and without the symbol files the stack is a list of addresses: the symbols are uploaded at build time (<code>--split-debug-info</code>).</aside>
 </section>
 
 <section class="slide">
@@ -112,36 +109,22 @@ PlatformDispatcher.instance.onError = (error, stack) {
   <ul>
     <li>An event is a name and properties. If nobody will look at the chart, it is not recorded.</li>
     <li>Never: name, email, exact location, what is typed in a field.</li>
-    <li>Firebase Analytics, PostHog, Amplitude, Mixpanel. Duolingo decides this way what changes.</li>
+    <li>On the dashboard: the chart "Funil: do arranque ao favorito".</li>
   </ul>
-  <aside class="notes">The event names are in Portuguese because the lab sends the PT and EN versions to the same place (app opened, island opened, favourite saved). Show the funnel "Do arranque ao favorito" in the Laboratório tab of the dashboard. In a room where people were asked to save a favourite it usually goes above 60%; in a real app, with nobody asking, it is much lower, and that is why teams live by these numbers. Show where they drop off: who opened no island, and who opened Corvo and never saw a forecast (step 3 in the dashboard). Next question: what event would you put in your app, and what question does it answer? Reject events without a question (<code>button_pressed</code>) and with personal data (<code>search</code> with the typed text). Duolingo publishes about the A/B tests it runs on every lesson; Y Combinator uses PostHog for experiments. With one room an A/B test is noise; we run one shortly anyway, to see how it works.</aside>
+  <aside class="notes">The event names are in Portuguese because the lab sends the PT and EN versions to the same place (app opened, island opened, favourite saved). Show the funnel "Do arranque ao favorito" in the Laboratório tab of the dashboard. In a room where people were asked to save a favourite it usually goes above 60%; in a real app, with nobody asking, it is much lower, and that is why teams live by these numbers. Show where they drop off: who opened no island, and who opened Corvo and never saw a forecast (step 3 in the dashboard). Next question: what event would you put in your app, and what question does it answer? Reject events without a question (<code>button_pressed</code>) and with personal data (<code>search</code> with the typed text). With one room an A/B test is noise; we run one shortly anyway, to see how it works.</aside>
 </section>
 
 <section class="slide">
-  <h2>Session recording</h2>
-  <ul>
-    <li>It is not video: it is the screen rebuilt from what changed, with text fields masked.</li>
-    <li>It shows where people get lost: the tap that does nothing, the screen that keeps loading.</li>
-    <li>Contra watched the recordings in PostHog, changed sign up and got 30% more accounts.</li>
-    <li>On the web there is Microsoft Clarity, free, and Hotjar; in Flutter, PostHog and Sentry.</li>
-  </ul>
-  <aside class="notes">Open OpenObserve RUM in Sessions and press play on a recording from the room, preferably one that went through Flores: you see the spinner, the slow warning and sometimes the person leaving before the forecast arrives. It is the slowness no crash log shows. It is legal if the privacy policy says so, if personal data is masked and, when the recording identifies someone, with consent (GDPR). In the lab the notice is at the bottom of the list. Banking and health apps mask whole screens. Contra is a case published by PostHog. Extra question: which screen of your app should never be recorded? Sign up and the profile.</aside>
+  <h2>Recordings: what the person did</h2>
+  <img class="captura-lab" src="../../assets/img/a26-sessoes-en.jpg" alt="OpenObserve RUM, Sessions tab, with the play button and the session errors highlighted">
+  <aside class="notes">In OpenObserve: RUM on the left menu, then the Sessions tab. Each phone is a row. Press play on a session with errors: you see the person opening islands and reaching Corvo. It is not video, it is the screen rebuilt, with text fields masked. The Error Tracking tab next to it groups identical errors. If there is time, open a session that went through Flores: you see the spinner and sometimes the person leaving before the forecast arrives. Question: which screen of your app should never be recorded? Sign up and the profile.</aside>
 </section>
 
 <section class="slide">
   <h2>Feature flags: change the app without the store</h2>
-  <div class="table-wrap"><table class="compacta">
-  <thead><tr><th>Flag</th><th>In the lab</th><th>Who does this</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Kill switch</strong><br><code>aba-avisos</code></td><td>A Warnings tab appears in the bar on every phone; switched off, it disappears.</td><td>Tapps Games (Firebase Remote Config)</td></tr>
-  <tr><td><strong>A/B test</strong><br><code>botao-favorito</code></td><td>Some see the star, others the heart; PostHog counts who saves an island.</td><td>Duolingo, on every lesson</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li><strong>Ship it switched off:</strong> the code ships in the release and is switched on later, first for 10%.</li>
-    <li><strong>Forced update:</strong> "minimum version 1.4", and older ones show the store link.</li>
-  </ul>
-  <p><strong>For the tests:</strong> a flag switches a feature on or off in the version already installed; a fix through the store takes days and some people never update.</p>
-  <aside class="notes">Project PostHog, in the "PDM (aulas)" project, with the lab open on your phone. Ship and switch off: open the <a href="https://eu.posthog.com/project/356741/feature_flags/369151" target="_blank" rel="noopener">aba-avisos</a> flag and switch it on. Within five seconds a Warnings tab appears in the bar on every phone; ask them to open it. What to say: the code was already in the version they have and nobody updated anything. This is how a new feature ships, first to 10% and then to everyone (show the percentage on the flag). Now imagine the warnings are wrong: switch the flag off and the tab disappears from everyone within five seconds, without the store. That is a kill switch. A/B test: open the <a href="https://eu.posthog.com/project/356741/experiments/114496" target="_blank" rel="noopener">Botão dos favoritos: estrela ou coração</a> experiment and press Launch. PostHog draws each phone by its id: some see the usual star, others a bigger pink button with a heart, right after today. Ask them to compare with the person next to them and save an island. The draw sticks to the phone, reloading does not change it; a private window may land on the other one. With one room it is rarely half and half. After a few minutes show the experiment results: how many saw each variant and how many saved. PostHog will say there is no significant result, and that is the lesson: with one room it is noise, in an app with thousands of people this is how you decide which one stays. In OpenObserve, the "Teste A/B" chart in the Laboratório tab shows the same per variant. Offline, the app uses the default value: no tab and the star. At the end, switch aba-avisos off and press Stop on the experiment. In the lab the app asks every five seconds so it shows in class; a real app asks at launch and every now and then (Remote Config keeps the value 12 hours by default). Tools: Firebase Remote Config with A/B Testing, PostHog, LaunchDarkly. In sprint 3, a group can put the warnings behind a flag and switch them on only when they are ready. Tapps Games has the case in Firebase's studies, with the staged rollout.</aside>
+  <img class="captura-lab" style="max-height: calc(100vh - 370px)" src="../../assets/img/a26-posthog-en.jpg" alt="PostHog: the aba-avisos flag switch and the botao-favorito experiment results">
+  <p><strong>For the tests:</strong> a flag changes the version already installed; a fix through the store takes days.</p>
+  <aside class="notes">The two numbers in the image match the app: 4 is the Warnings tab, 3 is the favourites button. Project PostHog, in the "PDM (aulas)" project, with the lab open on your phone. Ship and switch off: open the <a href="https://eu.posthog.com/project/356741/feature_flags/369151" target="_blank" rel="noopener">aba-avisos</a> flag and switch it on. Within five seconds a Warnings tab appears in the bar on every phone; ask them to open it. What to say: the code was already in the version they have and nobody updated anything. This is how a new feature ships, first to 10% and then to everyone (show the percentage on the flag). Now imagine the warnings are wrong: switch the flag off and the tab disappears from everyone within five seconds, without the store. That is a kill switch. A/B test: open the <a href="https://eu.posthog.com/project/356741/experiments/114496" target="_blank" rel="noopener">Botão dos favoritos: estrela ou coração</a> experiment and press Launch. PostHog draws each phone by its id: some see the usual star, others a bigger pink button with a heart, right after today. Ask them to compare with the person next to them and save an island. The draw sticks to the phone, reloading does not change it; a private window may land on the other one. With one room it is rarely half and half. After a few minutes show the experiment results: how many saw each variant and how many saved. PostHog will say there is no significant result, and that is the lesson: with one room it is noise, in an app with thousands of people this is how you decide which one stays. In OpenObserve, the "Teste A/B" chart in the Laboratório tab shows the same per variant. Offline, the app uses the default value: no tab and the star. At the end, switch aba-avisos off and press Stop on the experiment. In the lab the app asks every five seconds so it shows in class; a real app asks at launch and every now and then (Remote Config keeps the value 12 hours by default). Tools: Firebase Remote Config with A/B Testing, PostHog, LaunchDarkly. In sprint 3, a group can put the warnings behind a flag and switch them on only when they are ready. Other flags worth knowing: ship it switched off (the code goes in the release and is turned on later, first for 10%) and the forced update ("minimum version 1.4", older ones show the store link).</aside>
 </section>
 
 <section class="slide">
@@ -159,17 +142,17 @@ PlatformDispatcher.instance.onError = (error, stack) {
 </section>
 
 <section class="slide">
-  <h2>Which tool for which question</h2>
+  <h2>Where we saw each thing</h2>
   <div class="table-wrap"><table class="compacta">
-  <thead><tr><th>Question</th><th>Tool</th><th>In the lab</th></tr></thead>
+  <thead><tr><th>Question</th><th>Today</th><th>Also used</th></tr></thead>
   <tbody>
-  <tr><td>Is the server responding?</td><td>Logs (OpenObserve, Datadog)</td><td>The pdm-api</td></tr>
-  <tr><td>Does the app crash, where and for whom?</td><td>Crashes (Crashlytics, Sentry)</td><td>Corvo</td></tr>
-  <tr><td>How many reach the end?</td><td>Analytics (Firebase, PostHog)</td><td>The favourite funnel</td></tr>
-  <tr><td>Where do they get lost?</td><td>Session recording</td><td>Flores</td></tr>
-  <tr><td>Can I switch it off now?</td><td>Feature flags (Remote Config)</td><td>The Warnings tab</td></tr>
+  <tr><td>Is the server responding?</td><td>OpenObserve, A API tab</td><td>Datadog, Grafana</td></tr>
+  <tr><td>Does the app crash, where and for whom?</td><td>OpenObserve, Erros and Error Tracking</td><td>Crashlytics, Sentry</td></tr>
+  <tr><td>How many reach the end?</td><td>OpenObserve, the funnel</td><td>Firebase Analytics, PostHog</td></tr>
+  <tr><td>What did the person do?</td><td>OpenObserve, RUM Sessions</td><td>Sentry, PostHog</td></tr>
+  <tr><td>Can I switch it off now?</td><td>PostHog, the aba-avisos flag</td><td>Firebase Remote Config</td></tr>
   </tbody></table></div>
-  <aside class="notes">Closing the theory, one minute. Ask one student from each group: if tomorrow your app stops showing the forecast to half the people, where do you start? The good answer starts with crashes and logs, and ends with a flag or a hotfix. Extra for sprint 3: a PR that wires Sentry, Crashlytics or PostHog into the app, with the two capture points. It is small and it counts.</aside>
+  <aside class="notes">End of the theory, one minute. Ask one student per group: if tomorrow your app stops showing the forecast to half the people, where do you start? The good answer starts with the errors and the logs, and ends in a flag or a hotfix. Extra for sprint 3: a PR that connects Sentry, Crashlytics or PostHog to the app, with both capture points. It is small and it counts.</aside>
 </section>
 
 <section class="slide" data-part="Review">
