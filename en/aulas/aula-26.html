@@ -28,7 +28,7 @@
   <h1>Observability and sprint 2 review</h1>
   <p class="lead">Theory (40 minutes): how you find out what is happening in an app running on someone else's phone. Logs, crashes, analytics, session recording and feature flags, with the tools companies use and an app on your phone. Practice: sprint 2 review, retro and sprint 3 planning.</p>
   <div class="meta"><span>Sprint 2 review: today</span><span>Sprint 3: 19/11 to 02/12</span></div>
-  <aside class="notes">Before the lesson, on the laptop, leave these tabs open: in OpenObserve (logs.sublimecipher.com), the <a href="https://logs.sublimecipher.com/web/dashboards/view?org_identifier=default&amp;dashboard=7528790982121226240&amp;folder=default&amp;tab=lab&amp;period=1h&amp;refresh=10s" target="_blank" rel="noopener">Laboratório tab of the class dashboard</a>, RUM in Sessions and in Error Tracking, and Logs with the <code>pdm_api</code> stream, without the IP column. In a terminal, in <code>pdm-tools</code>, have <code>./lab_flag.sh on</code> ready (the <code>trilhos</code> flag starts off). Open the lab on your own phone once, so there is at least one session. Draw the review order now and say it starts at 16:40: the groups get the app ready on Android (phone or emulator) while the theory runs. Plan: 16:00 to 16:40 theory and lab, 16:40 to 16:45 each group runs its app with its own credentials, 16:45 to 17:25 review, 17:25 to 18:00 retro and planning.</aside>
+  <aside class="notes">Before the lesson, on the laptop, leave these tabs open: in OpenObserve (logs.sublimecipher.com), the <a href="https://logs.sublimecipher.com/web/dashboards/view?org_identifier=default&amp;dashboard=7528790982121226240&amp;folder=default&amp;tab=lab&amp;period=1h&amp;refresh=10s" target="_blank" rel="noopener">Laboratório tab of the class dashboard</a>, RUM in Sessions and in Error Tracking, and Logs with the <code>pdm_api</code> stream, without the IP column. In a terminal, in <code>pdm-tools</code>, run <code>./lab_flag.sh reset</code> (Corvo on, A/B test off). Open the lab on your own phone once, so there is at least one session. Draw the review order now and say it starts at 16:40: the groups get the app ready on Android (phone or emulator) while the theory runs. Plan: 16:00 to 16:40 theory and lab, 16:40 to 16:45 each group runs its app with its own credentials, 16:45 to 17:25 review, 17:25 to 18:00 retro and planning.</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
@@ -52,12 +52,10 @@
         <li>Open three islands and look at the forecast.</li>
         <li>Save one to your favourites.</li>
         <li>One island crashes and another is slow. Find them.</li>
-        <li>Keep an eye on the bottom bar.</li>
       </ul>
     </div>
   </div>
-  <p class="pergunta">While you play with it: what do you think I can see from here, on my laptop?</p>
-  <aside class="notes">What to say: it is a small version of Azores Weather, in HTML, with the OpenObserve RUM SDK inside (Real User Monitoring), the same kind of SDK you plug into a Flutter app. Give them three minutes. Collect guesses before showing anything. Answer: every screen opened and every tap, how long the forecast took to arrive, the Corvo error with what the person did before it, the session recording (without what is typed), the phone model, the system and the approximate city, from the IP. I do not see name, number, photos or exact location. Then project the Laboratório tab of the dashboard: the "Os últimos toques" (latest taps) table fills up within seconds. If someone shows as "offline" in the corner, a blocker is cutting the sending. It is a good aside: native apps have no blocker, so the responsibility not to abuse it lies with whoever builds the app. Corvo crashes and Flores is slow on purpose; we come back to them in the next slides. The bottom bar changes when you switch the flag on, later: do not say why yet.</aside>
+  <aside class="notes">What to say: it is a small version of Azores Weather, in HTML, with the OpenObserve RUM SDK inside (Real User Monitoring), the same kind of SDK you plug into a Flutter app. Give them three minutes. What reaches the laptop: every screen opened and every tap, how long the forecast took to arrive, the Corvo error with what the person did before it, the session recording (without what is typed), the phone model, the system and the approximate city, from the IP. I do not see name, number, photos or exact location. Then project the Laboratório tab of the dashboard: the "Os últimos toques" (latest taps) table fills up within seconds. If someone shows as "offline" in the corner, a blocker is cutting the sending. It is a good aside: native apps have no blocker, so the responsibility not to abuse it lies with whoever builds the app. Corvo crashes and Flores is slow on purpose; we come back to them in the next slides. Later you change their app from the laptop, with two flags: do not say it yet.</aside>
 </section>
 
 <section class="slide">
@@ -66,17 +64,15 @@
 14:23:22  WARN  POST /v1/auth/login     401  56ms  Group: A
 14:23:41  WARN  POST /v1/auth/login     401  49ms  Group: A
 14:24:03  WARN  POST /v1/auth/register  400  26ms  (no token)</code></pre>
-  <p class="pergunta">What happened here, and whose fault is it?</p>
   <ul>
     <li>One line per request: route, code, time and who asked. A crash on the phone before the request leaves no trace.</li>
     <li>OpenObserve (ours), Datadog (Peloton), Grafana, Google Cloud Logging.</li>
   </ul>
-  <aside class="notes">What to say: these lines are real, from our pdm-api, with the group name swapped and without the IP. Answer: three failed logins in half a minute (401: wrong password or an account that does not exist) and then an attempt to create an account with invalid data (400). Blame does not show in one line. Nine in a row from the same group in two minutes already say it is the app sending the fields wrong, not a distracted user. That is what logs do: one line says nothing, a thousand lines together tell the story. Open OpenObserve and filter by <code>status &gt;= 400</code> over the last week: each group sees its own errors. Peloton uses Datadog to follow the bikes and the app during live classes; OpenObserve does the same and runs on our server, so we do not pay per line. Rule: tokens, passwords and personal data never go into logs.</aside>
+  <aside class="notes">What to say: these lines are real, from our pdm-api, with the group name swapped and without the IP. What it says: three failed logins in half a minute (401: wrong password or an account that does not exist) and then an attempt to create an account with invalid data (400). Blame does not show in one line. Nine in a row from the same group in two minutes already say it is the app sending the fields wrong, not a distracted user. That is what logs do: one line says nothing, a thousand lines together tell the story. Open OpenObserve and filter by <code>status &gt;= 400</code> over the last week: each group sees its own errors. Peloton uses Datadog to follow the bikes and the app during live classes; OpenObserve does the same and runs on our server, so we do not pay per line. Rule: tokens, passwords and personal data never go into logs.</aside>
 </section>
 
 <section class="slide">
   <h2>Crashes: what arrives when the app blows up</h2>
-  <p class="pergunta">Which island crashed? And what do you think the report tells me about it?</p>
   <div class="table-wrap"><table class="compacta">
   <thead><tr><th>In the report</th><th>In the lab</th></tr></thead>
   <tbody>
@@ -87,7 +83,7 @@
   <tr><td>Version</td><td>Which version it started in, and whether the fix has arrived</td></tr>
   </tbody></table></div>
   <p><strong>Crashlytics</strong> (Firebase, free), at Gameloft · <strong>Sentry</strong>, at Disney+ · <strong>OpenObserve</strong>, the one we are using, with errors next to the events and the recordings.</p>
-  <aside class="notes">Open OpenObserve RUM in Error Tracking and show the Corvo error grouped: a single issue, with the number of people, occurrences and the crash-free sessions in the room. Open the issue and show the stack; the "Erros agrupados" table in the dashboard shows what the person did just before (depois_de). Answer to the question: Corvo; Corvo's forecast came with an empty list of days and the code reads the first day without checking. In the list it looked normal, because the list comes from somewhere else: the typical bug that only shows up with real data. The report gives the phone, the system, the browser, the time and the steps before; it does not say who the person is. In release Flutter is compiled, and without the symbol files the stack is a list of addresses: the symbols are uploaded at build time (<code>--split-debug-info</code>). The version is what decides whether you ship a hotfix today or it is already fixed. Disney+ has a published case on Sentry's site; Gameloft and Tapps Games appear in Firebase's case studies.</aside>
+  <aside class="notes">Open OpenObserve RUM in Error Tracking and show the Corvo error grouped: a single issue, with the number of people, occurrences and the crash-free sessions in the room. Open the issue and show the stack; the "Erros agrupados" table in the dashboard shows what the person did just before (depois_de). The island is Corvo: Corvo's forecast came with an empty list of days and the code reads the first day without checking. In the list it looked normal, because the list comes from somewhere else: the typical bug that only shows up with real data. The report gives the phone, the system, the browser, the time and the steps before; it does not say who the person is. In release Flutter is compiled, and without the symbol files the stack is a list of addresses: the symbols are uploaded at build time (<code>--split-debug-info</code>). The version is what decides whether you ship a hotfix today or it is already fixed. Disney+ has a published case on Sentry's site; Gameloft and Tapps Games appear in Firebase's case studies.</aside>
 </section>
 
 <section class="slide">
@@ -106,7 +102,6 @@ PlatformDispatcher.instance.onError = (error, stack) {
 
 <section class="slide">
   <h2>Analytics: the funnel</h2>
-  <p class="pergunta">Of everyone who opened the app today, what percentage do you think saved a favourite?</p>
   <div class="table-wrap"><table class="compacta">
   <thead><tr><th>Step</th><th>Event</th><th>Question it answers</th></tr></thead>
   <tbody>
@@ -119,32 +114,34 @@ PlatformDispatcher.instance.onError = (error, stack) {
     <li>Never: name, email, exact location, what is typed in a field.</li>
     <li>Firebase Analytics, PostHog, Amplitude, Mixpanel. Duolingo decides this way what changes.</li>
   </ul>
-  <aside class="notes">The event names are in Portuguese because the lab sends the PT and EN versions to the same place (app opened, island opened, favourite saved). Collect guesses with fingers (10, 30, 50, 80%) and only then show the funnel "Do arranque ao favorito" in the Laboratório tab of the dashboard. In a room where people were asked to save a favourite it usually goes above 60%; in a real app, with nobody asking, it is much lower, and that is why teams live by these numbers. Show where they drop off: who opened no island, and who opened Corvo and never saw a forecast (step 3 in the dashboard). Next question: what event would you put in your app, and what question does it answer? Reject events without a question (<code>button_pressed</code>) and with personal data (<code>search</code> with the typed text). Duolingo publishes about the A/B tests it runs on every lesson; Y Combinator uses PostHog for experiments. With 50 users an A/B test is noise: the funnel is enough.</aside>
+  <aside class="notes">The event names are in Portuguese because the lab sends the PT and EN versions to the same place (app opened, island opened, favourite saved). Show the funnel "Do arranque ao favorito" in the Laboratório tab of the dashboard. In a room where people were asked to save a favourite it usually goes above 60%; in a real app, with nobody asking, it is much lower, and that is why teams live by these numbers. Show where they drop off: who opened no island, and who opened Corvo and never saw a forecast (step 3 in the dashboard). Next question: what event would you put in your app, and what question does it answer? Reject events without a question (<code>button_pressed</code>) and with personal data (<code>search</code> with the typed text). Duolingo publishes about the A/B tests it runs on every lesson; Y Combinator uses PostHog for experiments. With one room an A/B test is noise; we run one shortly anyway, to see how it works.</aside>
 </section>
 
 <section class="slide">
   <h2>Session recording</h2>
-  <p class="pergunta">Recording the screen of whoever uses the app: is this legal?</p>
   <ul>
     <li>It is not video: it is the screen rebuilt from what changed, with text fields masked.</li>
     <li>It shows where people get lost: the tap that does nothing, the screen that keeps loading.</li>
     <li>Contra watched the recordings in PostHog, changed sign up and got 30% more accounts.</li>
     <li>On the web there is Microsoft Clarity, free, and Hotjar; in Flutter, PostHog and Sentry.</li>
   </ul>
-  <aside class="notes">Open OpenObserve RUM in Sessions and press play on a recording from the room, preferably one that went through Flores: you see the spinner, the slow warning and sometimes the person leaving before the forecast arrives. It is the slowness no crash log shows. Answer: it is legal if the privacy policy says so, if personal data is masked and, when the recording identifies someone, with consent (GDPR). In the lab the notice is at the bottom of the list. Banking and health apps mask whole screens. Contra is a case published by PostHog. Extra question: which screen of your app should never be recorded? Sign up and the profile.</aside>
+  <aside class="notes">Open OpenObserve RUM in Sessions and press play on a recording from the room, preferably one that went through Flores: you see the spinner, the slow warning and sometimes the person leaving before the forecast arrives. It is the slowness no crash log shows. It is legal if the privacy policy says so, if personal data is masked and, when the recording identifies someone, with consent (GDPR). In the lab the notice is at the bottom of the list. Banking and health apps mask whole screens. Contra is a case published by PostHog. Extra question: which screen of your app should never be recorded? Sign up and the profile.</aside>
 </section>
 
 <section class="slide">
-  <h2>Feature flags: changing the app without going through the store</h2>
-  <p class="pergunta">I am going to press a button on my laptop. What do you think changes on your phone?</p>
+  <h2>Feature flags: change the app without the store</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Flag</th><th>In the lab</th><th>Who does this</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Kill switch</strong><br><code>corvo</code></td><td>Corvo is paused: it stops crashing and the errors stop in the dashboard.</td><td>Tapps Games (Firebase Remote Config)</td></tr>
+  <tr><td><strong>A/B test</strong><br><code>ab_favorito</code></td><td>Half the phones see a different favourites button; the dashboard compares the two groups.</td><td>Duolingo, on every lesson</td></tr>
+  </tbody></table></div>
   <ul>
-    <li><strong>Ship it switched off:</strong> the code goes in the release, the feature is switched on later, first for 10%.</li>
-    <li><strong>Kill switch:</strong> Tapps Games used Remote Config to switch off an area of a game that was causing problems.</li>
+    <li><strong>Ship it switched off:</strong> the code ships in the release and is switched on later, first for 10%.</li>
     <li><strong>Forced update:</strong> "minimum version 1.4", and older ones show the store link.</li>
-    <li>Offline, the app uses the default value. Firebase Remote Config, PostHog, LaunchDarkly.</li>
   </ul>
   <p><strong>For the tests:</strong> a flag switches a feature on or off in the version already installed; a fix through the store takes days and some people never update.</p>
-  <aside class="notes">Switch the <code>trilhos</code> flag on live, with the laptop screen projected: <code>./lab_flag.sh on</code>. Within five seconds a pink "Trails" tab appears on the phones, and every island shows its trails. Let them react. Then switch it off (<code>./lab_flag.sh off</code>) and it disappears. What to say: nobody updated anything; the app asks the server which flags are on. In the lab it asks every five seconds so it shows in class; a real app asks at launch and every now and then (Remote Config keeps the value 12 hours by default). Trails are sprint 2 and warnings sprint 3: a group could put the warnings behind a flag and switch them on only when they are ready. Tapps Games has the case in Firebase's studies, with the staged rollout.</aside>
+  <aside class="notes">Project the terminal in <code>pdm-tools</code> and, next to it, the Laboratório tab of the dashboard. Kill switch: ask everyone to open Corvo, which crashes. Run <code>./lab_flag.sh corvo off</code>. Within five seconds Corvo shows as "paused" in the list and whoever opens it sees "Forecast paused", with no error. In the dashboard, the "Kill switch: erros do Corvo por minuto" chart stops growing and the "Corvo em pausa" tile starts counting. What to say: nobody updated anything; the bug is still in the code, but nobody hits it until the fix reaches the store. A/B test: run <code>./lab_flag.sh ab on</code>. Each phone had already drawn A or B; the B group now sees a bigger pink "Save this island" button right after today. Ask them to compare with the person next to them and save an island. The "Teste A/B" chart shows both variants, with how many opened an island and how many saved one. What to say: the group is drawn once per phone and always stays the same, otherwise people would see the button change; with one room the difference is noise, in an app with thousands of people this is how you decide which one stays. Offline, the app uses the default value. Tools: Firebase Remote Config, PostHog, LaunchDarkly. At the end, <code>./lab_flag.sh reset</code> (with no arguments, <code>./lab_flag.sh</code> shows the current state). In the lab the app asks every five seconds so it shows in class; a real app asks at launch and every now and then (Remote Config keeps the value 12 hours by default). In sprint 3, a group can put the warnings behind a flag and switch them on only when they are ready. Tapps Games has the case in Firebase's studies, with the staged rollout.</aside>
 </section>
 
 <section class="slide">
@@ -170,7 +167,7 @@ PlatformDispatcher.instance.onError = (error, stack) {
   <tr><td>Does the app crash, where and for whom?</td><td>Crashes (Crashlytics, Sentry)</td><td>Corvo</td></tr>
   <tr><td>How many reach the end?</td><td>Analytics (Firebase, PostHog)</td><td>The favourite funnel</td></tr>
   <tr><td>Where do they get lost?</td><td>Session recording</td><td>Flores</td></tr>
-  <tr><td>Can I switch it off now?</td><td>Feature flags (Remote Config)</td><td>The trails</td></tr>
+  <tr><td>Can I switch it off now?</td><td>Feature flags (Remote Config)</td><td>Corvo</td></tr>
   </tbody></table></div>
   <aside class="notes">Closing the theory, one minute. Ask one student from each group: if tomorrow your app stops showing the forecast to half the people, where do you start? The good answer starts with crashes and logs, and ends with a flag or a hotfix. Extra for sprint 3: a PR that wires Sentry, Crashlytics or PostHog into the app, with the two capture points. It is small and it counts.</aside>
 </section>

@@ -28,7 +28,7 @@
   <h1>Observabilidade e review da sprint 2</h1>
   <p class="lead">Teoria (40 minutos): como se sabe o que se passa numa app que corre no telemóvel de outra pessoa. Logs, crashes, analytics, gravação de sessões e feature flags, com as ferramentas das empresas e uma app no vosso telemóvel. Prática: review da sprint 2, retro e planeamento da sprint 3.</p>
   <div class="meta"><span>Review da sprint 2: hoje</span><span>Sprint 3: 19/11 a 02/12</span></div>
-  <aside class="notes">Antes da aula, no portátil, deixa abertos em separadores: no OpenObserve (logs.sublimecipher.com), o separador <a href="https://logs.sublimecipher.com/web/dashboards/view?org_identifier=default&amp;dashboard=7528790982121226240&amp;folder=default&amp;tab=lab&amp;period=1h&amp;refresh=10s" target="_blank" rel="noopener">Laboratório do painel da turma</a>, o RUM em Sessions e em Error Tracking, e os Logs com o stream <code>pdm_api</code>, sem a coluna do IP. Num terminal, em <code>pdm-tools</code>, deixa pronto <code>./lab_flag.sh on</code> (a flag <code>trilhos</code> começa desligada). Abre tu o laboratório no telemóvel uma vez, para teres pelo menos uma sessão. Sorteia já a ordem da review e diz que começa às 16:40: os grupos preparam a app em Android (telemóvel ou emulador) enquanto a teoria corre. Plano: 16:00 a 16:40 teoria e laboratório, 16:40 a 16:45 a app de cada grupo a correr com as credenciais do grupo, 16:45 a 17:25 review, 17:25 a 18:00 retro e planeamento.</aside>
+  <aside class="notes">Antes da aula, no portátil, deixa abertos em separadores: no OpenObserve (logs.sublimecipher.com), o separador <a href="https://logs.sublimecipher.com/web/dashboards/view?org_identifier=default&amp;dashboard=7528790982121226240&amp;folder=default&amp;tab=lab&amp;period=1h&amp;refresh=10s" target="_blank" rel="noopener">Laboratório do painel da turma</a>, o RUM em Sessions e em Error Tracking, e os Logs com o stream <code>pdm_api</code>, sem a coluna do IP. Num terminal, em <code>pdm-tools</code>, corre <code>./lab_flag.sh reset</code> (Corvo ligado, teste A/B desligado). Abre tu o laboratório no telemóvel uma vez, para teres pelo menos uma sessão. Sorteia já a ordem da review e diz que começa às 16:40: os grupos preparam a app em Android (telemóvel ou emulador) enquanto a teoria corre. Plano: 16:00 a 16:40 teoria e laboratório, 16:40 a 16:45 a app de cada grupo a correr com as credenciais do grupo, 16:45 a 17:25 review, 17:25 a 18:00 retro e planeamento.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -52,12 +52,10 @@
         <li>Abram três ilhas e vejam a previsão.</li>
         <li>Guardem uma nos favoritos.</li>
         <li>Há uma ilha que rebenta e outra que demora. Encontrem-nas.</li>
-        <li>Fiquem de olho na barra de baixo.</li>
       </ul>
     </div>
   </div>
-  <p class="pergunta">Enquanto mexem: o que acham que eu consigo ver daqui, no meu portátil?</p>
-  <aside class="notes">O que dizer: é uma versão pequena do Tempo Açores, em HTML, com o SDK de RUM do OpenObserve lá dentro (Real User Monitoring), o mesmo género de SDK que se liga a uma app Flutter. Dá três minutos. Recolhe palpites antes de mostrar. Resposta: cada ecrã aberto e cada toque, quanto tempo a previsão demorou a chegar, o erro do Corvo com o que a pessoa fez antes, a gravação da sessão (sem o que se escreve), o modelo do telemóvel, o sistema e a cidade aproximada, pelo IP. Não vejo nome, número, fotos nem a localização exata. Depois projeta o separador Laboratório do painel: o quadro "Os últimos toques" enche-se em segundos. Se alguém aparecer como "offline" no canto, é um bloqueador a cortar o envio. É um bom aparte: em apps nativas não há bloqueador, por isso a responsabilidade de não abusar é de quem faz a app. O Corvo rebenta e as Flores demoram de propósito; voltamos a eles nos slides seguintes. A barra de baixo muda quando ligares a flag, mais à frente: não digas já porquê.</aside>
+  <aside class="notes">O que dizer: é uma versão pequena do Tempo Açores, em HTML, com o SDK de RUM do OpenObserve lá dentro (Real User Monitoring), o mesmo género de SDK que se liga a uma app Flutter. Dá três minutos. O que chega ao portátil: cada ecrã aberto e cada toque, quanto tempo a previsão demorou a chegar, o erro do Corvo com o que a pessoa fez antes, a gravação da sessão (sem o que se escreve), o modelo do telemóvel, o sistema e a cidade aproximada, pelo IP. Não vejo nome, número, fotos nem a localização exata. Depois projeta o separador Laboratório do painel: o quadro "Os últimos toques" enche-se em segundos. Se alguém aparecer como "offline" no canto, é um bloqueador a cortar o envio. É um bom aparte: em apps nativas não há bloqueador, por isso a responsabilidade de não abusar é de quem faz a app. O Corvo rebenta e as Flores demoram de propósito; voltamos a eles nos slides seguintes. Mais à frente mudas a app deles a partir do portátil, com duas flags: não digas já.</aside>
 </section>
 
 <section class="slide">
@@ -66,17 +64,15 @@
 14:23:22  WARN  POST /v1/auth/login     401  56ms  Grupo: A
 14:23:41  WARN  POST /v1/auth/login     401  49ms  Grupo: A
 14:24:03  WARN  POST /v1/auth/register  400  26ms  (sem token)</code></pre>
-  <p class="pergunta">O que aconteceu aqui, e de quem é a culpa?</p>
   <ul>
     <li>Uma linha por pedido: rota, código, tempo e quem pediu. Um crash no telemóvel antes do pedido não deixa rasto.</li>
     <li>OpenObserve (a nossa), Datadog (Peloton), Grafana, Google Cloud Logging.</li>
   </ul>
-  <aside class="notes">O que dizer: estas linhas são reais, da nossa pdm-api, com o nome do grupo trocado e sem o IP. Resposta: três logins falhados em meio minuto (401: palavra-passe errada ou conta que não existe) e depois uma tentativa de criar conta com dados inválidos (400). A culpa não se vê numa linha. Nove seguidas do mesmo grupo em dois minutos já dizem que é a app que envia mal os campos, não um utilizador distraído. É isso que os logs fazem: uma linha não diz nada, mil linhas juntas contam a história. Abre o OpenObserve e filtra por <code>status &gt;= 400</code> da última semana: cada grupo vê os seus erros. A Peloton usa o Datadog para seguir as bicicletas e a app nas aulas ao vivo; o OpenObserve faz o mesmo e corre no nosso servidor, por isso não pagamos por linha. Regra: nos logs nunca vão tokens, palavras-passe nem dados pessoais.</aside>
+  <aside class="notes">O que dizer: estas linhas são reais, da nossa pdm-api, com o nome do grupo trocado e sem o IP. O que se lê: três logins falhados em meio minuto (401: palavra-passe errada ou conta que não existe) e depois uma tentativa de criar conta com dados inválidos (400). A culpa não se vê numa linha. Nove seguidas do mesmo grupo em dois minutos já dizem que é a app que envia mal os campos, não um utilizador distraído. É isso que os logs fazem: uma linha não diz nada, mil linhas juntas contam a história. Abre o OpenObserve e filtra por <code>status &gt;= 400</code> da última semana: cada grupo vê os seus erros. A Peloton usa o Datadog para seguir as bicicletas e a app nas aulas ao vivo; o OpenObserve faz o mesmo e corre no nosso servidor, por isso não pagamos por linha. Regra: nos logs nunca vão tokens, palavras-passe nem dados pessoais.</aside>
 </section>
 
 <section class="slide">
   <h2>Crashes: o que chega quando a app rebenta</h2>
-  <p class="pergunta">Que ilha rebentou? E o que acham que o relatório me diz sobre isso?</p>
   <div class="table-wrap"><table class="compacta">
   <thead><tr><th>No relatório</th><th>No laboratório</th></tr></thead>
   <tbody>
@@ -87,7 +83,7 @@
   <tr><td>Versão</td><td>Em que versão começou, e se a correção já chegou</td></tr>
   </tbody></table></div>
   <p><strong>Crashlytics</strong> (Firebase, grátis), na Gameloft · <strong>Sentry</strong>, na Disney+ · <strong>OpenObserve</strong>, o que estamos a usar, com os erros ao lado dos eventos e das gravações.</p>
-  <aside class="notes">Abre o RUM do OpenObserve em Error Tracking e mostra o erro do Corvo agrupado: uma só issue, com o número de pessoas, de ocorrências e as sessões sem crash da sala (crash-free sessions). Abre a issue e mostra o stack; o quadro "Erros agrupados" do painel diz o que a pessoa tinha feito antes (depois_de). Resposta à pergunta: o Corvo; a previsão do Corvo veio com a lista de dias vazia e o código lê o primeiro dia sem verificar. Na lista parecia normal, porque a lista vem de outro sítio: é o caso típico de um bug que só aparece com dados reais. O relatório diz o telemóvel, o sistema, o browser, a hora e os passos antes; não diz quem é a pessoa. Em release o Flutter é compilado, e sem os ficheiros de símbolos o stack é uma lista de endereços: os símbolos sobem no build (<code>--split-debug-info</code>). A versão é o que decide se fazes hotfix hoje ou se já está corrigido. A Disney+ tem um caso publicado no site do Sentry; a Gameloft e a Tapps Games aparecem nos casos do Firebase.</aside>
+  <aside class="notes">Abre o RUM do OpenObserve em Error Tracking e mostra o erro do Corvo agrupado: uma só issue, com o número de pessoas, de ocorrências e as sessões sem crash da sala (crash-free sessions). Abre a issue e mostra o stack; o quadro "Erros agrupados" do painel diz o que a pessoa tinha feito antes (depois_de). A ilha é o Corvo: a previsão do Corvo veio com a lista de dias vazia e o código lê o primeiro dia sem verificar. Na lista parecia normal, porque a lista vem de outro sítio: é o caso típico de um bug que só aparece com dados reais. O relatório diz o telemóvel, o sistema, o browser, a hora e os passos antes; não diz quem é a pessoa. Em release o Flutter é compilado, e sem os ficheiros de símbolos o stack é uma lista de endereços: os símbolos sobem no build (<code>--split-debug-info</code>). A versão é o que decide se fazes hotfix hoje ou se já está corrigido. A Disney+ tem um caso publicado no site do Sentry; a Gameloft e a Tapps Games aparecem nos casos do Firebase.</aside>
 </section>
 
 <section class="slide">
@@ -106,7 +102,6 @@ PlatformDispatcher.instance.onError = (error, stack) {
 
 <section class="slide">
   <h2>Analytics: o funil</h2>
-  <p class="pergunta">Dos que abriram a app hoje, que percentagem acham que guardou um favorito?</p>
   <div class="table-wrap"><table class="compacta">
   <thead><tr><th>Passo</th><th>Evento</th><th>Pergunta a que responde</th></tr></thead>
   <tbody>
@@ -119,32 +114,34 @@ PlatformDispatcher.instance.onError = (error, stack) {
     <li>Nunca: nome, email, localização exata, o que se escreve num campo.</li>
     <li>Firebase Analytics, PostHog, Amplitude, Mixpanel. O Duolingo decide assim o que muda.</li>
   </ul>
-  <aside class="notes">Recolhe palpites com os dedos (10, 30, 50, 80%) e só depois mostra o funil "Do arranque ao favorito" no separador Laboratório do painel. Numa sala onde se pediu para guardar um favorito costuma passar de 60%; numa app real, sem ninguém a pedir, é muito menos, e é por isso que as equipas vivem destes números. Mostra onde desistem: quem não abriu nenhuma ilha, e quem abriu o Corvo e não chegou a ver uma previsão (o passo 3 do painel). Pergunta seguinte: que evento poriam na vossa app, e a que pergunta responde? Rejeita eventos sem pergunta (<code>botao_carregado</code>) e com dados pessoais (<code>pesquisa</code> com o texto escrito). O Duolingo publica sobre os testes A/B que faz a cada lição; o Y Combinator usa o PostHog para experiências. Com 50 utilizadores um teste A/B é ruído: o funil já chega.</aside>
+  <aside class="notes">Mostra o funil "Do arranque ao favorito" no separador Laboratório do painel. Numa sala onde se pediu para guardar um favorito costuma passar de 60%; numa app real, sem ninguém a pedir, é muito menos, e é por isso que as equipas vivem destes números. Mostra onde desistem: quem não abriu nenhuma ilha, e quem abriu o Corvo e não chegou a ver uma previsão (o passo 3 do painel). Pergunta seguinte: que evento poriam na vossa app, e a que pergunta responde? Rejeita eventos sem pergunta (<code>botao_carregado</code>) e com dados pessoais (<code>pesquisa</code> com o texto escrito). O Duolingo publica sobre os testes A/B que faz a cada lição; o Y Combinator usa o PostHog para experiências. Com uma sala um teste A/B é ruído; fazemos um daqui a pouco na mesma, para se ver como funciona.</aside>
 </section>
 
 <section class="slide">
   <h2>Gravação de sessões</h2>
-  <p class="pergunta">Gravar o ecrã de quem usa a app: isto é legal?</p>
   <ul>
     <li>Não é vídeo: é o ecrã reconstruído a partir do que mudou, com os campos de texto tapados.</li>
     <li>Serve para ver onde as pessoas se perdem: o toque que não faz nada, o ecrã que fica a carregar.</li>
     <li>A Contra viu as gravações no PostHog, mudou o registo e passou a ter 30% mais contas.</li>
     <li>Na web há o Microsoft Clarity, grátis, e o Hotjar; em Flutter, o PostHog e o Sentry.</li>
   </ul>
-  <aside class="notes">Abre o RUM do OpenObserve em Sessions e carrega no play de uma gravação da sala, de preferência uma que tenha passado pelas Flores: vê-se o spinner, o aviso de demora e às vezes a pessoa a sair antes de a previsão chegar. É a lentidão que nenhum log de crash mostra. Resposta: é legal se a política de privacidade o disser, se os dados pessoais forem tapados e, quando a gravação identifica alguém, com consentimento (RGPD). No laboratório o aviso está no fundo da lista. As apps de banco e de saúde tapam ecrãs inteiros. A Contra é um caso publicado pelo PostHog. Pergunta extra: que ecrã da vossa app nunca deviam gravar? O de criar conta e o perfil.</aside>
+  <aside class="notes">Abre o RUM do OpenObserve em Sessions e carrega no play de uma gravação da sala, de preferência uma que tenha passado pelas Flores: vê-se o spinner, o aviso de demora e às vezes a pessoa a sair antes de a previsão chegar. É a lentidão que nenhum log de crash mostra. É legal se a política de privacidade o disser, se os dados pessoais forem tapados e, quando a gravação identifica alguém, com consentimento (RGPD). No laboratório o aviso está no fundo da lista. As apps de banco e de saúde tapam ecrãs inteiros. A Contra é um caso publicado pelo PostHog. Pergunta extra: que ecrã da vossa app nunca deviam gravar? O de criar conta e o perfil.</aside>
 </section>
 
 <section class="slide">
   <h2>Feature flags: mudar a app sem passar pela loja</h2>
-  <p class="pergunta">Vou carregar num botão no meu portátil. O que acham que muda no vosso telemóvel?</p>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Flag</th><th>No laboratório</th><th>Quem faz isto</th></tr></thead>
+  <tbody>
+  <tr><td><strong>Kill switch</strong><br><code>corvo</code></td><td>O Corvo fica em pausa: deixa de rebentar e os erros param no painel.</td><td>Tapps Games (Firebase Remote Config)</td></tr>
+  <tr><td><strong>Teste A/B</strong><br><code>ab_favorito</code></td><td>Metade dos telemóveis vê outro botão de favoritos; o painel compara os dois grupos.</td><td>Duolingo, em cada lição</td></tr>
+  </tbody></table></div>
   <ul>
     <li><strong>Lançar desligado:</strong> o código vai na versão, a funcionalidade liga-se depois, primeiro para 10%.</li>
-    <li><strong>Kill switch:</strong> a Tapps Games desligou com o Remote Config uma zona de um jogo que dava problemas.</li>
     <li><strong>Atualização obrigatória:</strong> "versão mínima 1.4", e as mais antigas mostram o link para a loja.</li>
-    <li>Sem rede, a app usa o valor por defeito. Firebase Remote Config, PostHog, LaunchDarkly.</li>
   </ul>
   <p><strong>Para os testes:</strong> uma flag liga ou desliga uma funcionalidade na versão que já está instalada; uma correção pela loja demora dias e há quem nunca atualize.</p>
-  <aside class="notes">Liga a flag <code>trilhos</code> ao vivo, com o ecrã do portátil projetado: <code>./lab_flag.sh on</code>. Em cinco segundos aparece um separador "Trilhos" cor de rosa nos telemóveis, e cada ilha mostra os trilhos. Deixa-os reagir. Depois desliga (<code>./lab_flag.sh off</code>) e desaparece. O que dizer: ninguém atualizou nada; a app pergunta ao servidor que flags estão ligadas. No laboratório pergunta a cada cinco segundos para se ver na aula; numa app real pergunta no arranque e de tempos a tempos (o Remote Config guarda o valor 12 horas por defeito). Os trilhos são da sprint 2 e os avisos da sprint 3: um grupo podia pôr os avisos atrás de uma flag e ligá-los só quando estiverem prontos. A Tapps Games tem o caso nos estudos do Firebase, com o lançamento por fases.</aside>
+  <aside class="notes">Projeta o terminal em <code>pdm-tools</code> e, ao lado, o separador Laboratório do painel. Kill switch: pede a todos para abrirem o Corvo, que rebenta. Corre <code>./lab_flag.sh corvo off</code>. Em cinco segundos o Corvo aparece "em pausa" na lista e quem o abre vê "Previsão em pausa", sem erro. No painel, o gráfico "Kill switch: erros do Corvo por minuto" deixa de subir e o quadro "Corvo em pausa" começa a contar. O que dizer: ninguém atualizou nada; o bug continua no código, mas ninguém o apanha enquanto a correção não chega à loja. Teste A/B: corre <code>./lab_flag.sh ab on</code>. Cada telemóvel já tinha tirado à sorte A ou B; os do grupo B passam a ver um botão cor de rosa "Guardar esta ilha", maior, logo a seguir a hoje. Pede para compararem com o colega do lado e guardarem uma ilha. O gráfico "Teste A/B" mostra as duas variantes, com quantos abriram uma ilha e quantos guardaram. O que dizer: o grupo sorteia-se uma vez por telemóvel e fica sempre o mesmo, senão a pessoa via o botão a mudar; com uma sala a diferença é ruído, numa app com milhares de pessoas é assim que se decide qual fica. Sem rede, a app usa o valor por defeito. Ferramentas: Firebase Remote Config, PostHog, LaunchDarkly. No fim, <code>./lab_flag.sh reset</code> (sem argumentos, <code>./lab_flag.sh</code> mostra como estão). No laboratório a app pergunta a cada cinco segundos para se ver na aula; numa app real pergunta no arranque e de tempos a tempos (o Remote Config guarda o valor 12 horas por defeito). Na sprint 3, um grupo pode pôr os avisos atrás de uma flag e ligá-los só quando estiverem prontos. A Tapps Games tem o caso nos estudos do Firebase, com o lançamento por fases.</aside>
 </section>
 
 <section class="slide">
@@ -170,7 +167,7 @@ PlatformDispatcher.instance.onError = (error, stack) {
   <tr><td>A app rebenta, onde e a quem?</td><td>Crashes (Crashlytics, Sentry)</td><td>O Corvo</td></tr>
   <tr><td>Quantos chegam ao fim?</td><td>Analytics (Firebase, PostHog)</td><td>O funil do favorito</td></tr>
   <tr><td>Onde se perdem?</td><td>Gravação de sessões</td><td>As Flores</td></tr>
-  <tr><td>Posso desligar já?</td><td>Feature flags (Remote Config)</td><td>Os trilhos</td></tr>
+  <tr><td>Posso desligar já?</td><td>Feature flags (Remote Config)</td><td>O Corvo</td></tr>
   </tbody></table></div>
   <aside class="notes">Fecho da teoria, um minuto. Pergunta a um aluno de cada grupo: se amanhã a vossa app deixar de mostrar a previsão a metade das pessoas, por onde começam? A resposta boa começa pelos crashes e pelos logs, e acaba numa flag ou num hotfix. Extra para a sprint 3: um PR que ligue o Sentry, o Crashlytics ou o PostHog à app, com os dois pontos de captura. É pequeno e conta.</aside>
 </section>
