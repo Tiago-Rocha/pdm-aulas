@@ -28,7 +28,7 @@
   <h1>Workshop: assinar a app e distribuí-la a testers</h1>
   <p class="lead">Teoria (30 minutos): porque se distribui cedo, os três caminhos até aos testers e o que é assinar uma app. Workshop: a app do grupo assinada, numa Release do GitHub e no telemóvel de três colegas pelo Firebase App Distribution. Depois: ícone, ecrã de arranque, tema escuro e duas línguas.</p>
   <div class="meta"><span>Sem repositório da aula: tudo no projeto do grupo</span><span>Pausa às 10:20</span></div>
-  <aside class="notes">Plano: 08:30 a 09:00 teoria; 09:00 a 10:20 passos 1 a 4 (identidade da app, chave, APK de release, Release no GitHub); 10:20 a 10:35 pausa; 10:35 a 11:30 Firebase e testers; 11:30 a 12:15 feedback em issues e polish; 12:15 a 12:30 ronda final, cada grupo mostra a Release e quantos testers têm a app. À entrada: quem tem iPhone fica a saber que hoje testa no Android de um colega ou no emulador. Os testers são os colegas dos outros grupos, por isso cada pessoa testa a app de pelo menos um grupo que não é o seu. Precisam de uma conta Google no telemóvel do tester e de um computador com o Android SDK a funcionar (o que já usam para correr a app).</aside>
+  <aside class="notes">Plano: 08:30 a 09:00 teoria; 09:00 a 10:20 passos 1 a 3 (identidade da app, chave, APK de release); 10:20 a 10:35 pausa; 10:35 a 10:50 Release no GitHub; 10:50 a 11:35 Firebase e testers; 11:35 a 12:15 testes e feedback em issues, e polish para quem acabar; 12:15 a 12:30 ronda final, cada grupo mostra a Release e quantos testers têm a app. À entrada: quem tem iPhone fica a saber que hoje testa no Android de um colega ou no emulador. Os testers são os colegas dos outros grupos, por isso cada pessoa testa a app de pelo menos um grupo que não é o seu. Precisam de uma conta Google no telemóvel do tester e de um computador com o Android SDK a funcionar (o que já usam para correr a app).</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
@@ -109,78 +109,127 @@
 
 <section class="slide" data-part="Workshop">
   <h2>Workshop: até ao telemóvel de outra pessoa</h2>
-  <ol class="steps">
-    <li><strong>A app com nome próprio:</strong> applicationId, nome no ícone, Internet e versão.</li>
-    <li><strong>A chave do grupo:</strong> keystore, <code>key.properties</code> e Gradle.</li>
-    <li><strong>O APK de release</strong>, usado no vosso telemóvel sem o cabo.</li>
-    <li><strong>A Release <code>v0.3.0</code></strong> no GitHub, com o APK.</li>
-    <li><strong>Firebase App Distribution:</strong> três testers de fora do grupo.</li>
-    <li><strong>Feedback em issues</strong> e, para quem acabar, o polish.</li>
-  </ol>
-  <aside class="notes">O que dizer: até à pausa, passos 1 a 4; depois da pausa, 5 e 6. Uma pessoa do grupo faz os passos 1 a 4 no computador onde a app já corre, e as outras acompanham e preparam a lista de testers e o texto das notas de versão. Os passos 1 e 2 são um PR (sem o <code>key.properties</code> nem o <code>.jks</code>, claro). A meta de hoje é o passo 5 feito por todos os grupos; o polish é o bónus. Na ronda final cada grupo mostra a Release e um telemóvel de fora do grupo com a app.</aside>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Passo</th><th>O quê</th><th>Até às</th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td>A app com nome próprio: id, nome, Internet e versão</td><td>09:15</td></tr>
+  <tr><td>2</td><td>A chave do grupo: keytool, <code>key.properties</code> e Gradle</td><td>09:55</td></tr>
+  <tr><td>3</td><td>O APK de release, no vosso telemóvel</td><td>10:20</td></tr>
+  <tr><td></td><td>Pausa</td><td>10:35</td></tr>
+  <tr><td>4</td><td>A Release <code>v0.3.0</code> no GitHub, com o APK</td><td>10:50</td></tr>
+  <tr><td>5</td><td>Firebase App Distribution: três testers de fora do grupo</td><td>11:35</td></tr>
+  <tr><td>6</td><td>Testar a app de outro grupo e feedback em issues</td><td>12:15</td></tr>
+  </tbody></table></div>
+  <p>Uma pessoa por grupo faz os passos 1 a 4 no computador onde a app já corre no Android. As outras preparam os emails dos testers e as notas de versão.</p>
+  <aside class="notes">O que dizer: a meta de hoje é o passo 5 feito por todos os grupos; o polish é só para quem acabar. Antes de começar, confirmem em cada grupo qual é o computador que já correu a app num telemóvel Android ou no emulador: é esse que faz o build. Se o build do passo 3 ainda estiver a correr às 10:20, deixem-no a correr durante a pausa. Os passos 1 e 2 são um PR (sem o <code>key.properties</code>, o <code>.jks</code> nem o <code>pdm.json</code>); o merge tem de estar feito antes do passo 4. Na ronda final cada grupo mostra a Release e um telemóvel de fora do grupo com a app.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 1: a app com nome próprio</h2>
+  <h2>Os ficheiros que mudam hoje</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Ficheiro</th><th>O que muda</th><th>Git</th></tr></thead>
+  <tbody>
+  <tr><td><code>android/app/src/main/AndroidManifest.xml</code></td><td>Internet e nome no ícone</td><td>Sim</td></tr>
+  <tr><td><code>android/app/build.gradle.kts</code></td><td>applicationId e assinatura</td><td>Sim</td></tr>
+  <tr><td><code>pubspec.yaml</code></td><td><code>version: 0.3.0+3</code></td><td>Sim</td></tr>
+  <tr><td><code>.gitignore</code></td><td>Uma linha: <code>pdm.json</code></td><td>Sim</td></tr>
+  <tr><td><code>android/key.properties</code></td><td>Palavra-passe e caminho da chave</td><td>Nunca</td></tr>
+  <tr><td><code>upload-keystore.jks</code>, na pasta pessoal</td><td>A chave do grupo</td><td>Nunca</td></tr>
+  <tr><td><code>pdm.json</code></td><td>clientId e clientSecret do grupo</td><td>Nunca</td></tr>
+  </tbody></table></div>
+  <aside class="notes">O que dizer: este é o mapa do dia. Antes de cada commit, o <code>git status</code> só pode mostrar as quatro primeiras linhas. Quatro ficheiros entram no PR, três nunca saem do computador. O <code>android/.gitignore</code> dos vossos projetos já esconde o <code>key.properties</code> e os <code>.jks</code>; o <code>pdm.json</code> não está em nenhum <code>.gitignore</code>, e é por isso que acrescentamos a linha no passo 1. O <code>pdm.json</code> só existe nos grupos que chamam a API com <code>String.fromEnvironment</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 1: Internet e o nome no ícone</h2>
 <pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
     &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+    &lt;!-- as permissões de localização ficam como estão --&gt;
     &lt;application
         android:label="Tempo Açores · Grupo 1"
         ...</code></pre>
   <ul>
-    <li>A permissão de Internet: sem ela, o build de release não chega à API.</li>
+    <li>É o manifesto de <code>src/main</code>. Os de <code>src/debug</code> e <code>src/profile</code> já têm a Internet, mas só valem para o <code>flutter run</code>.</li>
     <li>O <code>label</code> é o nome por baixo do ícone. Hoje as quatro apps chamam-se <code>tempo_acores</code>.</li>
-    <li>Em <code>android/app/build.gradle.kts</code>: <code>applicationId = "pt.uac.pdm.tempo_acores.grupo1"</code>.</li>
-    <li>No <code>pubspec.yaml</code>: <code>version: 0.3.0+3</code>.</li>
   </ul>
-  <aside class="notes">O que dizer: três ficheiros, quatro linhas. Só o applicationId muda; o <code>namespace</code> e a pasta do <code>MainActivity.kt</code> ficam como estão. O sufixo é à escolha do grupo (o apelido de alguém, o nome que deram à app), em minúsculas. Quem tinha a app instalada com o id antigo fica com duas no telemóvel: desinstalem a antiga. As permissões de localização que já lá estão continuam iguais. O <code>pubspec.yaml</code> vem com <code>1.0.0+1</code>; descer para 0.3.0 não faz mal, porque o Android só compara o número depois do <code>+</code>. Antes de passar ao passo 2, um <code>flutter run</code> para ver que nada partiu.</aside>
+  <aside class="notes">O que dizer: a linha da Internet vai logo a seguir à abertura do <code>&lt;manifest&gt;</code>, fora do <code>&lt;application&gt;</code>. Um grupo já a tem, os outros três não: sem ela, o build de release abre, mas o login falha e parece um erro da API. O nome no <code>label</code> é livre e pode ter espaços e acentos; é o que o tester vê no ecrã inicial.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 2: a chave do grupo</h2>
-<pre data-title="Terminal, uma vez por grupo"><code class="language-bash">keytool -genkey -v -keystore ~/upload-keystore.jks \
-        -storetype JKS -keyalg RSA -keysize 2048 \
-        -validity 10000 -alias upload</code></pre>
+  <h2>Passo 1: o id, a versão e o <code>.gitignore</code></h2>
+<pre data-title="android/app/build.gradle.kts, dentro de defaultConfig { }"><code class="language-kotlin">applicationId = "pt.uac.pdm.tempo_acores.grupo1"</code></pre>
   <ul>
-    <li>Pede uma palavra-passe e um nome. A palavra-passe fica já num sítio seguro do grupo.</li>
-    <li>O ficheiro fica na pasta pessoal, fora do projeto: não há forma de entrar num commit.</li>
-    <li>Uma pessoa cria; o <code>.jks</code> e a palavra-passe passam ao resto do grupo por um canal privado.</li>
-    <li>No Windows: o <code>keytool</code> está na pasta do Java que o <code>flutter doctor -v</code> mostra.</li>
+    <li>Só esta linha. O <code>namespace</code>, mais acima, fica como está.</li>
+    <li>O sufixo é vosso: minúsculas, números e <code>_</code>, a começar por uma letra. Não muda mais.</li>
+    <li>No <code>pubspec.yaml</code>: <code>version: 1.0.0+1</code> passa a <code>version: 0.3.0+3</code>.</li>
+    <li>No <code>.gitignore</code> da raiz, uma linha nova no fim: <code>pdm.json</code>.</li>
+    <li>Um <code>flutter run</code> para ver que nada partiu. Desinstalem a app antiga do telemóvel: agora são duas.</li>
   </ul>
-  <aside class="notes">O que dizer: <code>-validity 10000</code> são uns 27 anos; a Play Store exige que a chave dure pelo menos até 2033. O alias <code>upload</code> é o nome da chave dentro do ficheiro. No Windows, em PowerShell: <code>keytool -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload</code>. Se der "keytool não é reconhecido", correm <code>flutter doctor -v</code>, copiam o caminho de "Java binary at", trocam o <code>java</code> do fim por <code>keytool</code> e põem o caminho entre aspas. Guardem a palavra-passe em dois sítios (gestor de palavras-passe e uma nota privada do grupo). Não a escrevam no grupo de WhatsApp da turma.</aside>
+  <aside class="notes">O que dizer: o applicationId vai ser registado no Firebase no passo 5 e não se muda lá depois, por isso escolham-no agora com calma (o apelido de alguém, o nome que deram à app). Mudar o <code>namespace</code> obrigava a mudar a pasta do <code>MainActivity.kt</code>: não lhe toquem. Descer de 1.0.0 para 0.3.0 não faz mal, porque o Android só compara o número depois do <code>+</code>, e 3 é maior do que 1.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2: criar a chave do grupo</h2>
+<pre data-title="PowerShell, no Windows: uma vez por grupo"><code class="language-powershell">$kt = "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe"
+&amp; $kt -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks `
+    -keyalg RSA -keysize 2048 -validity 10000 -alias upload</code></pre>
+  <ul>
+    <li>No macOS, o mesmo comando com o keytool do Android Studio:<br><code>"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool"</code> e <code>-keystore ~/upload-keystore.jks</code>.</li>
+    <li>O keytool que vem com o sistema não serve: no Mac dá "Unable to locate a Java Runtime".</li>
+    <li>A chave fica na pasta pessoal, fora do projeto: não tem como entrar num commit.</li>
+  </ul>
+  <aside class="notes">O que dizer: uma pessoa do grupo cria a chave, e depois passa o ficheiro e a palavra-passe ao resto do grupo por um canal privado. Se o Android Studio estiver noutro sítio, o <code>flutter doctor -v</code> mostra-o na linha "Java binary at": é essa pasta, com <code>keytool</code> no lugar de <code>java</code>. O acento grave no fim da segunda linha é a continuação de linha do PowerShell; no macOS é a barra invertida. <code>-validity 10000</code> são uns 27 anos: a Play Store exige que a chave dure pelo menos até 2033. O alias <code>upload</code> é o nome da chave dentro do ficheiro.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2: o que o keytool pergunta</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Pergunta</th><th>Resposta</th></tr></thead>
+  <tbody>
+  <tr><td>Enter keystore password</td><td>A palavra-passe do grupo, 6 ou mais caracteres. Não aparece enquanto se escreve.</td></tr>
+  <tr><td>Re-enter new password</td><td>A mesma</td></tr>
+  <tr><td>What is your first and last name?</td><td>O nome do grupo</td></tr>
+  <tr><td>Organizational unit · organization</td><td><code>PDM</code> · <code>ESTA</code></td></tr>
+  <tr><td>City · State · country code</td><td><code>Ponta Delgada</code> · <code>Acores</code> · <code>PT</code></td></tr>
+  <tr><td>Is CN=... correct? [no]</td><td><code>yes</code>, por extenso</td></tr>
+  </tbody></table></div>
+  <p>Acaba com <code>[Storing ...upload-keystore.jks]</code>. A palavra-passe vai já para dois sítios seguros do grupo.</p>
+  <aside class="notes">O que dizer: o nome e a cidade ficam escritos no certificado; ninguém os confirma, servem para quem abrir a chave saber de quem é. Carregar só no Enter deixa "Unknown", e também funciona. Se responderem "sim" ou só Enter na última pergunta, o keytool volta ao início das perguntas: respondam <code>yes</code>. Os dois sítios: um gestor de palavras-passe e uma nota privada do grupo. Não no grupo de WhatsApp da turma. Se a palavra-passe se perder, a chave não serve para nada.</aside>
 </section>
 
 <section class="slide">
   <h2>Passo 2: o <code>key.properties</code>, fora do git</h2>
-<pre data-title="android/key.properties"><code class="language-properties">storePassword=a-palavra-passe-do-grupo
+<pre data-title="android/key.properties (ficheiro novo)"><code class="language-properties">storePassword=a-palavra-passe-do-grupo
 keyPassword=a-palavra-passe-do-grupo
 keyAlias=upload
-storeFile=/Users/ana/upload-keystore.jks</code></pre>
+storeFile=C:\\Users\\ana\\upload-keystore.jks</code></pre>
   <ul>
-    <li>No Windows, barras a dobrar: <code>storeFile=C:\\Users\\ana\\upload-keystore.jks</code></li>
-    <li>O <code>android/.gitignore</code> já tem <code>key.properties</code> e <code>*.jks</code>: o <code>git status</code> não os mostra.</li>
-    <li>Cada pessoa que faz builds de release tem o seu <code>key.properties</code>, com o caminho do seu computador.</li>
+    <li>Na pasta <code>android/</code>, ao lado do <code>build.gradle.kts</code> de fora, não em <code>android/app/</code>.</li>
+    <li>No Windows, barras a dobrar. No macOS: <code>storeFile=/Users/ana/upload-keystore.jks</code>.</li>
+    <li>As duas palavras-passe são a mesma.</li>
+    <li>O <code>git status</code> não o mostra: o <code>android/.gitignore</code> já o esconde.</li>
   </ul>
-  <aside class="notes">O que dizer: é aqui que o Gradle vai buscar o caminho e as palavras-passe; o código não tem nenhum segredo. Se a keystore pedir a mesma palavra-passe duas vezes, as duas linhas ficam iguais. Antes do commit do PR, correm <code>git status</code> e confirmam que este ficheiro não aparece. Se aparecer, alguém mexeu no <code>.gitignore</code>: parem e chamem-me. No CI do GitHub Actions este ficheiro não existe, e não faz mal: o CI só corre <code>analyze</code> e <code>test</code>.</aside>
+  <aside class="notes">O que dizer: é aqui que o Gradle vai buscar o caminho e a palavra-passe; o código não tem nenhum segredo. Cada pessoa que faz builds de release tem o seu <code>key.properties</code>, com o caminho do seu computador. Se o <code>git status</code> mostrar o <code>key.properties</code>, alguém mexeu no <code>.gitignore</code>: parem e chamem-me. No CI do GitHub Actions este ficheiro não existe, e não faz mal: o CI só corre <code>analyze</code> e <code>test</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 2: o Gradle lê a chave</h2>
+  <h2>Passo 2: o Gradle lê o <code>key.properties</code></h2>
 <pre data-title="android/app/build.gradle.kts, no topo"><code class="language-kotlin">import java.util.Properties
 import java.io.FileInputStream
-// aqui fica o bloco plugins { }, como está
+
+plugins { ... }  // fica como está
 
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }</code></pre>
-  <p>Sem <code>key.properties</code> nada rebenta: o <code>flutter run</code> continua a funcionar a quem não o tem.</p>
-  <aside class="notes">O que dizer: <code>rootProject</code> é a pasta <code>android/</code>, por isso o ficheiro é <code>android/key.properties</code>. O <code>if</code> é o que deixa os colegas sem a chave continuar a trabalhar: o Gradle só reclama quando alguém pede um build de release. Erro comum: colar os imports a meio do ficheiro dá "Unresolved reference: Properties" ou um erro de sintaxe no <code>plugins</code>.</aside>
+  <p>Os dois <code>import</code> antes do <code>plugins</code>; as cinco linhas novas entre o <code>plugins</code> e o <code>android {</code>.</p>
+  <aside class="notes">O que dizer: <code>rootProject</code> é a pasta <code>android/</code>, por isso o ficheiro é <code>android/key.properties</code>. O <code>if</code> é o que deixa os colegas sem a chave continuar a trabalhar: o <code>flutter run</code> funciona na mesma, e o Gradle só reclama quando alguém pede um build de release. Os imports a meio do ficheiro dão "Unresolved reference: Properties".</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 2: assinar com a chave do grupo</h2>
+  <h2>Passo 2: a chave, depois do <code>defaultConfig</code></h2>
 <pre data-title="android/app/build.gradle.kts, dentro de android { }"><code class="language-kotlin">signingConfigs {
     create("release") {
         keyAlias = keystoreProperties.getProperty("keyAlias")
@@ -190,56 +239,111 @@ if (keystorePropertiesFile.exists()) {
         storePassword = keystoreProperties.getProperty("storePassword")
     }
 }</code></pre>
-  <p>Logo a seguir, no <code>buildTypes</code> que já existe, a linha do <code>"debug"</code> passa a <code>signingConfig = signingConfigs.getByName("release")</code>.</p>
-  <aside class="notes">O que dizer: é aqui que a magia acontece. O <code>buildTypes</code> do modelo do Flutter assinava o release com a chave de debug, "para o <code>flutter run --release</code> funcionar", diz o comentário. Agora o release usa a chave do grupo. Erros comuns: "Keystore was tampered with, or password was incorrect" é a palavra-passe errada no <code>key.properties</code>; "Keystore file not found" é o caminho do <code>storeFile</code> (no Windows, as barras a dobrar); "SigningConfig release is missing required property" é o <code>key.properties</code> que não está em <code>android/</code>.</aside>
+  <p>Fica entre o fim do <code>defaultConfig { }</code> e o <code>buildTypes {</code>, que já existe.</p>
+  <aside class="notes">O que dizer: isto só dá um nome à chave, "release", e diz onde ela está. Ainda não assina nada: é o slide seguinte que a liga ao build de release. O <code>?.let</code> é o que evita o erro quando não há <code>key.properties</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2: o release passa a usar a chave do grupo</h2>
+<pre data-title="android/app/build.gradle.kts, o buildTypes que já existe"><code class="language-kotlin">buildTypes {
+    release {
+        signingConfig = signingConfigs.getByName("release")
+    }
+}</code></pre>
+  <ul>
+    <li>Antes estava <code>getByName("debug")</code>: o release saía assinado com a chave de debug de cada computador.</li>
+    <li>As duas linhas de comentário com <code>TODO</code> por cima podem sair.</li>
+    <li>Commit, PR e merge dos passos 1 e 2. O <code>git status</code> mostra quatro ficheiros.</li>
+  </ul>
+  <aside class="notes">O que dizer: é aqui que a magia acontece. O comentário do modelo do Flutter dizia "Signing with the debug keys for now, so flutter run --release works". Agora o release usa a chave do grupo, e o APK de qualquer pessoa do grupo instala-se por cima do de outra. Este ficheiro, com estas alterações, foi testado nos quatro projetos da turma e o build de release passa em todos.</aside>
 </section>
 
 <section class="slide">
   <h2>Passo 3: o APK de release</h2>
-<pre data-title="Terminal, na raiz do projeto"><code class="language-bash">flutter build apk --release --dart-define-from-file=pdm.json
-flutter install</code></pre>
+<pre data-title="Terminal, na raiz do projeto"><code class="language-bash"># a app chama a API com o pdm.json
+flutter build apk --release --dart-define-from-file=pdm.json
+# a app ainda não chama a API, ou tem o clientId no código
+flutter build apk --release</code></pre>
   <ul>
-    <li>Sai em <code>build/app/outputs/flutter-apk/app-release.apk</code>.</li>
-    <li>Sem o <code>--dart-define-from-file</code>, o clientId vai vazio e o login dá 401.</li>
-    <li>O <code>flutter install</code> põe este APK no telemóvel ligado. Depois, sem cabo: entrar, ilhas, trilhos, modo avião.</li>
-    <li>O que vai no APK é público: quem tiver o ficheiro consegue ler o clientSecret. Numa app a sério, os segredos ficam no servidor.</li>
+    <li>Demora de 3 a 10 minutos. Sai em <code>build/app/outputs/flutter-apk/app-release.apk</code>.</li>
+    <li>Com o telemóvel ligado: <code>flutter install</code>. Depois, sem o cabo: entrar, ilhas, trilhos, modo avião.</li>
   </ul>
-  <aside class="notes">O que dizer: o primeiro build de release demora uns minutos, porque compila o Dart para código máquina das três arquiteturas. É mais rápido e mais pequeno do que o debug, e não tem o banner. Se der "INSTALL_FAILED_UPDATE_INCOMPATIBLE", há no telemóvel uma app com o mesmo id e outra chave: desinstalem-na. Se a app abrir e nada carregar, é quase sempre a permissão de Internet do passo 1. A última linha liga ao que se viu com o PostHog: uma chave que vai dentro de uma app é pública. Por isso a chave do PostHog só deixa enviar eventos, e por isso as APIs a sério não confiam no que a app diz sem um login.</aside>
+  <aside class="notes">O que dizer: o build de release compila o Dart para código máquina das três arquiteturas: é mais rápido e mais pequeno do que o debug, e não tem a faixa DEBUG. O <code>pdm.json</code> é o de quarta, na raiz do projeto, com <code>CLIENT_ID</code> e <code>CLIENT_SECRET</code>. Sem o <code>--dart-define-from-file</code>, nos grupos que usam <code>String.fromEnvironment</code>, o clientId vai vazio e o login dá 401. Com a flag e sem o ficheiro, o build para logo. O que vai no APK é público, até o clientSecret: quem tiver o ficheiro consegue lê-lo. Numa app a sério, os segredos ficam no servidor. A chave do PostHog que se viu na quarta é pública por isso mesmo: só deixa enviar eventos. Sem telemóvel Android: o <code>flutter install</code> também instala no emulador, ou arrasta-se o APK para a janela do emulador.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quando a chave dá erro</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>A mensagem diz</th><th>O que fazer</th></tr></thead>
+  <tbody>
+  <tr><td>keytool não é reconhecido · Unable to locate a Java Runtime</td><td>O keytool do Android Studio, com o caminho todo</td></tr>
+  <tr><td>keystore password was incorrect</td><td>A palavra-passe no <code>key.properties</code></td></tr>
+  <tr><td>Keystore file '...' not found</td><td>O <code>storeFile</code>; no Windows, barras a dobrar</td></tr>
+  <tr><td>SigningConfig "release" is missing required property "storeFile"</td><td>O <code>key.properties</code> fora de <code>android/</code></td></tr>
+  <tr><td>Unresolved reference: Properties</td><td>Os dois <code>import</code> no topo</td></tr>
+  </tbody></table></div>
+  <aside class="notes">O que dizer: as mensagens do Gradle são compridas; a que interessa vem depois de "What went wrong". Estas são as mensagens exatas, tiradas de builds a falhar nos projetos da turma. Se aparecer outra, copiem as linhas depois de "What went wrong" e chamem-me.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quando a app dá erro</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>A mensagem diz</th><th>O que fazer</th></tr></thead>
+  <tbody>
+  <tr><td>Did not find the file passed to "--dart-define-from-file"</td><td>Criar o <code>pdm.json</code> na raiz, ou build sem a flag</td></tr>
+  <tr><td>O login dá 401</td><td>Faltou o <code>--dart-define-from-file=pdm.json</code></td></tr>
+  <tr><td>App não instalada · INSTALL_FAILED_UPDATE_INCOMPATIBLE</td><td>Desinstalar a app antiga, com o mesmo id e outra chave</td></tr>
+  <tr><td>A app abre e nada carrega</td><td>A Internet no manifesto de <code>src/main</code></td></tr>
+  </tbody></table></div>
+  <aside class="notes">O que dizer: o 401 e o "nada carrega" são os dois que parecem erros da API e não são. Para ter a certeza, abram o OpenObserve: se o login do grupo não aparece lá, o pedido nem saiu do telemóvel, e é a Internet no manifesto. Se aparece com <code>login_failed</code>, é o clientId.</aside>
 </section>
 
 <section class="slide">
   <h2>Passo 4: uma Release no GitHub</h2>
-<pre data-title="Terminal, na raiz do projeto"><code class="language-bash">gh release create v0.3.0 \
-  build/app/outputs/flutter-apk/app-release.apk \
-  --title "0.3.0" --notes "Primeira versão para testers"</code></pre>
-  <ul>
-    <li>Ou no site: Releases, "Draft a new release", tag <code>v0.3.0</code>, arrastar o APK.</li>
-    <li>A tag bate com o <code>pubspec.yaml</code>: <code>0.3.0+3</code> dá <code>v0.3.0</code>.</li>
-    <li>Cada build novo para os testers: versão nova, Release nova. É o requisito 11 do projeto.</li>
-  </ul>
-  <aside class="notes">O que dizer: a Release guarda o APK exato que os testers receberam, junto ao commit de onde saiu. Quando um tester disser "na 0.3.0 o Corvo não abre", sabem que código estava lá. As notas de versão escrevem-se para quem testa: o que é novo e o que querem que experimentem. Se o <code>gh</code> não estiver instalado ou autenticado, o site faz o mesmo em dois minutos. A tag cria-se no último commit do <code>main</code>: façam o merge do PR dos passos 1 e 2 antes.</aside>
+  <ol class="steps">
+    <li>Os passos 1 e 2 já com merge no <code>main</code>.</li>
+    <li>Releases, "Draft a new release". "Choose a tag": <code>v0.3.0</code>, "Create new tag".</li>
+    <li>Título <code>0.3.0</code>. Notas, para quem testa: o que a app já faz e o que querem que experimentem.</li>
+    <li>Arrastar o <code>app-release.apk</code> para a caixa dos ficheiros e esperar que carregue.</li>
+    <li>"Publish release".</li>
+  </ol>
+  <aside class="notes">O que dizer: a tag bate com o <code>pubspec.yaml</code>: <code>0.3.0+3</code> dá <code>v0.3.0</code>. Cada build novo para os testers é uma Release nova: é o requisito 11 do projeto. A Release guarda o APK exato que os testers receberam, junto ao commit de onde saiu. Quando um tester disser "na 0.3.0 o Corvo não abre", sabem que código estava lá. A tag cria-se no último commit do <code>main</code>, por isso o merge vem antes. Quem tiver o <code>gh</code> instalado faz o mesmo numa linha: <code>gh release create v0.3.0 build/app/outputs/flutter-apk/app-release.apk --title "0.3.0" --notes "..."</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 5: Firebase App Distribution</h2>
+  <h2>Passo 5: o projeto no Firebase</h2>
   <ol class="steps">
-    <li><code>console.firebase.google.com</code>: projeto novo <code>tempo-acores-grupo1</code>, sem Google Analytics.</li>
-    <li>Adicionar app Android com o applicationId do passo 1. O <code>google-services.json</code> e o SDK ficam para outro dia.</li>
-    <li>No menu, App Distribution: arrastar o <code>app-release.apk</code>.</li>
-    <li>Os emails de três colegas de fora do grupo, notas de versão e "Distribute".</li>
+    <li><code>console.firebase.google.com</code>, com uma conta Google pessoal.</li>
+    <li>Criar projeto: <code>tempo-acores-grupo1</code>. Sem Gemini e sem Google Analytics.</li>
+    <li>Na página do projeto, o ícone do Android: adicionar app.</li>
+    <li>Nome do pacote: o applicationId do passo 1, letra a letra. Registar app.</li>
+    <li>O <code>google-services.json</code> e o SDK: "Seguinte", "Seguinte", "Continuar para a consola". Nada disto entra na app.</li>
   </ol>
-  <aside class="notes">O que dizer: para distribuir não é preciso pôr nada do Firebase dentro da app; o projeto só serve para guardar os builds e os testers. O applicationId tem de ser exatamente o do passo 1 e não se muda depois de registado. Juntem os colegas do grupo ao projeto (Definições do projeto, Utilizadores e permissões) para todos poderem enviar builds. Se o menu não mostrar App Distribution, procurem por esse nome na barra de pesquisa da consola. Nos builds seguintes há um atalho na linha de comandos: <code>firebase appdistribution:distribute app-release.apk --app &lt;App ID&gt; --testers "a@x.pt,b@y.pt" --release-notes "..."</code>. O App ID está nas definições do projeto e começa por <code>1:</code>.</aside>
+  <aside class="notes">O que dizer: as contas da universidade podem ter o Firebase bloqueado; usem uma conta Gmail. Para distribuir não é preciso pôr nada do Firebase dentro da app: o projeto só guarda os builds e a lista de testers. O applicationId tem de ser exatamente o do passo 1 e não se muda depois de registado; se se enganarem, apaga-se a app nas definições do projeto e regista-se de novo. Juntem os colegas do grupo ao projeto (Definições do projeto, Utilizadores e permissões) para todos poderem enviar builds.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5: enviar aos testers</h2>
+  <ol class="steps">
+    <li>No menu da esquerda, App Distribution (está em Executar, ou procurem pelo nome). "Começar".</li>
+    <li>Arrastar o <code>app-release.apk</code> para a caixa e esperar que carregue.</li>
+    <li>Testers: os emails das três pessoas de fora do grupo, os que usam no telemóvel.</li>
+    <li>Notas de versão: as mesmas da Release do GitHub.</li>
+    <li>"Distribuir". O email chega aos testers em menos de um minuto.</li>
+  </ol>
+  <aside class="notes">O que dizer: na segunda distribuição já não é preciso escrever os emails: criem um grupo de testers (separador Testers e grupos) e escolham-no. Nos builds seguintes há um atalho na linha de comandos: <code>firebase appdistribution:distribute app-release.apk --app &lt;App ID&gt; --testers "a@x.pt,b@y.pt" --release-notes "..."</code>. O App ID está nas definições do projeto e começa por <code>1:</code>. Os builds no App Distribution expiram ao fim de 150 dias.</aside>
 </section>
 
 <section class="slide">
   <h2>Passo 5: do lado de quem testa</h2>
   <ol class="steps">
-    <li>Chega um email da Firebase App Distribution. Aceitar o convite com a conta Google.</li>
-    <li>Descarregar a app na página que abre. O Android pede para autorizar instalações vindas do browser.</li>
+    <li>No telemóvel, o email da Firebase App Distribution (ver o Spam): "Get started", conta Google, aceitar.</li>
+    <li>"Download" ao lado da versão 0.3.0. O Android pede para autorizar instalações vindas do Chrome.</li>
+    <li>Se o Play Protect avisar: "Mais detalhes" e "Instalar mesmo assim".</li>
     <li>Criar uma conta nova na app e usá-la dez minutos, sem ajuda de quem a fez.</li>
   </ol>
-  <p>Com iPhone: testa no Android de um colega ou no emulador.</p>
-  <aside class="notes">O que dizer: o convite pode cair no spam ou nas Promoções do Gmail. O convite aceita-se com qualquer conta Google, não tem de ser a do email. Se o Android recusar a instalação, é a opção "Instalar apps desconhecidas" para o Chrome, nas definições; desligá-la de novo depois é boa prática. "Sem ajuda de quem a fez" é a regra mais difícil: quem fez a app fica calado a ver e a tomar notas, como num teste de usabilidade. É aí que se vê onde as pessoas se perdem.</aside>
+  <p>Com iPhone: testa no Android de um colega, ou no emulador do grupo, que arrasta o APK para lá.</p>
+  <aside class="notes">O que dizer: o convite aceita-se com qualquer conta Google, não tem de ser a do email. A autorização é a opção "Instalar apps desconhecidas" para o Chrome; desligá-la depois é boa prática. O aviso do Play Protect aparece porque a app não vem da loja e a chave é desconhecida: é exatamente isto que a loja resolve. "Sem ajuda de quem a fez" é a regra mais difícil: quem fez a app fica calado a ver e a tomar notas, como num teste de usabilidade.</aside>
 </section>
 
 <section class="slide">

@@ -28,7 +28,7 @@
   <h1>Workshop: signing the app and getting it to testers</h1>
   <p class="lead">Theory (30 minutes): why you distribute early, the three routes to testers and what signing an app means. Workshop: your group's app signed, in a GitHub Release and on three classmates' phones through Firebase App Distribution. Then: icon, launch screen, dark theme and two languages.</p>
   <div class="meta"><span>No lesson repository: everything happens in the group project</span><span>Break at 10:20</span></div>
-  <aside class="notes">Plan: 08:30 to 09:00 theory; 09:00 to 10:20 steps 1 to 4 (app identity, key, release APK, GitHub Release); 10:20 to 10:35 break; 10:35 to 11:30 Firebase and testers; 11:30 to 12:15 feedback as issues and polish; 12:15 to 12:30 final round, each group shows its Release and how many testers have the app. At the start: anyone with an iPhone hears now that today they test on a classmate's Android phone or in the emulator. The testers are the classmates from the other groups, so each person tests the app of at least one group that is not their own. Testers need a Google account on their phone, and the group needs a computer with the Android SDK working (the one they already use to run the app).</aside>
+  <aside class="notes">Plan: 08:30 to 09:00 theory; 09:00 to 10:20 steps 1 to 3 (app identity, key, release APK); 10:20 to 10:35 break; 10:35 to 10:50 GitHub Release; 10:50 to 11:35 Firebase and testers; 11:35 to 12:15 testing and feedback as issues, and polish for whoever finishes; 12:15 to 12:30 final round, each group shows its Release and how many testers have the app. At the start: anyone with an iPhone hears now that today they test on a classmate's Android phone or in the emulator. The testers are the classmates from the other groups, so each person tests the app of at least one group that is not their own. Testers need a Google account on their phone, and the group needs a computer with the Android SDK working (the one they already use to run the app).</aside>
 </section>
 
 <section class="slide" data-part="Objectives">
@@ -109,78 +109,127 @@
 
 <section class="slide" data-part="Workshop">
   <h2>Workshop: all the way to someone else's phone</h2>
-  <ol class="steps">
-    <li><strong>The app with its own name:</strong> applicationId, name under the icon, Internet and version.</li>
-    <li><strong>The group key:</strong> keystore, <code>key.properties</code> and Gradle.</li>
-    <li><strong>The release APK</strong>, used on your phone without the cable.</li>
-    <li><strong>The <code>v0.3.0</code> Release</strong> on GitHub, with the APK.</li>
-    <li><strong>Firebase App Distribution:</strong> three testers from outside the group.</li>
-    <li><strong>Feedback as issues</strong> and, for whoever finishes, the polish.</li>
-  </ol>
-  <aside class="notes">What to say: steps 1 to 4 before the break; 5 and 6 after it. One person in the group does steps 1 to 4 on the computer where the app already runs, and the others follow and prepare the tester list and the release notes. Steps 1 and 2 are one PR (without the <code>key.properties</code> or the <code>.jks</code>, of course). Today's goal is step 5 done by every group; the polish is the bonus. In the final round each group shows its Release and a phone from outside the group with the app.</aside>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Step</th><th>What</th><th>Until</th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td>The app with its own name: id, name, Internet and version</td><td>09:15</td></tr>
+  <tr><td>2</td><td>The group key: keytool, <code>key.properties</code> and Gradle</td><td>09:55</td></tr>
+  <tr><td>3</td><td>The release APK, on your own phone</td><td>10:20</td></tr>
+  <tr><td></td><td>Break</td><td>10:35</td></tr>
+  <tr><td>4</td><td>The <code>v0.3.0</code> Release on GitHub, with the APK</td><td>10:50</td></tr>
+  <tr><td>5</td><td>Firebase App Distribution: three testers from outside the group</td><td>11:35</td></tr>
+  <tr><td>6</td><td>Test another group's app and feedback as issues</td><td>12:15</td></tr>
+  </tbody></table></div>
+  <p>One person per group does steps 1 to 4 on the computer where the app already runs on Android. The others gather the testers' emails and write the release notes.</p>
+  <aside class="notes">What to say: today's goal is step 5 done by every group; the polish is only for whoever finishes. Before starting, check in each group which computer has already run the app on an Android phone or in the emulator: that one does the build. If the step 3 build is still running at 10:20, leave it running through the break. Steps 1 and 2 are one PR (without <code>key.properties</code>, the <code>.jks</code> or <code>pdm.json</code>); the merge has to be done before step 4. In the final round each group shows its Release and a phone from outside the group with the app.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 1: the app with its own name</h2>
+  <h2>The files that change today</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>File</th><th>What changes</th><th>Git</th></tr></thead>
+  <tbody>
+  <tr><td><code>android/app/src/main/AndroidManifest.xml</code></td><td>Internet and the name under the icon</td><td>Yes</td></tr>
+  <tr><td><code>android/app/build.gradle.kts</code></td><td>applicationId and signing</td><td>Yes</td></tr>
+  <tr><td><code>pubspec.yaml</code></td><td><code>version: 0.3.0+3</code></td><td>Yes</td></tr>
+  <tr><td><code>.gitignore</code></td><td>One line: <code>pdm.json</code></td><td>Yes</td></tr>
+  <tr><td><code>android/key.properties</code></td><td>Password and path to the key</td><td>Never</td></tr>
+  <tr><td><code>upload-keystore.jks</code>, in your home folder</td><td>The group key</td><td>Never</td></tr>
+  <tr><td><code>pdm.json</code></td><td>The group's clientId and clientSecret</td><td>Never</td></tr>
+  </tbody></table></div>
+  <aside class="notes">What to say: this is the map for the day. Before each commit, <code>git status</code> may only show the first four rows. Four files go into the PR, three never leave the computer. The <code>android/.gitignore</code> in your projects already hides <code>key.properties</code> and the <code>.jks</code> files; <code>pdm.json</code> is not in any <code>.gitignore</code>, which is why we add the line in step 1. <code>pdm.json</code> only exists in the groups that call the API with <code>String.fromEnvironment</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 1: Internet and the name under the icon</h2>
 <pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
     &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+    &lt;!-- the location permissions stay as they are --&gt;
     &lt;application
         android:label="Tempo Açores · Group 1"
         ...</code></pre>
   <ul>
-    <li>The Internet permission: without it, the release build never reaches the API.</li>
+    <li>It is the manifest in <code>src/main</code>. The ones in <code>src/debug</code> and <code>src/profile</code> already have Internet, but they only count for <code>flutter run</code>.</li>
     <li>The <code>label</code> is the name under the icon. Today all four apps are called <code>tempo_acores</code>.</li>
-    <li>In <code>android/app/build.gradle.kts</code>: <code>applicationId = "pt.uac.pdm.tempo_acores.group1"</code>.</li>
-    <li>In <code>pubspec.yaml</code>: <code>version: 0.3.0+3</code>.</li>
   </ul>
-  <aside class="notes">What to say: three files, four lines. Only the applicationId changes; the <code>namespace</code> and the <code>MainActivity.kt</code> folder stay as they are. The suffix is the group's choice (someone's surname, the name they gave the app), in lowercase. Anyone who had the app installed with the old id ends up with two on the phone: uninstall the old one. The location permissions already there stay the same. <code>pubspec.yaml</code> comes with <code>1.0.0+1</code>; going down to 0.3.0 is fine, because Android only compares the number after the <code>+</code>. Before moving on to step 2, run <code>flutter run</code> to check nothing broke.</aside>
+  <aside class="notes">What to say: the Internet line goes right after the opening <code>&lt;manifest&gt;</code>, outside <code>&lt;application&gt;</code>. One group already has it, the other three do not: without it, the release build opens, but login fails and it looks like an API error. The <code>label</code> is free text and can have spaces and accents; it is what the tester sees on the home screen.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 2: the group key</h2>
-<pre data-title="Terminal, once per group"><code class="language-bash">keytool -genkey -v -keystore ~/upload-keystore.jks \
-        -storetype JKS -keyalg RSA -keysize 2048 \
-        -validity 10000 -alias upload</code></pre>
+  <h2>Step 1: the id, the version and <code>.gitignore</code></h2>
+<pre data-title="android/app/build.gradle.kts, inside defaultConfig { }"><code class="language-kotlin">applicationId = "pt.uac.pdm.tempo_acores.group1"</code></pre>
   <ul>
-    <li>It asks for a password and a name. Put the password somewhere safe for the group straight away.</li>
-    <li>The file stays in your home folder, outside the project: there is no way it ends up in a commit.</li>
-    <li>One person creates it; the <code>.jks</code> and the password go to the rest of the group through a private channel.</li>
-    <li>On Windows: <code>keytool</code> is in the Java folder that <code>flutter doctor -v</code> shows.</li>
+    <li>Only this line. The <code>namespace</code>, further up, stays as it is.</li>
+    <li>The suffix is yours: lowercase letters, numbers and <code>_</code>, starting with a letter. It does not change again.</li>
+    <li>In <code>pubspec.yaml</code>: <code>version: 1.0.0+1</code> becomes <code>version: 0.3.0+3</code>.</li>
+    <li>In the root <code>.gitignore</code>, a new line at the end: <code>pdm.json</code>.</li>
+    <li>A <code>flutter run</code> to check nothing broke. Uninstall the old app from the phone: now there are two.</li>
   </ul>
-  <aside class="notes">What to say: <code>-validity 10000</code> is about 27 years; the Play Store requires the key to last at least until 2033. The alias <code>upload</code> is the key's name inside the file. On Windows, in PowerShell: <code>keytool -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload</code>. If it says "keytool is not recognized", run <code>flutter doctor -v</code>, copy the path after "Java binary at", swap the <code>java</code> at the end for <code>keytool</code> and put the path in quotes. Keep the password in two places (a password manager and a private group note). Do not write it in the class WhatsApp group.</aside>
+  <aside class="notes">What to say: the applicationId is registered in Firebase in step 5 and cannot be changed there afterwards, so choose it calmly now (someone's surname, the name you gave the app). Changing the <code>namespace</code> would mean moving the <code>MainActivity.kt</code> folder: do not touch it. Going down from 1.0.0 to 0.3.0 is fine, because Android only compares the number after the <code>+</code>, and 3 is bigger than 1.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 2: creating the group key</h2>
+<pre data-title="PowerShell, on Windows: once per group"><code class="language-powershell">$kt = "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe"
+&amp; $kt -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks `
+    -keyalg RSA -keysize 2048 -validity 10000 -alias upload</code></pre>
+  <ul>
+    <li>On macOS, the same command with Android Studio's keytool:<br><code>"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool"</code> and <code>-keystore ~/upload-keystore.jks</code>.</li>
+    <li>The keytool that comes with the system will not do: on a Mac it says "Unable to locate a Java Runtime".</li>
+    <li>The key lives in your home folder, outside the project: it cannot end up in a commit.</li>
+  </ul>
+  <aside class="notes">What to say: one person in the group creates the key, then passes the file and the password to the rest of the group through a private channel. If Android Studio is somewhere else, <code>flutter doctor -v</code> shows it on the "Java binary at" line: it is that folder, with <code>keytool</code> instead of <code>java</code>. The backtick at the end of the second line is PowerShell's line continuation; on macOS it is the backslash. <code>-validity 10000</code> is about 27 years: the Play Store requires the key to last at least until 2033. The alias <code>upload</code> is the name of the key inside the file.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 2: what keytool asks</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+  <tbody>
+  <tr><td>Enter keystore password</td><td>The group password, 6 characters or more. It does not show while you type.</td></tr>
+  <tr><td>Re-enter new password</td><td>The same one</td></tr>
+  <tr><td>What is your first and last name?</td><td>The group name</td></tr>
+  <tr><td>Organizational unit · organization</td><td><code>PDM</code> · <code>ESTA</code></td></tr>
+  <tr><td>City · State · country code</td><td><code>Ponta Delgada</code> · <code>Acores</code> · <code>PT</code></td></tr>
+  <tr><td>Is CN=... correct? [no]</td><td><code>yes</code>, spelled out</td></tr>
+  </tbody></table></div>
+  <p>It ends with <code>[Storing ...upload-keystore.jks]</code>. The password goes straight into two safe places for the group.</p>
+  <aside class="notes">What to say: the name and the city are written into the certificate; nobody checks them, they tell whoever opens the key whose it is. Just pressing Enter leaves "Unknown", and that works too. If you answer anything else or just Enter on the last question, keytool goes back to the first question: answer <code>yes</code>. The two places: a password manager and a private group note. Not the class WhatsApp group. If the password is lost, the key is useless.</aside>
 </section>
 
 <section class="slide">
   <h2>Step 2: <code>key.properties</code>, outside git</h2>
-<pre data-title="android/key.properties"><code class="language-properties">storePassword=the-group-password
+<pre data-title="android/key.properties (new file)"><code class="language-properties">storePassword=the-group-password
 keyPassword=the-group-password
 keyAlias=upload
-storeFile=/Users/ana/upload-keystore.jks</code></pre>
+storeFile=C:\\Users\\ana\\upload-keystore.jks</code></pre>
   <ul>
-    <li>On Windows, double backslashes: <code>storeFile=C:\\Users\\ana\\upload-keystore.jks</code></li>
-    <li><code>android/.gitignore</code> already has <code>key.properties</code> and <code>*.jks</code>: <code>git status</code> does not show them.</li>
-    <li>Each person who makes release builds has their own <code>key.properties</code>, with the path on their computer.</li>
+    <li>In the <code>android/</code> folder, next to the outer <code>build.gradle.kts</code>, not in <code>android/app/</code>.</li>
+    <li>On Windows, double backslashes. On macOS: <code>storeFile=/Users/ana/upload-keystore.jks</code>.</li>
+    <li>Both passwords are the same.</li>
+    <li><code>git status</code> does not show it: <code>android/.gitignore</code> already hides it.</li>
   </ul>
-  <aside class="notes">What to say: this is where Gradle gets the path and the passwords; the code has no secret in it. If the keystore asked for the same password twice, both lines are the same. Before committing the PR, run <code>git status</code> and check this file is not listed. If it is, someone changed the <code>.gitignore</code>: stop and call me. In GitHub Actions CI this file does not exist, and that is fine: CI only runs <code>analyze</code> and <code>test</code>.</aside>
+  <aside class="notes">What to say: this is where Gradle gets the path and the password; the code holds no secret. Each person who makes release builds has their own <code>key.properties</code>, with the path on their own computer. If <code>git status</code> shows <code>key.properties</code>, someone touched <code>.gitignore</code>: stop and call me. In GitHub Actions CI this file does not exist, and that is fine: CI only runs <code>analyze</code> and <code>test</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 2: Gradle reads the key</h2>
+  <h2>Step 2: Gradle reads <code>key.properties</code></h2>
 <pre data-title="android/app/build.gradle.kts, at the top"><code class="language-kotlin">import java.util.Properties
 import java.io.FileInputStream
-// the plugins { } block stays here, as it is
+
+plugins { ... }  // stays as it is
 
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }</code></pre>
-  <p>Without <code>key.properties</code> nothing breaks: <code>flutter run</code> keeps working for anyone who does not have it.</p>
-  <aside class="notes">What to say: <code>rootProject</code> is the <code>android/</code> folder, so the file is <code>android/key.properties</code>. The <code>if</code> is what lets classmates without the key keep working: Gradle only complains when someone asks for a release build. Common mistake: pasting the imports in the middle of the file gives "Unresolved reference: Properties" or a syntax error in <code>plugins</code>.</aside>
+  <p>The two <code>import</code> lines before <code>plugins</code>; the five new lines between <code>plugins</code> and <code>android {</code>.</p>
+  <aside class="notes">What to say: <code>rootProject</code> is the <code>android/</code> folder, so the file is <code>android/key.properties</code>. The <code>if</code> is what lets classmates without the key keep working: <code>flutter run</code> still works, and Gradle only complains when someone asks for a release build. Imports in the middle of the file give "Unresolved reference: Properties".</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 2: signing with the group key</h2>
+  <h2>Step 2: the key, after <code>defaultConfig</code></h2>
 <pre data-title="android/app/build.gradle.kts, inside android { }"><code class="language-kotlin">signingConfigs {
     create("release") {
         keyAlias = keystoreProperties.getProperty("keyAlias")
@@ -190,56 +239,111 @@ if (keystorePropertiesFile.exists()) {
         storePassword = keystoreProperties.getProperty("storePassword")
     }
 }</code></pre>
-  <p>Right after it, in the <code>buildTypes</code> that already exists, the <code>"debug"</code> line becomes <code>signingConfig = signingConfigs.getByName("release")</code>.</p>
-  <aside class="notes">What to say: this is where the magic happens. The <code>buildTypes</code> in the Flutter template signed the release with the debug key, "so <code>flutter run --release</code> works", says the comment. Now the release uses the group key. Common errors: "Keystore was tampered with, or password was incorrect" is the wrong password in <code>key.properties</code>; "Keystore file not found" is the <code>storeFile</code> path (on Windows, the double backslashes); "SigningConfig release is missing required property" is a <code>key.properties</code> that is not in <code>android/</code>.</aside>
+  <p>It goes between the end of <code>defaultConfig { }</code> and <code>buildTypes {</code>, which is already there.</p>
+  <aside class="notes">What to say: this only gives the key a name, "release", and says where it is. It does not sign anything yet: the next slide connects it to the release build. The <code>?.let</code> is what avoids the error when there is no <code>key.properties</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 2: release now uses the group key</h2>
+<pre data-title="android/app/build.gradle.kts, the existing buildTypes"><code class="language-kotlin">buildTypes {
+    release {
+        signingConfig = signingConfigs.getByName("release")
+    }
+}</code></pre>
+  <ul>
+    <li>Before it said <code>getByName("debug")</code>: release was signed with each computer's debug key.</li>
+    <li>The two comment lines with <code>TODO</code> above it can go.</li>
+    <li>Commit, PR and merge of steps 1 and 2. <code>git status</code> shows four files.</li>
+  </ul>
+  <aside class="notes">What to say: this is where the magic happens. The Flutter template comment said "Signing with the debug keys for now, so flutter run --release works". Now release uses the group key, and anyone in the group's APK installs over anyone else's. This file, with these changes, was tested on the four class projects and the release build passes on all of them.</aside>
 </section>
 
 <section class="slide">
   <h2>Step 3: the release APK</h2>
-<pre data-title="Terminal, at the project root"><code class="language-bash">flutter build apk --release --dart-define-from-file=pdm.json
-flutter install</code></pre>
+<pre data-title="Terminal, at the project root"><code class="language-bash"># the app calls the API with pdm.json
+flutter build apk --release --dart-define-from-file=pdm.json
+# the app does not call the API yet, or has the clientId in the code
+flutter build apk --release</code></pre>
   <ul>
-    <li>It ends up in <code>build/app/outputs/flutter-apk/app-release.apk</code>.</li>
-    <li>Without <code>--dart-define-from-file</code>, the clientId is empty and login returns 401.</li>
-    <li><code>flutter install</code> puts this APK on the connected phone. Then, without the cable: log in, islands, trails, flight mode.</li>
-    <li>What goes in the APK is public: anyone with the file can read the clientSecret. In a real app, secrets stay on the server.</li>
+    <li>It takes 3 to 10 minutes. It ends up in <code>build/app/outputs/flutter-apk/app-release.apk</code>.</li>
+    <li>With the phone plugged in: <code>flutter install</code>. Then, without the cable: sign in, islands, trails, airplane mode.</li>
   </ul>
-  <aside class="notes">What to say: the first release build takes a few minutes, because it compiles Dart to machine code for three architectures. It is faster and smaller than debug, and has no banner. If you get "INSTALL_FAILED_UPDATE_INCOMPATIBLE", the phone has an app with the same id and a different key: uninstall it. If the app opens and nothing loads, it is almost always the Internet permission from step 1. The last line ties back to what we saw with PostHog: a key that ships inside an app is public. That is why the PostHog key only lets you send events, and why real APIs do not trust what the app says without a login.</aside>
+  <aside class="notes">What to say: what goes into the APK is public, even the clientSecret: anyone with the file can read it. In a real app, secrets stay on the server. The PostHog key you saw on Wednesday is public for that very reason: it only lets you send events. The release build compiles Dart to machine code for three architectures: it is faster and smaller than debug, and has no DEBUG banner. <code>pdm.json</code> is Wednesday's, at the project root, with <code>CLIENT_ID</code> and <code>CLIENT_SECRET</code>. Without <code>--dart-define-from-file</code>, in the groups that use <code>String.fromEnvironment</code>, the clientId is empty and login gives 401. With the flag and no file, the build stops straight away. No Android phone: <code>flutter install</code> also installs on the emulator, or drag the APK onto the emulator window.</aside>
+</section>
+
+<section class="slide">
+  <h2>When the key fails</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>The message says</th><th>What to do</th></tr></thead>
+  <tbody>
+  <tr><td>keytool is not recognized · Unable to locate a Java Runtime</td><td>Android Studio's keytool, with the full path</td></tr>
+  <tr><td>keystore password was incorrect</td><td>The password in <code>key.properties</code></td></tr>
+  <tr><td>Keystore file '...' not found</td><td>The <code>storeFile</code>; on Windows, double backslashes</td></tr>
+  <tr><td>SigningConfig "release" is missing required property "storeFile"</td><td><code>key.properties</code> is not in <code>android/</code></td></tr>
+  <tr><td>Unresolved reference: Properties</td><td>The two <code>import</code> lines at the top</td></tr>
+  </tbody></table></div>
+  <aside class="notes">What to say: Gradle messages are long; the one that matters comes after "What went wrong". These are the exact messages, taken from failing builds on the class projects. If you get a different one, copy the lines after "What went wrong" and call me.</aside>
+</section>
+
+<section class="slide">
+  <h2>When the app fails</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>The message says</th><th>What to do</th></tr></thead>
+  <tbody>
+  <tr><td>Did not find the file passed to "--dart-define-from-file"</td><td>Create <code>pdm.json</code> at the root, or build without the flag</td></tr>
+  <tr><td>Login gives 401</td><td>The <code>--dart-define-from-file=pdm.json</code> was missing</td></tr>
+  <tr><td>App not installed · INSTALL_FAILED_UPDATE_INCOMPATIBLE</td><td>Uninstall the old app, same id and another key</td></tr>
+  <tr><td>The app opens and nothing loads</td><td>Internet in the <code>src/main</code> manifest</td></tr>
+  </tbody></table></div>
+  <aside class="notes">What to say: the 401 and the "nothing loads" are the two that look like API errors and are not. To be sure, open OpenObserve: if the group's login does not show up there, the request never left the phone, and it is the Internet permission. If it shows up with <code>login_failed</code>, it is the clientId.</aside>
 </section>
 
 <section class="slide">
   <h2>Step 4: a GitHub Release</h2>
-<pre data-title="Terminal, at the project root"><code class="language-bash">gh release create v0.3.0 \
-  build/app/outputs/flutter-apk/app-release.apk \
-  --title "0.3.0" --notes "First version for testers"</code></pre>
-  <ul>
-    <li>Or on the website: Releases, "Draft a new release", tag <code>v0.3.0</code>, drag the APK in.</li>
-    <li>The tag matches <code>pubspec.yaml</code>: <code>0.3.0+3</code> gives <code>v0.3.0</code>.</li>
-    <li>Each new build for testers: new version, new Release. It is requirement 11 of the project.</li>
-  </ul>
-  <aside class="notes">What to say: the Release keeps the exact APK the testers got, next to the commit it came from. When a tester says "in 0.3.0 Corvo does not open", you know what code was there. Release notes are written for the testers: what is new and what you want them to try. If <code>gh</code> is not installed or logged in, the website does the same in two minutes. The tag is created on the latest <code>main</code> commit: merge the PR from steps 1 and 2 first.</aside>
+  <ol class="steps">
+    <li>Steps 1 and 2 already merged into <code>main</code>.</li>
+    <li>Releases, "Draft a new release". "Choose a tag": <code>v0.3.0</code>, "Create new tag".</li>
+    <li>Title <code>0.3.0</code>. Notes, for testers: what the app already does and what you want them to try.</li>
+    <li>Drag <code>app-release.apk</code> into the files box and wait for it to upload.</li>
+    <li>"Publish release".</li>
+  </ol>
+  <aside class="notes">What to say: the tag matches <code>pubspec.yaml</code>: <code>0.3.0+3</code> gives <code>v0.3.0</code>. Each new build for testers is a new Release: that is requirement 11 of the project. The Release keeps the exact APK the testers got, next to the commit it came from. When a tester says "in 0.3.0 Corvo won't open", you know what code was there. The tag is created on the latest <code>main</code> commit, so the merge comes first. Anyone with <code>gh</code> installed does the same in one line: <code>gh release create v0.3.0 build/app/outputs/flutter-apk/app-release.apk --title "0.3.0" --notes "..."</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Step 5: Firebase App Distribution</h2>
+  <h2>Step 5: the Firebase project</h2>
   <ol class="steps">
-    <li><code>console.firebase.google.com</code>: new project <code>tempo-acores-group1</code>, without Google Analytics.</li>
-    <li>Add an Android app with the applicationId from step 1. The <code>google-services.json</code> and the SDK are for another day.</li>
-    <li>In the menu, App Distribution: drag in <code>app-release.apk</code>.</li>
-    <li>The emails of three classmates from outside the group, release notes and "Distribute".</li>
+    <li><code>console.firebase.google.com</code>, with a personal Google account.</li>
+    <li>Create a project: <code>tempo-acores-group1</code>. No Gemini and no Google Analytics.</li>
+    <li>On the project page, the Android icon: add app.</li>
+    <li>Package name: the applicationId from step 1, letter by letter. Register app.</li>
+    <li><code>google-services.json</code> and the SDK: "Next", "Next", "Continue to console". None of it goes into the app.</li>
   </ol>
-  <aside class="notes">What to say: to distribute you do not need to put anything from Firebase inside the app; the project only stores the builds and the testers. The applicationId has to be exactly the one from step 1 and cannot be changed once registered. Add your group mates to the project (Project settings, Users and permissions) so everyone can upload builds. If the menu does not show App Distribution, search for that name in the console search bar. For later builds there is a command-line shortcut: <code>firebase appdistribution:distribute app-release.apk --app &lt;App ID&gt; --testers "a@x.pt,b@y.pt" --release-notes "..."</code>. The App ID is in the project settings and starts with <code>1:</code>.</aside>
+  <aside class="notes">What to say: university accounts may have Firebase blocked; use a Gmail account. To distribute you do not need to put anything from Firebase inside the app: the project only keeps the builds and the list of testers. The applicationId has to be exactly the one from step 1 and cannot be changed after it is registered; if you get it wrong, delete the app in the project settings and register it again. Add your group mates to the project (Project settings, Users and permissions) so everyone can upload builds.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 5: sending it to testers</h2>
+  <ol class="steps">
+    <li>In the left menu, App Distribution (under Run, or search for it). "Get started".</li>
+    <li>Drag <code>app-release.apk</code> into the box and wait for it to upload.</li>
+    <li>Testers: the emails of the three people from outside the group, the ones they use on their phone.</li>
+    <li>Release notes: the same as the GitHub Release.</li>
+    <li>"Distribute". The email reaches the testers in under a minute.</li>
+  </ol>
+  <aside class="notes">What to say: on the second distribution you do not need to type the emails again: create a tester group (Testers and groups tab) and pick it. For later builds there is a command line shortcut: <code>firebase appdistribution:distribute app-release.apk --app &lt;App ID&gt; --testers "a@x.pt,b@y.pt" --release-notes "..."</code>. The App ID is in the project settings and starts with <code>1:</code>. Builds on App Distribution expire after 150 days.</aside>
 </section>
 
 <section class="slide">
   <h2>Step 5: on the tester's side</h2>
   <ol class="steps">
-    <li>An email arrives from Firebase App Distribution. Accept the invitation with a Google account.</li>
-    <li>Download the app from the page that opens. Android asks to allow installs from the browser.</li>
+    <li>On the phone, the Firebase App Distribution email (check spam): "Get started", Google account, accept.</li>
+    <li>"Download" next to version 0.3.0. Android asks you to allow installs from Chrome.</li>
+    <li>If Play Protect warns you: "More details" and "Install anyway".</li>
     <li>Create a new account in the app and use it for ten minutes, with no help from whoever made it.</li>
   </ol>
-  <p>With an iPhone: test on a classmate's Android phone or in the emulator.</p>
-  <aside class="notes">What to say: the invitation may land in spam or in Gmail's Promotions tab. It can be accepted with any Google account, not necessarily the one it was sent to. If Android refuses the install, it is the "Install unknown apps" option for Chrome, in settings; turning it off again afterwards is good practice. "No help from whoever made it" is the hardest rule: the person who made the app stays quiet, watches and takes notes, like in a usability test. That is where you see where people get lost.</aside>
+  <p>With an iPhone: test on a classmate's Android, or on the group's emulator, with the APK dragged onto it.</p>
+  <aside class="notes">What to say: the invite can be accepted with any Google account, it does not have to be the one in the email. The permission is the "Install unknown apps" option for Chrome; turning it off afterwards is good practice. The Play Protect warning shows up because the app does not come from the store and the key is unknown: that is exactly what the store solves. "No help from whoever made it" is the hardest rule: whoever built the app stays quiet, watches and takes notes, like in a usability test.</aside>
 </section>
 
 <section class="slide">
