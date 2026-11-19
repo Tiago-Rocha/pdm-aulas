@@ -32,7 +32,7 @@
     { n: 24, d: "2026-11-11", h: "16:00-18:00", t: "Hardware e sensores, e sprint 2", te: "Hardware and sensors, and sprint 2", repo: null, kind: "sprint" },
     { n: 25, d: "2026-11-16", h: "16:00-18:00", t: "Caça aos bugs: testes, CI e logs", te: "Bug hunt: tests, CI and logs", repo: "pdm-aula-25", kind: "" },
     { n: 26, d: "2026-11-18", h: "16:00-18:00", t: "Observabilidade e review da sprint 2", te: "Observability and sprint 2 review", repo: null, kind: "sprint" },
-    { n: 27, d: "2026-11-20", h: "08:30-12:30", t: "Workshop: polish de UI e primeira distribuição a testers", te: "Workshop: UI polish and first distribution to testers", repo: "pdm-aula-27", kind: "workshop" },
+    { n: 27, d: "2026-11-20", h: "08:30-12:30", t: "Workshop: assinar a app e distribuí-la a testers", te: "Workshop: signing the app and getting it to testers", repo: null, kind: "workshop" },
     { n: 28, d: "2026-11-23", h: "16:00-18:00", t: "Platform channels, plugins e API v2", te: "Platform channels, plugins and API v2", repo: "pdm-aula-28", kind: "" },
     { n: 29, d: "2026-11-24", h: "08:30-10:30", t: "Lojas e monetização, e sprint 3", te: "Stores and monetisation, and sprint 3", repo: null, kind: "sprint" },
     { n: 30, d: "2026-11-25", h: "16:00-18:00", t: "Tamanho, arranque e atualizações, e sprint 3", te: "Size, startup and updates, and sprint 3", repo: null, kind: "sprint" },

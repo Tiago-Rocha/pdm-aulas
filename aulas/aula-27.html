@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 27 · Workshop: polish de UI e primeira distribuição a testers · PDM</title>
+<title>Aula 27 · Workshop: assinar a app e distribuí-la a testers · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -25,490 +25,309 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 27 · Semana 11 · Sexta, 20 de novembro de 2026 · 08:30 às 12:30</p>
-  <h1>Workshop: polish de UI e primeira distribuição a testers</h1>
-  <p class="lead">Teoria: distribuição a testers com Firebase App Distribution, TestFlight e testes internos do Google Play. Prática (três horas): tema claro e escuro, português e inglês, ícone e splash, build de release e instalação no telemóvel de outra pessoa através do Firebase App Distribution; demonstração do TestFlight pelo docente.</p>
-  <div class="meta"><span>Repo: pdm-aula-27</span><span>Pausa às 10:20</span></div>
-  <aside class="notes">Antes da aula: projeto Firebase "pdm-tempo-acores-demo" criado, grupo de testers "turma-daw" com os emails da turma, e a tua app pronta para Archive no Xcode com o certificado válido. À entrada pergunta quem tem conta Google no telemóvel: sem ela não instalam pelo App Distribution. Anuncia a pausa das 10:20 e que a demo do TestFlight é às 12:05.</aside>
+  <h1>Workshop: assinar a app e distribuí-la a testers</h1>
+  <p class="lead">Teoria (30 minutos): porque se distribui cedo, os três caminhos até aos testers e o que é assinar uma app. Workshop: a app do grupo assinada, numa Release do GitHub e no telemóvel de três colegas pelo Firebase App Distribution. Depois: ícone, ecrã de arranque, tema escuro e duas línguas.</p>
+  <div class="meta"><span>Sem repositório da aula: tudo no projeto do grupo</span><span>Pausa às 10:20</span></div>
+  <aside class="notes">Plano: 08:30 a 09:00 teoria; 09:00 a 10:20 passos 1 a 4 (identidade da app, chave, APK de release, Release no GitHub); 10:20 a 10:35 pausa; 10:35 a 11:30 Firebase e testers; 11:30 a 12:15 feedback em issues e polish; 12:15 a 12:30 ronda final, cada grupo mostra a Release e quantos testers têm a app. À entrada: quem tem iPhone fica a saber que hoje testa no Android de um colega ou no emulador. Os testers são os colegas dos outros grupos, por isso cada pessoa testa a app de pelo menos um grupo que não é o seu. Precisam de uma conta Google no telemóvel do tester e de um computador com o Android SDK a funcionar (o que já usam para correr a app).</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Descrever o fluxo do Firebase App Distribution, do TestFlight e dos testes internos do Google Play, e dizer o que cada um exige.</li>
-    <li>Construir um tema claro e escuro a partir de um <code>ColorScheme</code> e usar as cores do tema em vez de cores fixas.</li>
-    <li>Internacionalizar a app com gen-l10n, ficheiros <code>.arb</code> em pt e en, plurais e placeholders.</li>
-    <li>Gerar ícone e splash com <code>flutter_launcher_icons</code> e <code>flutter_native_splash</code>.</li>
-    <li>Fazer um build de release Android e distribuí-lo a testers pela consola e pela CLI do Firebase.</li>
+    <li>Dizer o que só aparece quando a app chega ao telemóvel de outra pessoa.</li>
+    <li>Escolher entre Firebase App Distribution, teste interno do Google Play e TestFlight.</li>
+    <li>Explicar o que é a assinatura de uma app e o que acontece se a chave se perder.</li>
+    <li>Gerar um APK de release assinado, com a versão certa, numa Release do GitHub.</li>
+    <li>Pôr a app do grupo no telemóvel de três colegas e transformar o que dizem em issues.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>Porque distribuir cedo</h2>
-  <ul>
-    <li><strong>Feedback real.</strong> O tester não sabe onde carregar. Tu sabes, e é por isso que nunca encontras o problema.</li>
-    <li><strong>Instalação real.</strong> Build de release, sem cabo, num telemóvel que não é o teu, com outra versão do Android, outro tamanho de ecrã e outro teclado.</li>
-    <li><strong>Crashes reais.</strong> Com o Crashlytics ou o Sentry de quarta, dez testers durante uma semana dão mais informação do que cem horas de emulador.</li>
-    <li>As grandes apps fazem isto em escala: o Google Maps tem programa beta no Play, o Instagram no TestFlight, com milhares de testers antes de cada versão.</li>
-    <li>Custo: uma manhã para montar, cinco minutos por build depois. Sem isto, o primeiro tester é o cliente.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> distribuir cedo dá feedback, instalação e crashes reais; o tester não sabe onde carregar, e é por isso que serve.</p>
-  <div class="callout"><strong>Analogia</strong> Distribuir a testers é a pré-estreia de um filme para um público convidado, antes da estreia. O Firebase App Distribution e o TestFlight são a sala de pré-estreia: sem bilheteira, só entra quem foi convidado, e os comentários voltam para a equipa a tempo de corrigir. A estreia é a loja, e aí o primeiro espectador já pagou bilhete.</div>
-  <aside class="notes">Conta a tua história de um bug que só apareceu num telemóvel de um tester. Pergunta: "quantos já instalaram a app do vosso grupo no telemóvel de alguém que não é do grupo?" Normalmente ninguém. Hoje muda.</aside>
-</section>
-
-<section class="slide">
-  <h2>Firebase App Distribution (1 de 2)</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 900 330" role="img" aria-label="Pipeline do Firebase App Distribution: código no repositório, build de release assinado, upload pela consola ou CLI, os testers do grupo recebem um email, instalam pela app App Tester e devolvem feedback e crashes; em baixo, o TestFlight segue o mesmo fluxo para iOS pelo App Store Connect">
-    <rect x="40" y="20" width="250" height="84" rx="10" class="box accent"/>
-    <text x="60" y="44" class="t b">1. Código no repositório</text>
-    <text x="60" y="66" class="t s">merge em main ou uma tag</text>
-    <text x="60" y="88" class="t s">no CI ou no teu portátil</text>
-    <path d="M290 62H323" class="arrow"/>
-    <rect x="325" y="20" width="250" height="84" rx="10" class="box"/>
-    <text x="345" y="44" class="t b">2. Build de release</text>
-    <text x="345" y="66" class="t mono">flutter build apk --release</text>
-    <text x="345" y="88" class="t s">assinado com a tua chave</text>
-    <path d="M575 62H608" class="arrow"/>
-    <rect x="610" y="20" width="250" height="84" rx="10" class="box"/>
-    <text x="630" y="44" class="t b">3. Upload no Firebase</text>
-    <text x="630" y="66" class="t s">consola, CLI ou GitHub Actions</text>
-    <text x="630" y="88" class="t s">notas de versão e grupo</text>
-    <path d="M735 104V138" class="arrow"/>
-    <rect x="610" y="140" width="250" height="84" rx="10" class="box"/>
-    <text x="630" y="164" class="t b">4. Testers recebem email</text>
-    <text x="630" y="186" class="t s">grupo turma-daw recebe o link</text>
-    <text x="630" y="208" class="t s">com as notas de versão</text>
-    <path d="M610 182H577" class="arrow"/>
-    <rect x="325" y="140" width="250" height="84" rx="10" class="box"/>
-    <text x="345" y="164" class="t b">5. Instalam (App Tester)</text>
-    <text x="345" y="186" class="t s">autorizam a origem uma vez</text>
-    <text x="345" y="208" class="t s">veem todas as versões</text>
-    <path d="M325 182H292" class="arrow"/>
-    <rect x="40" y="140" width="250" height="84" rx="10" class="box ok"/>
-    <text x="60" y="164" class="t b">6. Feedback e crashes</text>
-    <text x="60" y="186" class="t s">screenshot + comentário na app</text>
-    <text x="60" y="208" class="t s">crashes agrupados por versão</text>
-    <path d="M165 140V106" class="arrow dashed"/>
-    <text x="175" y="127" class="t s">próxima versão</text>
-    <rect x="40" y="250" width="820" height="56" rx="10" class="box muted"/>
-    <text x="60" y="273" class="t b">TestFlight (iOS): o mesmo fluxo, mas pelo App Store Connect</text>
-    <text x="60" y="294" class="t s">Precisa de Mac, conta Apple Developer paga e IPA assinado; os testers instalam pela app TestFlight.</text>
-  </svg>
-  <figcaption>Do repositório ao telemóvel do tester sem passar pela loja; o feedback fecha o ciclo na versão seguinte.</figcaption>
-  </figure>
-  <ul>
-    <li>Serviço grátis do Firebase para entregar builds Android (APK ou AAB) e iOS (IPA) a testers, sem passar pela loja.</li>
-    <li><strong>Testers</strong> por email, organizados em <strong>grupos</strong> ("turma-daw", "qa", "cliente"). Recebem um email com link, instalam a app <em>App Tester</em> no Android, e veem todas as versões disponíveis.</li>
-    <li><strong>Android:</strong> um APK instala diretamente (o tester autoriza "instalar de fontes desconhecidas" uma vez). Um AAB obriga a ligar a conta ao Play para gerar os APKs. Para a turma, APK.</li>
-    <li><strong>iOS:</strong> precisa de um IPA assinado com um perfil ad hoc que inclua o UDID de cada iPhone, ou de conta enterprise. Por isso, para iOS, o TestFlight é mais simples.</li>
-    <li>Cada release tem notas de versão, e o tester pode enviar feedback com screenshot a partir da própria app.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> App Distribution entrega APKs a testers por email, sem loja; em iOS exige perfil ad hoc com UDIDs, o que torna o TestFlight preferível.</p>
-</section>
-
-<section class="slide">
-  <h2>Firebase App Distribution (2 de 2): consola, CLI e Actions</h2>
-  <ul>
-    <li><strong>Consola:</strong> arrastar o APK, escolher grupos, escrever notas. Boa para a primeira vez, má para a décima.</li>
-    <li><strong>CLI:</strong> <code>firebase appdistribution:distribute app-release.apk --app ID --groups turma-daw</code>. Um comando, repetível, cabe num script.</li>
-    <li><strong>GitHub Actions:</strong> um job que faz <code>flutter build apk --release</code> e distribui a cada tag ou a cada merge em <code>main</code>. A partir daí, nenhum build de produção sai do portátil de alguém.</li>
-    <li><strong>Autenticação da CI:</strong> uma service account do Firebase guardada em Secrets do GitHub. Nunca no repositório.</li>
-    <li>Alternativas: Diawi (link direto para um APK), o próprio Play internal testing, ou o Codemagic com distribuição integrada.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> distribuir a partir do CI garante builds reproduzíveis; a credencial do Firebase vai em Secrets, nunca no repositório.</p>
-</section>
-
-<section class="slide">
-  <h2>TestFlight</h2>
-  <ul>
-    <li>O serviço de beta da Apple: os builds sobem para o App Store Connect e os testers instalam pela app TestFlight.</li>
-    <li>Precisa de <strong>conta paga</strong> (99 USD por ano), de um <strong>Mac com Xcode</strong> para assinar e fazer upload, e de um bundle id registado.</li>
-    <li><strong>Testers internos:</strong> até 100 membros da equipa no App Store Connect, sem revisão, build disponível minutos depois do processamento.</li>
-    <li><strong>Testers externos:</strong> até 10 000, por email ou link público; o primeiro build de cada versão passa por <em>Beta App Review</em> (horas a um dia). Os builds expiram ao fim de 90 dias.</li>
-    <li>Feedback: screenshots anotados e crash reports chegam ao App Store Connect. Cada build leva notas "What to test".</li>
-  </ul>
-  <p><strong>Para os testes:</strong> TestFlight exige conta paga e Mac; internos até 100 sem revisão, externos até 10 000 com Beta App Review; builds expiram em 90 dias.</p>
-</section>
-
-<section class="slide">
-  <h2>Google Play internal testing, e os três lado a lado</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th></th><th>App Distribution</th><th>TestFlight</th><th>Play internal testing</th></tr></thead>
+  <h2>O que só aparece no telemóvel de outra pessoa</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>O que muda</th><th>O que costuma partir</th></tr></thead>
   <tbody>
-  <tr><td>Plataforma</td><td>Android e iOS</td><td>iOS</td><td>Android</td></tr>
-  <tr><td>Testers</td><td>Sem limite prático, por email e grupo</td><td>100 internos, 10 000 externos</td><td>Até 100, por email</td></tr>
-  <tr><td>Revisão</td><td>Nenhuma</td><td>Beta App Review para externos</td><td>Nenhuma; closed e open testing já passam por revisão</td></tr>
-  <tr><td>Precisa de</td><td>Projeto Firebase</td><td>Conta Apple paga e Mac</td><td>Conta Play (25 USD) e AAB assinado</td></tr>
-  <tr><td>Caminho para produção</td><td>Não é</td><td>App Store</td><td>Closed testing → open testing → produção</td></tr>
+  <tr><td>Build de release</td><td>Sem a permissão de Internet no manifesto: nada carrega</td></tr>
+  <tr><td>Outro telemóvel</td><td>Texto cortado, botões fora do ecrã, letra grande</td></tr>
+  <tr><td>Primeira vez</td><td>Ecrã vazio sem conta, permissões recusadas</td></tr>
+  <tr><td>Rede da escola</td><td>Estados de erro e de carregamento que nunca se viram</td></tr>
+  <tr><td>Outra cabeça</td><td>Caminhos pela app em que o grupo nunca pensou</td></tr>
   </tbody></table></div>
-  <p>Contas pessoais novas no Play têm de ter 12 testers em closed testing durante 14 dias antes de poderem publicar em produção.</p>
-  <p><strong>Para os testes:</strong> o internal testing do Play aceita até 100 testers sem revisão; closed e open testing são o caminho para produção.</p>
+  <p><strong>Para os testes:</strong> distribui-se cedo para encontrar o que o emulador e o <code>flutter run</code> escondem, antes da entrega.</p>
+  <aside class="notes">O que dizer: até hoje a app só correu com o cabo ligado, em modo debug, nas mãos de quem a fez. Hoje sai de casa. A primeira linha é a que mais apanha: em debug, o Flutter junta a permissão de Internet sozinho; no build de release só existe se estiver no <code>AndroidManifest.xml</code> principal. A app abre, o login falha e parece um erro da API. Há grupos nesta sala com este problema, e vamos tratá-lo no passo 1. A letra grande: muita gente tem o tamanho de letra do sistema no máximo, e é aí que os <code>Row</code> rebentam. "Outra cabeça" é o que os testes automáticos nunca apanham: a pessoa carrega onde ninguém pensou.</aside>
 </section>
 
 <section class="slide">
-  <h2>Boas práticas de distribuição</h2>
+  <h2>Três caminhos até aos testers</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th></th><th>App Distribution</th><th>Google Play</th><th>TestFlight</th></tr></thead>
+  <tbody>
+  <tr><td>De quem</td><td>Firebase, da Google</td><td>Teste interno, na Play Console</td><td>Apple</td></tr>
+  <tr><td>Plataforma</td><td>Android e iOS</td><td>Android</td><td>iOS</td></tr>
+  <tr><td>Custo</td><td>Grátis</td><td>25 $, uma vez</td><td>99 $ por ano</td></tr>
+  <tr><td>Como chega</td><td>Email, instala o APK</td><td>Pela Play Store</td><td>Pela app TestFlight</td></tr>
+  <tr><td>Revisão</td><td>Nenhuma</td><td>Nenhuma, até 100 testers</td><td>Só para testers externos</td></tr>
+  <tr><td>Hoje</td><td>Sim</td><td>Mais à frente</td><td>Não: Mac e conta paga</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> App Distribution e TestFlight vêm antes da loja; o teste interno já é na loja.</p>
+  <aside class="notes">O que dizer: as três fazem o mesmo trabalho, que é pôr um build no telemóvel de quem testa sem passar pela loja pública. O App Distribution é o único que serve as duas plataformas e é grátis, por isso é o de hoje. No iOS até ele precisa da conta Apple paga, porque o build tem de ser assinado com um perfil que lista os iPhones de cada tester. É por isso que quem tem iPhone hoje testa no Android de um colega ou no emulador. No TestFlight, os testers da equipa (até 100) recebem logo; os externos (até 10 000) passam por uma revisão da Apple, normalmente de um dia. No teste interno do Google Play não há revisão demorada e a app instala-se pela própria Play Store, com atualizações automáticas, mas precisa da conta de programador. Os builds expiram: 90 dias no TestFlight, 150 no App Distribution.</aside>
+</section>
+
+<section class="slide">
+  <h2>Assinatura: a app diz quem a fez</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Chave</th><th>Onde vive</th><th>Para quê</th></tr></thead>
+  <tbody>
+  <tr><td>Debug</td><td>Uma por computador, criada pelo Android SDK</td><td><code>flutter run</code></td></tr>
+  <tr><td>Upload do grupo</td><td>Um ficheiro <code>.jks</code> com palavra-passe, fora do git</td><td>Builds para testers e para a loja</td></tr>
+  </tbody></table></div>
   <ul>
-    <li><strong>Notas de versão</strong> em cada build: o que testar, o que mudou, o que já sabem que está partido. "Build 47" sem notas é um build que ninguém testa.</li>
-    <li><strong>Versionamento:</strong> sobe o <code>version: 1.2.0+47</code> no <code>pubspec.yaml</code> antes de cada distribuição. Dois builds com o mesmo número confundem testers e loja, e o Play recusa.</li>
-    <li><strong>Feedback in-app:</strong> um botão "Reportar problema" que abre email ou o feedback do App Distribution, com versão e modelo pré-preenchidos.</li>
-    <li><strong>Nunca um build de debug:</strong> é 2 a 3 vezes mais lento e tem o dobro do tamanho. Os testers vão dizer que a app é lenta, e têm razão.</li>
-    <li><strong>Cedo e muitas vezes:</strong> um build por semana com notas curtas vale mais do que um build "final" na véspera.</li>
+    <li>O telemóvel só aceita uma atualização assinada com a mesma chave da app instalada.</li>
+    <li>Com a chave de debug, cada colega tem a sua: instalar o build de outro por cima dá "App não instalada".</li>
+    <li>Chave perdida: os testers desinstalam e instalam de novo, e perdem o que tinham na app.</li>
   </ul>
-  <p><strong>Para os testes:</strong> nunca distribuir builds de debug; cada build com número de versão novo e notas de versão.</p>
-  <aside class="notes">Fecha a teoria aqui (09:10). Repete o plano do workshop no slide seguinte e diz que o objetivo mínimo da manhã é o exercício 5: build no telemóvel de três pessoas de fora do grupo.</aside>
+  <p><strong>Para os testes:</strong> uma app só se atualiza com a mesma chave; o <code>.jks</code> e a palavra-passe nunca vão para o repositório.</p>
+  <aside class="notes">O que dizer: a assinatura é a forma de o Android saber que a versão 2 vem de quem fez a versão 1. Sem isto, qualquer pessoa podia publicar uma "atualização" do banco de alguém. A chave de debug está em <code>~/.android/debug.keystore</code> e é criada no primeiro build, uma por computador: é por isso que, num grupo, o APK do colega não se instala por cima do vosso. Na loja há uma camada a mais: o Google guarda a chave final da app (Play App Signing) e vocês só têm a de upload, por isso uma chave de upload perdida recupera-se com um pedido ao suporte. Fora da loja, como hoje, não há quem a recupere. Um <code>.jks</code> num commit conta como publicado, mesmo que se apague a seguir.</aside>
+</section>
+
+<section class="slide">
+  <h2>Duas coisas que identificam a app</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Campo</th><th>Exemplo</th><th>Regra</th></tr></thead>
+  <tbody>
+  <tr><td>applicationId</td><td><code>pt.uac.pdm.tempo_acores.grupo1</code></td><td>Único, não muda depois de publicado</td></tr>
+  <tr><td>versionName</td><td><code>0.3.0</code></td><td>O que a pessoa lê nas definições</td></tr>
+  <tr><td>versionCode</td><td><code>3</code></td><td>Um inteiro que sobe sempre</td></tr>
+  </tbody></table></div>
+  <ul>
+    <li>No <code>pubspec.yaml</code>, <code>version: 0.3.0+3</code> dá as duas versões: antes e depois do <code>+</code>.</li>
+    <li>As quatro apps da turma têm hoje o mesmo applicationId: para o telemóvel, são a mesma app.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> o versionCode tem de subir em cada build distribuído; o Android recusa uma versão mais baixa por cima de uma mais alta.</p>
+  <aside class="notes">O que dizer: o applicationId é o nome da app no telemóvel e na loja, por exemplo <code>com.whatsapp</code> ou <code>com.spotify.music</code>. Duas apps com o mesmo id não convivem: um tester com a app de um grupo instalada não consegue instalar a de outro grupo (assinaturas diferentes) e, se a chave fosse a mesma, uma substituía a outra. Por isso cada grupo acrescenta um sufixo seu no passo 1: letras minúsculas, números e <code>_</code>, a começar por uma letra. O versionName é livre (há quem use datas); o versionCode é o que o sistema compara. Começar em 0.3.0 diz que é a terceira sprint e que ainda não é a versão 1.</aside>
 </section>
 
 <section class="slide" data-part="Workshop">
-  <h2>Workshop: da app no teu telemóvel à app no dos outros</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-27.git
-cd pdm-aula-27/starter
-flutter pub get
-flutter run</code></pre>
-  <p>O <code>starter/</code> é uma versão do Tempo Açores com cores fixas, strings em português no código, ícone por defeito e sem splash; tem TODOs numerados de 1 a 8 e testes a falhar em <code>test/</code>. O <code>solucao/</code> tem o estado final, com os <code>.arb</code>, a configuração do ícone e do splash e o workflow de distribuição.</p>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Bloco</th><th>Tempo</th><th>Resultado</th></tr></thead>
+  <h2>Workshop: até ao telemóvel de outra pessoa</h2>
+  <ol class="steps">
+    <li><strong>A app com nome próprio:</strong> applicationId, nome no ícone, Internet e versão.</li>
+    <li><strong>A chave do grupo:</strong> keystore, <code>key.properties</code> e Gradle.</li>
+    <li><strong>O APK de release</strong>, usado no vosso telemóvel sem o cabo.</li>
+    <li><strong>A Release <code>v0.3.0</code></strong> no GitHub, com o APK.</li>
+    <li><strong>Firebase App Distribution:</strong> três testers de fora do grupo.</li>
+    <li><strong>Feedback em issues</strong> e, para quem acabar, o polish.</li>
+  </ol>
+  <aside class="notes">O que dizer: até à pausa, passos 1 a 4; depois da pausa, 5 e 6. Uma pessoa do grupo faz os passos 1 a 4 no computador onde a app já corre, e as outras acompanham e preparam a lista de testers e o texto das notas de versão. Os passos 1 e 2 são um PR (sem o <code>key.properties</code> nem o <code>.jks</code>, claro). A meta de hoje é o passo 5 feito por todos os grupos; o polish é o bónus. Na ronda final cada grupo mostra a Release e um telemóvel de fora do grupo com a app.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 1: a app com nome próprio</h2>
+<pre data-title="android/app/src/main/AndroidManifest.xml"><code class="language-xml">&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+    &lt;application
+        android:label="Tempo Açores · Grupo 1"
+        ...</code></pre>
+  <ul>
+    <li>A permissão de Internet: sem ela, o build de release não chega à API.</li>
+    <li>O <code>label</code> é o nome por baixo do ícone. Hoje as quatro apps chamam-se <code>tempo_acores</code>.</li>
+    <li>Em <code>android/app/build.gradle.kts</code>: <code>applicationId = "pt.uac.pdm.tempo_acores.grupo1"</code>.</li>
+    <li>No <code>pubspec.yaml</code>: <code>version: 0.3.0+3</code>.</li>
+  </ul>
+  <aside class="notes">O que dizer: três ficheiros, quatro linhas. Só o applicationId muda; o <code>namespace</code> e a pasta do <code>MainActivity.kt</code> ficam como estão. O sufixo é à escolha do grupo (o apelido de alguém, o nome que deram à app), em minúsculas. Quem tinha a app instalada com o id antigo fica com duas no telemóvel: desinstalem a antiga. As permissões de localização que já lá estão continuam iguais. O <code>pubspec.yaml</code> vem com <code>1.0.0+1</code>; descer para 0.3.0 não faz mal, porque o Android só compara o número depois do <code>+</code>. Antes de passar ao passo 2, um <code>flutter run</code> para ver que nada partiu.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2: a chave do grupo</h2>
+<pre data-title="Terminal, uma vez por grupo"><code class="language-bash">keytool -genkey -v -keystore ~/upload-keystore.jks \
+        -storetype JKS -keyalg RSA -keysize 2048 \
+        -validity 10000 -alias upload</code></pre>
+  <ul>
+    <li>Pede uma palavra-passe e um nome. A palavra-passe fica já num sítio seguro do grupo.</li>
+    <li>O ficheiro fica na pasta pessoal, fora do projeto: não há forma de entrar num commit.</li>
+    <li>Uma pessoa cria; o <code>.jks</code> e a palavra-passe passam ao resto do grupo por um canal privado.</li>
+    <li>No Windows: o <code>keytool</code> está na pasta do Java que o <code>flutter doctor -v</code> mostra.</li>
+  </ul>
+  <aside class="notes">O que dizer: <code>-validity 10000</code> são uns 27 anos; a Play Store exige que a chave dure pelo menos até 2033. O alias <code>upload</code> é o nome da chave dentro do ficheiro. No Windows, em PowerShell: <code>keytool -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload</code>. Se der "keytool não é reconhecido", correm <code>flutter doctor -v</code>, copiam o caminho de "Java binary at", trocam o <code>java</code> do fim por <code>keytool</code> e põem o caminho entre aspas. Guardem a palavra-passe em dois sítios (gestor de palavras-passe e uma nota privada do grupo). Não a escrevam no grupo de WhatsApp da turma.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2: o <code>key.properties</code>, fora do git</h2>
+<pre data-title="android/key.properties"><code class="language-properties">storePassword=a-palavra-passe-do-grupo
+keyPassword=a-palavra-passe-do-grupo
+keyAlias=upload
+storeFile=/Users/ana/upload-keystore.jks</code></pre>
+  <ul>
+    <li>No Windows, barras a dobrar: <code>storeFile=C:\\Users\\ana\\upload-keystore.jks</code></li>
+    <li>O <code>android/.gitignore</code> já tem <code>key.properties</code> e <code>*.jks</code>: o <code>git status</code> não os mostra.</li>
+    <li>Cada pessoa que faz builds de release tem o seu <code>key.properties</code>, com o caminho do seu computador.</li>
+  </ul>
+  <aside class="notes">O que dizer: é aqui que o Gradle vai buscar o caminho e as palavras-passe; o código não tem nenhum segredo. Se a keystore pedir a mesma palavra-passe duas vezes, as duas linhas ficam iguais. Antes do commit do PR, correm <code>git status</code> e confirmam que este ficheiro não aparece. Se aparecer, alguém mexeu no <code>.gitignore</code>: parem e chamem-me. No CI do GitHub Actions este ficheiro não existe, e não faz mal: o CI só corre <code>analyze</code> e <code>test</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2: o Gradle lê a chave</h2>
+<pre data-title="android/app/build.gradle.kts, no topo"><code class="language-kotlin">import java.util.Properties
+import java.io.FileInputStream
+// aqui fica o bloco plugins { }, como está
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}</code></pre>
+  <p>Sem <code>key.properties</code> nada rebenta: o <code>flutter run</code> continua a funcionar a quem não o tem.</p>
+  <aside class="notes">O que dizer: <code>rootProject</code> é a pasta <code>android/</code>, por isso o ficheiro é <code>android/key.properties</code>. O <code>if</code> é o que deixa os colegas sem a chave continuar a trabalhar: o Gradle só reclama quando alguém pede um build de release. Erro comum: colar os imports a meio do ficheiro dá "Unresolved reference: Properties" ou um erro de sintaxe no <code>plugins</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2: assinar com a chave do grupo</h2>
+<pre data-title="android/app/build.gradle.kts, dentro de android { }"><code class="language-kotlin">signingConfigs {
+    create("release") {
+        keyAlias = keystoreProperties.getProperty("keyAlias")
+        keyPassword = keystoreProperties.getProperty("keyPassword")
+        storeFile = keystoreProperties.getProperty("storeFile")
+            ?.let { file(it) }
+        storePassword = keystoreProperties.getProperty("storePassword")
+    }
+}</code></pre>
+  <p>Logo a seguir, no <code>buildTypes</code> que já existe, a linha do <code>"debug"</code> passa a <code>signingConfig = signingConfigs.getByName("release")</code>.</p>
+  <aside class="notes">O que dizer: é aqui que a magia acontece. O <code>buildTypes</code> do modelo do Flutter assinava o release com a chave de debug, "para o <code>flutter run --release</code> funcionar", diz o comentário. Agora o release usa a chave do grupo. Erros comuns: "Keystore was tampered with, or password was incorrect" é a palavra-passe errada no <code>key.properties</code>; "Keystore file not found" é o caminho do <code>storeFile</code> (no Windows, as barras a dobrar); "SigningConfig release is missing required property" é o <code>key.properties</code> que não está em <code>android/</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 3: o APK de release</h2>
+<pre data-title="Terminal, na raiz do projeto"><code class="language-bash">flutter build apk --release --dart-define-from-file=pdm.json
+flutter install</code></pre>
+  <ul>
+    <li>Sai em <code>build/app/outputs/flutter-apk/app-release.apk</code>.</li>
+    <li>Sem o <code>--dart-define-from-file</code>, o clientId vai vazio e o login dá 401.</li>
+    <li>O <code>flutter install</code> põe este APK no telemóvel ligado. Depois, sem cabo: entrar, ilhas, trilhos, modo avião.</li>
+    <li>O que vai no APK é público: quem tiver o ficheiro consegue ler o clientSecret. Numa app a sério, os segredos ficam no servidor.</li>
+  </ul>
+  <aside class="notes">O que dizer: o primeiro build de release demora uns minutos, porque compila o Dart para código máquina das três arquiteturas. É mais rápido e mais pequeno do que o debug, e não tem o banner. Se der "INSTALL_FAILED_UPDATE_INCOMPATIBLE", há no telemóvel uma app com o mesmo id e outra chave: desinstalem-na. Se a app abrir e nada carregar, é quase sempre a permissão de Internet do passo 1. A última linha liga ao que se viu com o PostHog: uma chave que vai dentro de uma app é pública. Por isso a chave do PostHog só deixa enviar eventos, e por isso as APIs a sério não confiam no que a app diz sem um login.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 4: uma Release no GitHub</h2>
+<pre data-title="Terminal, na raiz do projeto"><code class="language-bash">gh release create v0.3.0 \
+  build/app/outputs/flutter-apk/app-release.apk \
+  --title "0.3.0" --notes "Primeira versão para testers"</code></pre>
+  <ul>
+    <li>Ou no site: Releases, "Draft a new release", tag <code>v0.3.0</code>, arrastar o APK.</li>
+    <li>A tag bate com o <code>pubspec.yaml</code>: <code>0.3.0+3</code> dá <code>v0.3.0</code>.</li>
+    <li>Cada build novo para os testers: versão nova, Release nova. É o requisito 11 do projeto.</li>
+  </ul>
+  <aside class="notes">O que dizer: a Release guarda o APK exato que os testers receberam, junto ao commit de onde saiu. Quando um tester disser "na 0.3.0 o Corvo não abre", sabem que código estava lá. As notas de versão escrevem-se para quem testa: o que é novo e o que querem que experimentem. Se o <code>gh</code> não estiver instalado ou autenticado, o site faz o mesmo em dois minutos. A tag cria-se no último commit do <code>main</code>: façam o merge do PR dos passos 1 e 2 antes.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5: Firebase App Distribution</h2>
+  <ol class="steps">
+    <li><code>console.firebase.google.com</code>: projeto novo <code>tempo-acores-grupo1</code>, sem Google Analytics.</li>
+    <li>Adicionar app Android com o applicationId do passo 1. O <code>google-services.json</code> e o SDK ficam para outro dia.</li>
+    <li>No menu, App Distribution: arrastar o <code>app-release.apk</code>.</li>
+    <li>Os emails de três colegas de fora do grupo, notas de versão e "Distribute".</li>
+  </ol>
+  <aside class="notes">O que dizer: para distribuir não é preciso pôr nada do Firebase dentro da app; o projeto só serve para guardar os builds e os testers. O applicationId tem de ser exatamente o do passo 1 e não se muda depois de registado. Juntem os colegas do grupo ao projeto (Definições do projeto, Utilizadores e permissões) para todos poderem enviar builds. Se o menu não mostrar App Distribution, procurem por esse nome na barra de pesquisa da consola. Nos builds seguintes há um atalho na linha de comandos: <code>firebase appdistribution:distribute app-release.apk --app &lt;App ID&gt; --testers "a@x.pt,b@y.pt" --release-notes "..."</code>. O App ID está nas definições do projeto e começa por <code>1:</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5: do lado de quem testa</h2>
+  <ol class="steps">
+    <li>Chega um email da Firebase App Distribution. Aceitar o convite com a conta Google.</li>
+    <li>Descarregar a app na página que abre. O Android pede para autorizar instalações vindas do browser.</li>
+    <li>Criar uma conta nova na app e usá-la dez minutos, sem ajuda de quem a fez.</li>
+  </ol>
+  <p>Com iPhone: testa no Android de um colega ou no emulador.</p>
+  <aside class="notes">O que dizer: o convite pode cair no spam ou nas Promoções do Gmail. O convite aceita-se com qualquer conta Google, não tem de ser a do email. Se o Android recusar a instalação, é a opção "Instalar apps desconhecidas" para o Chrome, nas definições; desligá-la de novo depois é boa prática. "Sem ajuda de quem a fez" é a regra mais difícil: quem fez a app fica calado a ver e a tomar notas, como num teste de usabilidade. É aí que se vê onde as pessoas se perdem.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 6: feedback que dá para corrigir</h2>
+<pre data-title="Issue no repositório do grupo, etiqueta tester"><code class="language-markdown">Telemóvel: Samsung A52, Android 14 · versão 0.3.0
+Fiz: abri o Corvo e carreguei em Trilhos
+Esperava: a lista dos trilhos do Corvo
+Aconteceu: ecrã branco, sem "Tentar outra vez"
+Captura: em anexo</code></pre>
+  <ul>
+    <li>O tester manda isto ao grupo, com a captura; o grupo abre o issue com a etiqueta <code>tester</code>.</li>
+    <li>Os repositórios são privados: os testers não veem o vosso código, nem precisam.</li>
+    <li>Cada pessoa testa a app de pelo menos um outro grupo.</li>
+  </ul>
+  <aside class="notes">O que dizer: "não funciona" não se corrige; "fiz isto, esperava aquilo, aconteceu aqueloutro" corrige-se. A versão é importante: o que estava partido na 0.3.0 pode já estar corrigido na 0.3.1. Os issues com a etiqueta <code>tester</code> entram no backlog da sprint 3 como outro qualquer, e na review mostram-se os que foram fechados. Um grupo com a app ainda muito em baixo recebe feedback na mesma: o tester diz o que viu, mesmo que seja pouco.</aside>
+</section>
+
+<section class="slide" data-part="Polish">
+  <h2>Para quem acabar: o polish</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>O quê</th><th>Como</th><th>Onde se vê</th></tr></thead>
   <tbody>
-  <tr><td>1. Tema claro e escuro</td><td>30 min</td><td>Zero cores fixas; os dois temas em todos os ecrãs</td></tr>
-  <tr><td>2. i18n com gen-l10n</td><td>40 min</td><td><code>app_pt.arb</code>, <code>app_en.arb</code>, plurais, datas</td></tr>
-  <tr><td>3. Ícone e splash</td><td>20 min</td><td>Ícone e splash próprios no telemóvel</td></tr>
-  <tr><td>4. Build de release</td><td>25 min</td><td>APK instalado no telemóvel de outro grupo</td></tr>
-  <tr><td>5. App Distribution</td><td>40 min</td><td>Build distribuído à turma, feedback recebido</td></tr>
+  <tr><td>Ícone</td><td><code>flutter_launcher_icons</code>, uma imagem de 1024×1024</td><td>No ecrã inicial do tester</td></tr>
+  <tr><td>Ecrã de arranque</td><td><code>flutter_native_splash</code>, cor e logótipo</td><td>Ao abrir, antes do primeiro ecrã</td></tr>
+  <tr><td>Tema escuro</td><td><code>darkTheme</code> e <code>ThemeMode.system</code></td><td>Com o telemóvel em modo escuro</td></tr>
+  <tr><td>Português e inglês</td><td><code>gen-l10n</code> e ficheiros <code>.arb</code></td><td>Com o telemóvel em inglês</td></tr>
   </tbody></table></div>
+  <p>Cada um é um PR e um extra da tabela do projeto. Depois: <code>0.3.1+4</code>, Release nova e upload novo.</p>
+  <aside class="notes">O que dizer: isto é o que faz uma app parecer acabada a quem a instala. O ícone é o mais barato e o que mais se nota. O tema escuro só é rápido para quem tem o design system com as cores num sítio só: se as cores estão espalhadas pelos ecrãs, é trabalho para a sprint toda. As duas línguas são o mais longo: todas as strings dos ecrãs passam para os <code>.arb</code>. Se não acabarem hoje, entra no backlog. A 0.3.1 sobe o versionCode para 4: sem isso, o telemóvel do tester recusa a atualização.</aside>
 </section>
 
 <section class="slide">
-  <h2>Bloco 1: tema claro e escuro a partir de uma semente</h2>
-<pre data-title="lib/ui/app_theme.dart"><code class="language-dart">import 'package:flutter/material.dart';
-
-class AppTheme {
-  static const _semente = Color(0xFF0B63C9);
-
-  static ThemeData claro() => _base(ColorScheme.fromSeed(seedColor: _semente));
-
-  static ThemeData escuro() =>
-      _base(ColorScheme.fromSeed(seedColor: _semente, brightness: Brightness.dark));
-
-  static ThemeData _base(ColorScheme esquema) => ThemeData(
-        useMaterial3: true,
-        colorScheme: esquema,
-        appBarTheme: AppBarTheme(
-          backgroundColor: esquema.surface,
-          foregroundColor: esquema.onSurface,
-          centerTitle: false,
-        ),
-        cardTheme: const CardThemeData(margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6)),
-        textTheme: const TextTheme(
-          headlineSmall: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.5),
-          bodyMedium: TextStyle(height: 1.4),
-        ),
-      );
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Bloco 1: ligar ao <code>MaterialApp</code> e usar nos widgets</h2>
-<pre data-title="lib/main.dart e lib/ui/widgets/aviso_chip.dart"><code class="language-dart">MaterialApp(
-  theme: AppTheme.claro(),
-  darkTheme: AppTheme.escuro(),
-  themeMode: context.watch&lt;DefinicoesNotifier&gt;().temaModo, // system, light ou dark
-  // ...
-)
-// Num widget: nunca Colors.blue, sempre o esquema do tema
-class AvisoChip extends StatelessWidget {
-  const AvisoChip({super.key, required this.nivel});
-  final NivelAviso nivel;
-
-  @override
-  Widget build(BuildContext context) {
-    final esquema = Theme.of(context).colorScheme;
-    final (fundo, texto) = switch (nivel) {
-      NivelAviso.vermelho => (esquema.errorContainer, esquema.onErrorContainer),
-      NivelAviso.laranja || NivelAviso.amarelo => (esquema.tertiaryContainer, esquema.onTertiaryContainer),
-      NivelAviso.verde => (esquema.secondaryContainer, esquema.onSecondaryContainer),
-    };
-    return Chip(
-      label: Text(nivel.name, style: TextStyle(color: texto)),
-      backgroundColor: fundo,
-    );
-  }
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Bloco 1: o que interessa</h2>
-  <ul>
-    <li><code>ColorScheme.fromSeed</code> gera as cerca de 30 cores do Material 3 a partir de uma só; a versão escura vem da mesma semente com <code>Brightness.dark</code>. Coerência grátis.</li>
-    <li>Regra: <strong>nenhuma cor fixa em widgets</strong>. <code>Colors.white</code> num <code>Container</code> fica branco no tema escuro e cega. Os pares <code>surface</code>/<code>onSurface</code>, <code>primaryContainer</code>/<code>onPrimaryContainer</code> garantem contraste.</li>
-    <li>Tipografia: define no <code>textTheme</code> e usa <code>Theme.of(context).textTheme.titleMedium</code>. Não repitas <code>TextStyle(fontSize: 18)</code> em vinte sítios.</li>
-    <li><code>ThemeMode.system</code> por defeito; o toggle da aula 9 guarda a escolha em <code>shared_preferences</code>.</li>
-    <li>Testa os dois temas em todos os ecrãs: o estado de erro, o skeleton, o mapa (os tiles OSM são claros; há tiles escuros).</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 1</strong> TODOs 1 e 2: corre a app com o telemóvel em modo escuro e caça as cores fixas (<code>grep -rn "Colors\." lib/</code>). Substitui todas pelo esquema. O teste <code>test/tema_test.dart</code> verifica que <code>AppTheme.escuro().brightness</code> é <code>dark</code> e que a <code>AppBar</code> usa <code>surface</code>.</div>
-  <aside class="notes">30 minutos. A dúvida clássica é "que cor do esquema uso para X?": mostra a página do Material 3 com os papéis das cores. Quem acabar cedo faz a tipografia com google_fonts.</aside>
-</section>
-
-<section class="slide">
-  <h2>Bloco 2: i18n com gen-l10n, a configuração</h2>
-<pre data-title="pubspec.yaml"><code class="language-yaml">dependencies:
-  flutter:
-    sdk: flutter
-  flutter_localizations:
-    sdk: flutter
-  intl: any            # a versão é fixada pelo flutter_localizations
-
-flutter:
-  uses-material-design: true
-  generate: true       # liga o gen-l10n ao flutter pub get</code></pre>
-<pre data-title="l10n.yaml (na raiz do projeto)"><code class="language-yaml">arb-dir: lib/l10n
-template-arb-file: app_pt.arb
-output-localization-file: app_localizations.dart</code></pre>
-  <p>Depois de <code>flutter pub get</code>, o gerador escreve <code>lib/l10n/app_localizations.dart</code> e um ficheiro por língua. Não se editam: regeneram-se sempre que um <code>.arb</code> muda.</p>
-</section>
-
-<section class="slide">
-  <h2>Bloco 2: os ficheiros <code>.arb</code></h2>
-<pre data-title="lib/l10n/app_pt.arb (template)"><code class="language-json">{
-  "@@locale": "pt",
-  "tituloApp": "Tempo Açores",
-  "previsaoDias": "Previsão a {dias} dias",
-  "@previsaoDias": {"placeholders": {"dias": {"type": "int"}}},
-  "avisosAtivos": "{n, plural, =0{Sem avisos ativos} =1{1 aviso ativo} other{{n} avisos ativos}}",
-  "@avisosAtivos": {"placeholders": {"n": {"type": "int"}}},
-  "atualizadoHa": "Atualizado há {minutos} min",
-  "@atualizadoHa": {"placeholders": {"minutos": {"type": "int"}}},
-  "tentarDeNovo": "Tentar de novo",
-  "semLigacao": "Sem ligação. A mostrar os últimos dados guardados.",
-  "favoritos": "Favoritos",
-  "definicoes": "Definições"
-}</code></pre>
-<pre data-title="lib/l10n/app_en.arb"><code class="language-json">{
-  "@@locale": "en",
-  "tituloApp": "Azores Weather",
-  "previsaoDias": "{dias}-day forecast",
-  "avisosAtivos": "{n, plural, =0{No active warnings} =1{1 active warning} other{{n} active warnings}}",
-  "atualizadoHa": "Updated {minutos} min ago",
-  "tentarDeNovo": "Try again",
-  "semLigacao": "No connection. Showing the last saved data.",
-  "favoritos": "Favourites",
-  "definicoes": "Settings"
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Bloco 2: ligar e usar</h2>
-<pre data-title="lib/main.dart e um widget qualquer"><code class="language-dart">import 'package:intl/intl.dart';
-import 'package:tempo_acores/l10n/app_localizations.dart';
-
-MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,   // [pt, en], lidos dos .arb
-  onGenerateTitle: (context) => AppLocalizations.of(context)!.tituloApp,
-  locale: definicoes.locale,                              // null: segue o telemóvel
-  // ...
-)
-
-// Num widget
-final l10n = AppLocalizations.of(context)!;
-Text(l10n.previsaoDias(5));
-Text(l10n.avisosAtivos(avisos.length));
-Text(l10n.atualizadoHa(DateTime.now().difference(obtidoEm).inMinutes));
-
-// Datas e números na língua ativa, com intl
-final locale = Localizations.localeOf(context).toString();
-Text(DateFormat.EEEE(locale).format(previsao.dia));       // "segunda-feira" / "Monday"
-Text(NumberFormat.decimalPattern(locale).format(19.8));   // "19,8" / "19.8"</code></pre>
-</section>
-
-<section class="slide">
-  <h2>Bloco 2: o que interessa</h2>
-  <ul>
-    <li><strong>Nenhuma string na UI.</strong> Cada <code>Text('...')</code> fixo é um bug de i18n à espera. Extrair todas as strings é trabalhoso; por isso faz-se cedo e não na véspera.</li>
-    <li>Plurais com sintaxe ICU: <code>=0</code>, <code>=1</code>, <code>other</code>. Português e inglês são simples; russo e árabe têm mais categorias, e o <code>intl</code> conhece-as.</li>
-    <li>A metadata <code>@chave</code> só é obrigatória no ficheiro template; as traduções só precisam das chaves. Chave em falta no <code>en</code>: o gerador avisa e usa o <code>pt</code>.</li>
-    <li>Datas com <code>DateFormat</code> e o locale ativo. <code>DateTime.toString()</code> na UI é proibido.</li>
-    <li>Layouts: "Tentar de novo" em alemão é "Erneut versuchen". Botões com largura fixa partem. Testa em inglês e imagina o dobro.</li>
-    <li>Uma extensão <code>extension L10n on BuildContext { AppLocalizations get l10n => AppLocalizations.of(this)!; }</code> poupa o <code>!</code> em todo o lado.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> TODOs 3 a 5: extrai as strings dos ecrãs de previsão e de avisos para os <code>.arb</code>, com o plural dos avisos e o dia da semana por extenso na língua ativa. Muda a língua do telemóvel para inglês e confirma. O teste <code>test/l10n_test.dart</code> monta o ecrã com <code>locale: Locale('en')</code> e procura "Try again".</div>
-  <aside class="notes">40 minutos, é o bloco mais longo. Erros comuns: esquecer o generate: true, editar o app_localizations.dart gerado, e chaves com hífen (têm de ser identificadores Dart válidos). Pausa de 10 minutos às 10:20, no fim deste bloco.</aside>
-</section>
-
-<section class="slide">
-  <h2>Bloco 3: ícone com <code>flutter_launcher_icons</code></h2>
-<pre data-title="pubspec.yaml"><code class="language-yaml">dev_dependencies:
-  flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.4
-
-flutter_launcher_icons:
+  <h2>Ícone e ecrã de arranque</h2>
+<pre data-title="pubspec.yaml, no fim"><code class="language-yaml">flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon/icon-1024.png"
-  adaptive_icon_background: "#0B63C9"
-  adaptive_icon_foreground: "assets/icon/icon-foreground.png"
-  remove_alpha_ios: true
-  min_sdk_android: 21</code></pre>
-<pre class="term"><code class="language-bash">dart run flutter_launcher_icons</code></pre>
+  image_path: assets/icone.png
+flutter_native_splash:
+  color: "#0B4F6C"
+  image: assets/logo.png</code></pre>
   <ul>
-    <li>Fonte: um PNG de 1024×1024. O iOS não aceita transparência (daí o <code>remove_alpha_ios</code>). O adaptive icon do Android tem fundo e primeiro plano separados, e o launcher recorta (círculo, squircle) como quiser: deixa margem no primeiro plano.</li>
-    <li>O gerador escreve em <code>android/app/src/main/res/mipmap-*</code> e <code>ios/Runner/Assets.xcassets/AppIcon.appiconset</code>. Não se edita à mão.</li>
+    <li>Instalar: <code>flutter pub add --dev flutter_launcher_icons flutter_native_splash</code></li>
+    <li>Gerar: <code>dart run flutter_launcher_icons</code> e <code>dart run flutter_native_splash:create</code></li>
   </ul>
+  <aside class="notes">O que dizer: os dois packages geram ficheiros nativos (as pastas <code>mipmap</code> e <code>drawable</code> no Android, o <code>Assets.xcassets</code> no iOS) a partir de uma imagem. Os ficheiros gerados entram no commit; quem faz o build seguinte não precisa de correr nada. O ícone tem de ser quadrado, sem transparência para o iOS; no Android 8 ou mais recente o sistema recorta-o num círculo ou num quadrado arredondado, por isso o desenho fica longe das margens (há a opção <code>adaptive_icon_foreground</code> para fazer bem). A cor do arranque é a cor principal do design system. No Android 12 ou mais recente o arranque é sempre o ícone ao centro: o package trata disso.</aside>
 </section>
 
 <section class="slide">
-  <h2>Bloco 3: splash com <code>flutter_native_splash</code></h2>
-<pre data-title="pubspec.yaml"><code class="language-yaml">flutter_native_splash:
-  color: "#0B63C9"
-  color_dark: "#0F141B"
-  image: assets/splash/logo.png
-  image_dark: assets/splash/logo-dark.png
-  android_12:
-    color: "#0B63C9"
-    color_dark: "#0F141B"
-    image: assets/splash/logo-android12.png
-  android: true
-  ios: true</code></pre>
-<pre class="term"><code class="language-bash">dart run flutter_native_splash:create</code></pre>
+  <h2>Tema escuro e duas línguas</h2>
+<pre data-title="lib/main.dart"><code class="language-dart">MaterialApp.router(
+  theme: TemaApp.claro,
+  darkTheme: TemaApp.escuro,
+  themeMode: ThemeMode.system,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  routerConfig: router,
+)</code></pre>
   <ul>
-    <li>O splash nativo aparece antes de o Flutter arrancar; não é um widget. O Android 12+ tem o seu próprio splash (ícone no centro, 192 dp) e ignora a imagem grande: daí a secção <code>android_12</code>.</li>
-    <li>Cor de fundo igual à do primeiro ecrã, para a transição não piscar. Sem texto: aparece durante 300 ms. Para reverter, <code>dart run flutter_native_splash:remove</code>.</li>
+    <li><code>TemaApp</code> é o tema do vosso design system, em claro e em escuro.</li>
+    <li>As strings: <code>lib/l10n/app_pt.arb</code> e <code>app_en.arb</code>; no ecrã, <code>AppLocalizations.of(context)!.ilhas</code>.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 3</strong> TODO 6: gera o ícone e o splash com as imagens em <code>assets/icon/</code> e <code>assets/splash/</code> (ou as vossas). Desinstala a app antes de instalar de novo: o Android guarda o ícone antigo em cache. Tira um screenshot do ecrã inicial com o ícone novo para o README.</div>
-  <aside class="notes">20 minutos. Quem não tiver imagem usa as do starter. Dúvida frequente: "o ícone não mudou": é a cache do launcher; desinstalar resolve. No iOS, precisa de flutter clean se o Xcode não apanhar o asset novo.</aside>
-</section>
-
-<section class="slide">
-  <h2>Bloco 4: build de release e instalar no telemóvel de outro grupo</h2>
-<pre class="term"><code class="language-bash">flutter build apk --release
-ls -lh build/app/outputs/flutter-apk/app-release.apk
-adb install -r build/app/outputs/flutter-apk/app-release.apk</code></pre>
-  <ol class="steps">
-    <li><strong>Sobe a versão</strong> primeiro: <code>version: 0.3.0+3</code> no <code>pubspec.yaml</code>. O <code>+3</code> é o <code>versionCode</code> do Android; tem de crescer a cada build distribuído.</li>
-    <li><strong>Build:</strong> 2 a 4 minutos na primeira vez. O APK fica em <code>build/app/outputs/flutter-apk/app-release.apk</code>, com cerca de 20 MB.</li>
-    <li><strong>Instala</strong> no telemóvel de um colega de outro grupo: por cabo com <code>adb install</code>, ou envia o ficheiro (Drive, Bluetooth, Nearby Share) e abre-o no telemóvel dele.</li>
-    <li><strong>Observa:</strong> pede-lhe que use a app dois minutos sem ajuda. Não expliques nada. Anota o que não percebeu.</li>
-  </ol>
-</section>
-
-<section class="slide">
-  <h2>Bloco 4: o que interessa</h2>
-  <ul>
-    <li><strong>Release:</strong> AOT, sem asserts, sem hot reload. Duas a três vezes mais rápido e metade do tamanho do debug. É o único build que se distribui.</li>
-    <li><strong>Assinatura:</strong> por defeito o <code>build.gradle</code> assina o release com a chave de debug. Instala, mas o Play não aceita e todos os grupos partilham a mesma chave. A chave de release é matéria da aula 31.</li>
-    <li><code>--split-per-abi</code> gera um APK por arquitetura (arm64-v8a, armeabi-v7a, x86_64), cada um com um terço do tamanho. Para a loja, <code>flutter build appbundle</code>.</li>
-    <li><strong>Fontes desconhecidas:</strong> o Android pergunta ao tester se confia na origem (Ficheiros, Chrome, App Tester). Uma vez por origem, não por app.</li>
-    <li>O client-id da API do curso vai no build por <code>--dart-define</code>, como na aula 18. Confirma que não está no repositório antes de distribuir.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 4</strong> TODO 7: versão <code>0.3.0+3</code>, build de release, instalado no telemóvel de alguém de outro grupo. O que ele não percebeu vai para uma issue no vosso repositório com a etiqueta <code>feedback</code>.</div>
-  <aside class="notes">25 minutos. Se o build falhar por Gradle, o costume é a versão do Java ou falta de espaço em disco. Quem tiver iPhone e Mac faz flutter build ipa em paralelo e mostra na demo do fim.</aside>
-</section>
-
-<section class="slide">
-  <h2>Bloco 5: Firebase App Distribution na consola</h2>
-  <ol class="steps">
-    <li><strong>Projeto:</strong> em <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a>, "Add project" com o nome <code>tempo-acores-grupoNN</code>. O Analytics pode ficar desligado.</li>
-    <li><strong>App Android:</strong> "Add app" → Android, com o package name igual ao <code>applicationId</code> em <code>android/app/build.gradle.kts</code> (por exemplo <code>pt.uac.tempoacores.grupo01</code>). O <code>google-services.json</code> só é preciso se usarem Crashlytics ou Analytics.</li>
-    <li><strong>Distribuir:</strong> menu "Run" → App Distribution → "Get started" → arrasta o <code>app-release.apk</code>.</li>
-    <li><strong>Testers:</strong> separador "Testers and groups" → grupo <code>turma-daw</code> com os emails dos colegas (o docente partilha a lista no Moodle).</li>
-    <li><strong>Release:</strong> adiciona o grupo, escreve notas ("v0.3.0: favoritos sincronizados e mapa. Sabemos que o offline no ecrã de avisos falha.") e "Distribute".</li>
-    <li><strong>Do lado do tester:</strong> email → aceitar convite → instalar a App Tester → instalar a app. Na consola vês quem aceitou e quem instalou.</li>
-  </ol>
-</section>
-
-<section class="slide">
-  <h2>Bloco 5: o mesmo pela CLI</h2>
-<pre class="term"><code class="language-bash">npm install -g firebase-tools
-firebase login
-firebase apps:list --project tempo-acores-grupo01
-firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
-  --app 1:123456789012:android:0a1b2c3d4e5f6a7b \
-  --groups turma-daw \
-  --release-notes "v0.3.0: favoritos sincronizados e mapa. Testar: modo avião no ecrã de avisos."</code></pre>
-  <ul>
-    <li>O <code>--app</code> é o App ID que <code>apps:list</code> mostra (também está nas definições do projeto). Identifica o projeto e a app; não confundir com o package name.</li>
-    <li><code>--testers "ana@x.pt,rui@y.pt"</code> em vez de <code>--groups</code> para convidar pessoas avulsas; <code>--release-notes-file notas.txt</code> para notas longas.</li>
-    <li>Mete isto num <code>tool/distribuir.sh</code> que sobe a versão, faz o build e distribui. Quem corre o script não precisa de saber Firebase.</li>
-  </ul>
-</section>
-
-<section class="slide">
-  <h2>Bloco 5: a partir do GitHub Actions</h2>
-<pre data-title=".github/workflows/distribuir.yml"><code class="language-yaml">name: Distribuir
-on:
-  push:
-    tags: ['v*']
-
-jobs:
-  android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-      - uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
-      - run: flutter pub get
-      - run: flutter test
-      - run: flutter build apk --release --dart-define=API_CLIENT_ID=${{ secrets.API_CLIENT_ID }}
-      - uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{ secrets.FIREBASE_APP_ID }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          groups: turma-daw
-          file: build/app/outputs/flutter-apk/app-release.apk
-          releaseNotes: ${{ github.ref_name }}</code></pre>
-  <p>A service account vem de "Project settings → Service accounts → Generate new private key" no Firebase; o JSON inteiro vai para o secret <code>FIREBASE_SERVICE_ACCOUNT</code>. A partir daqui, <code>git tag v0.3.0 &amp;&amp; git push --tags</code> distribui.</p>
-</section>
-
-<section class="slide">
-  <h2>Bloco 5: o que interessa</h2>
-  <ul>
-    <li>O tester precisa de uma conta Google com o email convidado e da App Tester. É onde mais gente encrava: "não recebi o email" (spam) ou "aceitei com outra conta".</li>
-    <li>Cada release tem versão e build: dois uploads com o mesmo <code>versionCode</code> são a mesma release. Sobe o <code>+N</code> antes de cada build.</li>
-    <li>Feedback: na App Tester o tester usa o botão de feedback ou abana o telemóvel; chega com screenshot ao separador "Feedback" da release.</li>
-    <li>Com o workflow, a tag <code>v0.3.0</code> dispara build e distribuição. O portátil de ninguém volta a ser a origem dos builds, e os testes correm antes.</li>
-    <li>Um projeto Firebase por grupo. Não convidem a turma para o projeto; convidem-na como testers.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 5</strong> TODO 8: distribui o vosso build a pelo menos três pessoas fora do grupo, pela consola ou pela CLI. Cada tester envia um feedback pela App Tester. Extra: o workflow de distribuição por tag no repositório do projeto, com a service account em Secrets.</div>
-  <aside class="notes">40 minutos. Anda pela sala a confirmar emails recebidos. A conta de serviço precisa do papel "Firebase App Distribution Admin"; se o workflow falhar com 403 é isso. Aos 12:05 pára tudo para a demo do TestFlight.</aside>
-</section>
-
-<section class="slide">
-  <h2>Demo do docente: TestFlight ao vivo</h2>
-  <ol class="steps">
-    <li><strong>Xcode → Runner → Signing &amp; Capabilities:</strong> equipa e bundle id (<code>pt.uac.tempoacores</code>). Com "Automatically manage signing", o Xcode cria certificado e perfil.</li>
-    <li><strong>Build:</strong> <code>flutter build ipa --release</code> cria <code>build/ios/archive/Runner.xcarchive</code> e o <code>.ipa</code> em <code>build/ios/ipa/</code>. Demora 5 a 8 minutos.</li>
-    <li><strong>Upload:</strong> abrir o <code>.xcarchive</code> no Xcode → "Distribute App" → App Store Connect → Upload; ou a app Transporter com o <code>.ipa</code>. O processamento demora 5 a 15 minutos e chega um email.</li>
-    <li><strong>App Store Connect → TestFlight:</strong> o build aparece. Se pedir "Missing Compliance", é a pergunta sobre encriptação; com <code>ITSAppUsesNonExemptEncryption</code> a <code>false</code> no <code>Info.plist</code> deixa de perguntar.</li>
-    <li><strong>Testers internos:</strong> grupo "Equipa", adicionar utilizadores do App Store Connect; disponível de imediato. <strong>Externos:</strong> link público; o primeiro build de cada versão vai a Beta App Review.</li>
-    <li><strong>No iPhone:</strong> app TestFlight → aceitar → instalar. O feedback com screenshot chega ao App Store Connect.</li>
-  </ol>
-  <div class="callout"><strong>Sem Mac?</strong> O Codemagic compila e faz o upload com o teu certificado numa máquina deles. É a alternativa para iOS sem hardware Apple; continua a precisar da conta paga.</div>
-  <aside class="notes">Faz o upload antes da aula e mostra ao vivo só o Archive e o App Store Connect com o build já processado: o processamento não cabe em 15 minutos. Mostra o email de "build processed" e o link público. Termina com os três testers como objetivo para segunda.</aside>
+  <aside class="notes">O que dizer: com <code>ThemeMode.system</code> a app segue o telemóvel, sem botão. O tema escuro não é inverter cores: é o mesmo <code>ColorScheme</code> com <code>brightness: Brightness.dark</code>, e com o <code>ColorScheme.fromSeed</code> o Flutter gera as duas a partir da mesma cor. Para as línguas: <code>flutter_localizations</code> (do SDK) e <code>intl</code> no <code>pubspec.yaml</code>, <code>generate: true</code> na secção <code>flutter</code>, e um <code>l10n.yaml</code> com <code>arb-dir: lib/l10n</code> e <code>template-arb-file: app_pt.arb</code>. O <code>flutter pub get</code> gera a classe <code>AppLocalizations</code> e o import é <code>package:tempo_acores/l10n/app_localizations.dart</code>. Os nomes das ilhas e os textos que vêm da API não se traduzem.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até segunda</h2>
   <div class="cols">
     <div>
-      <h3>Para fazer</h3>
+      <h3>O que fica feito hoje</h3>
       <ul class="checklist">
-        <li>Build do projeto distribuído a pelo menos 3 testers fora do grupo pelo App Distribution (ou TestFlight, quem tiver iOS), com notas de versão e feedback recebido.</li>
-        <li>Tema escuro, ícone, splash e as strings em pt e en no projeto, em PRs revistos. É o polish que conta na rubrica.</li>
-        <li>Segunda: platform channels e a migração para a API v2. Lê o changelog da API na página <a href="../api.html">API</a> antes da aula.</li>
+        <li>Release <code>v0.3.0</code> no GitHub com o APK assinado.</li>
+        <li>Três testers de fora do grupo com a app instalada.</li>
+        <li>Issues com o feedback, etiqueta <code>tester</code>.</li>
+        <li>A keystore e a palavra-passe em dois sítios, fora do git.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://firebase.google.com/docs/app-distribution" target="_blank" rel="noopener">Firebase App Distribution</a>: consola, CLI e integração com CI.</li>
-        <li><a href="https://developer.apple.com/testflight/" target="_blank" rel="noopener">TestFlight</a>: testers internos e externos, Beta App Review e o prazo de 90 dias dos builds.</li>
-        <li><a href="https://support.google.com/googleplay/android-developer/answer/9845334" target="_blank" rel="noopener">Testing tracks</a> na Play Console: internal, closed e open testing, limites de testers e o caminho até produção.</li>
-        <li><a href="https://docs.flutter.dev/deployment/android" target="_blank" rel="noopener">Build and release an Android app</a>: assinatura, <code>flutter build apk</code> e <code>appbundle</code>, e o número de versão.</li>
-        <li><a href="https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization" target="_blank" rel="noopener">Internationalizing Flutter apps</a>: gen-l10n, <code>.arb</code>, plurais.</li>
+        <li><a href="https://docs.flutter.dev/deployment/android" target="_blank" rel="noopener">Build and release an Android app</a></li>
+        <li><a href="https://firebase.google.com/docs/app-distribution" target="_blank" rel="noopener">Firebase App Distribution</a></li>
+        <li><a href="https://developer.apple.com/testflight/" target="_blank" rel="noopener">TestFlight</a></li>
+        <li><a href="https://support.google.com/googleplay/android-developer/answer/9845334" target="_blank" rel="noopener">Testes no Google Play</a></li>
+        <li><a href="https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization" target="_blank" rel="noopener">Internationalizing Flutter apps</a></li>
       </ul>
     </div>
   </div>
+  <aside class="notes">Ronda final, das 12:15 às 12:30: cada grupo abre a Release no projetor e um colega de fora do grupo mostra a app no telemóvel dele. Anota por grupo: Release feita, quantos testers, quantos issues. O que faltou entra no backlog da sprint 3. Lembra que a keystore tem de sobreviver até às defesas: se a perderem, a versão final não se instala por cima da que os testers têm.</aside>
   <nav class="pager" id="pager"></nav>
 </section>
 
