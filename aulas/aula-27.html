@@ -134,7 +134,7 @@
   <tr><td><code>pubspec.yaml</code></td><td><code>version: 0.3.0+3</code></td><td>Sim</td></tr>
   <tr><td><code>.gitignore</code></td><td>Uma linha: <code>pdm.json</code></td><td>Sim</td></tr>
   <tr><td><code>android/key.properties</code></td><td>Palavra-passe e caminho da chave</td><td>Nunca</td></tr>
-  <tr><td><code>upload-keystore.jks</code>, na pasta pessoal</td><td>A chave do grupo</td><td>Nunca</td></tr>
+  <tr><td><code>C:\dev\upload-keystore.jks</code></td><td>A chave do grupo</td><td>Nunca</td></tr>
   <tr><td><code>pdm.json</code></td><td>clientId e clientSecret do grupo</td><td>Nunca</td></tr>
   </tbody></table></div>
   <aside class="notes">O que dizer: este é o mapa do dia. Antes de cada commit, o <code>git status</code> só pode mostrar as quatro primeiras linhas. Quatro ficheiros entram no PR, três nunca saem do computador. O <code>android/.gitignore</code> dos vossos projetos já esconde o <code>key.properties</code> e os <code>.jks</code>; o <code>pdm.json</code> não está em nenhum <code>.gitignore</code>, e é por isso que acrescentamos a linha no passo 1. O <code>pdm.json</code> só existe nos grupos que chamam a API com <code>String.fromEnvironment</code>.</aside>
@@ -170,15 +170,15 @@
 
 <section class="slide">
   <h2>Passo 2: criar a chave do grupo</h2>
-<pre data-title="PowerShell, no Windows: uma vez por grupo"><code class="language-powershell">$kt = "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe"
-&amp; $kt -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks `
+<pre data-title="Terminal do VS Code, no Windows: uma vez por grupo"><code class="language-powershell">$kt = "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe"
+&amp; $kt -genkey -v -keystore C:\dev\upload-keystore.jks `
     -keyalg RSA -keysize 2048 -validity 10000 -alias upload</code></pre>
   <ul>
-    <li>No macOS, o mesmo comando com o keytool do Android Studio:<br><code>"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool"</code> e <code>-keystore ~/upload-keystore.jks</code>.</li>
-    <li>O keytool que vem com o sistema não serve: no Mac dá "Unable to locate a Java Runtime".</li>
-    <li>A chave fica na pasta pessoal, fora do projeto: não tem como entrar num commit.</li>
+    <li>Copiar as três linhas de uma vez. O terminal do VS Code é PowerShell; no cmd não funciona.</li>
+    <li>A chave fica em <code>C:\dev</code>, fora da pasta do projeto: não tem como entrar num commit.</li>
+    <li>No macOS: <code>"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool"</code> e <code>-keystore ~/upload-keystore.jks</code>.</li>
   </ul>
-  <aside class="notes">O que dizer: uma pessoa do grupo cria a chave, e depois passa o ficheiro e a palavra-passe ao resto do grupo por um canal privado. Se o Android Studio estiver noutro sítio, o <code>flutter doctor -v</code> mostra-o na linha "Java binary at": é essa pasta, com <code>keytool</code> no lugar de <code>java</code>. O acento grave no fim da segunda linha é a continuação de linha do PowerShell; no macOS é a barra invertida. <code>-validity 10000</code> são uns 27 anos: a Play Store exige que a chave dure pelo menos até 2033. O alias <code>upload</code> é o nome da chave dentro do ficheiro.</aside>
+  <aside class="notes">O que dizer: uma pessoa do grupo cria a chave, e depois passa o ficheiro e a palavra-passe ao resto do grupo por um canal privado. Se o Android Studio estiver noutro sítio, o <code>flutter doctor -v</code> mostra-o na linha "Java binary at": é essa pasta, com <code>keytool</code> no lugar de <code>java</code>. Só <code>keytool</code>, sem o caminho, dá "não é reconhecido" no Windows e "Unable to locate a Java Runtime" no Mac. O acento grave no fim da segunda linha é a continuação de linha do PowerShell e tem de ser o último caractere: com um espaço depois, o comando parte-se a meio. No macOS é a barra invertida. A chave vai para <code>C:\dev</code> e não para a pasta pessoal porque um nome de utilizador com acento (João) estraga o caminho no <code>key.properties</code>. Se não houver <code>C:\dev</code>: <code>mkdir C:\dev</code>. <code>-validity 10000</code> são uns 27 anos: a Play Store exige que a chave dure pelo menos até 2033. O alias <code>upload</code> é o nome da chave dentro do ficheiro.</aside>
 </section>
 
 <section class="slide">
@@ -202,14 +202,14 @@
 <pre data-title="android/key.properties (ficheiro novo)"><code class="language-properties">storePassword=a-palavra-passe-do-grupo
 keyPassword=a-palavra-passe-do-grupo
 keyAlias=upload
-storeFile=C:\\Users\\ana\\upload-keystore.jks</code></pre>
+storeFile=C:/dev/upload-keystore.jks</code></pre>
   <ul>
-    <li>Na pasta <code>android/</code>, ao lado do <code>build.gradle.kts</code> de fora, não em <code>android/app/</code>.</li>
-    <li>No Windows, barras a dobrar. No macOS: <code>storeFile=/Users/ana/upload-keystore.jks</code>.</li>
+    <li>Criado no VS Code, na pasta <code>android/</code>, não em <code>android/app/</code>. O Bloco de Notas grava-o como <code>key.properties.txt</code>.</li>
+    <li>No Windows, barras para a frente: <code>C:/dev/...</code>. No macOS: <code>/Users/ana/upload-keystore.jks</code>.</li>
     <li>As duas palavras-passe são a mesma.</li>
     <li>O <code>git status</code> não o mostra: o <code>android/.gitignore</code> já o esconde.</li>
   </ul>
-  <aside class="notes">O que dizer: é aqui que o Gradle vai buscar o caminho e a palavra-passe; o código não tem nenhum segredo. Cada pessoa que faz builds de release tem o seu <code>key.properties</code>, com o caminho do seu computador. Se o <code>git status</code> mostrar o <code>key.properties</code>, alguém mexeu no <code>.gitignore</code>: parem e chamem-me. No CI do GitHub Actions este ficheiro não existe, e não faz mal: o CI só corre <code>analyze</code> e <code>test</code>.</aside>
+  <aside class="notes">O que dizer: é aqui que o Gradle vai buscar o caminho e a palavra-passe; o código não tem nenhum segredo. Cada pessoa que faz builds de release tem o seu <code>key.properties</code>, com o caminho do seu computador. Com barras invertidas simples, o Java lê <code>\u</code> de <code>\upload</code> como um código Unicode e o build para com "Malformed \uxxxx encoding"; nas outras, a barra desaparece. As barras para a frente funcionam no Windows e não precisam de nada. Testado com o Java do Android Studio. Se o <code>git status</code> mostrar o <code>key.properties</code>, alguém mexeu no <code>.gitignore</code>: parem e chamem-me. No CI do GitHub Actions este ficheiro não existe, e não faz mal: o CI só corre <code>analyze</code> e <code>test</code>.</aside>
 </section>
 
 <section class="slide">
@@ -260,15 +260,15 @@ if (keystorePropertiesFile.exists()) {
 
 <section class="slide">
   <h2>Passo 3: o APK de release</h2>
-<pre data-title="Terminal, na raiz do projeto"><code class="language-bash"># a app chama a API com o pdm.json
+<pre data-title="Terminal do VS Code, na raiz do projeto"><code class="language-bash"># a app chama a API com o pdm.json
 flutter build apk --release --dart-define-from-file=pdm.json
 # a app ainda não chama a API, ou tem o clientId no código
 flutter build apk --release</code></pre>
   <ul>
-    <li>Demora de 3 a 10 minutos. Sai em <code>build/app/outputs/flutter-apk/app-release.apk</code>.</li>
+    <li>Demora de 3 a 10 minutos. Sai em <code>build\app\outputs\flutter-apk\app-release.apk</code>.</li>
     <li>Com o telemóvel ligado: <code>flutter install</code>. Depois, sem o cabo: entrar, ilhas, trilhos, modo avião.</li>
   </ul>
-  <aside class="notes">O que dizer: o build de release compila o Dart para código máquina das três arquiteturas: é mais rápido e mais pequeno do que o debug, e não tem a faixa DEBUG. O <code>pdm.json</code> é o de quarta, na raiz do projeto, com <code>CLIENT_ID</code> e <code>CLIENT_SECRET</code>. Sem o <code>--dart-define-from-file</code>, nos grupos que usam <code>String.fromEnvironment</code>, o clientId vai vazio e o login dá 401. Com a flag e sem o ficheiro, o build para logo. O que vai no APK é público, até o clientSecret: quem tiver o ficheiro consegue lê-lo. Numa app a sério, os segredos ficam no servidor. A chave do PostHog que se viu na quarta é pública por isso mesmo: só deixa enviar eventos. Sem telemóvel Android: o <code>flutter install</code> também instala no emulador, ou arrasta-se o APK para a janela do emulador.</aside>
+  <aside class="notes">O que dizer: o build de release compila o Dart para código máquina das três arquiteturas: é mais rápido e mais pequeno do que o debug, e não tem a faixa DEBUG. O <code>pdm.json</code> é o de quarta, na raiz do projeto, com <code>CLIENT_ID</code> e <code>CLIENT_SECRET</code>. Sem o <code>--dart-define-from-file</code>, nos grupos que usam <code>String.fromEnvironment</code>, o clientId vai vazio e o login dá 401. Com a flag e sem o ficheiro, o build para logo. O que vai no APK é público, até o clientSecret: quem tiver o ficheiro consegue lê-lo. Numa app a sério, os segredos ficam no servidor. A chave do PostHog que se viu na quarta é pública por isso mesmo: só deixa enviar eventos. No Windows, o primeiro build pode demorar mais por causa do antivírus a analisar o Gradle. O APK arrasta-se daquela pasta, no Explorador, para o GitHub e para o Firebase. Sem telemóvel Android: o <code>flutter install</code> também instala no emulador, ou arrasta-se o APK para a janela do emulador.</aside>
 </section>
 
 <section class="slide">
@@ -278,8 +278,8 @@ flutter build apk --release</code></pre>
   <tbody>
   <tr><td>keytool não é reconhecido · Unable to locate a Java Runtime</td><td>O keytool do Android Studio, com o caminho todo</td></tr>
   <tr><td>keystore password was incorrect</td><td>A palavra-passe no <code>key.properties</code></td></tr>
-  <tr><td>Keystore file '...' not found</td><td>O <code>storeFile</code>; no Windows, barras a dobrar</td></tr>
-  <tr><td>SigningConfig "release" is missing required property "storeFile"</td><td>O <code>key.properties</code> fora de <code>android/</code></td></tr>
+  <tr><td>Keystore file '...' not found · Malformed \uxxxx encoding</td><td>O <code>storeFile</code>, com barras para a frente: <code>C:/dev/...</code></td></tr>
+  <tr><td>SigningConfig "release" is missing required property "storeFile"</td><td>O <code>key.properties</code> fora de <code>android/</code> ou gravado como <code>.txt</code></td></tr>
   <tr><td>Unresolved reference: Properties</td><td>Os dois <code>import</code> no topo</td></tr>
   </tbody></table></div>
   <aside class="notes">O que dizer: as mensagens do Gradle são compridas; a que interessa vem depois de "What went wrong". Estas são as mensagens exatas, tiradas de builds a falhar nos projetos da turma. Se aparecer outra, copiem as linhas depois de "What went wrong" e chamem-me.</aside>
