@@ -401,6 +401,20 @@ android {</code></pre>
 </section>
 
 <section class="slide">
+  <h2><code>pdm.json</code>: your group's pass for the API</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Where</th><th>What it is</th></tr></thead>
+  <tbody>
+  <tr><td>Issue #1 of your repo</td><td>clientId and clientSecret: the group's name and password</td></tr>
+  <tr><td><code>pdm.json</code> at the root</td><td><code>{"CLIENT_ID": "…", "CLIENT_SECRET": "…"}</code><br>Kept out of git: the repo is public</td></tr>
+  <tr><td>The build with the flag</td><td>Flutter puts them where the code says <code>fromEnvironment</code></td></tr>
+  <tr><td>The APK</td><td>Carries them inside: the API knows which group the app is</td></tr>
+  </tbody></table></div>
+  <div class="callout tip"><strong>Do you need it?</strong>Only if the code has <code>fromEnvironment</code>. With the clientId written in <code>main.dart</code>, or no API calls yet, not today.</div>
+  <aside class="notes">What to say: there are two different passwords. The person's (email and password) tells who they are; the group's (clientId and clientSecret) tells the API which app the request comes from, like a company access card. That is why login gives 401 when the clientId is empty, even with the right email. <code>pdm.json</code> is the same as Wednesday's: if you already have it, nothing changes. If the clientId and secret are written in <code>main.dart</code>, build without the flag and move them to <code>pdm.json</code> in a sprint 3 PR. Honest note: what goes into the APK can be read by anyone with the file, so in a real app secrets stay on the server; here <code>pdm.json</code> keeps them off GitHub.</aside>
+</section>
+
+<section class="slide">
   <h2>Step 3.1: which command to use</h2>
   <p>Is there a <code>pdm.json</code> file at the project root, next to <code>pubspec.yaml</code>?</p>
 <pre data-title="VS Code terminal, at the project root"><code class="language-bash"># Yes, there is pdm.json:

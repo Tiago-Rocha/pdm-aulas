@@ -401,6 +401,20 @@ android {</code></pre>
 </section>
 
 <section class="slide">
+  <h2>O <code>pdm.json</code>: o cartão do grupo na API</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Onde</th><th>O que é</th></tr></thead>
+  <tbody>
+  <tr><td>Issue #1 do vosso repo</td><td>clientId e clientSecret: o nome e a palavra-passe do grupo</td></tr>
+  <tr><td><code>pdm.json</code> na raiz</td><td><code>{"CLIENT_ID": "…", "CLIENT_SECRET": "…"}</code><br>Fora do git: o repo é público</td></tr>
+  <tr><td>O build com a flag</td><td>O Flutter mete-os onde o código diz <code>fromEnvironment</code></td></tr>
+  <tr><td>O APK</td><td>Leva-os dentro: a API sabe de que grupo é a app</td></tr>
+  </tbody></table></div>
+  <div class="callout tip"><strong>Precisam dele?</strong>Só se o código tem <code>fromEnvironment</code>. Com o clientId escrito no <code>main.dart</code>, ou sem chamadas à API, hoje não.</div>
+  <aside class="notes">O que dizer: há duas palavras-passe diferentes. A da pessoa (email e palavra-passe) serve para saber quem é; a do grupo (clientId e clientSecret) serve para a API saber de que app vem o pedido, como o cartão de acesso de uma empresa. É por isso que o login dá 401 quando o clientId vai vazio, mesmo com o email certo. O <code>pdm.json</code> é o mesmo de quarta: quem já o tem não muda nada. Quem tem o clientId e o segredo escritos no <code>main.dart</code> constrói sem a flag e passa-os para o <code>pdm.json</code> num PR da sprint 3. Nota honesta: o que vai no APK pode ser lido por quem tiver o ficheiro, por isso numa app a sério os segredos ficam no servidor; aqui o <code>pdm.json</code> serve para não os pôr no GitHub.</aside>
+</section>
+
+<section class="slide">
   <h2>Passo 3.1: que comando usar</h2>
   <p>Há um ficheiro <code>pdm.json</code> na raiz do projeto, ao lado do <code>pubspec.yaml</code>?</p>
 <pre data-title="Terminal do VS Code, na raiz do projeto"><code class="language-bash"># Sim, há pdm.json:
