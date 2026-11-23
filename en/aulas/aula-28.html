@@ -42,20 +42,22 @@
 .deck .slide .walk { display: grid; grid-template-columns: minmax(0, 2.05fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
 .deck .slide .walk pre { margin: 0; font-size: .64rem; overflow: hidden; }
 .deck .slide .walk ol.walk-ex li code { white-space: nowrap; }
-.deck .slide .walk pre code, .deck .slide .walk pre code.hljs { display: block; position: relative; z-index: 1; padding: 0; font-size: .66rem; overflow: visible; }
+.deck .slide .walk pre code, .deck .slide .walk pre code.hljs { display: block; position: relative; z-index: 1; padding: 0; font-size: inherit; overflow: visible; }
 .deck .slide .walk .walk-bar { position: absolute; left: 0; right: 0; z-index: 0; opacity: 0; background: rgba(76,156,245,.22); border-left: 4px solid #4c9cf5; transition: top .35s ease, height .35s ease, opacity .25s; pointer-events: none; }
-.deck .slide .walk ol.walk-ex { list-style: none; margin: 0; padding: 0; counter-reset: w; }
-.deck .slide .walk ol.walk-ex li { counter-increment: w; position: relative; margin: 0 0 .3em; padding: .28em .5em .28em 2.2em; border-radius: 10px; font-size: .88rem; line-height: 1.32; cursor: pointer; transition: opacity .25s, background .25s; }
-.deck .slide .walk ol.walk-ex li::before { content: counter(w); position: absolute; left: .45em; top: .38em; width: 1.45em; height: 1.45em; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 700 .8rem/1.45em var(--font); text-align: center; }
+.deck .slide .walk ol.walk-ex { list-style: none; margin: 0; padding: 0; counter-reset: w; font-size: .88rem; }
+.deck .slide .walk ol.walk-ex li { counter-increment: w; position: relative; margin: 0 0 .3em; padding: .28em .5em .28em 2.2em; border-radius: 10px; font-size: 1em; line-height: 1.32; cursor: pointer; transition: opacity .25s, background .25s; }
+.deck .slide .walk ol.walk-ex li::before { content: counter(w); position: absolute; left: .45em; top: .38em; width: 1.45em; height: 1.45em; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 700 .85em/1.45em var(--font); text-align: center; }
 .deck .slide .walk ol.walk-ex li.on { background: var(--accent-soft); font-weight: 700; }
 .deck .slide .walk ol.walk-ex li.on::before { background: var(--accent); color: var(--accent-fg); }
 .deck .slide .walk ol.walk-ex li.off { opacity: .4; }
 .deck.doc .slide .walk ol.walk-ex li.off { opacity: 1; }
+/* Os slides do build.yml usam a largura toda do ecrã, não só a coluna do site */
+.deck:not(.doc) .slide.largo { --lw: min(calc(100vw - 5rem), 1900px); width: var(--lw); max-width: none; margin-left: calc((100% - var(--lw)) / 2); }
 /* O ficheiro todo: dois lados, um bloco por parte, com o nome no canto */
-.deck .slide .ficheiro { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .8rem; align-items: start; }
+.deck .slide .ficheiro { font-size: min(1.35vh, .62vw); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .8rem; align-items: start; }
 .deck .slide .ficheiro pre code, .deck .slide .ficheiro pre code.hljs { padding: 0; font-size: inherit; }
-.deck .slide .ficheiro pre { font-size: min(1.35vh, .78cqi); line-height: 1.25; padding: .45em .8em; margin: 0 0 .4rem; overflow: hidden; }
-.deck .slide .ficheiro pre[data-title]::before { position: absolute; top: .45rem; right: .7rem; margin: 0; padding: .15em .6em; border-radius: 999px; background: #4c9cf5; color: #0b1220; font: 700 .68rem var(--font); z-index: 2; }
+.deck .slide .ficheiro pre { font-size: 1em; line-height: 1.25; padding: .5em .8em; margin: 0 0 .5rem; overflow: hidden; }
+.deck .slide .ficheiro pre[data-title]::before { position: absolute; top: .45rem; right: .7rem; margin: 0; padding: .15em .6em; border-radius: 999px; background: #4c9cf5; color: #0b1220; font: 700 .6rem var(--font); z-index: 2; }
 </style>
 </head>
 <body data-aula="28">
@@ -346,7 +348,7 @@ Future&lt;int?&gt; batteryLevel() async {
   <aside class="notes">What to say: a secret is an encrypted repository variable; the build uses it, but the logs show <code>***</code>. The <code>.jks</code> is binary: Base64 turns it into text so it fits in a text box, and the build turns it back into the file. Same principle as Friday, the secret never goes into git, except now the "group computer" is a GitHub machine that is born for the build and dies at the end. Not even you can read a secret again once saved: you can only replace it. Base64 is not encryption, it is just a way of writing bytes with letters and numbers; whoever has the text has the key, so do not paste it anywhere else. Only the repository owner (or an admin) sees the Settings menu where secrets are created. Why the key matters: a phone only installs an update signed with the same key; with another one, testers have to uninstall and lose their data. The password alone is useless, and so is the key alone: you need both. <code>key.properties</code> is not a secret: the build writes it from <code>KEYSTORE_PASSWORD</code>. The two Firebase ones only come in at step 4: the App ID is not really a secret, but it sits with the rest so everything is in one place; the service account is a "robot person" allowed to send releases, and whoever has the <code>.json</code> can do the same.</aside>
 </section>
 
-<section class="slide">
+<section class="slide largo">
   <h2>The whole build.yml on one slide</h2>
   <div class="ficheiro" role="img" aria-label="The complete build.yml file, in seven blocks from top to bottom">
   <div>
@@ -364,66 +366,66 @@ jobs:
     env:
       BUILD: ${{ github.run_number }}
       TEM_FIREBASE: ${{ secrets.FIREBASE_APP_ID != '' }}</code></pre>
-<pre data-title="the machine and Flutter"><code class="language-yaml">    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: 3.47.5
-          cache: true</code></pre>
-<pre data-title="the key"><code class="language-yaml">      - name: A chave do grupo
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d &gt; "$RUNNER_TEMP/upload.jks"
-          cat &gt; android/key.properties &lt;&lt;FIM
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEYSTORE_PASSWORD
-          keyAlias=upload
-          storeFile=$RUNNER_TEMP/upload.jks
-          FIM</code></pre>
+<pre data-title="the machine and Flutter"><code class="language-yaml">steps:
+  - uses: actions/checkout@v5
+  - uses: actions/setup-java@v5
+    with:
+      distribution: temurin
+      java-version: 17
+      cache: gradle
+  - uses: subosito/flutter-action@v2
+    with:
+      flutter-version: 3.47.5
+      cache: true</code></pre>
+<pre data-title="the key"><code class="language-yaml">- name: A chave do grupo
+  env:
+    KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+  run: |
+    echo "$KEYSTORE_BASE64" | base64 -d &gt; "$RUNNER_TEMP/upload.jks"
+    cat &gt; android/key.properties &lt;&lt;FIM
+    storePassword=$KEYSTORE_PASSWORD
+    keyPassword=$KEYSTORE_PASSWORD
+    keyAlias=upload
+    storeFile=$RUNNER_TEMP/upload.jks
+    FIM</code></pre>
   </div>
   <div>
-<pre data-title="pdm.json"><code class="language-yaml">      - name: O pdm.json
-        env:
-          PDM_JSON: ${{ secrets.PDM_JSON }}
-        run: |
-          if [ -n "$PDM_JSON" ]; then printf '%s' "$PDM_JSON" &gt; pdm.json
-          else echo '{}' &gt; pdm.json; fi</code></pre>
-<pre data-title="the APK"><code class="language-yaml">      - name: APK de release
-        run: |
-          flutter build apk --release \
-            --build-number=$((100 + BUILD)) \
-            --dart-define-from-file=pdm.json</code></pre>
-<pre data-title="the Release"><code class="language-yaml">      - name: Release no GitHub
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSAO=$(grep -oP '^version: \K[^+]+' pubspec.yaml)
-          N=$((100 + BUILD))
-          APK=build/app/outputs/flutter-apk/app-release.apk
-          cp "$APK" "app-$VERSAO-$N.apk"
-          git log -1 --format=%B &gt; notas.txt
-          gh release create "v$VERSAO-build.$N" "app-$VERSAO-$N.apk" \
-            --target "$GITHUB_SHA" --prerelease \
-            --title "$VERSAO ($N)" --notes-file notas.txt</code></pre>
-<pre data-title="Firebase"><code class="language-yaml">      - name: Firebase App Distribution
-        env:
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        if: env.TEM_FIREBASE == 'true'
-        run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" &gt; "$RUNNER_TEMP/firebase.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase.json"
-          npx --yes firebase-tools appdistribution:distribute \
-            build/app/outputs/flutter-apk/app-release.apk \
-            --app "$FIREBASE_APP_ID" --groups testers \
-            --release-notes-file notas.txt</code></pre>
+<pre data-title="pdm.json"><code class="language-yaml">- name: O pdm.json
+  env:
+    PDM_JSON: ${{ secrets.PDM_JSON }}
+  run: |
+    if [ -n "$PDM_JSON" ]; then printf '%s' "$PDM_JSON" &gt; pdm.json
+    else echo '{}' &gt; pdm.json; fi</code></pre>
+<pre data-title="the APK"><code class="language-yaml">- name: APK de release
+  run: |
+    flutter build apk --release \
+      --build-number=$((100 + BUILD)) \
+      --dart-define-from-file=pdm.json</code></pre>
+<pre data-title="the Release"><code class="language-yaml">- name: Release no GitHub
+  env:
+    GH_TOKEN: ${{ github.token }}
+  run: |
+    VERSAO=$(grep -oP '^version: \K[^+]+' pubspec.yaml)
+    N=$((100 + BUILD))
+    APK=build/app/outputs/flutter-apk/app-release.apk
+    cp "$APK" "app-$VERSAO-$N.apk"
+    git log -1 --format=%B &gt; notas.txt
+    gh release create "v$VERSAO-build.$N" "app-$VERSAO-$N.apk" \
+      --target "$GITHUB_SHA" --prerelease \
+      --title "$VERSAO ($N)" --notes-file notas.txt</code></pre>
+<pre data-title="Firebase"><code class="language-yaml">- name: Firebase App Distribution
+  env:
+    FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+    FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+  if: env.TEM_FIREBASE == 'true'
+  run: |
+    printf '%s' "$FIREBASE_SERVICE_ACCOUNT" &gt; "$RUNNER_TEMP/firebase.json"
+    export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase.json"
+    npx --yes firebase-tools appdistribution:distribute \
+      build/app/outputs/flutter-apk/app-release.apk \
+      --app "$FIREBASE_APP_ID" --groups testers \
+      --release-notes-file notas.txt</code></pre>
   </div>
   </div>
   <aside class="notes">What to say: this is the whole file, just to see its size and order: not to read line by line. In the workshop they download it as is, it is the same for every group, and then we look at the pieces that matter one at a time. It reads top to bottom like a recipe: when it runs, set up the machine, the key, <code>pdm.json</code>, the APK, the Release and, if there is one, Firebase. The secrets from the previous slide show up as <code>secrets.NAME</code>: that is the only place they come in.</aside>
@@ -631,7 +633,7 @@ Invoke-WebRequest $url -OutFile .github\workflows\build.yml</code></pre>
   <aside class="notes">What to say: <code>build.yml</code> is the same for every group: it has nothing of yours, the secrets come from GitHub. That is why it is downloaded rather than copied from the slide, where a wrong YAML indent breaks everything. The file is shared with the Portuguese-speaking classmates, so its step names are in Portuguese. The <code>main.dart</code> changed in step 1.4 comes with you to the branch: that is normal, it goes in the same PR. On macOS: <code>mkdir -p .github/workflows</code> and <code>curl -o .github/workflows/build.yml</code> with the same address.</aside>
 </section>
 
-<section class="slide">
+<section class="slide largo">
   <h2>Inside build.yml: when and where it runs</h2>
   <div class="walk">
 <pre data-title=".github/workflows/build.yml"><code class="language-yaml">on:
@@ -656,7 +658,7 @@ jobs:
   <aside class="notes">What to say: just read, don't change anything. It is all one file, the <code>build.yml</code> they downloaded; these four slides are four pieces of it, top to bottom. Each arrow press lights up one piece. <code>ci.yml</code> still handles PRs; this one only runs after the merge. The excerpt has the lines that matter; the full file also has Java 17 and the cache, so the second build is faster. The Flutter version is pinned because, with the latest one, the project Flutter created in September no longer compiles (it asks for a newer Android Gradle Plugin). That is a reproducible build: the same code gives the same APK today and a month from now.</aside>
 </section>
 
-<section class="slide">
+<section class="slide largo">
   <h2>Inside build.yml: the key</h2>
   <div class="walk">
 <pre data-title=".github/workflows/build.yml"><code class="language-yaml">- name: A chave do grupo
@@ -680,7 +682,7 @@ jobs:
   <aside class="notes">What to say: <code>secrets.KEYSTORE_BASE64</code> is the secret from step 1.2; <code>base64 -d</code> rebuilds the <code>.jks</code> in a temporary folder. Then it writes the same <code>key.properties</code> you wrote by hand on Friday. Gradle doesn't know it is on a robot: it reads <code>key.properties</code> just like on your computer.</aside>
 </section>
 
-<section class="slide">
+<section class="slide largo">
   <h2>Inside build.yml: pdm.json and the APK</h2>
   <div class="walk">
 <pre data-title=".github/workflows/build.yml"><code class="language-yaml">- name: O pdm.json
@@ -706,7 +708,7 @@ jobs:
   <aside class="notes">What to say: <code>BUILD</code> is <code>github.run_number</code>, the build number in Actions (1, 2, 3...), defined at the top of the file. With <code>{}</code> the build doesn't fail, so the same file works for every group; but the app has no <code>clientId</code> and login gives 401. Building the APK is the slowest step, about 8 minutes on the first build.</aside>
 </section>
 
-<section class="slide">
+<section class="slide largo">
   <h2>Inside build.yml: the Release</h2>
   <div class="walk">
 <pre data-title=".github/workflows/build.yml"><code class="language-yaml">- name: Release no GitHub
@@ -1083,7 +1085,7 @@ flutter pub add dev:flutter_launcher_icons</code></pre>
 /* Dentro do build.yml: a seta para a direita acende o par seguinte antes de mudar de slide */
 (function () {
   var walks = [].slice.call(document.querySelectorAll(".walk"));
-  if (!walks.length) return;
+  if (!walks.length && !document.querySelector(".ficheiro")) return;
   walks.forEach(function (w) {
     var pre = w.querySelector("pre"), bar = document.createElement("div");
     bar.className = "walk-bar"; pre.appendChild(bar); w._k = 0;
@@ -1117,6 +1119,39 @@ flutter pub add dev:flutter_launcher_icons</code></pre>
     else if (dir < 0 && w._k > 0) { e.preventDefault(); e.stopImmediatePropagation(); show(w, w._k - 1); }
     else reset();
   }
+  /* A letra do código cresce até encher o espaço livre do slide */
+  function cabe(caixa, pres) {
+    if (caixa.getBoundingClientRect().bottom > window.innerHeight - 18) return false;
+    return pres.every(function (p) {
+      var c = p.querySelector("code") || p;
+      return p.scrollWidth <= p.clientWidth + 1 && c.scrollWidth <= c.clientWidth + 1;
+    });
+  }
+  function ajusta() {
+    var s = document.querySelector(".deck .slide.active");
+    [].forEach.call(document.querySelectorAll(".ficheiro, .walk"), function (c) {
+      var alvo = c.classList.contains("walk") ? c.querySelector("pre") : c;
+      if (document.querySelector(".deck.doc") || !s || !s.contains(c)) { alvo.style.fontSize = ""; var o = c.querySelector(".walk-ex"); if (o) o.style.fontSize = ""; return; }
+      var pres = [].slice.call(c.querySelectorAll("pre")), lo = 8, hi = 30;
+      while (hi - lo > .25) {
+        var m = (lo + hi) / 2; alvo.style.fontSize = m + "px";
+        if (cabe(c, pres)) lo = m; else hi = m;
+      }
+      alvo.style.fontSize = lo + "px";
+      var ol = c.querySelector(".walk-ex");
+      if (ol) {
+        var base = parseFloat(getComputedStyle(document.documentElement).fontSize) * .88, f = Math.max(base, lo * 1.3);
+        ol.style.fontSize = f + "px";
+        while (f > base && !cabe(c, pres)) { f -= .5; ol.style.fontSize = f + "px"; }
+      }
+      if (c._k) show(c, c._k);
+    });
+  }
+  function depois() { setTimeout(ajusta, 30); }
+  ["resize", "hashchange", "fullscreenchange", "load"].forEach(function (ev) { window.addEventListener(ev, depois); });
+  document.addEventListener("keyup", depois);
+  document.addEventListener("click", depois);
+  depois();
   window.addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === "ArrowRight" || e.key === "PageDown") passo(1, e);
