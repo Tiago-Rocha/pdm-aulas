@@ -7,6 +7,77 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* Números grandes */
+.deck .slide .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: .6em 0 .9em; }
+.deck .slide .stat { border: 1px solid var(--border); border-radius: 14px; padding: .7em .9em; background: var(--surface); }
+.deck .slide .stat b { display: block; font-size: 2.5em; line-height: 1.05; color: var(--accent); letter-spacing: -.02em; }
+.deck .slide .stat span { display: block; font-weight: 600; margin-top: .2em; }
+.deck .slide .stat small { display: block; color: var(--muted); font-size: .75em; margin-top: .2em; }
+.deck .slide .stat.mau b { color: var(--danger); }
+.deck .slide .fonte { color: var(--muted); font-size: .7em; margin: .4em 0 0; }
+/* Barras horizontais */
+.deck .slide .barras { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; gap: .25em .8em; align-items: center; margin: .3em 0 .5em; }
+.deck .slide .barras .rot { font-weight: 600; }
+.deck .slide .barras .rot small { display: block; font-weight: 400; color: var(--muted); font-size: .72em; }
+.deck .slide .barras .bar { height: 1.15em; border-radius: 6px; background: var(--accent); }
+.deck .slide .barras .val { font-variant-numeric: tabular-nums; font-weight: 700; }
+/* Grelha de 100 pontos */
+.deck .slide .lado { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 1.6rem; align-items: center; }
+.deck .slide .pontos { display: grid; grid-template-columns: repeat(10, 1fr); gap: .35em; max-width: 13em; }
+.deck .slide .pontos i { aspect-ratio: 1; border-radius: 50%; background: var(--border); }
+.deck .slide .pontos i.s { background: var(--accent); }
+.deck .slide .pontos-leg { margin: .5em 0 0; font-size: .85em; }
+.deck .slide .pontos-leg b { color: var(--accent); font-size: 1.5em; }
+/* Barra empilhada */
+.deck .slide .pilha { display: flex; height: 3.2em; border-radius: 10px; overflow: hidden; margin: .6em 0 .3em; }
+.deck .slide .pilha div { display: flex; align-items: center; padding: 0 .7em; color: #fff; font-weight: 700; white-space: nowrap; font-size: .9em; }
+.deck .slide .pilha .fis { background: var(--ok); flex: 1100; }
+.deck .slide .pilha .ads { background: var(--warn); flex: 151; justify-content: center; padding: 0; }
+.deck .slide .pilha .dig { background: var(--accent); flex: 149; justify-content: center; padding: 0; }
+.deck .slide .pilha-leg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8em; font-size: .78em; margin-bottom: .7em; }
+.deck .slide .pilha-leg b { display: block; }
+.deck .slide .pilha-leg .c-fis b { color: var(--ok); } .deck .slide .pilha-leg .c-ads b { color: var(--warn); } .deck .slide .pilha-leg .c-dig b { color: var(--accent); }
+.deck .slide .regra { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.deck .slide .regra > div { border-radius: 12px; padding: .5em .8em; font-size: .85em; }
+.deck .slide .regra .loja { background: var(--accent-soft); border: 1px solid var(--accent); }
+.deck .slide .regra .fora { background: var(--ok-soft); border: 1px solid var(--ok); }
+.deck .slide .regra b { display: block; }
+/* Histórias */
+.deck .slide .historias { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+.deck .slide .historia { border: 1px solid var(--border); border-radius: 14px; padding: .55em .85em; background: var(--surface); font-size: .82em; }
+.deck .slide .historia h3 { margin: 0 0 .15em; font-size: 1.15em; }
+.deck .slide .historia h3 small { color: var(--muted); font-weight: 400; font-size: .75em; }
+.deck .slide .historia .grande { font-size: 1.35em; font-weight: 800; color: var(--accent); margin: 0 0 .1em; }
+.deck .slide .historia p { margin: 0; }
+/* Paywall desenhado */
+.deck .slide .tel { width: 23em; margin: 0 auto; border: 3px solid var(--fg); border-radius: 30px; padding: 1.1em .9em .9em; background: var(--surface); font-size: .54em; position: relative; }
+.deck .slide .tel .x { position: absolute; top: .8em; right: 1.1em; color: var(--muted); }
+.deck .slide .tel h4 { margin: .2em 0 .5em; font-size: 1.45em; text-align: center; }
+.deck .slide .tel ul { list-style: none; padding: 0; margin: 0 0 .7em; }
+.deck .slide .tel ul li { padding-left: 1.4em; position: relative; margin: .25em 0; }
+.deck .slide .tel ul li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: 700; }
+.deck .slide .tel .plano { border: 2px solid var(--border); border-radius: 10px; padding: .45em .7em; margin: .35em 0; display: flex; justify-content: space-between; gap: .5em; }
+.deck .slide .tel .plano.on { border-color: var(--accent); background: var(--accent-soft); }
+.deck .slide .tel .plano small { display: block; color: var(--muted); }
+.deck .slide .tel .btn { background: var(--accent); color: var(--accent-fg); text-align: center; border-radius: 10px; padding: .6em; font-weight: 700; margin: .6em 0 .5em; }
+.deck .slide .tel .rodape { display: flex; justify-content: space-between; color: var(--muted); font-size: .9em; white-space: nowrap; gap: .8em; }
+.deck .slide .tel .plano > b { white-space: nowrap; gap: .8em; }
+.deck .slide .tel .n { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--danger); color: #fff; font-weight: 700; font-size: .85em; vertical-align: middle; margin-left: .2em; }
+.deck .slide ol.marcas { list-style: none; padding: 0; margin: .3em 0 0; font-size: .72em; }
+.deck .slide ol.marcas li { margin: .05em 0; }
+.deck .slide ol.marcas .n { display: inline-grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--danger); color: #fff; font-weight: 700; font-size: .8em; margin-right: .3em; }
+/* Contas dos anúncios */
+.deck .slide .contas { border: 1px solid var(--border); border-radius: 14px; padding: .6em 1em; background: var(--surface); }
+.deck .slide .contas div { display: flex; justify-content: space-between; gap: 1em; padding: .25em 0; border-bottom: 1px dashed var(--border); }
+.deck .slide .contas div:last-child { border-bottom: 0; font-weight: 800; color: var(--accent); font-size: 1.15em; }
+.deck .slide .contas b { font-variant-numeric: tabular-nums; white-space: nowrap; gap: .8em; }
+.deck .slide .fig-lado { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.4rem; align-items: start; }
+.deck .slide ul.curta { margin: 0; }
+.deck .slide ul.curta li { margin: .2em 0; }
+.deck .slide .checklist.duas { columns: 2; column-gap: 2rem; }
+.deck .slide .checklist.duas li { break-inside: avoid; margin: .15em 0; }
+</style>
 </head>
 <body data-aula="29">
 <header class="site"><div class="wrap">
@@ -26,163 +97,229 @@
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 29 · Semana 12 · Terça, 24 de novembro de 2026 · 08:30 às 10:30</p>
   <h1>Lojas e monetização, e sprint 3</h1>
-  <p class="lead">Teoria (30 minutos): modelos de negócio em mobile, compras in-app e subscrições, regras das lojas, publicidade, motivos comuns de rejeição e ASO. Prática: sprint 3, com revisão da app do grupo contra as guidelines da App Store.</p>
+  <p class="lead">Quantas apps chegam às lojas, quantas ganham dinheiro e como o ganham. Depois, o resto da aula é para a sprint 3, no projeto do grupo.</p>
   <div class="meta"><span>Review da sprint 3: quarta 02/12 às 16:30</span></div>
-  <aside class="notes">Aula das 08:30: acorda a sala com uma pergunta, "quem pagou por uma app este ano, e quanto?". Escreve as respostas no quadro: saem quase só subscrições (Spotify, YouTube Premium, Duolingo) e nenhuma compra única; é o slide dos modelos de negócio feito por eles. Tem o App Store Connect e a Play Console da tua conta abertos noutro separador para mostrar onde se criam produtos in-app. Logo a seguir aos objetivos, dois minutos de ponto de situação por grupo em uma frase: decide por onde circulas na parte prática.</aside>
+  <aside class="notes">Plano: 08:30 a 09:05 teoria; 09:05 a 09:15 ponto de situação da sprint; 09:15 a 10:30 trabalho no projeto, com o docente a circular. Para acordar a sala: "quem pagou por uma app este ano, e quanto?". Saem quase só subscrições (Spotify, YouTube Premium, Duolingo, iCloud) e quase nenhuma compra única. É o resumo da aula feito por eles.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Distinguir os cinco modelos de negócio de uma app e dizer o que cada um exige na arquitetura.</li>
-    <li>Explicar quando uma compra tem de passar pelo StoreKit ou pelo Play Billing, quanto custa em comissões e o que o DMA mudou na UE.</li>
-    <li>Avaliar o custo da publicidade para a experiência do utilizador e para a privacidade.</li>
-    <li>Reconhecer os motivos mais comuns de rejeição nas lojas e evitá-los antes de submeter.</li>
-    <li>Pedir uma avaliação no momento certo com <code>in_app_review</code> e preparar a ficha da app para ser encontrada.</li>
+    <li>Dizer quantas apps tentam entrar nas lojas e porque a maioria nunca dá dinheiro.</li>
+    <li>Distinguir os modelos de negócio de uma app, com exemplos que usas.</li>
+    <li>Saber quando um pagamento tem de passar pela loja e quanto a loja fica.</li>
+    <li>Fazer as contas a uma app com anúncios ou com subscrição.</li>
   </ul>
+  <aside class="notes">Antes de passar ao slide seguinte, pergunta e escreve as apostas no quadro: "quantas apps são submetidas à App Store por dia? 100, 1 000 ou 10 000?" e "em cada quatro, quantas a Apple rejeita?". Respostas no slide seguinte: perto de 25 000 por dia, e uma em cada quatro.</aside>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>Modelos de negócio</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Modelo</th><th>Exemplos</th><th>O que muda na arquitetura</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Pago</strong> (compra única)</td><td>Minecraft, Procreate, Things</td><td>Nada no código: a loja cobra antes de instalar. Cada vez mais raro fora de jogos e ferramentas.</td></tr>
-  <tr><td><strong>Freemium</strong></td><td>Duolingo, Windy, Spotify</td><td>Entitlements (a app sabe quem tem o quê), paywall, compras in-app, botão de restaurar compras.</td></tr>
-  <tr><td><strong>Subscrição</strong></td><td>Carrot Weather, Headspace, YouTube Premium</td><td>Tudo o do freemium mais o ciclo de vida: trial, renovação, falha de cobrança, cancelamento; validação no servidor.</td></tr>
-  <tr><td><strong>Publicidade</strong></td><td>AccuWeather, Instagram, jogos casuais</td><td>SDK de anúncios, consentimento, ATT, platform views; a receita depende de volume.</td></tr>
-  <tr><td><strong>Empresa ou interna</strong></td><td>App de estafetas, app de um banco para os balcões</td><td>Distribuição fora da loja pública (Apple Business Manager, managed Google Play), login corporativo, sem monetização direta.</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>Os modelos misturam-se: o Duolingo é gratuito, mostra anúncios e vende a subscrição que os tira. Cada modelo é um ecrã a mais e uma regra da loja a mais.</li>
-    <li>Uma app de meteorologia dos Açores com dados públicos tende para gratuita, ou freemium com um extra que valha a fricção (alertas personalizados, previsão a 10 dias). O que se cobra tem de valer mais do que o incómodo de pagar.</li>
+  <h2>Quantas apps tentam entrar nas lojas</h2>
+  <div class="stats">
+    <div class="stat"><b>25 000</b><span>submissões por dia à App Store</span><small>9,1 milhões em 2025, entre apps novas e atualizações</small></div>
+    <div class="stat mau"><b>1 em 4</b><span>rejeitadas pela Apple</span><small>2,09 milhões em 2025</small></div>
+    <div class="stat"><b>1 500</b><span>apps novas por dia na App Store</span><small>557 mil em 2025, mais 24 %: o maior salto desde 2016</small></div>
+  </div>
+  <ul class="curta">
+    <li>No início de 2026 os lançamentos nas duas lojas subiram 60 % face ao ano anterior. A explicação mais citada: ferramentas de IA que escrevem a app.</li>
+    <li>Os downloads totais desceram 2,7 %: há cada vez mais apps a dividir as mesmas pessoas.</li>
   </ul>
-  <p><strong>Para os testes:</strong> o modelo de negócio decide a arquitetura: freemium e subscrição exigem entitlements e restauro de compras, publicidade exige consentimento, apps de empresa distribuem-se fora da loja pública.</p>
+  <p class="fonte">Fontes: Apple, App Store Transparency Report 2025; Appfigures, dezembro de 2025 e abril de 2026.</p>
+  <aside class="notes">O que dizer: 9,1 milhões a dividir por 365 dá perto de 25 000 por dia. Cada submissão é uma versão: uma app nova ou uma atualização, e a mesma app pode ser rejeitada e voltar várias vezes. A Sensor Tower conta ainda mais apps novas, perto de 600 mil em 2025. A Apple também tem tirado apps de "vibe coding" que geram outras apps dentro delas (Replit, Vibecode, Anything), por violarem as regras. A mensagem: fazer uma app ficou fácil, fazer com que alguém a encontre e pague não.</aside>
 </section>
 
 <section class="slide">
-  <h2>Compras in-app e subscrições</h2>
-  <ul>
-    <li><strong>Três tipos de produto:</strong> consumível (moedas, créditos), não consumível (remover anúncios, versão Pro, comprado uma vez para sempre) e subscrição auto-renovável (mensal ou anual, com trial). Definem-se no App Store Connect e na Play Console, com preço por escalão e nome localizado, não no código.</li>
-    <li><strong>StoreKit 2</strong> (iOS) e <strong>Play Billing Library</strong> (Android) são as APIs nativas. No Flutter: <code>in_app_purchase</code>, o plugin oficial que fala com as duas, ou RevenueCat (<code>purchases_flutter</code>), um serviço que valida recibos, gere entitlements e envia webhooks; grátis até um certo volume de receita.</li>
-    <li><strong>Validação no servidor:</strong> o recibo (Apple) ou o purchase token (Google) verifica-se com a App Store Server API ou a Play Developer API. Um telemóvel com root falsifica uma compra em minutos; só o servidor sabe se é real.</li>
-    <li><strong>Ciclo de vida de uma subscrição:</strong> trial, renovação, falha de cobrança com período de tolerância, cancelamento, reembolso. O servidor recebe notificações (App Store Server Notifications, Real-time Developer Notifications) e atualiza o entitlement; a app só pergunta "tem acesso?".</li>
-    <li><strong>Restaurar compras</strong> é obrigatório na Apple: um botão visível que repõe o que o utilizador já comprou noutro telemóvel. Sem ele, rejeição pela guideline 3.1.1.</li>
-    <li><strong>A regra:</strong> conteúdo ou funcionalidade digital consumida na app passa pelo sistema de compras da loja. Bens físicos e serviços fora da app (Uber, Bolt, Zara, uma reserva de restaurante) usam o processador que quiserem: Stripe, MB WAY, cartão.</li>
+  <h2>Porque é que as lojas dizem que não</h2>
+  <div class="barras">
+    <span class="rot">Desempenho<small>crashes, app incompleta, botões que não fazem nada</small></span><div class="bar" style="width:100%"></div><span class="val">1,35 M</span>
+    <span class="rot">Legal<small>privacidade, dados pessoais, direitos de autor</small></span><div class="bar" style="width:37%"></div><span class="val">0,50 M</span>
+    <span class="rot">Design<small>cópias, spam, uma app que só embrulha um site</small></span><div class="bar" style="width:31%"></div><span class="val">0,42 M</span>
+    <span class="rot">Negócio<small>pagamentos fora da loja, preços enganadores</small></span><div class="bar" style="width:21%"></div><span class="val">0,28 M</span>
+  </div>
+  <ul class="curta">
+    <li><strong>Google Play</strong> em 2025: 1,75 milhões de apps bloqueadas antes de serem publicadas e 80 mil contas banidas.</li>
+    <li><strong>Conta pessoal nova na Google Play:</strong> antes de publicar, um teste fechado com <strong>12 testers durante 14 dias seguidos</strong>. Vocês já têm 3.</li>
   </ul>
-  <p><strong>Para os testes:</strong> conteúdo digital consumido na app passa pela loja, bens e serviços físicos não; restaurar compras é obrigatório e a validação é no servidor.</p>
-  <aside class="notes">Mostra no App Store Connect o formulário de criar um produto in-app (id, tipo, escalão de preço) sem gravar. Pergunta: "uma app de reservas que cobra 2 € por reserva passa pelo StoreKit?" Não: é um serviço consumido fora da app. "E uma app que vende um tema escuro?" Sim. Confundir os dois é pergunta de teste. Se alguém perguntar pelo Netflix e Spotify: são "reader apps", podem não vender na app, mas até há pouco não podiam sequer dizer onde se comprava.</aside>
+  <aside class="notes">Fontes: Apple, App Store Transparency Report 2025 (rejeições por secção das guidelines; uma submissão pode ter várias razões); Google, Play safety 2025; Google Play Console Help. O que dizer: a primeira causa de rejeição não é nada sofisticado, é a app rebentar ou estar a meio (guideline 2.1). Por isso o "testar num telemóvel acabado de instalar" e a conta de demonstração nas notas para o revisor. A regra dos 12 testers existe desde novembro de 2023 para contas pessoais e é o que mais atrasa um primeiro lançamento a solo: há quem venda "12 testers" no Fiverr, e a Google deteta quem instala e não usa. Contas de empresa não têm esta regra, mas precisam de um número D-U-N-S. O que já fizeram com o Firebase App Distribution e os 3 testers é o treino disto.</aside>
 </section>
 
 <section class="slide">
-  <h2>Comissões e o DMA na UE</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th></th><th>App Store</th><th>Google Play</th></tr></thead>
-  <tbody>
-  <tr><td>Comissão padrão</td><td>30 %</td><td>30 %</td></tr>
-  <tr><td>Pequenos programadores</td><td>15 % com o Small Business Program (até 1 M$ por ano)</td><td>15 % no primeiro milhão de dólares de cada ano</td></tr>
-  <tr><td>Subscrições</td><td>15 % a partir do segundo ano de cada subscritor</td><td>15 % desde o primeiro dia</td></tr>
-  <tr><td>Pagamentos alternativos na UE</td><td>Permitidos desde o iOS 17.4 (2024), com termos próprios da Apple e taxas adicionais</td><td>User choice billing: o utilizador escolhe e a comissão baixa cerca de 4 pontos</td></tr>
-  <tr><td>Lojas alternativas</td><td>Só na UE (AltStore PAL, Epic Games Store), com notarização da Apple</td><td>Sempre existiram: sideloading, Galaxy Store, F-Droid</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>O <strong>DMA</strong> (Digital Markets Act, em vigor desde março de 2024) classificou a App Store e a Play como gatekeepers: têm de permitir pagamentos alternativos e, no iOS, lojas alternativas. As condições concretas (taxas, avisos ao utilizador) mudam quase todos os anos e continuam em disputa com a Comissão Europeia.</li>
-    <li><strong>Epic vs Apple</strong> (2020): o Fortnite pôs um pagamento direto dentro da app e foi removido em horas. Só em 2025 voltou à App Store nos EUA, depois de cinco anos de tribunais. A regra continua a ser da loja, não tua.</li>
-    <li>Para um projeto pequeno: sistema da loja, os 15 %, e nada de pagamentos alternativos sem um contabilista ao lado.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> 30 % é a comissão padrão, 15 % para pequenos programadores e subscrições; na UE o DMA obriga a alternativas, mas com condições próprias de cada loja.</p>
+  <h2>E quantas ganham dinheiro</h2>
+  <div class="lado">
+    <div>
+      <div class="pontos" aria-label="17 pontos em 100 a azul">
+        <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
+        <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <p class="pontos-leg"><b>17</b> em cada 100 apps de subscrição novas chegam a 1 000 $ por mês nos dois primeiros anos.</p>
+    </div>
+    <ul class="fig-texto">
+      <li>Só em janeiro de 2026 saíram 14 700 apps de subscrição novas, sete vezes mais do que em 2022.</li>
+      <li>69 % da receita vai para apps lançadas antes de 2020. As lançadas em 2025 ficam com 3 %.</li>
+      <li>Um ano depois de sair, a app média faz uns 72 $ por mês. As 10 % melhores passam os 2 500 $.</li>
+      <li>Quem ganha é quem já lá está: o mercado é dos vencedores.</li>
+    </ul>
+  </div>
+  <p class="fonte">Fonte: RevenueCat, State of Subscription Apps 2026 (mais de 115 000 apps e 16 mil milhões de dólares de receita).</p>
+  <aside class="notes">O que dizer: a RevenueCat é o serviço que muitas apps usam para gerir subscrições, por isso vê a receita real de dezenas de milhares de apps. Antes de comentar a figura, pergunta "em 100 apps, quantas chegam a mil dólares por mês?": a maioria aposta alto. Mil dólares por mês, antes de impostos e da comissão da loja, nem paga um salário. A frase para levar: há mais apps do que nunca e a receita está concentrada nas antigas (Spotify, Duolingo, Tinder, Calm). Se perguntarem porquê: marca, base de utilizadores e anos de testes ao paywall.</aside>
 </section>
 
 <section class="slide">
-  <h2>Publicidade</h2>
-  <ul>
-    <li><strong>AdMob</strong> (Google) é a rede dominante em mobile; no Flutter usa-se <code>google_mobile_ads</code>. Formatos: banner, interstitial (ecrã inteiro entre duas ações), rewarded (o utilizador vê 30 segundos e recebe algo) e native (imita o conteúdo da app). Mediação para leiloar cada impressão entre várias redes.</li>
-    <li><strong>Receita:</strong> o eCPM, receita por mil impressões, vai de cêntimos a poucos euros conforme o país e o formato. São precisos dezenas de milhares de utilizadores ativos para os anúncios pagarem um café por dia. Uma app de nicho vende antes uma subscrição.</li>
-    <li><strong>Experiência:</strong> um interstitial ao arrancar ou a meio de um gesto é o primeiro motivo de reviews de uma estrela nas apps de meteorologia. O rewarded é o único formato que o utilizador escolhe ver. As guidelines proíbem anúncios que imitam botões do sistema ou aparecem fora da app.</li>
-    <li><strong>Privacidade:</strong> anúncios personalizados dependem do IDFA (iOS) e do GAID (Android), logo do ATT (aula 18) e de consentimento RGPD. No Espaço Económico Europeu a Google exige uma plataforma de consentimento certificada (o UMP SDK serve). Sem consentimento há anúncios, mas contextuais, e pagam menos.</li>
-    <li><strong>Técnica:</strong> cada anúncio é uma platform view (aula 28): custa memória e frames. Carrega o interstitial antes de precisares dele e nunca bloqueies a UI à espera de um anúncio.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> a publicidade paga por volume, degrada a experiência quando é intrusiva e exige consentimento (ATT e RGPD) para ser personalizada.</p>
+  <h2>Onde está o dinheiro das apps</h2>
+  <p>Tudo o que se vendeu através de apps do iPhone em 2025: <strong>1,4 biliões de dólares</strong>.</p>
+  <div class="pilha" aria-label="Barra: 1,1 biliões em bens e serviços físicos, 151 mil milhões em anúncios, 149 mil milhões em conteúdo digital">
+    <div class="fis">Bens e serviços do mundo real</div><div class="ads">Ads</div><div class="dig">Digital</div>
+  </div>
+  <div class="pilha-leg">
+    <div class="c-fis"><b>1,1 biliões $</b>Uber, Glovo, Booking, compras no supermercado</div>
+    <div class="c-ads"><b>151 mil milhões $</b>anúncios dentro das apps</div>
+    <div class="c-dig"><b>149 mil milhões $</b>jogos, streaming, subscrições</div>
+  </div>
+  <div class="regra">
+    <div class="loja"><b>Passa pela loja (paga comissão)</b>Conteúdo digital usado na app: versão Pro, tema escuro, vidas num jogo, sem anúncios.</div>
+    <div class="fora"><b>Pagamento que quiseres</b>O que existe fora do telemóvel: uma viagem, comida, o bilhete do barco para o Pico. MB WAY, cartão, Stripe.</div>
+  </div>
+  <p class="fonte">Fonte: Apple e Analysis Group, junho de 2026. Mais de 90 % deste valor não pagou comissão à Apple.</p>
+  <aside class="notes">O que dizer: um bilião português é um milhão de milhões (o "trillion" americano). A maior parte do dinheiro que passa pelas apps nem é da loja: é a Glovo a vender comida ou a Booking a vender quartos, e aí a Apple não recebe nada. Para os testes: conteúdo digital consumido na app paga pela loja; bens e serviços do mundo real não. Exemplos para perguntar à sala: "uma app de reservas que cobra 2 € por reserva passa pela loja?" Não, é um serviço fora da app. "Uma app que vende um tema escuro?" Sim. "O Spotify?" É uma "reader app": pode não vender na app e mandar comprar no site.</aside>
 </section>
 
 <section class="slide">
-  <h2>Review guidelines e rejeições comuns</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Guideline (Apple)</th><th>O que o revisor encontra</th><th>Como evitar</th></tr></thead>
-  <tbody>
-  <tr><td><strong>2.1</strong> Completude</td><td>Crash ao abrir, botão que não faz nada, "em breve", login que não funciona</td><td>Testar num telemóvel limpo; conta de demonstração nas review notes; zero placeholders</td></tr>
-  <tr><td><strong>2.3</strong> Metadata</td><td>Screenshots de outra versão, descrição que fala de Android, funcionalidades que não existem</td><td>Screenshots do build submetido; descrever só o que existe</td></tr>
-  <tr><td><strong>3.1.1</strong> Pagamentos</td><td>Link para pagar no site, "mais barato em tempoacores.pt"</td><td>Conteúdo digital só pela loja; nenhuma referência a preços externos</td></tr>
-  <tr><td><strong>4.2</strong> Funcionalidade mínima</td><td>WebView à volta do site, app que só mostra uma lista estática</td><td>Funcionalidade nativa que o site não tem: offline, notificações, mapa, widgets</td></tr>
-  <tr><td><strong>5.1.1</strong> Privacidade</td><td>Login obrigatório sem funcionalidade de conta, permissão sem justificação, dados a mais</td><td>Pedir só o que precisas, quando precisas, com texto concreto; labels a bater certo com a app</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>A Apple revê tudo, com pessoas e automatismos, quase sempre em 24 a 48 horas; a Google é sobretudo automática e demora de horas a dias. Nas duas, a rejeição cita o número da regra.</li>
-    <li><strong>Google Play</strong>, os mais comuns: data safety form em desacordo com o tráfego real, target API level abaixo do exigido, permissões sensíveis sem formulário de declaração (localização em background, <code>QUERY_ALL_PACKAGES</code>) e "comportamento enganoso" (funcionalidade escondida ou diferente da descrita).</li>
-  </ul>
-  <p><strong>Para os testes:</strong> as rejeições mais comuns são crashes e funcionalidade incompleta (2.1), metadata enganosa (2.3), pagamento externo (3.1.1), funcionalidade mínima (4.2) e privacidade (5.1.1).</p>
-  <div class="callout"><strong>Analogia</strong> A loja é ao mesmo tempo a alfândega e a montra. A alfândega (a revisão) verifica as regras antes de deixar a app entrar; a montra (a ficha, os screenshots, o ASO do slide seguinte) decide se alguém repara nela. A Apple tem uma alfândega com inspeção humana a cada versão; a Google inspeciona sobretudo por máquina e é mais rápida, mas exige aos vendedores novos um período de teste fechado antes da primeira venda.</div>
-  <aside class="notes">Conta uma rejeição tua verdadeira, com a mensagem original. O "como responder" fica para a aula 32: hoje é prevenção. Pergunta: "o Tempo Açores passa na 4.2?" Se a resposta for "mostra a previsão", não passa; com cache offline, notificações e mapa, passa. É a motivação para o exercício da parte prática.</aside>
+  <h2>Os modelos de negócio</h2>
+  <div class="table-wrap"><table class="compacta">
+    <thead><tr><th>Modelo</th><th>Exemplos</th><th>O que a app precisa</th></tr></thead>
+    <tbody>
+      <tr><td>Paga</td><td>Minecraft, Procreate</td><td>Nada: a loja cobra antes de instalar</td></tr>
+      <tr><td>Compras na app</td><td>Candy Crush, Clash Royale</td><td>Produtos na consola, restaurar compras</td></tr>
+      <tr><td>Subscrição</td><td>Spotify, Duolingo, Strava</td><td>Paywall, trial, quem tem acesso a quê</td></tr>
+      <tr><td>Anúncios</td><td>Flappy Bird, jogos casuais</td><td>SDK de anúncios, consentimento</td></tr>
+      <tr><td>Serviço real</td><td>Uber, Glovo, Booking</td><td>Pagamento próprio; a app é o balcão</td></tr>
+      <tr><td>Empresa</td><td>App dos estafetas, do banco</td><td>Login da empresa, fora da loja pública</td></tr>
+    </tbody>
+  </table></div>
+  <p>Os modelos misturam-se: o Duolingo é grátis, mostra anúncios e vende a subscrição que os tira.</p>
+  <aside class="notes">O que dizer: "quem tem acesso a quê" chama-se entitlement. A app não pergunta "esta pessoa pagou?", pergunta "esta pessoa tem o Pro?". As apps de empresa distribuem-se pelo Apple Business Manager ou pelo managed Google Play, sem passar pela loja pública. Para o Tempo Açores, com dados públicos, o modelo natural é grátis, ou freemium com um extra que valha a pena pagar (avisos por ilha em tempo real, previsão a 10 dias). O que se cobra tem de valer mais do que o incómodo de pagar.</aside>
 </section>
 
 <section class="slide">
-  <h2>ASO e pedir avaliação no momento certo</h2>
-  <ul>
-    <li><strong>ASO</strong> (App Store Optimization) é o SEO das lojas. Nome com 30 caracteres nas duas; subtítulo (iOS) e descrição curta (Play) com o benefício; campo de keywords só no iOS (100 caracteres, invisível); a descrição longa conta para a pesquisa na Play, não no iOS. "Tempo Açores: previsão e avisos" vale mais do que "Tempo Açores".</li>
-    <li><strong>Screenshots:</strong> as três primeiras decidem a instalação. Por dispositivo e por idioma, com uma frase de benefício em cima, do build atual. Ícone simples e legível a 48 px.</li>
-    <li><strong>Ratings</strong> pesam no ranking e na conversão; a Play dá mais peso às recentes. Responder às reviews em público conta, e mostra a quem lê que há alguém do outro lado.</li>
-    <li><strong><code>in_app_review</code></strong>: <code>requestReview()</code> chama o <code>SKStoreReviewController</code> no iOS e a In-App Review API na Play. O sistema decide se o pedido aparece: a Apple mostra-o no máximo 3 vezes por ano por app; a Play tem uma quota não publicada. Verifica <code>isAvailable()</code> antes; <code>openStoreListing()</code> serve para um botão "Avaliar" nas definições.</li>
-    <li><strong>O momento certo</strong> é a seguir a um sucesso: terceira previsão consultada, aviso recebido a tempo, favorito sincronizado. Nunca no arranque, nunca depois de um erro, nunca a interromper um gesto. As guidelines proíbem prompts personalizados e o padrão "gostas? então avalia" que só deixa passar quem gosta.</li>
-  </ul>
-<pre data-title="lib/services/avaliacao_service.dart"><code class="language-dart">final review = InAppReview.instance;
-if (previsoesConsultadas == 3 &amp;&amp; await review.isAvailable()) {
-  await review.requestReview();   // o SO pode decidir não mostrar nada
-}</code></pre>
-  <p><strong>Para os testes:</strong> pede-se avaliação com a API do sistema, depois de um sucesso e nunca no arranque; o sistema decide se o pedido aparece.</p>
-  <aside class="notes">Abre a ficha de uma app conhecida na App Store e noutra na Play e pede à turma para dizer o que está bem e mal nas três primeiras screenshots. Dúvida frequente: "o requestReview não fez nada no meu telemóvel". Normal: em debug o iOS mostra sempre, em TestFlight nunca, e em produção só quando quer. Não se testa a lógica pelo diálogo, testa-se pelo contador.</aside>
-</section>
-
-<section class="slide" data-part="Sprint">
-  <h2>Sprint 3: ponto de situação</h2>
-  <ul>
-    <li>Cada grupo, um minuto: o que está em <code>main</code>, o que está em PR, o que fica de fora e já está escrito no README.</li>
-    <li>A review é na <strong>quarta 02/12 às 16:30</strong>, na aula 32. Até lá há três aulas: amanhã (tamanho e arranque), segunda (build e assinatura) e a própria review. O que não estiver em <code>main</code> até terça 01/12 à noite não entra na demo.</li>
-    <li><strong>Pronto</strong> na sprint 3, como ficou na aula 26: instalável por um tester fora do grupo, README com screenshots, CI verde; e desde ontem, API v2 com testes verdes nas duas versões.</li>
-    <li>Prioridade: os mínimos primeiro, um extra no máximo. Um PR pequeno merged vale mais do que uma funcionalidade a meio.</li>
-    <li>O docente circula pelos grupos. Bloqueios resolvem-se ao vivo, no vosso código.</li>
-  </ul>
-  <div class="callout warn"><strong>Calendário apertado</strong> Depois da review de quarta há uma semana até ao freeze de 09/12, com o teste 2 pelo meio, na segunda 07/12. O polish e o README não podem ficar para a semana do freeze: entram nesta sprint.</div>
-  <aside class="notes">Dez minutos ao ponto de situação. Confirma grupo a grupo que a migração para a v2 está merged: quem ainda estiver na v1 tem isso como primeira tarefa de hoje, antes de qualquer extra. Anota um bloqueio por grupo e começa a circular pelos que estão pior; os que dizem "está tudo bem" mostram o board.</aside>
+  <h2>Quatro histórias</h2>
+  <div class="historias">
+    <div class="historia"><h3>Flappy Bird <small>2014</small></h3><p class="grande">50 000 $ por dia</p><p>Um programador sozinho no Vietname, só com anúncios. No auge, tirou o jogo das lojas: "estragou-me a vida simples".</p></div>
+    <div class="historia"><h3>Wordle <small>2022</small></h3><p class="grande">Mais de 1 milhão $</p><p>Feito para a namorada, sem anúncios nem compras. O New York Times comprou-o e meteu-o na subscrição de jogos.</p></div>
+    <div class="historia"><h3>Cal AI <small>2024 a 2026</small></h3><p class="grande">30 milhões $ por ano</p><p>Dois alunos do secundário: tira foto ao prato e a IA conta as calorias. Subscrição, 15 milhões de downloads. Comprada pela MyFitnessPal.</p></div>
+    <div class="historia"><h3>Fortnite <small>2020 a 2025</small></h3><p class="grande">5 anos fora</p><p>A Epic pôs um pagamento direto dentro do jogo, mais barato. A Apple tirou-o da loja em horas. Só voltou aos EUA em 2025, depois dos tribunais.</p></div>
+  </div>
+  <aside class="notes">O que dizer, uma lição por história. Flappy Bird: anúncios só pagam com volume enorme (50 milhões de downloads); o valor foi dito pelo autor, Dong Nguyen, numa entrevista, não é auditado; as lojas encheram-se de cópias. Wordle: Josh Wardle fez o jogo para a companheira; o NYT pagou "um valor baixo de sete dígitos" e o jogo foi a porta de entrada para a subscrição de jogos do jornal: o dinheiro estava em quem o comprou, não no jogo. Cal AI: Zach Yadegari e Henry Langmack começaram no secundário; uma ideia simples, uma câmara, uma API de IA e um paywall; a venda à MyFitnessPal foi anunciada em março de 2026, com valor não divulgado. Fortnite: a regra da loja manda mais do que o tamanho da empresa; levou a processos nos EUA e na UE que mudaram as regras dos pagamentos (slide seguinte).</aside>
 </section>
 
 <section class="slide">
-  <h2>Exercício: a vossa app contra as guidelines</h2>
-  <p>Quinze minutos, por grupo, com a app instalada num telemóvel (não no emulador) e a ficha da loja imaginada como se a submissão fosse amanhã. Cada ponto indica a guideline da App Store em causa.</p>
-  <ul class="checklist">
-    <li>Arranca e chega ao ecrã principal sem crash num telemóvel acabado de instalar, com rede e em modo avião (2.1).</li>
-    <li>Nenhum ecrã "em construção", nenhum TODO visível, nenhum botão que não faz nada, nenhuma string em inglês por traduzir (2.1).</li>
-    <li>Ícone e nome próprios: nada do ícone por defeito do Flutter nem de <code>tempo_acores</code> com underscore por baixo do ícone (2.3).</li>
-    <li>Os screenshots que fariam da app mostram exatamente o que ela faz hoje; a descrição não fala de Android nem de "em breve" (2.3).</li>
-    <li>Faz mais do que o site do IPMA faria num browser: cache offline, notificações de avisos, mapa, favoritos (4.2).</li>
-    <li>Ver previsões não exige conta nem dados pessoais; se houver conta, existe uma funcionalidade que a justifique (5.1.1).</li>
-    <li>Cada permissão tem uma justificação concreta no <code>Info.plist</code> ("Para mostrar a previsão da localidade mais próxima"), é pedida no momento em que é precisa, e a app continua a funcionar se for recusada (5.1.1).</li>
-    <li>Conseguem listar tudo o que a app envia para fora (client-id e headers para a API do curso, telemetria, crash reports) para as privacy labels baterem certo (5.1.2).</li>
-    <li>Nenhum link, texto ou preço a apontar para pagamentos fora da loja; se o extra do grupo for pago, é por compra in-app (3.1.1).</li>
-    <li>Atribuição do OpenStreetMap visível no mapa e a fonte dos dados meteorológicos identificada nas definições (5.2).</li>
+  <h2>Quanto fica a loja</h2>
+  <div class="table-wrap"><table class="compacta">
+    <thead><tr><th></th><th>App Store</th><th>Google Play</th></tr></thead>
+    <tbody>
+      <tr><td>Compras na app</td><td>30 %; 15 % até 1 M$ por ano</td><td>20 %, mais 5 % pela faturação</td></tr>
+      <tr><td>Subscrições</td><td>30 % no 1.º ano, 15 % depois</td><td>10 %, mais 5 % pela faturação</td></tr>
+      <tr><td>Pagar fora, na UE</td><td>Permitido (DMA), com taxas próprias</td><td>Permitido, com taxa mais baixa</td></tr>
+      <tr><td>Link para o site, EUA</td><td>Permitido desde 2025</td><td>Permitido desde 2025</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="curta">
+    <li>Desde 2025, o Spotify e o Kindle já mostram nos EUA um botão para comprar no site, coisa que a Apple proibia desde 2011.</li>
+    <li>As regras mudam quase todos os anos, por causa dos tribunais e da Comissão Europeia.</li>
   </ul>
-  <div class="callout task"><strong>Exercício</strong> Percorram a lista na app do grupo e escrevam numa issue os <strong>três motivos mais prováveis de rejeição</strong>, cada um com o número da guideline, o que o revisor veria e o que vão fazer. O mais grave dos três entra hoje no backlog da sprint 3 com um responsável; os outros dois ficam na issue, ou no README como limitação conhecida se decidirem não os corrigir. Quem acabar antes: <code>NSLocationWhenInUseUsageDescription</code> e as justificações de notificações reescritas em português concreto, num PR de cinco minutos.</div>
-  <aside class="notes">Circula com a checklist na mão e faz de revisor: abre a app deles num telemóvel teu em modo avião e carrega em tudo. Os pontos que mais falham são o 2 (strings em inglês e ecrãs a meio), o 7 (texto da permissão vago ou pedido no arranque) e o 10 (ninguém pôs a atribuição do OSM). Dá 15 minutos certos; aos 12 avisa que falta escrever a issue.</aside>
+  <p><strong>Para um projeto pequeno:</strong> o sistema de pagamentos da loja e os 15 %. Pagamentos alternativos só com um contabilista ao lado.</p>
+  <aside class="notes">O que dizer: até 2025 era simples, 30 % nas duas, 15 % para pequenos. A Google anunciou em março de 2026, no acordo com a Epic, 20 % nas compras e 10 % nas subscrições, com mais 5 % se usar a faturação da Google, primeiro na UE, no Reino Unido e nos EUA (até 30/06/2026) e no resto do mundo até setembro de 2027; nos EUA ainda dependia da aprovação do tribunal. Na Apple, o Small Business Program dá 15 % a quem fatura menos de 1 milhão de dólares por ano, e as subscrições passam a 15 % a partir do segundo ano de cada subscritor. Na UE, o DMA (Digital Markets Act, desde março de 2024) obrigou a aceitar pagamentos alternativos e, no iPhone, lojas alternativas. Nos EUA, a decisão de abril de 2025 obrigou a Apple a deixar pôr links para o site; a comissão sobre essas compras ainda está em discussão. Se um aluno perguntar números exatos: confirmar sempre na App Store Connect e na Play Console.</aside>
 </section>
 
 <section class="slide">
-  <h2>Da issue de hoje à review de quarta</h2>
-  <ul>
-    <li>O motivo escolhido tem de estar fechado antes da review: é um PR como os outros, revisto por um colega, com CI verde.</li>
-    <li>As review notes que escreveriam já hoje: como chegar a cada ecrã, que localidade escolher, que a API é do curso e onde estão os dados. Guardem-nas no README, secção "Para o revisor". Na aula 32 vão precisar delas.</li>
-    <li>Se o vosso extra é pedir avaliação, o momento certo já está decidido: a seguir a um sucesso, com um contador, nunca no arranque.</li>
-    <li>Amanhã medimos o tamanho da app com <code>flutter build apk --analyze-size</code>: tragam o projeto a compilar em release e um portátil com espaço em disco.</li>
+  <h2>O paywall: o ecrã que mais dinheiro vale</h2>
+  <div class="fig-lado">
+    <div>
+      <div class="tel">
+        <span class="x">✕</span>
+        <h4>Tempo Açores Pro</h4>
+        <ul><li>Avisos da tua ilha em tempo real</li><li>Previsão a 10 dias</li><li>Sem anúncios</li></ul>
+        <div class="plano on"><span><b>Anual</b><small>7 dias grátis, depois 19,99 €/ano<span class="n">1</span></small></span><b>19,99 €</b></div>
+        <div class="plano"><span><b>Mensal</b><small>renova todos os meses</small></span><b>2,99 €</b></div>
+        <div class="btn">Experimentar 7 dias grátis</div>
+        <div class="rodape"><span>Restaurar compras<span class="n">2</span></span><span>Termos · Privacidade<span class="n">3</span></span></div>
+      </div>
+      <ol class="marcas"><li><span class="n">1</span>Preço e renovação escritos antes do botão</li><li><span class="n">2</span>Restaurar compras: obrigatório na Apple</li><li><span class="n">3</span>Termos e privacidade à vista</li></ol>
+    </div>
+    <ul class="fig-texto">
+      <li>Paywall logo à entrada converte <strong>cerca de 5 vezes mais</strong> do que o freemium, e a retenção fica parecida.</li>
+      <li>Mais de metade dos trials cancelados é cancelada <strong>no próprio dia</strong>.</li>
+      <li><strong>95 %</strong> de quem cancela uma subscrição anual nunca volta.</li>
+      <li>As apps com IA ganham 41 % mais por cliente, mas perdem-nos 30 % mais depressa.</li>
+    </ul>
+  </div>
+  <aside class="notes">Fonte: RevenueCat, State of Subscription Apps 2026. O que dizer: o paywall é o ecrã mais testado das apps de subscrição; o Duolingo e o Calm testam-no o ano todo. O número 1: o preço e a renovação escritos em cada plano, antes do botão. Sem preço e renovação claros, rejeição pela guideline 3.1.2; sem restaurar compras, pela 3.1.1. Porque se cancela no dia 0: a pessoa ativa o trial e cancela logo para não se esquecer, por isso o que conta é a app mostrar valor nas primeiras horas. A pergunta para eles: "pagavam 2,99 € por mês pelo Tempo Açores?" e "o que tinha de ter para pagarem?".</aside>
+</section>
+
+<section class="slide">
+  <h2>Anúncios: as contas</h2>
+  <div class="fig-lado">
+    <div>
+      <p style="margin-top:0"><strong>E se o Tempo Açores tivesse banners?</strong></p>
+      <div class="contas">
+        <div><span>Pessoas por dia</span><b>5 000</b></div>
+        <div><span>Ecrãs com banner por visita</span><b>× 3</b></div>
+        <div><span>Impressões por dia</span><b>15 000</b></div>
+        <div><span>eCPM: quanto pagam por mil</span><b>0,50 €</b></div>
+        <div><span>Por mês</span><b>~225 €</b></div>
+      </div>
+    </div>
+    <ul class="fig-texto">
+      <li>Formatos: banner, interstitial (ecrã inteiro entre duas ações) e rewarded (vês 30 segundos e ganhas algo).</li>
+      <li>Um interstitial ao abrir a app é o caminho mais curto para reviews de uma estrela.</li>
+      <li>Na UE, anúncios personalizados pedem consentimento RGPD; no iPhone, também o pedido de rastreio (ATT). Sem isso há anúncios, mas pagam menos.</li>
+      <li>No Flutter: <code>google_mobile_ads</code>, com o UMP da Google para o consentimento.</li>
+    </ul>
+  </div>
+  <aside class="notes">O que dizer: antes de mostrar a última linha, pede à sala uma aposta: "quanto rendia por mês?". Contas: 15 000 impressões são 15 milhares, vezes 0,50 € dá 7,50 € por dia, perto de 225 € por mês, antes de impostos. O eCPM de um banner na Europa vai de cêntimos a um euro; os rewarded e os interstitials pagam mais. Para chegar aos 50 000 $ por dia do Flappy Bird foram precisos dezenas de milhões de jogadores. Uma app de nicho ganha mais a vender uma subscrição a poucos do que anúncios a muitos.</aside>
+</section>
+
+<section class="slide">
+  <h2>Na app: a loja cobra, alguém confirma</h2>
+<pre data-title="lib/pro/pro_service.dart (com RevenueCat)"><code class="language-dart">// Que planos há? Criam-se na consola da loja
+final ofertas = await Purchases.getOfferings();
+final planos = ofertas.current?.availablePackages ?? [];
+
+// Em qualquer ecrã: esta pessoa tem o Pro?
+final info = await Purchases.getCustomerInfo();
+final temPro = info.entitlements.active.containsKey('pro');</code></pre>
+  <div class="table-wrap"><table class="compacta">
+    <tbody>
+      <tr><td><code>in_app_purchase</code></td><td>Plugin oficial: fala com as duas lojas; validar a compra fica contigo.</td></tr>
+      <tr><td>RevenueCat</td><td>Valida no servidor e responde "tem o Pro?". Grátis para começar.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Validar no servidor é obrigatório: com root, uma compra falsa faz-se em minutos.</p>
+  <aside class="notes">O que dizer: a app nunca decide sozinha se alguém pagou. A loja devolve um recibo (Apple) ou um purchase token (Google) e um servidor confirma-o com a App Store Server API ou a Play Developer API. Também é o servidor que recebe os avisos de renovação, falha de pagamento e reembolso, e atualiza o acesso. O RevenueCat faz esse servidor por ti; com o <code>in_app_purchase</code> tens de o fazer. Para comprar, no RevenueCat: <code>Purchases.purchase(...)</code> com o plano escolhido; o resultado traz o <code>CustomerInfo</code> novo. Os produtos (id, preço por escalão, nome em cada língua) criam-se na App Store Connect e na Play Console. Não há exercício disto no projeto: a API do curso não vende nada.</aside>
+</section>
+
+<section class="slide" data-part="Sprint 3">
+  <h2>Sprint 3: o que tem de estar no main</h2>
+  <ul class="checklist duas">
+    <li>Avisos no ecrã inicial e no da ilha</li>
+    <li>Relatos: criar, editar, apagar, com foto</li>
+    <li>Favoritos sincronizados com a API</li>
+    <li>Release assinada e 3 testers de fora</li>
+    <li>Feedback dos testers em issues</li>
+    <li>Cinco testes e CI verde no <code>main</code></li>
+    <li>Credenciais só pelo <code>pdm.json</code> e pelo segredo <code>PDM_JSON</code></li>
+    <li>Extras escolhidos, acabados</li>
+    <li>README completo e lista de pendentes</li>
   </ul>
-  <div class="callout tip"><strong>Regra do revisor</strong> O revisor da Apple passa uns minutos com a vossa app e nunca leu o vosso código. Tudo o que precisar de explicação já vem tarde: se um ecrã só faz sentido com contexto, o contexto vai nas review notes ou o ecrã sai.</div>
+  <div class="callout warn"><strong>Datas</strong>Review na quarta 02/12 às 16:30. O que não estiver no <code>main</code> na terça 01/12 à noite não entra na demo. Um PR pequeno com merge vale mais do que uma funcionalidade a meio.</div>
+  <aside class="notes">Dez minutos: cada grupo diz numa frase o que está no main, o que está em PR e o que fica de fora. Estado a 23/11 ao fim da aula: Grupo ACR (Felgueiras) e Marco e Miguel com build automático, Release, ícone e Firebase, tudo a funcionar. Leandro e Martim: tudo menos o Firebase (erro 403: a conta de serviço precisa do papel "Firebase App Distribution Admin" no IAM). Ekaterina, Inês e Palina: nada da aula de ontem nem da assinatura; só o PR "conta" aberto e sem review; começar pelo PR e pela assinatura antes de funcionalidades novas. O ci.yml está a falhar no main de Marco e Miguel e de Leandro e Martim: é a primeira coisa a corrigir. Credenciais: só o Felgueiras lê o clientId com String.fromEnvironment; o Leandro tem o clientSecret no código. Começa a circular pelos grupos que estão pior.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
@@ -191,19 +328,16 @@ if (previsoesConsultadas == 3 &amp;&amp; await review.isAvailable()) {
     <div>
       <h3>Para fazer</h3>
       <ul class="checklist">
-        <li>A sprint 3 continua: o motivo de rejeição escolhido hoje está numa issue com responsável, e a migração para a API v2 está merged em todos os grupos.</li>
-        <li>PRs abertos revistos por um colega até amanhã; nada entra em <code>main</code> sem revisão e sem CI verde.</li>
-        <li>Para amanhã: o projeto compila em release (<code>flutter build apk --release</code> sem erros) num portátil do grupo.</li>
+        <li>A sprint 3 continua: PRs revistos por um colega, nada entra no <code>main</code> sem CI verde.</li>
+        <li>Amanhã: tamanho e arranque da app. Tragam o projeto a compilar em release.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://developer.apple.com/app-store/review/guidelines/" target="_blank" rel="noopener">App Store Review Guidelines</a>: lê a 2.1, a 3.1.1, a 4.2 e a 5.1.1 inteiras; são as que mais rejeitam.</li>
-        <li><a href="https://play.google.com/about/developer-content-policy/" target="_blank" rel="noopener">Google Play Developer Policy</a>: o equivalente da Google, com as regras de privacidade, permissões, publicidade e comportamento enganoso.</li>
-        <li><a href="https://support.google.com/googleplay/android-developer/answer/9858738" target="_blank" rel="noopener">Google Play's Payments policy</a>: o que tem de passar pelo Play Billing e as exceções.</li>
-        <li><a href="https://pub.dev/packages/in_app_review" target="_blank" rel="noopener">in_app_review</a>: <code>requestReview</code>, <code>openStoreListing</code> e porque o diálogo pode não aparecer.</li>
-        <li><a href="https://adapty.io/docs/prepare-your-app-for-store-review" target="_blank" rel="noopener">Prepare your app for store review</a> (Adapty): checklist prática do que os revisores procuram nas duas lojas e como reagir a uma rejeição.</li>
+        <li><a href="https://www.revenuecat.com/state-of-subscription-apps/" target="_blank" rel="noopener">State of Subscription Apps 2026</a> (RevenueCat)</li>
+        <li><a href="https://www.apple.com/legal/app-store/transparency/2025/" target="_blank" rel="noopener">App Store Transparency Report 2025</a> (Apple)</li>
+        <li><a href="https://support.google.com/googleplay/android-developer/answer/14151465" target="_blank" rel="noopener">A regra dos 12 testers</a> (Google Play)</li>
       </ul>
     </div>
   </div>
