@@ -726,47 +726,26 @@ jobs:
   </ol>
   <div class="callout task"><strong>Prompt de exemplo</strong>Ícone de app, quadrado, fundo azul sólido, um farol branco simples ao centro, estilo flat, sem texto.</div>
   <div class="callout tip"><strong>Deves ver</strong>Um <code>.png</code> nas Transferências: um quadrado cheio, sem xadrez de transparência.</div>
-  <aside class="notes">O que dizer: o ícone é o trabalho final de hoje, e é por ele que o professor sabe de quem é cada app nos telemóveis dos testers: ninguém pode confundir a vossa app com a de outro grupo. O ChatGPT e o Gemini já dão o quadrado a 1024. É também a primeira coisa que um utilizador vê de uma app, antes de a abrir. Desenhem com margem: o Android corta os cantos em círculo ou em quadrado arredondado, e o que estiver encostado à borda desaparece. Transparência: a Apple recusa ícones com fundo transparente, e o pacote do passo seguinte tira-a no iOS, e o fundo transparente fica branco. O Canva grátis exporta sem transparência. Com a IA, confirmem que o fundo não ficou transparente.</aside>
+  <aside class="notes">O que dizer: o ícone é o trabalho final de hoje, e é por ele que o professor sabe de quem é cada app nos telemóveis dos testers: ninguém pode confundir a vossa app com a de outro grupo. O ChatGPT e o Gemini já dão o quadrado a 1024. É também a primeira coisa que um utilizador vê de uma app, antes de a abrir. Desenhem com margem: o Android corta os cantos em círculo ou em quadrado arredondado, e o que estiver encostado à borda desaparece. Transparência: no Android o desenho fica a flutuar sem fundo, e a Apple recusa ícones com fundo transparente. O Canva grátis exporta sem transparência. Com a IA, confirmem que o fundo não ficou transparente.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 5.2: um branch e a pasta do ícone</h2>
-<pre data-title="Terminal do VS Code (PowerShell), na pasta do projeto"><code class="language-powershell">git checkout main
-git pull
-git checkout -b icone
+  <h2>Passo 5.2: gerar o ícone</h2>
+<pre data-title="Terminal do VS Code (PowerShell), na pasta do projeto"><code class="language-powershell">git fetch
+git checkout -b icone origin/main
 mkdir -Force assets\icon
 flutter pub add dev:flutter_launcher_icons</code></pre>
   <ol class="steps">
-    <li>Arrasta o PNG para a pasta <code>assets/icon</code>, no VS Code, e muda-lhe o nome para <code>icon.png</code>.</li>
+    <li>No VS Code, arrasta o PNG para <code>assets/icon</code> e chama-lhe <code>icon.png</code>.</li>
+    <li>No fim do <code>pubspec.yaml</code>: <code>flutter_launcher_icons: {android: true, image_path: assets/icon/icon.png}</code></li>
+    <li>No terminal: <code>dart run flutter_launcher_icons</code></li>
   </ol>
-  <div class="callout tip"><strong>Deves ver</strong>No VS Code, à esquerda, <code>assets</code>, <code>icon</code>, <code>icon.png</code>. Um clique e aparece o quadrado.</div>
-  <aside class="notes">O que dizer: o <code>git pull</code> traz o merge do <code>build.yml</code>, que foi feito no GitHub. Cuidado no Windows: com as extensões escondidas, mudar o nome para <code>icon.png</code> no Explorador dá <code>icon.png.png</code>. No VS Code vê-se o nome verdadeiro. A última linha junta ao <code>pubspec.yaml</code> o pacote que gera os ícones. No macOS: <code>mkdir -p assets/icon</code>.</aside>
+  <div class="callout tip"><strong>Deves ver</strong><code>Successfully generated launcher icons</code></div>
+  <aside class="notes">O que dizer: o <code>git fetch</code> traz o merge do <code>build.yml</code>, que foi feito no GitHub, e o branch <code>icone</code> parte do <code>main</code> do GitHub, já com ele. O Android quer o ícone em cinco tamanhos, um por densidade de ecrã (de 48 a 192 pixels, nas pastas <code>mipmap</code>); o pacote faz os cinco a partir do PNG e escreve por cima dos do Flutter. É um pacote <code>dev</code>: só corre no vosso computador, não vai dentro da app. Só Android porque o robô só faz o APK. A linha do <code>pubspec.yaml</code> vai encostada à esquerda, fora do bloco <code>flutter:</code>. O aviso <code>No platform provided</code> é por não pedirmos o iOS e pode ignorar-se. Cuidado no Windows: com as extensões escondidas, mudar o nome no Explorador dá <code>icon.png.png</code>; no VS Code vê-se o nome verdadeiro. Erros comuns: <code>PathNotFoundException</code> é o nome ou a pasta do PNG errados; <code>Could not find package</code> é o <code>flutter pub add</code> que ficou por fazer. No macOS: <code>mkdir -p assets/icon</code>.</aside>
 </section>
 
 <section class="slide">
-  <h2>Passo 5.3: o pacote que faz os ícones</h2>
-  <p>No fim do <code>pubspec.yaml</code>, encostado à esquerda:</p>
-<pre data-title="pubspec.yaml (no fim)"><code class="language-yaml">flutter_launcher_icons:
-  image_path: assets/icon/icon.png
-  android: true
-  ios: true
-  remove_alpha_ios: true
-  web:
-    generate: true</code></pre>
-  <div class="callout tip"><strong>Deves ver</strong><code>flutter_launcher_icons</code> duas vezes: em <code>dev_dependencies</code> e no bloco do fim.</div>
-  <aside class="notes">O que dizer: é um pacote <code>dev</code> porque só corre no vosso computador, não vai dentro da app. Um PNG dá todos os tamanhos: cinco para o Android, mais de vinte para o iOS, e o favicon da versão web, que é o ícone do separador no Chrome. O YAML conta espaços: dois por nível, nunca tabs. Se o bloco ficar dentro do <code>flutter:</code> (indentado), o pacote não o encontra.</aside>
-</section>
-
-<section class="slide">
-  <h2>Passo 5.4: gerar os ícones</h2>
-<pre data-title="Terminal do VS Code (PowerShell), na pasta do projeto"><code class="language-powershell">dart run flutter_launcher_icons
-git status</code></pre>
-  <div class="callout tip"><strong>Deves ver</strong><code>Successfully generated launcher icons</code> e, no <code>git status</code>, os <code>ic_launcher.png</code> do Android, os <code>Icon-App</code> do iOS e o <code>web/favicon.png</code>.</div>
-  <aside class="notes">O que dizer: o pacote escreve por cima dos ícones do Flutter que vinham no projeto desde o primeiro dia. Para ver já, sem esperar pelo robô: <code>flutter run -d chrome</code> e o favicon aparece no separador (Ctrl+F5 se o Chrome mostrar o antigo). Erros comuns: <code>PathNotFoundException</code> com <code>icon.png</code> é o nome ou a pasta errados (o <code>icon.png.png</code> do slide anterior); <code>Could not find package</code> é o <code>flutter pub add</code> do passo 5.2 que ficou por fazer.</aside>
-</section>
-
-<section class="slide">
-  <h2>Passo 5.5: o PR, o merge e a Release</h2>
+  <h2>Passo 5.3: o PR, o merge e a Release</h2>
   <ol class="steps">
     <li><code>git add .</code>, um commit <code>Ícone do grupo</code> e <code>git push -u origin icone</code>.</li>
     <li>O PR no GitHub. Um colega do grupo aprova. Merge no <code>main</code>.</li>
@@ -778,7 +757,7 @@ git status</code></pre>
 </section>
 
 <section class="slide cap">
-  <h2>Passo 5.6: os testers recebem sozinhos</h2>
+  <h2>Passo 5.4: os testers recebem sozinhos</h2>
   <div class="passo-lado larga">
   <div>
   <ol class="steps">
