@@ -38,6 +38,24 @@
 .deck .slide figure.diagram .st.next + .t.n { fill: var(--fg); }
 .deck .slide figure.diagram .t.ic { font-weight: 700; font-size: 13px; fill: var(--accent-fg); }
 .deck .slide figure.diagram .t.h { font-weight: 700; font-size: 16px; }
+/* Dentro do build.yml: código à esquerda, explicação à direita, cada seta acende um par */
+.deck .slide .walk { display: grid; grid-template-columns: minmax(0, 2.05fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.deck .slide .walk pre { margin: 0; font-size: .64rem; overflow: hidden; }
+.deck .slide .walk ol.walk-ex li code { white-space: nowrap; }
+.deck .slide .walk pre code, .deck .slide .walk pre code.hljs { display: block; position: relative; z-index: 1; padding: 0; font-size: .66rem; overflow: visible; }
+.deck .slide .walk .walk-bar { position: absolute; left: 0; right: 0; z-index: 0; opacity: 0; background: rgba(76,156,245,.22); border-left: 4px solid #4c9cf5; transition: top .35s ease, height .35s ease, opacity .25s; pointer-events: none; }
+.deck .slide .walk ol.walk-ex { list-style: none; margin: 0; padding: 0; counter-reset: w; }
+.deck .slide .walk ol.walk-ex li { counter-increment: w; position: relative; margin: 0 0 .3em; padding: .28em .5em .28em 2.2em; border-radius: 10px; font-size: .88rem; line-height: 1.32; cursor: pointer; transition: opacity .25s, background .25s; }
+.deck .slide .walk ol.walk-ex li::before { content: counter(w); position: absolute; left: .45em; top: .38em; width: 1.45em; height: 1.45em; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 700 .8rem/1.45em var(--font); text-align: center; }
+.deck .slide .walk ol.walk-ex li.on { background: var(--accent-soft); font-weight: 700; }
+.deck .slide .walk ol.walk-ex li.on::before { background: var(--accent); color: var(--accent-fg); }
+.deck .slide .walk ol.walk-ex li.off { opacity: .4; }
+.deck.doc .slide .walk ol.walk-ex li.off { opacity: 1; }
+/* O ficheiro todo: dois lados, um bloco por parte, com o nome no canto */
+.deck .slide .ficheiro { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .8rem; align-items: start; }
+.deck .slide .ficheiro pre code, .deck .slide .ficheiro pre code.hljs { padding: 0; font-size: inherit; }
+.deck .slide .ficheiro pre { font-size: min(1.35vh, .78cqi); line-height: 1.25; padding: .45em .8em; margin: 0 0 .4rem; overflow: hidden; }
+.deck .slide .ficheiro pre[data-title]::before { position: absolute; top: .45rem; right: .7rem; margin: 0; padding: .15em .6em; border-radius: 999px; background: #4c9cf5; color: #0b1220; font: 700 .68rem var(--font); z-index: 2; }
 </style>
 </head>
 <body data-aula="28">
@@ -329,6 +347,89 @@ Future&lt;int?&gt; batteryLevel() async {
 </section>
 
 <section class="slide">
+  <h2>The whole build.yml on one slide</h2>
+  <div class="ficheiro" role="img" aria-label="The complete build.yml file, in seven blocks from top to bottom">
+  <div>
+<pre data-title="when it runs"><code class="language-yaml">name: Build
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      BUILD: ${{ github.run_number }}
+      TEM_FIREBASE: ${{ secrets.FIREBASE_APP_ID != '' }}</code></pre>
+<pre data-title="the machine and Flutter"><code class="language-yaml">    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5
+          cache: true</code></pre>
+<pre data-title="the key"><code class="language-yaml">      - name: A chave do grupo
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d &gt; "$RUNNER_TEMP/upload.jks"
+          cat &gt; android/key.properties &lt;&lt;FIM
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=upload
+          storeFile=$RUNNER_TEMP/upload.jks
+          FIM</code></pre>
+  </div>
+  <div>
+<pre data-title="pdm.json"><code class="language-yaml">      - name: O pdm.json
+        env:
+          PDM_JSON: ${{ secrets.PDM_JSON }}
+        run: |
+          if [ -n "$PDM_JSON" ]; then printf '%s' "$PDM_JSON" &gt; pdm.json
+          else echo '{}' &gt; pdm.json; fi</code></pre>
+<pre data-title="the APK"><code class="language-yaml">      - name: APK de release
+        run: |
+          flutter build apk --release \
+            --build-number=$((100 + BUILD)) \
+            --dart-define-from-file=pdm.json</code></pre>
+<pre data-title="the Release"><code class="language-yaml">      - name: Release no GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSAO=$(grep -oP '^version: \K[^+]+' pubspec.yaml)
+          N=$((100 + BUILD))
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          cp "$APK" "app-$VERSAO-$N.apk"
+          git log -1 --format=%B &gt; notas.txt
+          gh release create "v$VERSAO-build.$N" "app-$VERSAO-$N.apk" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "$VERSAO ($N)" --notes-file notas.txt</code></pre>
+<pre data-title="Firebase"><code class="language-yaml">      - name: Firebase App Distribution
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        if: env.TEM_FIREBASE == 'true'
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" &gt; "$RUNNER_TEMP/firebase.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase.json"
+          npx --yes firebase-tools appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app "$FIREBASE_APP_ID" --groups testers \
+            --release-notes-file notas.txt</code></pre>
+  </div>
+  </div>
+  <aside class="notes">What to say: this is the whole file, just to see its size and order: not to read line by line. In the workshop they download it as is, it is the same for every group, and then we look at the pieces that matter one at a time. It reads top to bottom like a recipe: when it runs, set up the machine, the key, <code>pdm.json</code>, the APK, the Release and, if there is one, Firebase. The secrets from the previous slide show up as <code>secrets.NAME</code>: that is the only place they come in.</aside>
+</section>
+
+<section class="slide">
   <h2>The version number goes up on its own</h2>
   <div class="table-wrap"><table class="compacta">
   <thead><tr><th>Build</th><th>pubspec.yaml</th><th>versionCode</th><th>GitHub Release</th></tr></thead>
@@ -531,8 +632,9 @@ Invoke-WebRequest $url -OutFile .github\workflows\build.yml</code></pre>
 </section>
 
 <section class="slide">
-  <h2>Where the magic happens 1: when it runs</h2>
-<pre data-title=".github/workflows/build.yml (start)"><code class="language-yaml">on:
+  <h2>Inside build.yml: when and where it runs</h2>
+  <div class="walk">
+<pre data-title=".github/workflows/build.yml"><code class="language-yaml">on:
   push:
     branches: [main]
 permissions:
@@ -544,53 +646,90 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.47.5</code></pre>
-  <p>Runs on every merge to <code>main</code>, creates Releases and uses the class's Flutter.</p>
-  <aside class="notes">What to say: read only, do not change anything. <code>on: push</code> to <code>main</code>: it runs on every merge, not on every PR; <code>ci.yml</code> keeps looking after PRs. <code>contents: write</code> lets the robot create Releases. The excerpt has the lines that matter; the full file also has Java 17 and the cache, so the second build is faster. The Flutter version is pinned because with the latest one the project Flutter created in September no longer builds (it asks for a newer Android Gradle Plugin). That is a reproducible build: the same code gives the same APK today and a month from now.</aside>
+  <ol class="walk-ex">
+    <li data-l="1-3">Runs on every merge into <code>main</code>. PRs still go through <code>ci.yml</code>.</li>
+    <li data-l="4-5">Can create Releases in your repository.</li>
+    <li data-l="6-8">On a GitHub Linux machine, born for the build and deleted at the end.</li>
+    <li data-l="10-12">Installs the class Flutter, always the same version.</li>
+  </ol>
+  </div>
+  <aside class="notes">What to say: just read, don't change anything. It is all one file, the <code>build.yml</code> they downloaded; these four slides are four pieces of it, top to bottom. Each arrow press lights up one piece. <code>ci.yml</code> still handles PRs; this one only runs after the merge. The excerpt has the lines that matter; the full file also has Java 17 and the cache, so the second build is faster. The Flutter version is pinned because, with the latest one, the project Flutter created in September no longer compiles (it asks for a newer Android Gradle Plugin). That is a reproducible build: the same code gives the same APK today and a month from now.</aside>
 </section>
 
 <section class="slide">
-  <h2>Where the magic happens 2: the key</h2>
-<pre data-title=".github/workflows/build.yml (the «A chave do grupo» step)"><code class="language-yaml">        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d &gt; "$RUNNER_TEMP/upload.jks"
-          cat &gt; android/key.properties &lt;&lt;FIM
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEYSTORE_PASSWORD
-          keyAlias=upload
-          storeFile=$RUNNER_TEMP/upload.jks
-          FIM</code></pre>
-  <aside class="notes">What to say: this is where the magic happens. "A chave do grupo" is "The group's key". <code>secrets.KEYSTORE_BASE64</code> is the secret from step 1.2; <code>base64 -d</code> turns it back into the <code>.jks</code> in a temporary folder. Then it writes the same <code>key.properties</code> you wrote by hand on Friday, only with the build machine's path. Gradle does not know it is on a robot: it reads <code>key.properties</code> just like on your computer.</aside>
+  <h2>Inside build.yml: the key</h2>
+  <div class="walk">
+<pre data-title=".github/workflows/build.yml"><code class="language-yaml">- name: A chave do grupo
+  env:
+    KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+  run: |
+    echo "$KEYSTORE_BASE64" | base64 -d &gt; "$RUNNER_TEMP/upload.jks"
+    cat &gt; android/key.properties &lt;&lt;FIM
+    storePassword=$KEYSTORE_PASSWORD
+    keyPassword=$KEYSTORE_PASSWORD
+    keyAlias=upload
+    storeFile=$RUNNER_TEMP/upload.jks
+    FIM</code></pre>
+  <ol class="walk-ex">
+    <li data-l="2-4">The two secrets from step 1 come in here. In the logs they show as <code>***</code>.</li>
+    <li data-l="6">Rebuilds the <code>.jks</code> from the Base64 text.</li>
+    <li data-l="7-12">Writes <code>key.properties</code>, same as Friday, with this machine's path.</li>
+  </ol>
+  </div>
+  <aside class="notes">What to say: <code>secrets.KEYSTORE_BASE64</code> is the secret from step 1.2; <code>base64 -d</code> rebuilds the <code>.jks</code> in a temporary folder. Then it writes the same <code>key.properties</code> you wrote by hand on Friday. Gradle doesn't know it is on a robot: it reads <code>key.properties</code> just like on your computer.</aside>
 </section>
 
 <section class="slide">
-  <h2>Where the magic happens 3: the number</h2>
-<pre data-title=".github/workflows/build.yml (the «APK de release» step)"><code class="language-yaml">      - name: APK de release
-        run: |
-          flutter build apk --release \
-            --build-number=$((100 + BUILD)) \
-            --dart-define-from-file=pdm.json</code></pre>
-  <ul>
-    <li>Friday's command, with the versionCode made by the robot: 100 plus the build number.</li>
-    <li><code>pdm.json</code> comes from the <code>PDM_JSON</code> secret; without it, an empty <code>{}</code> goes in and login gives 401.</li>
-  </ul>
-  <aside class="notes">What to say: "APK de release" is "Release APK". <code>BUILD</code> is <code>github.run_number</code>, the Actions build number (1, 2, 3...), set at the top of the file. A step before this one writes <code>pdm.json</code> from the secret, or <code>{}</code> if the secret is missing, so the same file works for every group. This is the slowest step, about 8 minutes on the first build.</aside>
+  <h2>Inside build.yml: pdm.json and the APK</h2>
+  <div class="walk">
+<pre data-title=".github/workflows/build.yml"><code class="language-yaml">- name: O pdm.json
+  env:
+    PDM_JSON: ${{ secrets.PDM_JSON }}
+  run: |
+    if [ -n "$PDM_JSON" ]; then printf '%s' "$PDM_JSON" &gt; pdm.json
+    else echo '{}' &gt; pdm.json; fi
+
+- name: APK de release
+  run: |
+    flutter build apk --release \
+      --build-number=$((100 + BUILD)) \
+      --dart-define-from-file=pdm.json</code></pre>
+  <ol class="walk-ex">
+    <li data-l="2-3">The <code>PDM_JSON</code> secret comes in here.</li>
+    <li data-l="5-6">Writes <code>pdm.json</code>. Without the secret it is <code>{}</code> and login gives 401.</li>
+    <li data-l="10">The same build as Friday.</li>
+    <li data-l="11">The versionCode: 100 plus the build number.</li>
+    <li data-l="12">The <code>clientId</code> reaches the app, like in Chrome.</li>
+  </ol>
+  </div>
+  <aside class="notes">What to say: <code>BUILD</code> is <code>github.run_number</code>, the build number in Actions (1, 2, 3...), defined at the top of the file. With <code>{}</code> the build doesn't fail, so the same file works for every group; but the app has no <code>clientId</code> and login gives 401. Building the APK is the slowest step, about 8 minutes on the first build.</aside>
 </section>
 
 <section class="slide">
-  <h2>Where the magic happens 4: the Release</h2>
-<pre data-title=".github/workflows/build.yml (the «Release no GitHub» step)"><code class="language-yaml">        run: |
-          VERSAO=$(grep -oP '^version: \K[^+]+' pubspec.yaml)
-          N=$((100 + BUILD))
-          APK=build/app/outputs/flutter-apk/app-release.apk
-          cp "$APK" "app-$VERSAO-$N.apk"
-          git log -1 --format=%B &gt; notas.txt
-          gh release create "v$VERSAO-build.$N" "app-$VERSAO-$N.apk" \
-            --target "$GITHUB_SHA" --prerelease \
-            --title "$VERSAO ($N)" --notes-file notas.txt</code></pre>
-  <p>The Release notes are the last commit's message: PR titles become what testers read.</p>
-  <aside class="notes">What to say: it is the same thing you did with clicks on Friday (tag, title, notes, APK), in one line with <code>gh</code>, GitHub's command-line tool. <code>VERSAO</code> is the version, <code>notas.txt</code> the notes. <code>--target</code> ties the tag to the exact commit of the build; <code>--prerelease</code> does not take the "Latest" spot from v0.3.0. When a PR is merged, the commit message is "Merge pull request #N" plus the PR title: write PR titles a tester can understand. At the end of the file there is one more step, Firebase, which only runs if the <code>FIREBASE_APP_ID</code> secret exists: that is step 4.</aside>
+  <h2>Inside build.yml: the Release</h2>
+  <div class="walk">
+<pre data-title=".github/workflows/build.yml"><code class="language-yaml">- name: Release no GitHub
+  env:
+    GH_TOKEN: ${{ github.token }}
+  run: |
+    VERSAO=$(grep -oP '^version: \K[^+]+' pubspec.yaml)
+    N=$((100 + BUILD))
+    APK=build/app/outputs/flutter-apk/app-release.apk
+    cp "$APK" "app-$VERSAO-$N.apk"
+    git log -1 --format=%B &gt; notas.txt
+    gh release create "v$VERSAO-build.$N" "app-$VERSAO-$N.apk" \
+      --target "$GITHUB_SHA" --prerelease \
+      --title "$VERSAO ($N)" --notes-file notas.txt</code></pre>
+  <ol class="walk-ex">
+    <li data-l="3">Permission to create the Release. GitHub gives it, it is not a secret.</li>
+    <li data-l="5">Reads the version from <code>pubspec.yaml</code>, for example <code>0.3.0</code>.</li>
+    <li data-l="6-8">The APK name: <code>app-0.3.0-101.apk</code>.</li>
+    <li data-l="9">The notes are the last commit message: the PR title.</li>
+    <li data-l="10-12">Creates the Release with the APK, like Friday, marked Pre-release.</li>
+  </ol>
+  </div>
+  <aside class="notes">What to say: it is what you did with clicks on Friday (tag, title, notes, APK), in a single line with <code>gh</code>, GitHub's command line tool. <code>--target</code> pins the tag to the exact commit of the build; <code>--prerelease</code> doesn't take the "Latest" spot from v0.3.0. When a PR is merged, the commit message is "Merge pull request #N" plus the PR title: write PR titles a tester can understand. At the end of the file there is one more step, Firebase, which only runs if the <code>FIREBASE_APP_ID</code> secret exists: that is step 4.</aside>
 </section>
 
 <section class="slide">
@@ -938,6 +1077,56 @@ flutter pub add dev:flutter_launcher_icons</code></pre>
     else if (e.key === "Escape" && palco) alternar();
   });
   layout();
+})();
+</script>
+<script>
+/* Dentro do build.yml: a seta para a direita acende o par seguinte antes de mudar de slide */
+(function () {
+  var walks = [].slice.call(document.querySelectorAll(".walk"));
+  if (!walks.length) return;
+  walks.forEach(function (w) {
+    var pre = w.querySelector("pre"), bar = document.createElement("div");
+    bar.className = "walk-bar"; pre.appendChild(bar); w._k = 0;
+    [].forEach.call(w.querySelectorAll(".walk-ex li"), function (li, i) {
+      li.addEventListener("click", function () { show(w, w._k === i + 1 ? 0 : i + 1); });
+    });
+  });
+  function show(w, k) {
+    var items = w.querySelectorAll(".walk-ex li"), bar = w.querySelector(".walk-bar");
+    w._k = k;
+    [].forEach.call(items, function (li, i) {
+      li.classList.toggle("on", i === k - 1); li.classList.toggle("off", k > 0 && i !== k - 1);
+    });
+    if (!k) { bar.style.opacity = 0; return; }
+    var r = items[k - 1].getAttribute("data-l").split("-"), a = +r[0], b = +(r[1] || r[0]);
+    var code = w.querySelector("pre code"), cs = getComputedStyle(code), lh = parseFloat(cs.lineHeight);
+    bar.style.top = (code.offsetTop + parseFloat(cs.paddingTop) + (a - 1) * lh) + "px";
+    bar.style.height = ((b - a + 1) * lh) + "px";
+    bar.style.opacity = 1;
+  }
+  function atual() {
+    if (document.querySelector(".deck.doc")) return null;
+    var s = document.querySelector(".deck .slide.active");
+    return s ? s.querySelector(".walk") : null;
+  }
+  function reset() { setTimeout(function () { walks.forEach(function (w) { if (w._k) show(w, 0); }); }, 0); }
+  function passo(dir, e) {
+    var w = atual(); if (!w) return reset();
+    var n = w.querySelectorAll(".walk-ex li").length;
+    if (dir > 0 && w._k < n) { e.preventDefault(); e.stopImmediatePropagation(); show(w, w._k + 1); }
+    else if (dir < 0 && w._k > 0) { e.preventDefault(); e.stopImmediatePropagation(); show(w, w._k - 1); }
+    else reset();
+  }
+  window.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "ArrowRight" || e.key === "PageDown") passo(1, e);
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") passo(-1, e);
+    else if (e.key === "Home" || e.key === "End") reset();
+  }, true);
+  window.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest('button[data-act="next"], button[data-act="prev"]');
+    if (b) passo(b.getAttribute("data-act") === "next" ? 1 : -1, e);
+  }, true);
 })();
 </script>
 </body>
