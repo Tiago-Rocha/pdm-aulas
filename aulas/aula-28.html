@@ -26,6 +26,18 @@
 .deck .slide .passo-topo .callout { margin: 0; }
 .deck .slide img.captura-lab.passo-larga { max-height: calc(100vh - 520px); margin: .2rem auto 0; }
 .deck .slide .passo-lado.larga { grid-template-columns: minmax(0, .85fr) minmax(0, 1.4fr); }
+/* Mapa do workshop: percurso com estações */
+.deck .slide figure.diagram .ln { fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.deck .slide figure.diagram .ln.accent { stroke: var(--accent); }
+.deck .slide figure.diagram .ln.ok { stroke: var(--ok); stroke-width: 2.5; }
+.deck .slide figure.diagram .ln.track { stroke-width: 6; }
+.deck .slide figure.diagram .ln.dot { stroke-dasharray: 1 11; }
+.deck .slide figure.diagram .st { fill: var(--accent); stroke: var(--accent); stroke-width: 2; }
+.deck .slide figure.diagram .st.next { fill: var(--surface); stroke: var(--muted); }
+.deck .slide figure.diagram .t.n { font-weight: 700; font-size: 17px; fill: var(--accent-fg); }
+.deck .slide figure.diagram .st.next + .t.n { fill: var(--fg); }
+.deck .slide figure.diagram .t.ic { font-weight: 700; font-size: 13px; fill: var(--accent-fg); }
+.deck .slide figure.diagram .t.h { font-weight: 700; font-size: 16px; }
 </style>
 </head>
 <body data-aula="28">
@@ -347,15 +359,68 @@ Future&lt;int?&gt; nivelDaBateria() async {
 
 <section class="slide" data-part="Workshop">
   <h2>Workshop: um APK novo a cada commit</h2>
-  <div class="table-wrap"><table class="compacta">
-  <thead><tr><th>Passo</th><th>O quê</th><th>Até às</th></tr></thead>
-  <tbody>
-  <tr><td>1</td><td>Os segredos no GitHub e o <code>pdm.json</code> fora do código</td><td>17:10</td></tr>
-  <tr><td>2</td><td>O ficheiro <code>build.yml</code> no projeto</td><td>17:15</td></tr>
-  <tr><td>3</td><td>PR, merge e o primeiro build automático</td><td>17:30</td></tr>
-  <tr><td>4</td><td>Os testers do Firebase também automáticos</td><td>17:40</td></tr>
-  <tr><td>5</td><td>O ícone do grupo, até ao telemóvel dos testers</td><td>17:50</td></tr>
-  </tbody></table></div>
+  <figure class="diagram">
+  <svg viewBox="0 0 900 320" role="img" aria-label="O workshop como um percurso de cinco estações. 1, segredos no GitHub e o pdm.json fora do código. 2, o ficheiro build.yml no projeto. 3, PR e merge, e o primeiro build sai sozinho com o APK. Do 1 ao 3 é a meta de todos. 4, os testers do Firebase também automáticos. 5, o ícone do grupo no telemóvel dos testers. O 4 e o 5 são se der tempo.">
+    <!-- 1 cofre -->
+    <rect x="50" y="40" width="80" height="74" rx="10" class="box accent"/>
+    <rect x="59" y="49" width="62" height="56" rx="6" class="box"/>
+    <circle cx="90" cy="77" r="17" class="box accent"/>
+    <path d="M90 64V90M77 77H103" class="ln accent"/>
+    <circle cx="90" cy="77" r="4" class="st"/>
+    <path d="M60 114V122M120 114V122" class="ln"/>
+    <!-- 2 build.yml -->
+    <path d="M228 30H297L312 45V128H228Z" class="box"/>
+    <path d="M297 30V45H312" class="ln"/>
+    <text x="237" y="66" class="t mono">on: push</text>
+    <text x="245" y="88" class="t mono">build</text>
+    <text x="245" y="110" class="t mono">sign</text>
+    <!-- 3 APK na Release -->
+    <path d="M416 58L433 40H493L476 58Z" class="box accent"/>
+    <path d="M476 58L493 40V98L476 116Z" class="box"/>
+    <rect x="416" y="58" width="60" height="58" class="box accent"/>
+    <text x="446" y="93" class="t b" text-anchor="middle">APK</text>
+    <circle cx="492" cy="114" r="14" class="box ok"/>
+    <path d="M485 114L490 119L499 109" class="ln ok"/>
+    <!-- 4 testers -->
+    <circle cx="653" cy="56" r="13" class="box"/>
+    <path d="M629 116Q629 82 653 82Q677 82 677 116Z" class="box"/>
+    <circle cx="616" cy="66" r="15" class="box accent"/>
+    <path d="M588 128Q588 93 616 93Q644 93 644 128Z" class="box accent"/>
+    <!-- 5 telemovel com o icone -->
+    <rect x="778" y="22" width="64" height="114" rx="11" class="box"/>
+    <rect x="789" y="38" width="19" height="19" rx="5" class="st"/>
+    <text x="798.5" y="52" class="t ic" text-anchor="middle">G</text>
+    <rect x="812" y="38" width="19" height="19" rx="5" class="box"/>
+    <rect x="789" y="62" width="19" height="19" rx="5" class="box"/>
+    <rect x="812" y="62" width="19" height="19" rx="5" class="box"/>
+    <rect x="789" y="86" width="19" height="19" rx="5" class="box"/>
+    <rect x="812" y="86" width="19" height="19" rx="5" class="box"/>
+    <path d="M800 126H820" class="ln"/>
+    <!-- percurso -->
+    <path d="M90 176H450" class="ln accent track"/>
+    <path d="M450 176H810" class="ln track dot"/>
+    <circle cx="90" cy="176" r="18" class="st"/><text x="90" y="182" class="t n" text-anchor="middle">1</text>
+    <circle cx="270" cy="176" r="18" class="st"/><text x="270" y="182" class="t n" text-anchor="middle">2</text>
+    <circle cx="450" cy="176" r="18" class="st"/><text x="450" y="182" class="t n" text-anchor="middle">3</text>
+    <circle cx="630" cy="176" r="18" class="st next"/><text x="630" y="182" class="t n" text-anchor="middle">4</text>
+    <circle cx="810" cy="176" r="18" class="st next"/><text x="810" y="182" class="t n" text-anchor="middle">5</text>
+    <text x="90" y="226" class="t h" text-anchor="middle">Segredos no GitHub</text>
+    <text x="90" y="248" class="t s" text-anchor="middle">pdm.json fora do código</text>
+    <text x="270" y="226" class="t h" text-anchor="middle">build.yml</text>
+    <text x="270" y="248" class="t s" text-anchor="middle">no projeto</text>
+    <text x="450" y="226" class="t h" text-anchor="middle">PR e merge</text>
+    <text x="450" y="248" class="t s" text-anchor="middle">o 1.º build sai sozinho</text>
+    <text x="630" y="226" class="t h" text-anchor="middle">Testers no Firebase</text>
+    <text x="630" y="248" class="t s" text-anchor="middle">também automático</text>
+    <text x="810" y="226" class="t h" text-anchor="middle">Ícone do grupo</text>
+    <text x="810" y="248" class="t s" text-anchor="middle">no telemóvel dos testers</text>
+    <!-- meta -->
+    <path d="M20 270V280H530V270" class="ln ok"/>
+    <text x="275" y="306" class="t b ok" text-anchor="middle">A meta de todos</text>
+    <path d="M550 270V280H880V270" class="ln"/>
+    <text x="715" y="306" class="t" style="fill: var(--muted)" text-anchor="middle">Se der tempo</text>
+  </svg>
+  </figure>
   <p>Um slide, um passo. Só passas ao seguinte quando vês o que diz a caixa verde.</p>
   <aside class="notes">O que dizer: a meta de hoje é o passo 3 feito por todos: uma Release que ninguém fez à mão. O build demora uns 10 minutos: enquanto corre, vejam o slide dos erros e preparem o passo 4. Na ronda final cada grupo mostra no projetor a Release automática e o separador Actions com o visto verde.</aside>
 </section>
