@@ -301,36 +301,19 @@ Future&lt;int?&gt; batteryLevel() async {
 </section>
 
 <section class="slide">
-  <h2>The key is not in the repository. How does it reach the build?</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 760 230" role="img" aria-label="The key and the password live in the repository Secrets, encrypted, and nobody can read them again. During the build, the robot gets them as text, recreates the key file in a temporary folder and the key.properties; at the end the machine is wiped.">
-    <rect x="10" y="20" width="230" height="190" rx="12" class="box"/>
-    <text x="30" y="50" class="t b">Your computer</text>
-    <text x="30" y="80" class="t">upload-keystore.jks</text>
-    <text x="30" y="104" class="t">the password</text>
-    <text x="30" y="128" class="t">pdm.json</text>
-    <text x="30" y="170" class="t s">the key becomes text</text>
-    <text x="30" y="190" class="t s">(Base64) so it can be pasted</text>
-    <path d="M240 115H276" class="arrow accent"/>
-    <rect x="278" y="20" width="210" height="190" rx="12" class="box accent"/>
-    <text x="298" y="50" class="t b">GitHub Secrets</text>
-    <text x="298" y="80" class="t mono">KEYSTORE_BASE64</text>
-    <text x="298" y="104" class="t mono">KEYSTORE_PASSWORD</text>
-    <text x="298" y="128" class="t mono">PDM_JSON</text>
-    <text x="298" y="170" class="t s">encrypted: once saved,</text>
-    <text x="298" y="190" class="t s">nobody can read them</text>
-    <path d="M488 115H524" class="arrow accent"/>
-    <rect x="526" y="20" width="224" height="190" rx="12" class="box"/>
-    <text x="546" y="50" class="t b">Build machine</text>
-    <text x="546" y="80" class="t">recreates the .jks</text>
-    <text x="546" y="104" class="t">writes key.properties</text>
-    <text x="546" y="128" class="t">signs the APK</text>
-    <text x="546" y="170" class="t s">at the end, the machine</text>
-    <text x="546" y="190" class="t s">is wiped</text>
-  </svg>
-  </figure>
+  <h2>How do the secrets reach the build?</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>GitHub secret</th><th>What it is</th><th>What it is for</th></tr></thead>
+  <tbody>
+  <tr><td><code>KEYSTORE_BASE64</code></td><td>the <code>.jks</code>, as text</td><td>signs the APK: the app is yours</td></tr>
+  <tr><td><code>KEYSTORE_PASSWORD</code></td><td>the key's password</td><td>opens the key</td></tr>
+  <tr><td><code>PDM_JSON</code></td><td><code>pdm.json</code></td><td>gives the app access to the API</td></tr>
+  <tr><td><code>FIREBASE_APP_ID</code></td><td>the App ID, in the Firebase console</td><td>says which app the APK goes to</td></tr>
+  <tr><td><code>FIREBASE_SERVICE_ACCOUNT</code></td><td>the service account <code>.json</code></td><td>lets the robot send it to testers</td></tr>
+  </tbody></table></div>
+  <p>None of this goes into git. During the build, the GitHub machine rebuilds the files, signs the APK and is wiped at the end.</p>
   <p><strong>For the tests:</strong> build secrets live in the CI secrets, never in the repository; the build recreates them on a temporary machine.</p>
-  <aside class="notes">What to say: a secret is an encrypted repository variable; the build uses it, but the logs show <code>***</code>. The <code>.jks</code> is binary: Base64 turns it into text so it fits in a text box, and the build turns it back into the file. Same principle as Friday, the secret never goes into git, except now the "group computer" is a GitHub machine that is born for the build and dies at the end. Not even you can read a secret again once saved: you can only replace it. Base64 is not encryption, it is just a way of writing bytes with letters and numbers; whoever has the text has the key, so do not paste it anywhere else. Only the repository owner (or an admin) sees the Settings menu where secrets are created.</aside>
+  <aside class="notes">What to say: a secret is an encrypted repository variable; the build uses it, but the logs show <code>***</code>. The <code>.jks</code> is binary: Base64 turns it into text so it fits in a text box, and the build turns it back into the file. Same principle as Friday, the secret never goes into git, except now the "group computer" is a GitHub machine that is born for the build and dies at the end. Not even you can read a secret again once saved: you can only replace it. Base64 is not encryption, it is just a way of writing bytes with letters and numbers; whoever has the text has the key, so do not paste it anywhere else. Only the repository owner (or an admin) sees the Settings menu where secrets are created. Why the key matters: a phone only installs an update signed with the same key; with another one, testers have to uninstall and lose their data. The password alone is useless, and so is the key alone: you need both. <code>key.properties</code> is not a secret: the build writes it from <code>KEYSTORE_PASSWORD</code>. The two Firebase ones only come in at step 4: the App ID is not really a secret, but it sits with the rest so everything is in one place; the service account is a "robot person" allowed to send releases, and whoever has the <code>.json</code> can do the same.</aside>
 </section>
 
 <section class="slide">

@@ -301,36 +301,19 @@ Future&lt;int?&gt; nivelDaBateria() async {
 </section>
 
 <section class="slide">
-  <h2>A chave não está no repositório. Como chega ao build?</h2>
-  <figure class="diagram">
-  <svg viewBox="0 0 760 230" role="img" aria-label="A chave e a palavra-passe ficam nos Secrets do repositório, cifrados, e ninguém os volta a ler. No build, o robô recebe-os como texto, recria o ficheiro da chave numa pasta temporária e o key.properties; no fim a máquina é apagada.">
-    <rect x="10" y="20" width="230" height="190" rx="12" class="box"/>
-    <text x="30" y="50" class="t b">O vosso computador</text>
-    <text x="30" y="80" class="t">upload-keystore.jks</text>
-    <text x="30" y="104" class="t">a palavra-passe</text>
-    <text x="30" y="128" class="t">pdm.json</text>
-    <text x="30" y="170" class="t s">a chave passa a texto</text>
-    <text x="30" y="190" class="t s">(Base64) para se colar</text>
-    <path d="M240 115H276" class="arrow accent"/>
-    <rect x="278" y="20" width="210" height="190" rx="12" class="box accent"/>
-    <text x="298" y="50" class="t b">Secrets do GitHub</text>
-    <text x="298" y="80" class="t mono">KEYSTORE_BASE64</text>
-    <text x="298" y="104" class="t mono">KEYSTORE_PASSWORD</text>
-    <text x="298" y="128" class="t mono">PDM_JSON</text>
-    <text x="298" y="170" class="t s">cifrados: depois de</text>
-    <text x="298" y="190" class="t s">gravados, ninguém os lê</text>
-    <path d="M488 115H524" class="arrow accent"/>
-    <rect x="526" y="20" width="224" height="190" rx="12" class="box"/>
-    <text x="546" y="50" class="t b">Máquina do build</text>
-    <text x="546" y="80" class="t">recria o .jks</text>
-    <text x="546" y="104" class="t">escreve o key.properties</text>
-    <text x="546" y="128" class="t">assina o APK</text>
-    <text x="546" y="170" class="t s">no fim, a máquina</text>
-    <text x="546" y="190" class="t s">é apagada</text>
-  </svg>
-  </figure>
+  <h2>Como chegam os segredos ao build?</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Secret no GitHub</th><th>O que é</th><th>Para que serve</th></tr></thead>
+  <tbody>
+  <tr><td><code>KEYSTORE_BASE64</code></td><td>o <code>.jks</code>, em texto</td><td>assina o APK: a app é vossa</td></tr>
+  <tr><td><code>KEYSTORE_PASSWORD</code></td><td>a palavra-passe da chave</td><td>abre a chave</td></tr>
+  <tr><td><code>PDM_JSON</code></td><td>o <code>pdm.json</code></td><td>dá à app o acesso à API</td></tr>
+  <tr><td><code>FIREBASE_APP_ID</code></td><td>o App ID, na consola do Firebase</td><td>diz para que app vai o APK</td></tr>
+  <tr><td><code>FIREBASE_SERVICE_ACCOUNT</code></td><td>o <code>.json</code> da conta de serviço</td><td>deixa o robô enviar aos testers</td></tr>
+  </tbody></table></div>
+  <p>Nada disto vai para o git. No build, a máquina do GitHub volta a fazer os ficheiros, assina o APK e no fim é apagada.</p>
   <p><strong>Para os testes:</strong> segredos de build ficam nos secrets do CI, nunca no repositório; o build recria-os numa máquina temporária.</p>
-  <aside class="notes">O que dizer: um secret é uma variável cifrada do repositório; o build usa-a, mas nos logs aparece <code>***</code>. O <code>.jks</code> é binário: o Base64 passa-o a texto para caber numa caixa de texto, e o build volta a fazer o ficheiro. É o mesmo princípio da sexta, o segredo não entra no git, só que agora o "computador do grupo" é uma máquina do GitHub que nasce para o build e morre no fim. Nem vocês conseguem voltar a ler um secret depois de gravado: só substituí-lo. Base64 não é cifra, é só uma forma de escrever bytes com letras e números; quem tiver o texto tem a chave, por isso não o colem em mais lado nenhum. Só o dono do repositório (ou um admin) vê o menu Settings onde se criam os secrets.</aside>
+  <aside class="notes">O que dizer: um secret é uma variável cifrada do repositório; o build usa-a, mas nos logs aparece <code>***</code>. O <code>.jks</code> é binário: o Base64 passa-o a texto para caber numa caixa de texto, e o build volta a fazer o ficheiro. É o mesmo princípio da sexta, o segredo não entra no git, só que agora o "computador do grupo" é uma máquina do GitHub que nasce para o build e morre no fim. Nem vocês conseguem voltar a ler um secret depois de gravado: só substituí-lo. Base64 não é cifra, é só uma forma de escrever bytes com letras e números; quem tiver o texto tem a chave, por isso não o colem em mais lado nenhum. Só o dono do repositório (ou um admin) vê o menu Settings onde se criam os secrets. Porque é que a chave importa: o telemóvel só instala uma atualização assinada com a mesma chave; com outra, os testers têm de desinstalar e perdem os dados. A palavra-passe sozinha não serve, a chave sozinha também não: é preciso as duas. O <code>key.properties</code> não é um secret: o build escreve-o a partir do <code>KEYSTORE_PASSWORD</code>. Os dois do Firebase só entram no passo 4: o App ID não é bem um segredo, mas fica junto para estar tudo no mesmo sítio; a conta de serviço é uma "pessoa robô" com licença para enviar versões, e quem tiver o <code>.json</code> pode fazer o mesmo.</aside>
 </section>
 
 <section class="slide">
