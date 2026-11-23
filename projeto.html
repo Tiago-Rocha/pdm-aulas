@@ -62,7 +62,7 @@
 <ul>
   <li>Cada grupo recebe um <code>clientId</code> e um <code>clientSecret</code> próprios, numa issue no repositório do grupo, que é privado. Identificam a app do grupo.</li>
   <li>Dentro da app, cada pessoa cria a sua conta (email, password e nome) e entra com ela. Os favoritos e os relatos são de cada utilizador; os relatos aparecem à turma com o nome do grupo e de quem os escreveu. A API guarda o email e o nome de cada conta, e a password só em hash. O email não precisa de ser real: a API não envia emails.</li>
-  <li>O <code>clientSecret</code> nunca vai para o repositório: passa-se na compilação com <code>--dart-define</code>.</li>
+  <li>O <code>clientId</code> e o <code>clientSecret</code> nunca vão para o código nem para o repositório. Ficam num <code>pdm.json</code> na raiz, fora do git (<code>.gitignore</code>), o código lê-os com <code>String.fromEnvironment</code> e entram na compilação com <code>--dart-define-from-file=pdm.json</code>. No GitHub, o mesmo conteúdo vai para o segredo <code>PDM_JSON</code>, para o build automático.</li>
   <li>A documentação interativa está em <a href="https://api-pdm.sublimecipher.com/docs" target="_blank" rel="noopener">api-pdm.sublimecipher.com/docs</a>: experimenta cada pedido no browser antes de o escrever em Dart.</li>
   <li>Se a API ganhar uma versão 2 durante o semestre (aula 28), a migração faz parte do trabalho da sprint 3.</li>
 </ul>
@@ -165,6 +165,7 @@
   <li>Primeira distribuição a testers na aula 27 (20/11) e feedback recebido em issues (requisito 11).</li>
   <li>Build de release assinado com a versão certa no <code>pubspec.yaml</code> (aula 31, 30/11).</li>
   <li>Pelo menos cinco testes e CI verde no <code>main</code> (requisito 10).</li>
+  <li>Credenciais da API só pelo <code>pdm.json</code> e pelo segredo <code>PDM_JSON</code>: o APK da Release faz login sem ninguém mexer no código.</li>
   <li>Extras escolhidos pelo grupo, acabados.</li>
   <li>README completo e lista de pendentes para o freeze.</li>
 </ul>
@@ -187,7 +188,7 @@
 <p>Tudo no repositório do grupo, na tag <code>v1.0.0</code>:</p>
 <ul class="checklist">
   <li>O código da app, com o CI verde nesse commit.</li>
-  <li>Um README com: nomes e números dos membros, o que a app faz, capturas de ecrã, como correr a app (incluindo o <code>--dart-define</code> das credenciais), os extras feitos e quem fez o quê.</li>
+  <li>Um README com: nomes e números dos membros, o que a app faz, capturas de ecrã, como correr a app (incluindo o <code>pdm.json</code> das credenciais, sem os valores), os extras feitos e quem fez o quê.</li>
   <li>A Release no GitHub com o APK assinado da versão final, e a lista de quem testou.</li>
   <li>Os slides da defesa em PDF, na pasta <code>docs/</code>.</li>
   <li>O histórico de issues, branches e pull requests das três sprints.</li>
