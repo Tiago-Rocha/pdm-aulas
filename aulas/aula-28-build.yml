@@ -1,0 +1,77 @@
+name: Build
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      BUILD: ${{ github.run_number }}
+      TEM_FIREBASE: ${{ secrets.FIREBASE_APP_ID != '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5
+          cache: true
+
+      - name: A chave do grupo
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          cat > android/key.properties <<FIM
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=upload
+          storeFile=$RUNNER_TEMP/upload.jks
+          FIM
+
+      - name: O pdm.json
+        env:
+          PDM_JSON: ${{ secrets.PDM_JSON }}
+        run: |
+          if [ -n "$PDM_JSON" ]; then printf '%s' "$PDM_JSON" > pdm.json
+          else echo '{}' > pdm.json; fi
+
+      - name: APK de release
+        run: |
+          flutter build apk --release \
+            --build-number=$((100 + BUILD)) \
+            --dart-define-from-file=pdm.json
+
+      - name: Release no GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSAO=$(grep -oP '^version: \K[^+]+' pubspec.yaml)
+          N=$((100 + BUILD))
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          cp "$APK" "app-$VERSAO-$N.apk"
+          git log -1 --format=%B > notas.txt
+          gh release create "v$VERSAO-build.$N" "app-$VERSAO-$N.apk" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "$VERSAO ($N)" --notes-file notas.txt
+
+      - name: Firebase App Distribution
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        if: env.TEM_FIREBASE == 'true'
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase.json"
+          npx --yes firebase-tools appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app "$FIREBASE_APP_ID" --groups testers \
+            --release-notes-file notas.txt

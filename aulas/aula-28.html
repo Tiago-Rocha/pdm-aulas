@@ -3,10 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aula 28 · Platform channels, plugins e API v2 · PDM</title>
+<title>Aula 28 · Platform channels e builds automáticos · PDM</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* Workshop passo a passo: listas e caixas mais baixas para caber no projetor */
+.deck .slide ol.steps { margin: .4em 0; }
+.deck .slide ol.steps > li { padding: .28em 0 .28em 2.5em; }
+.deck .slide ol.steps > li::before { top: .3em; width: 1.7em; height: 1.7em; font-size: .75rem; }
+.deck .slide .callout { padding: .4em .9em; margin: .5em 0; }
+.deck .slide .callout > strong:first-child { display: inline; margin: 0 .4em 0 0; }
+.deck .slide pre { margin: .5em 0; }
+.deck .slide figure.diagram { margin: .4rem 0 .6rem; }
+/* Passo 4: capturas anotadas, os números das caixas são os da lista */
+.deck .slide.cap { font-size: .9em; }
+.deck .slide.cap h2 { margin-bottom: .3em; }
+.deck .slide .passo-lado { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 1.2rem; align-items: start; }
+.deck .slide .passo-lado img.captura-lab { max-height: calc(100vh - 210px); margin: 0 auto; }
+.deck .slide a.captura-link { display: block; cursor: zoom-in; }
+.deck .slide .passo-topo { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.2rem; align-items: center; }
+.deck .slide .passo-topo .callout { margin: 0; }
+.deck .slide img.captura-lab.passo-larga { max-height: calc(100vh - 520px); margin: .2rem auto 0; }
+.deck .slide .passo-lado.larga { grid-template-columns: minmax(0, .85fr) minmax(0, 1.4fr); }
+</style>
 </head>
 <body data-aula="28">
 <header class="site"><div class="wrap">
@@ -25,474 +45,736 @@
 
 <section class="slide title" data-part="Início">
   <p class="kicker">Aula 28 · Semana 12 · Segunda, 23 de novembro de 2026 · 16:00 às 18:00</p>
-  <h1>Platform channels, plugins e API v2</h1>
-  <p class="lead">Teoria: platform channels, plugins e FFI; critérios para avaliar um package no pub.dev; versionamento de APIs e alterações incompatíveis. Prática: MethodChannel em Dart, Kotlin e Swift para ler o nível da bateria, e migração da app para a API v2 do curso.</p>
-  <div class="meta"><span>Repo: pdm-aula-28</span><span>v1 da API desliga a 09/12</span></div>
-  <aside class="notes">Liga a v2 na API antes da aula e confirma que a v1 responde com os headers Deprecation e Sunset. Pergunta à entrada quem fez a distribuição de sexta aos três testers; quem não fez, faz hoje no fim. Avisa que a parte Kotlin e Swift é para ler e copiar, não para decorar: o que interessa é o contrato do canal.</aside>
+  <h1>Platform channels e builds automáticos</h1>
+  <p class="lead">Teoria: como o Flutter fala com o Kotlin e o Swift, três casos reais, e o que é CI/CD. Workshop: cada commit no <code>main</code> do vosso projeto passa a gerar sozinho um APK assinado, numa Release do GitHub.</p>
+  <div class="meta"><span>Sem repositório da aula: tudo no projeto do grupo</span><span>Precisam da chave da aula de sexta</span></div>
+  <aside class="notes">Plano: 16:00 a 16:35 platform channels e os três casos; 16:35 a 16:50 CI/CD; 16:50 a 17:15 passos 1 a 3 (segredos, workflow, PR); o build demora uns 10 minutos, e enquanto corre vêem-se os erros comuns; 17:25 a 17:40 a Release automática no telemóvel e o Firebase automático (se encravar, saltam para o ícone); 17:40 a 17:50 o ícone do grupo; 17:50 a 18:00 ronda final. À entrada: cada grupo confirma que tem o computador com a chave da sexta (<code>C:\dev\upload-keystore.jks</code>) e a palavra-passe. Quem criou o repositório do grupo tem de estar presente, porque só o dono pode criar segredos. O grupo da Ekaterina, Inês e Palina ainda não tem a assinatura: começa pelos passos 1 a 4 da aula de sexta e só depois faz este workshop.</aside>
 </section>
 
 <section class="slide" data-part="Objetivos">
   <h2>No fim desta aula consegues</h2>
   <ul>
-    <li>Explicar o que é um platform channel, a diferença entre <code>MethodChannel</code> e <code>EventChannel</code>, e que tipos passam por eles.</li>
-    <li>Situar FFI, plugins federados e platform views, e dizer quando cada um se usa.</li>
-    <li>Avaliar um package no pub.dev com critérios objetivos antes de o adicionar ao projeto.</li>
-    <li>Ler o nível da bateria com um <code>MethodChannel</code> em Kotlin e Swift, e tratar as plataformas onde não existe.</li>
-    <li>Migrar os modelos e o repository para a API v2 mantendo a v1 a funcionar atrás de uma feature flag.</li>
+    <li>Explicar o que é um platform channel e quando se usa <code>MethodChannel</code> ou <code>EventChannel</code>.</li>
+    <li>Reconhecer, em apps reais, quando o Flutter precisa de código nativo e de que forma.</li>
+    <li>Escolher um package no pub.dev com critérios, antes de escrever o teu próprio canal.</li>
+    <li>Dizer a diferença entre CI e CD e onde ficam os segredos de um build.</li>
+    <li>Ter a app do grupo a gerar sozinha um APK assinado a cada commit no <code>main</code>.</li>
   </ul>
 </section>
 
 <section class="slide" data-part="Teoria">
-  <h2>MethodChannel e EventChannel</h2>
+  <h2>Platform channel: o Dart pede, o nativo responde</h2>
+  <div class="figura-iso"><iframe data-fig="../assets/fig/canal" data-nat="812" data-texto="510" title="Figura interativa: uma mensagem a descer do Dart até à bateria pelo canal, e a resposta a subir" loading="lazy"></iframe></div>
+  <ul class="fig-texto">
+    <li>O Flutter não sabe nada do telemóvel: pede ao sistema, que só fala Kotlin ou Swift.</li>
+    <li>Tudo vai em bytes, por isso só passam primitivos, listas e mapas.</li>
+    <li>A resposta chega num <code>Future</code>: o ecrã não fica à espera.</li>
+    <li>Na web não há Kotlin nem Swift: <code>MissingPluginException</code>.</li>
+  </ul>
+  <p><strong>Para os testes:</strong> mensagens assíncronas entre o Dart e o nativo; só primitivos, listas e mapas.</p>
+  <aside class="notes">O que dizer: o Flutter desenha tudo sozinho, mas não sabe nada do telemóvel. Para saber a bateria, abrir a câmara ou ler o NFC tem de perguntar ao sistema, e o sistema só fala Kotlin ou Swift. O canal é um intérprete entre as duas línguas: as mensagens vão em pacotes normalizados (o codec), uma de cada vez, e a resposta demora, por isso chega num Future. O <code>image_picker</code> e o <code>geolocator</code> que já usaram são exatamente isto, com o trabalho feito por outra pessoa. Um nome errado não dá erro de compilação: dá <code>MissingPluginException</code> quando a app corre. O nome é o contrato: tem de ser igual no Dart, no Kotlin e no Swift. Na figura: clicar repete a viagem, as teclas ↑ e ↓ mudam de modo (MethodChannel, EventChannel, web) e Z põe-na em ecrã inteiro.</aside>
+</section>
+
+<section class="slide">
+  <h2>O lado Dart: a chamada e o resultado</h2>
+<pre data-title="lib/services/bateria.dart"><code class="language-dart">const canal = MethodChannel('pdm/bateria');
+
+Future&lt;int?&gt; nivelDaBateria() async {
+  if (kIsWeb) return null; // na web não há nativo
+  try {
+    return await canal.invokeMethod&lt;int&gt;('nivel');
+  } on MissingPluginException {
+    return null; // plataforma sem código nativo
+  } on PlatformException catch (e) {
+    debugPrint('Bateria: ${e.code}'); // o nativo disse não
+    return null;
+  }
+}</code></pre>
+  <aside class="notes">O que dizer: no ecrã fica <code>Text('Bateria: $nivel %')</code>, ou nada quando vem <code>null</code>: uma funcionalidade opcional desaparece em silêncio, não mostra "erro". Duas exceções, duas histórias. <code>MissingPluginException</code>: não há ninguém do outro lado (web, desktop, ou o nome do canal mal escrito). <code>PlatformException</code>: há alguém, e respondeu com erro; o <code>code</code> serve para decidir, a <code>message</code> para os logs. Para testar sem telemóvel, o <code>TestDefaultBinaryMessenger</code> do <code>flutter_test</code> responde ao canal com um valor fixo, como o mocktail faz com um repository. Os imports: <code>package:flutter/foundation.dart</code> (o <code>kIsWeb</code>) e <code>package:flutter/services.dart</code> (o canal).</aside>
+</section>
+
+<section class="slide">
+  <h2>O lado Android, em Kotlin</h2>
+<pre data-title="android/.../MainActivity.kt (dentro da classe)"><code class="language-kotlin">override fun configureFlutterEngine(engine: FlutterEngine) {
+    super.configureFlutterEngine(engine)
+    val messenger = engine.dartExecutor.binaryMessenger
+    MethodChannel(messenger, "pdm/bateria")
+        .setMethodCallHandler { call, result -&gt;
+            if (call.method == "nivel") {
+                val bm = getSystemService(BATTERY_SERVICE)
+                    as BatteryManager
+                result.success(bm.getIntProperty(
+                    BatteryManager.BATTERY_PROPERTY_CAPACITY))
+            } else result.notImplemented()
+        }
+}</code></pre>
+  <aside class="notes">O que dizer: isto é para ler, não para decorar. A função vai dentro de <code>class MainActivity : FlutterActivity()</code>. O canal regista-se uma vez, quando o motor do Flutter arranca, nunca dentro de um widget. <code>call.method</code> é o nome que o Dart mandou; <code>result.success</code> devolve o valor, <code>result.error("CODIGO", "mensagem", null)</code> chega ao Dart como <code>PlatformException</code>. Os imports que faltam no slide: <code>android.os.BatteryManager</code>, <code>io.flutter.embedding.android.FlutterActivity</code>, <code>io.flutter.embedding.engine.FlutterEngine</code> e <code>io.flutter.plugin.common.MethodChannel</code>. Uma alteração no Kotlin pede <code>flutter run</code> de novo: o hot reload só recarrega Dart.</aside>
+</section>
+
+<section class="slide">
+  <h2>O lado iOS, em Swift</h2>
+<pre data-title="ios/Runner/AppDelegate.swift (a função que muda)"><code class="language-swift">func didInitializeImplicitFlutterEngine(
+  _ engineBridge: FlutterImplicitEngineBridge
+) {
+  GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  let canal = FlutterMethodChannel(name: "pdm/bateria",
+    binaryMessenger: engineBridge.applicationRegistrar.messenger())
+  canal.setMethodCallHandler { call, result in
+    if call.method == "nivel" {
+      UIDevice.current.isBatteryMonitoringEnabled = true
+      result(Int(UIDevice.current.batteryLevel * 100))
+    } else { result(FlutterMethodNotImplemented) }
+  }
+}</code></pre>
+  <aside class="notes">O que dizer: a mesma ideia, outra língua. O modelo do Flutter que vocês têm já traz esta função vazia (só com a linha do <code>GeneratedPluginRegistrant</code>); o canal entra a seguir. Exemplos antigos na internet usam <code>window?.rootViewController</code> no <code>application(didFinishLaunchingWithOptions:)</code>: com o modelo atual (o iOS por cenas) isso dá <code>nil</code>. No simulador o <code>batteryLevel</code> é -1, por isso a app mostraria -100: no telemóvel dá o valor certo. Sem Mac não se compila iOS; para ler chega.</aside>
+</section>
+
+<section class="slide">
+  <h2>Pedir uma vez ou ouvir sempre</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th></th><th>MethodChannel</th><th>EventChannel</th></tr></thead>
+  <tbody>
+  <tr><td>Como</td><td>Pergunta e resposta</td><td>Stream: o nativo avisa quando muda</td></tr>
+  <tr><td>No Dart</td><td><code>await invokeMethod(...)</code></td><td><code>receiveBroadcastStream().listen</code></td></tr>
+  <tr><td>Bateria</td><td>Quanto tens agora?</td><td>Avisa-me quando ligares o carregador</td></tr>
+  <tr><td>Plugins</td><td><code>image_picker</code>, <code>local_auth</code></td><td><code>geolocator</code>, <code>sensors_plus</code></td></tr>
+  <tr><td>Apps</td><td>Escolher foto no Instagram</td><td>Corrida no Strava, mapa do Uber</td></tr>
+  </tbody></table></div>
+  <p><strong>Para os testes:</strong> <code>MethodChannel</code> é pedido e resposta, sempre assíncrono; <code>EventChannel</code> é um stream do nativo para o Dart.</p>
+  <aside class="notes">O que dizer: a pergunta é "quem começa a conversa?". No MethodChannel é sempre o Dart: pergunta, espera, recebe. No EventChannel o Dart diz "estou a ouvir" e é o nativo que fala quando quer: a posição GPS a cada segundo numa corrida, o acelerómetro, o estado da bateria. Há uma terceira peça, o BasicMessageChannel, para mensagens soltas nos dois sentidos, que raramente se usa à mão. Um MethodChannel também pode ser chamado do nativo para o Dart (<code>invokeMethod</code> do lado Kotlin): vamos ver isso num dos casos reais.</aside>
+</section>
+
+<section class="slide">
+  <h2>Caso real 1: migrar sem perder dados</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 300" role="img" aria-label="Um MethodChannel: o Dart chama invokeMethod no canal pdm/bateria, o codec serializa a mensagem, o Kotlin no Android ou o Swift no iOS respondem, e a resposta volta ao Dart num Future; sem handler nativo, como na web, dá MissingPluginException">
-    <text x="450" y="24" class="t s" text-anchor="middle">platform channel «pdm/bateria»</text>
-    <rect x="40" y="40" width="250" height="150" rx="10" class="box accent"/>
-    <text x="58" y="66" class="t b">Dart</text>
-    <text x="58" y="92" class="t mono">MethodChannel('pdm/bateria')</text>
-    <text x="74" y="112" class="t mono">.invokeMethod('nivel')</text>
-    <text x="58" y="142" class="t s">devolve um Future&lt;int&gt;: 87</text>
-    <text x="58" y="162" class="t s">sempre assíncrono</text>
-    <path d="M290 75H324" class="arrow accent"/>
-    <path d="M326 95H292" class="arrow"/>
-    <rect x="326" y="40" width="204" height="150" rx="10" class="box muted"/>
-    <text x="428" y="66" class="t b" text-anchor="middle">Codec</text>
-    <text x="428" y="88" class="t mono" text-anchor="middle">StandardMessageCodec</text>
-    <text x="428" y="112" class="t s" text-anchor="middle">pedido: nome + argumentos</text>
-    <text x="428" y="132" class="t s" text-anchor="middle">resposta: valor ou erro</text>
-    <text x="428" y="156" class="t s" text-anchor="middle">null, bool, int, double,</text>
-    <text x="428" y="176" class="t s" text-anchor="middle">String, List, Map, bytes</text>
-    <path d="M530 75H564" class="arrow accent"/>
-    <path d="M566 95H532" class="arrow"/>
-    <rect x="566" y="40" width="294" height="70" rx="10" class="box"/>
-    <text x="584" y="65" class="t b">Android · Kotlin</text>
-    <text x="584" y="88" class="t s">BatteryManager → result.success(87)</text>
-    <path d="M530 155H564" class="arrow accent"/>
-    <path d="M566 175H532" class="arrow"/>
-    <rect x="566" y="120" width="294" height="70" rx="10" class="box"/>
-    <text x="584" y="145" class="t b">iOS · Swift</text>
-    <text x="584" y="168" class="t s">UIDevice.batteryLevel → result(87)</text>
-    <text x="450" y="212" class="t s" text-anchor="middle">Seta de destaque: pedido invokeMethod('nivel'). Seta cinzenta: resposta, que chega ao Dart num Future.</text>
-    <rect x="40" y="228" width="400" height="56" rx="10" class="box warn"/>
-    <text x="60" y="251" class="t b">Sem handler nativo (web, desktop)</text>
-    <text x="60" y="272" class="t s">invokeMethod lança MissingPluginException</text>
-    <rect x="460" y="228" width="400" height="56" rx="10" class="box"/>
-    <text x="480" y="251" class="t b">EventChannel: stream do nativo para o Dart</text>
-    <text x="480" y="272" class="t s">receiveBroadcastStream().listen · sensores, posição</text>
+  <svg viewBox="0 0 760 270" role="img" aria-label="Antes: a app nativa de futebol, desde 2008, guardava a sessão e as equipas favoritas no armazenamento nativo do Android e no Keychain do iOS. Depois: a app em Flutter lê esses dados antigos por um platform channel, uma única porta para os dois sistemas, e o utilizador atualiza sem perder nada.">
+    <text x="10" y="20" class="t b">Antes: app nativa, desde 2008</text>
+    <rect x="10" y="32" width="300" height="200" rx="12" class="box"/>
+    <text x="30" y="62" class="t b">Cada plataforma à sua maneira</text>
+    <rect x="30" y="80" width="260" height="58" rx="8" class="box muted"/>
+    <text x="46" y="104" class="t">Armazenamento local</text>
+    <text x="46" y="126" class="t s">definições, equipas favoritas</text>
+    <rect x="30" y="152" width="260" height="58" rx="8" class="box muted"/>
+    <text x="46" y="176" class="t">Armazenamento seguro</text>
+    <text x="46" y="198" class="t s">sessão do utilizador (token)</text>
+    <path d="M312 132H366" class="arrow accent"/>
+    <text x="339" y="120" class="t s" text-anchor="middle">update</text>
+    <text x="380" y="20" class="t b">Depois: app em Flutter</text>
+    <rect x="370" y="32" width="380" height="200" rx="12" class="box accent"/>
+    <text x="390" y="62" class="t b">Um canal: «storage antigo»</text>
+    <text x="390" y="92" class="t">o Dart pede "lê a sessão antiga"</text>
+    <text x="390" y="118" class="t">o nativo vai buscá-la onde estava</text>
+    <text x="390" y="144" class="t">o Dart guarda-a no sítio novo</text>
+    <rect x="390" y="164" width="340" height="50" rx="8" class="box ok"/>
+    <text x="408" y="195" class="t b">o utilizador nem dá por nada</text>
+    <text x="10" y="258" class="t s">OneFootball: milhões de utilizadores com dados guardados pela app antiga</text>
   </svg>
-  <figcaption>Pedido-resposta assíncrono entre o Dart e o código nativo, com os dados serializados em primitivos, listas e mapas.</figcaption>
   </figure>
   <ul>
-    <li>Um <strong>platform channel</strong> é um canal de mensagens com nome (<code>pdm/bateria</code>) entre o Dart e o código nativo: Kotlin ou Java no Android, Swift ou Objective-C no iOS. As mensagens são serializadas pelo <code>StandardMessageCodec</code>.</li>
-    <li><strong><code>MethodChannel</code></strong> é pedido-resposta: o Dart chama <code>invokeMethod('nivel')</code>, o nativo responde com <code>result.success(valor)</code> ou <code>result.error(...)</code>. Sempre assíncrono.</li>
-    <li><strong><code>EventChannel</code></strong> é um stream do nativo para o Dart: mudanças de bateria, sensores, posição. O nativo emite quando quiser; o Dart faz <code>receiveBroadcastStream().listen</code>.</li>
-    <li><strong>Tipos suportados:</strong> <code>null</code>, <code>bool</code>, <code>int</code>, <code>double</code>, <code>String</code>, <code>Uint8List</code> e outras listas tipadas, <code>List</code>, <code>Map</code>. Objetos não passam: serializa em <code>Map</code>.</li>
-    <li>O handler corre na thread principal da plataforma: trabalho pesado no nativo vai para outra thread e responde depois.</li>
-    <li>Um <strong>plugin</strong> compensa quando o mesmo canal serve mais do que uma app ou queres publicar. Para uma app, um canal dentro do projeto chega.</li>
+    <li>Os packages do Flutter (<code>shared_preferences</code>, <code>flutter_secure_storage</code>) guardam com os seus nomes e formatos: não encontram o que a app antiga escreveu.</li>
   </ul>
-  <p><strong>Para os testes:</strong> <code>MethodChannel</code> é pedido-resposta assíncrono; <code>EventChannel</code> é um stream nativo → Dart; os dados passam como primitivos, listas e mapas.</p>
-  <div class="callout"><strong>Analogia</strong> Um platform channel é um intérprete entre duas pessoas que não falam a mesma língua: o Dart de um lado, o Kotlin ou o Swift do outro. As mensagens vão em pequenos pacotes normalizados (o codec), uma de cada vez, e a resposta demora, por isso chega num <code>Future</code>. Um plugin é um intérprete que alguém já contratou e partilhou no pub.dev.</div>
-  <aside class="notes">Desenha no quadro: Dart ─ mensagem "nivel" ─→ Kotlin/Swift ─ 87 ─→ Dart. Pergunta: "o image_picker da aula 24 é o quê por dentro?" Um MethodChannel com métodos pickImage e pickVideo. Todos os plugins com hardware são isto.</aside>
+  <aside class="notes">O que dizer (caso contado pelo professor, da OneFootball): a app de futebol existia em nativo desde 2008 e passou para Flutter. Se a primeira versão em Flutter pedisse login a toda a gente e esquecesse as equipas favoritas, perdiam-se utilizadores no dia do update. Os dados estavam no armazenamento local e no seguro de cada plataforma, cada um com as suas chaves. Exemplo concreto do porquê: o <code>shared_preferences</code> no Android acrescenta o prefixo <code>flutter.</code> a cada chave, por isso nunca lê uma chave gravada pela app antiga. A solução foi um canal que dá acesso unificado a esse armazenamento: o Dart pede, o Kotlin e o Swift vão buscar onde estava, e o Dart passa os dados para o sítio novo. Sem canal, não havia migração.</aside>
 </section>
 
 <section class="slide">
-  <h2>FFI: chamar C diretamente</h2>
-  <ul>
-    <li><code>dart:ffi</code> chama funções C sem canal nem serialização: o Dart carrega uma biblioteca (<code>.so</code>, <code>.dylib</code>) e chama a função com a assinatura declarada. Microssegundos em vez de milissegundos.</li>
-    <li><code>ffigen</code> gera as ligações Dart a partir de um header C; <code>jnigen</code> faz o mesmo para APIs Java e Kotlin do Android; para Swift há <code>swift2objc</code>, ainda experimental.</li>
-    <li>Casos de uso: bibliotecas C existentes (SQLite, criptografia, codecs, processamento de imagem), código partilhado com outras plataformas em Rust ou C++ (<code>flutter_rust_bridge</code>).</li>
-    <li>Custos: memória manual com <code>malloc</code> e <code>free</code> do <code>package:ffi</code>, tipos C, compilar a biblioteca para cada arquitetura, e nada de hot reload na parte nativa.</li>
-    <li>Exemplo: o package <code>sqlite3</code> usa FFI e é mais rápido do que o <code>sqflite</code>, que usa um <code>MethodChannel</code>.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> FFI chama C diretamente, sem serialização; platform channels trocam mensagens com Kotlin e Swift. FFI para bibliotecas C e desempenho; channels para APIs do sistema.</p>
-</section>
-
-<section class="slide">
-  <h2>Plugins federados e platform views</h2>
-  <ul>
-    <li>Um <strong>plugin federado</strong> divide-se em: a interface (<code>x_platform_interface</code>), uma implementação por plataforma (<code>x_android</code>, <code>x_ios</code>, <code>x_web</code>) e o package que tu importas (<code>x</code>). Cada implementação regista-se sozinha.</li>
-    <li>Vantagem: outra pessoa acrescenta Windows ou web sem tocar no plugin principal. É assim que <code>url_launcher</code>, <code>camera</code> e <code>shared_preferences</code> estão feitos.</li>
-    <li><code>flutter create --template=plugin --platforms=android,ios</code> gera o esqueleto; o <code>pubspec.yaml</code> declara <code>flutter: plugin: platforms:</code> com a classe nativa de cada plataforma.</li>
-    <li><strong>Platform view:</strong> um widget nativo (mapa da Google, WebView, player de vídeo, anúncio) embutido na árvore Flutter. Custa desempenho e tem limitações com gestos e recortes.</li>
-    <li><code>google_maps_flutter</code> e <code>webview_flutter</code> são platform views; o <code>flutter_map</code> da aula 21 não é: desenha os tiles em Dart.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> plugin federado = interface + uma implementação por plataforma; platform view = widget nativo dentro da árvore Flutter, mais caro do que um widget Dart.</p>
-</section>
-
-<section class="slide">
-  <h2>Avaliar um package no pub.dev</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>Critério</th><th>Onde ver</th><th>Sinal de alarme</th></tr></thead>
-  <tbody>
-  <tr><td><strong>Pub points</strong> (até 160)</td><td>Cartão do package: análise, docs, plataformas, null safety</td><td>Abaixo de 120, ou sem null safety</td></tr>
-  <tr><td><strong>Popularidade</strong></td><td>Downloads por semana e likes</td><td>Poucos utilizadores e nenhuma alternativa conhecida</td></tr>
-  <tr><td><strong>Manutenção</strong></td><td>Data da última versão; issues e PRs no GitHub</td><td>Mais de um ano sem release, dezenas de issues sem resposta</td></tr>
-  <tr><td><strong>Quem publica</strong></td><td>Publisher verificado, "Flutter Favorite"</td><td>Nome sem site nem organização</td></tr>
-  <tr><td><strong>Licença</strong></td><td>Separador License</td><td>GPL (contamina a app) ou sem licença</td></tr>
-  </tbody></table></div>
-  <ul>
-    <li>Dependências: <code>flutter pub deps</code> mostra o que o package traz consigo. Cada uma é uma manutenção que herdas.</li>
-    <li>Pergunta final: dá para escrever em 50 linhas? Então não instales.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> pub points, popularidade, data da última versão, issues abertas, publisher e licença; um package sem manutenção é uma dívida que vais pagar.</p>
-  <aside class="notes">Abre ao vivo dois packages: um bom (url_launcher) e um abandonado (procura "battery" no pub.dev e escolhe um com 3 anos sem release). Deixa a turma pontuar cada um com a tabela.</aside>
-</section>
-
-<section class="slide">
-  <h2>APIs mudam: versionar e migrar sem partir</h2>
+  <h2>Caso real 2: o perfil numa stream</h2>
   <figure class="diagram">
-  <svg viewBox="0 0 900 340" role="img" aria-label="Linha do tempo de uma migração de API: a v1 em produção, a v2 publicada com a v1 ainda a responder e marcada como deprecada até 9 de dezembro, e depois a v1 a devolver 410 Gone; na app, primeiro só v1, depois v1 e v2 lado a lado com uma feature flag, e por fim só v2 com forced update; as apps instaladas não atualizam quando queres">
-    <text x="40" y="22" class="t s b">Backend (API)</text>
-    <rect x="40" y="30" width="210" height="80" rx="10" class="box"/>
-    <text x="60" y="55" class="t b">v1 em produção</text>
-    <text x="60" y="78" class="t mono">GET /v1/forecast</text>
-    <text x="60" y="98" class="t s">um único contrato</text>
-    <path d="M250 70H278" class="arrow"/>
-    <rect x="280" y="30" width="340" height="80" rx="10" class="box"/>
-    <text x="300" y="55" class="t b">v2 publicada, v1 ainda responde</text>
-    <text x="300" y="78" class="t mono">GET /v2/forecast</text>
-    <text x="300" y="98" class="t s">v1 com headers Deprecation e Sunset: 09/12</text>
-    <path d="M620 70H648" class="arrow"/>
-    <rect x="650" y="30" width="210" height="80" rx="10" class="box danger"/>
-    <text x="670" y="55" class="t b">v1 desligada</text>
-    <text x="670" y="78" class="t mono">410 Gone</text>
-    <text x="670" y="98" class="t s">só a v2 responde</text>
-    <path d="M40 142H858" class="arrow"/>
-    <circle cx="280" cy="142" r="7" class="box accent"/>
-    <text x="280" y="131" class="t s" text-anchor="middle">v2 sai</text>
-    <circle cx="650" cy="142" r="7" class="box danger"/>
-    <text x="650" y="131" class="t s" text-anchor="middle">09/12: fim do prazo da v1</text>
-    <text x="856" y="131" class="t s" text-anchor="end">tempo</text>
-    <text x="40" y="168" class="t s b">App (Flutter)</text>
-    <rect x="40" y="176" width="210" height="80" rx="10" class="box"/>
-    <text x="60" y="201" class="t b">Só v1</text>
-    <text x="60" y="224" class="t mono">fromJsonV1</text>
-    <text x="60" y="244" class="t s">a app que está na loja</text>
-    <path d="M250 216H278" class="arrow"/>
-    <rect x="280" y="176" width="340" height="80" rx="10" class="box accent"/>
-    <text x="300" y="201" class="t b">Feature flag: v1 e v2 lado a lado</text>
-    <text x="300" y="224" class="t mono">fromJsonV1 · fromJsonV2</text>
-    <text x="300" y="244" class="t s">testes com amostras reais das duas versões</text>
-    <path d="M620 216H648" class="arrow"/>
-    <rect x="650" y="176" width="210" height="80" rx="10" class="box ok"/>
-    <text x="670" y="201" class="t b">Só v2</text>
-    <text x="670" y="224" class="t s">forced update (aula 30)</text>
-    <text x="670" y="244" class="t s">para quem ficou na v1</text>
-    <rect x="40" y="276" width="820" height="56" rx="10" class="box warn"/>
-    <text x="60" y="299" class="t b">As apps instaladas não atualizam quando queres</text>
-    <text x="60" y="320" class="t s">Há quem fique meses numa versão: o backend serve v1 e v2 durante o prazo e a app ignora campos novos.</text>
+  <svg viewBox="0 0 760 270" role="img" aria-label="Antes: cada ecrã perguntava o perfil ao nativo de tempos a tempos, muitas chamadas repetidas. Depois: um EventChannel com o perfil; o nativo guarda o último valor e entrega-o logo a quem começa a ouvir, o replay, e depois avisa só quando muda.">
+    <text x="10" y="20" class="t b">Antes: cada ecrã pergunta de tempos a tempos</text>
+    <rect x="10" y="32" width="740" height="84" rx="12" class="box warn"/>
+    <text x="30" y="62" class="t">Início, Notícias, Definições: "o perfil mudou?" a cada poucos segundos</text>
+    <text x="30" y="92" class="t s">chamadas repetidas, bateria gasta, e cada ecrã com uma versão diferente</text>
+    <text x="10" y="146" class="t b">Depois: uma stream, com replay</text>
+    <rect x="10" y="158" width="250" height="90" rx="12" class="box"/>
+    <text x="30" y="188" class="t b">Nativo</text>
+    <text x="30" y="214" class="t s">guarda o último perfil</text>
+    <text x="30" y="234" class="t s">e avisa quando muda</text>
+    <path d="M262 203H312" class="arrow accent"/>
+    <rect x="314" y="158" width="436" height="90" rx="12" class="box accent"/>
+    <text x="334" y="188" class="t b">Um ecrã começa a ouvir</text>
+    <text x="334" y="214" class="t">recebe logo o perfil atual (o replay)</text>
+    <text x="334" y="238" class="t">e depois só as mudanças</text>
   </svg>
-  <figcaption>Duas versões em paralelo durante o prazo de deprecação; a app migra com uma feature flag e só depois a v1 desliga.</figcaption>
   </figure>
   <ul>
-    <li><strong>Versionamento por URL</strong> (<code>/v1/</code>, <code>/v2/</code>) é o mais comum em mobile: visível, cacheável, fácil de testar. Alternativas: header <code>Accept-Version</code> ou query <code>?v=2</code>.</li>
-    <li><strong>Incompatível:</strong> renomear ou remover campos, mudar tipos ou formatos de data, remover endpoints. <strong>Compatível:</strong> campo novo opcional, endpoint novo. Um cliente bem feito ignora campos que não conhece.</li>
-    <li><strong>Deprecação com prazo:</strong> a v1 continua a responder depois de a v2 sair, com headers <code>Deprecation</code> e <code>Sunset</code>. No curso: v1 até 09/12, depois <code>410 Gone</code>.</li>
-    <li>A app instalada não atualiza quando queres: há quem fique meses numa versão. O backend serve as duas versões nesse período; a app tolera diferenças pequenas.</li>
-    <li><strong>Changelog</strong> por versão, com exemplos de resposta. Sem ele, migrar é adivinhar.</li>
-    <li>Estratégia: duas factories (<code>fromJsonV1</code>, <code>fromJsonV2</code>), feature flag no repository, testes com amostras reais das duas versões, forced update quando a v1 desligar (aula 30).</li>
+    <li>O <code>EventChannel</code> não guarda nada: quem começa a ouvir depois do último evento fica sem dados até à mudança seguinte.</li>
   </ul>
-  <p><strong>Para os testes:</strong> versionar por URL, deprecar com prazo, e nunca assumir que todos os utilizadores estão na versão nova da app.</p>
-  <div class="callout"><strong>Analogia</strong> Versionar uma API é mudar as regras de um formulário público. Não se altera o formulário antigo debaixo dos pés de quem ainda o usa: publica-se o novo ao lado (<code>/v2/</code>), anuncia-se um prazo para o antigo (<code>Sunset</code>) e só depois se deixa de o aceitar (<code>410 Gone</code>).</div>
-</section>
-
-<section class="slide" data-part="Prática">
-  <h2>Prática: bateria por MethodChannel e migração para a v2</h2>
-<pre class="term"><code class="language-bash">git clone https://github.com/pdm-daw-2026/pdm-aula-28.git
-cd pdm-aula-28/starter
-flutter pub get
-flutter run</code></pre>
-  <p>O <code>starter/</code> tem o Tempo Açores na v1, um ecrã de definições com espaço para a bateria, e TODOs numerados de 1 a 8. Em <code>test/</code> há testes a falhar: <code>bateria_service_test.dart</code> (com o canal simulado) e <code>previsao_v2_test.dart</code>. O <code>solucao/</code> tem o estado final nas duas plataformas e com a flag.</p>
-  <p>Quatro blocos: o canal em Dart, Kotlin e Swift; as plataformas sem canal; os modelos v2; a flag para correr v1 e v2 lado a lado.</p>
-  <div class="callout warn"><strong>Kotlin e Swift</strong> Exigem <code>flutter run</code> de novo depois de cada alteração: o hot reload só recarrega Dart. Quem não tem Mac faz só o Android; o Swift fica para ler.</div>
+  <aside class="notes">O que dizer (OneFootball): o perfil do utilizador (equipas, idioma, sessão) vivia no lado nativo, e cada funcionalidade em Flutter fazia polling, ou seja, perguntava de tempos a tempos. Passou a ser uma stream por canal: quem quer o perfil ouve, e recebe quando muda. O problema: um ecrã que abre a meio não recebia nada até à mudança seguinte, porque o canal não repete o último evento. A solução foi o replay: guardar o último valor e entregá-lo a quem começa a ouvir. É o mesmo que um <code>BehaviorSubject</code> do RxDart, ou um <code>ValueNotifier</code>: quem chega recebe logo o valor atual. Ligação ao que já sabem: o <code>ChangeNotifier</code> do projeto faz isto do lado do Dart.</aside>
 </section>
 
 <section class="slide">
-  <h2>1. O lado Dart do canal</h2>
-<pre data-title="lib/services/bateria_service.dart"><code class="language-dart">import 'package:flutter/services.dart';
-
-class BateriaService {
-  BateriaService({MethodChannel? canal})
-      : _canal = canal ?? const MethodChannel('pdm/bateria');
-  final MethodChannel _canal;
-
-  /// Nível da bateria em percentagem, de 0 a 100.
-  Future&lt;int&gt; nivel() async {
-    final valor = await _canal.invokeMethod&lt;int&gt;('nivel');
-    if (valor == null) throw StateError('A plataforma não devolveu o nível');
-    return valor;
-  }
-}
-
-// No ecrã de definições
-FutureBuilder&lt;int&gt;(
-  future: context.read&lt;BateriaService&gt;().nivel(),
-  builder: (context, snapshot) {
-    if (snapshot.hasError) return const Text('Bateria indisponível');
-    if (!snapshot.hasData) return const SizedBox.shrink();
-    return Text('Bateria: ${snapshot.data} %');
-  },
-)</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. O lado Android, em Kotlin</h2>
-<pre data-title="android/app/src/main/kotlin/pt/uac/tempoacores/MainActivity.kt"><code class="language-kotlin">package pt.uac.tempoacores
-
-import android.content.Context
-import android.os.BatteryManager
-import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.MethodChannel
-
-class MainActivity : FlutterActivity() {
-    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdm/bateria")
-            .setMethodCallHandler { call, result ->
-                if (call.method != "nivel") { result.notImplemented(); return@setMethodCallHandler }
-                val bm = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-                val nivel = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-                if (nivel == Integer.MIN_VALUE) {
-                    result.error("INDISPONIVEL", "Nível de bateria não disponível", null)
-                } else {
-                    result.success(nivel)
-                }
-            }
-    }
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. O lado iOS, em Swift</h2>
-<pre data-title="ios/Runner/AppDelegate.swift"><code class="language-swift">import Flutter
-import UIKit
-
-@main
-@objc class AppDelegate: FlutterAppDelegate {
-  override func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -> Bool {
-    let controller = window?.rootViewController as! FlutterViewController
-    let canal = FlutterMethodChannel(name: "pdm/bateria", binaryMessenger: controller.binaryMessenger)
-    canal.setMethodCallHandler { call, result in
-      guard call.method == "nivel" else { result(FlutterMethodNotImplemented); return }
-      let device = UIDevice.current
-      device.isBatteryMonitoringEnabled = true
-      if device.batteryState == .unknown {
-        result(FlutterError(code: "INDISPONIVEL", message: "Nível de bateria não disponível", details: nil))
-      } else {
-        result(Int(device.batteryLevel * 100))
-      }
-    }
-    GeneratedPluginRegistrant.register(with: self)
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-}</code></pre>
-</section>
-
-<section class="slide">
-  <h2>1. O canal: o que interessa</h2>
+  <h2>Caso real 3: videoconsultas e Apple Watch</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 760 270" role="img" aria-label="Uma app de saúde em Flutter com videoconsultas: o vídeo da Amazon Chime não tem SDK Flutter, por isso é uma view nativa dentro do ecrã Flutter, uma platform view; um MethodChannel nos dois sentidos, o Flutter manda abrir o chat e o nativo avisa que a sala de espera acabou; um EventChannel com os eventos da chamada; e outro canal fala com o Apple Watch, ritmo cardíaco e play ou pausa do áudio.">
+    <rect x="10" y="10" width="440" height="250" rx="14" class="box"/>
+    <text x="30" y="40" class="t b">Ecrã Flutter da consulta</text>
+    <rect x="30" y="56" width="400" height="110" rx="10" class="box accent"/>
+    <text x="50" y="86" class="t b">Vídeo da chamada</text>
+    <text x="50" y="112" class="t">view nativa da Amazon Chime</text>
+    <text x="50" y="136" class="t s">platform view: não há SDK Flutter</text>
+    <rect x="30" y="180" width="190" height="62" rx="10" class="box muted"/>
+    <text x="46" y="206" class="t">Botão do chat</text>
+    <text x="46" y="228" class="t s">Flutter manda: abre</text>
+    <rect x="240" y="180" width="190" height="62" rx="10" class="box muted"/>
+    <text x="256" y="206" class="t">Sala de espera</text>
+    <text x="256" y="228" class="t s">nativo avisa: acabou</text>
+    <path d="M452 135H500" class="arrow accent"/>
+    <path d="M500 160H452" class="arrow"/>
+    <rect x="502" y="10" width="248" height="120" rx="14" class="box"/>
+    <text x="522" y="40" class="t b">Eventos da chamada</text>
+    <text x="522" y="66" class="t s">EventChannel: ligou, caiu,</text>
+    <text x="522" y="88" class="t s">o médico entrou</text>
+    <rect x="502" y="142" width="248" height="118" rx="14" class="box ok"/>
+    <text x="522" y="172" class="t b">Apple Watch</text>
+    <text x="522" y="198" class="t s">ritmo cardíaco para a app</text>
+    <text x="522" y="220" class="t s">play e pausa do áudio</text>
+    <text x="522" y="242" class="t s">para o relógio</text>
+  </svg>
+  </figure>
   <ul>
-    <li>O nome do canal é um contrato: <code>pdm/bateria</code> nos três lados. Um erro de escrita dá <code>MissingPluginException</code> em runtime, não erro de compilação.</li>
-    <li><code>invokeMethod&lt;int&gt;</code> faz o cast: o <code>Int</code> do Kotlin e o <code>Int</code> do Swift chegam como <code>int</code> em Dart. Um <code>Long</code> também, porque o <code>int</code> do Dart tem 64 bits.</li>
-    <li><code>result.error(code, message, details)</code> chega ao Dart como <code>PlatformException</code>. Códigos em maiúsculas e estáveis, para o Dart poder fazer <code>switch</code>.</li>
-    <li>Só se cria um <code>MethodChannel</code> por nome; o handler é o último registado. Regista-o no <code>configureFlutterEngine</code> e no <code>didFinishLaunchingWithOptions</code>, nunca num widget.</li>
-    <li>Testar sem telemóvel: <code>TestDefaultBinaryMessenger.setMockMethodCallHandler</code> responde ao canal com um valor fixo. O starter já traz esse teste.</li>
+    <li>Sem SDK Flutter, o vídeo vem do nativo e encaixa-se no ecrã como uma <strong>platform view</strong>.</li>
   </ul>
-  <div class="callout task"><strong>Exercício 1</strong> TODOs 1 a 3: os três lados do canal e a linha "Bateria: N %" no ecrã de definições. No simulador iOS aparece "indisponível" (o <code>batteryState</code> é <code>unknown</code>; é normal); no telemóvel aparece o valor. Corre <code>flutter test test/bateria_service_test.dart</code>.</div>
-  <aside class="notes">20 minutos. Onde encravam: o package do Kotlin não corresponde à pasta (copiar o que o starter tem), e esquecer o flutter run depois de editar o nativo. Mostra o MissingPluginException ao vivo mudando uma letra no nome do canal.</aside>
+  <aside class="notes">O que dizer (Nue Life, projeto em que o professor trabalhou em 2023): uma app de saúde mental com consultas por vídeo. O fornecedor de vídeo, Amazon Chime, só tinha SDK para Android e iOS. A solução teve três canais. 1) O vídeo é uma view nativa embutida no ecrã Flutter (no iOS um <code>UiKitView</code>), com os botões em Flutter por cima. 2) Um MethodChannel nos dois sentidos: o Flutter diz "abre o chat", o nativo diz "a sala de espera acabou, o médico entrou" (o nativo chama <code>invokeMethod</code> no Dart). 3) Outro canal fala com o Apple Watch pelo WatchConnectivity: o ritmo cardíaco vem do relógio para a app, e o play e a pausa do áudio vão da app para o relógio. Lição: quando um fornecedor não tem SDK Flutter, não é um beco sem saída, é uma semana de trabalho nativo.</aside>
 </section>
 
 <section class="slide">
-  <h2>2. Onde o canal não existe: web, desktop, simulador</h2>
-<pre data-title="lib/services/bateria_service.dart (continuação)"><code class="language-dart">import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-
-  /// null quando a plataforma não tem canal ou não sabe o nível.
-  Future&lt;int?&gt; nivelSeguro() async {
-    if (kIsWeb) return null;                     // na web não há código nativo
-    try {
-      return await _canal.invokeMethod&lt;int&gt;('nivel');
-    } on MissingPluginException {
-      return null;                               // desktop sem handler, ou nome errado
-    } on PlatformException catch (e) {
-      debugPrint('Bateria: ${e.code} ${e.message}');
-      return null;                               // INDISPONIVEL no simulador iOS
-    }
-  }</code></pre>
-  <ul>
-    <li><code>MissingPluginException</code>: não há handler para o canal nesta plataforma. Não é um erro do utilizador; é uma funcionalidade que aqui não existe.</li>
-    <li><code>PlatformException</code>: o nativo respondeu com erro. <code>code</code> para decidir, <code>message</code> para os logs.</li>
-    <li>A UI não mostra "erro": esconde a linha ou diz "indisponível". Uma funcionalidade opcional degrada em silêncio.</li>
-  </ul>
-  <div class="callout task"><strong>Exercício 2</strong> TODO 4: usa <code>nivelSeguro()</code> no ecrã e corre <code>flutter run -d chrome</code>: a app arranca e a linha da bateria desaparece. Teste: com o handler simulado a lançar <code>PlatformException(code: 'INDISPONIVEL')</code>, <code>nivelSeguro()</code> devolve <code>null</code>.</div>
-</section>
-
-<section class="slide">
-  <h2>3. API v2: o que mudou</h2>
-  <div class="table-wrap"><table>
-  <thead><tr><th>v1 (<code>/v1/forecast/{id}</code>)</th><th>v2 (<code>/v2/forecast/{id}</code>)</th><th>Tipo de mudança</th></tr></thead>
+  <h2>Outras formas de falar com o nativo</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th></th><th>O que é</th><th>Exemplos</th></tr></thead>
   <tbody>
-  <tr><td><code>locationId</code></td><td><code>location_id</code></td><td>Renomeado: toda a v2 usa snake_case</td></tr>
-  <tr><td><code>tMin</code>, <code>tMax</code> soltos</td><td><code>temperature: {min, max}</code></td><td>Estrutura: as temperaturas passam a um objeto</td></tr>
-  <tr><td><code>forecastDate: "2026-11-23"</code></td><td><code>date: "2026-11-23T00:00:00-01:00"</code></td><td>ISO 8601 completo, com hora e fuso dos Açores</td></tr>
-  <tr><td><code>weatherType</code>, <code>precipProb</code></td><td><code>weather</code>, <code>precipitation_probability</code></td><td>Renomeados</td></tr>
-  <tr><td>—</td><td><code>issued_at</code></td><td>Novo, opcional: quando o IPMA emitiu a previsão</td></tr>
+  <tr><td>Plugin</td><td>Um canal empacotado e partilhado no pub.dev</td><td><code>camera</code>, <code>url_launcher</code></td></tr>
+  <tr><td>Plugin federado</td><td>Uma interface e um package por plataforma</td><td><code>shared_preferences</code></td></tr>
+  <tr><td>Platform view</td><td>Um widget nativo dentro do ecrã Flutter</td><td>Google Maps, WebView, anúncios</td></tr>
+  <tr><td>FFI</td><td>Chamar C ou Rust diretamente, sem canal</td><td><code>sqlite3</code>, criptografia</td></tr>
   </tbody></table></div>
+  <p><strong>Para os testes:</strong> canal para APIs do sistema; FFI para bibliotecas C e desempenho; platform view para um widget nativo; plugin federado é uma interface com uma implementação por plataforma.</p>
+  <aside class="notes">O que dizer: na prática, o primeiro passo é sempre procurar um plugin. Escrever um canal só quando não há, como no caso da Chime. Plugin federado: o <code>shared_preferences</code> é na verdade vários packages (<code>_android</code>, <code>_foundation</code>, <code>_web</code>), e alguém pode acrescentar Windows sem mexer no principal. Platform view: o <code>google_maps_flutter</code> é o mapa nativo da Google dentro do ecrã, e custa desempenho; o <code>flutter_map</code> que usaram desenha os tiles em Dart, não é platform view. FFI: sem mensagens nem serialização, microssegundos em vez de milissegundos; o package <code>sqlite3</code> usa FFI e é mais rápido do que o <code>sqflite</code>, que usa um canal. O custo do FFI: memória gerida à mão e compilar a biblioteca para cada arquitetura.</aside>
+</section>
+
+<section class="slide">
+  <h2>Antes de instalar um package</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Ver</th><th>Onde</th><th>Sinal de alarme</th></tr></thead>
+  <tbody>
+  <tr><td>Pub points</td><td>Cartão do package, até 160</td><td>Abaixo de 120</td></tr>
+  <tr><td>Uso</td><td>Downloads e likes</td><td>Quase ninguém o usa</td></tr>
+  <tr><td>Manutenção</td><td>Última versão, issues</td><td>Um ano sem versão nova</td></tr>
+  <tr><td>Quem publica</td><td>Publisher verificado</td><td>Sem site nem organização</td></tr>
+  <tr><td>Licença</td><td>Separador License</td><td>GPL, ou nenhuma</td></tr>
+  </tbody></table></div>
+  <p>Regra final: se dá para escrever em 50 linhas, não instales.</p>
+  <aside class="notes">O que dizer: cada package é código de outra pessoa dentro da vossa app, com permissões e com as dependências dele. Um plugin abandonado parte no dia em que o Android ou o iOS mudam alguma coisa, e quem fica com o problema são vocês. Abre ao vivo o <code>battery_plus</code> no pub.dev (publisher fluttercommunity.dev, muito usado, atualizado) e compara com o canal que vimos: para o projeto, o plugin ganha. GPL: obriga a publicar o código da app inteira. <code>flutter pub deps</code> mostra o que cada package traz consigo.</aside>
+</section>
+
+<section class="slide">
+  <h2>CI e CD: o que já têm e o que falta</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 760 250" role="img" aria-label="Um PR corre o CI, analyze e test, que os grupos já têm. Depois do merge no main, o CD que falta: build do APK assinado, Release no GitHub e, opcional, Firebase para os testers. Tudo sozinho, a cada commit.">
+    <rect x="10" y="30" width="140" height="80" rx="10" class="box"/>
+    <text x="80" y="64" class="t b" text-anchor="middle">PR</text>
+    <text x="80" y="88" class="t s" text-anchor="middle">o vosso código</text>
+    <path d="M150 70H186" class="arrow"/>
+    <rect x="188" y="30" width="160" height="80" rx="10" class="box ok"/>
+    <text x="268" y="62" class="t b" text-anchor="middle">CI</text>
+    <text x="268" y="88" class="t s" text-anchor="middle">analyze e test</text>
+    <path d="M348 70H384" class="arrow"/>
+    <rect x="386" y="30" width="110" height="80" rx="10" class="box"/>
+    <text x="441" y="64" class="t b" text-anchor="middle">merge</text>
+    <text x="441" y="88" class="t s" text-anchor="middle">no main</text>
+    <path d="M496 70H532" class="arrow accent"/>
+    <rect x="534" y="30" width="216" height="80" rx="10" class="box accent"/>
+    <text x="642" y="62" class="t b" text-anchor="middle">CD</text>
+    <text x="642" y="88" class="t s" text-anchor="middle">APK assinado</text>
+    <path d="M642 110V146" class="arrow accent"/>
+    <rect x="386" y="148" width="364" height="86" rx="10" class="box accent"/>
+    <text x="404" y="178" class="t b">Release no GitHub com o APK</text>
+    <text x="404" y="204" class="t">e, opcional, os testers no Firebase</text>
+    <text x="404" y="224" class="t s">um build novo a cada commit</text>
+    <rect x="10" y="148" width="338" height="86" rx="10" class="box muted"/>
+    <text x="28" y="178" class="t b">Já têm desde a sprint 1</text>
+    <text x="28" y="204" class="t">o ficheiro ci.yml</text>
+    <text x="28" y="224" class="t s">diz se o código está são</text>
+  </svg>
+  </figure>
+  <p><strong>Para os testes:</strong> CI verifica cada alteração; CD gera e entrega uma versão a cada alteração aceite.</p>
+  <aside class="notes">O que dizer: CI, integração contínua: cada PR é verificado sozinho e diz se o código está são. CD, entrega contínua: cada merge gera uma versão instalável e diz que versão os testers têm. Na sexta fizeram tudo à mão: build no computador de um de vocês, arrastar o APK para o GitHub e para o Firebase. Funciona uma vez. À décima, alguém esquece-se de subir o versionCode, ou faz o build de um branch errado, ou o colega com a chave está doente. Nas empresas, cada merge gera um build que a equipa e os testers internos instalam no mesmo dia; à loja vai uma versão de tempos a tempos, escolhida entre esses builds. A ferramenta é a mesma que o vosso CI já usa: o GitHub Actions. O que muda é o que o robô faz no fim.</aside>
+</section>
+
+<section class="slide">
+  <h2>A chave não está no repositório. Como chega ao build?</h2>
+  <figure class="diagram">
+  <svg viewBox="0 0 760 230" role="img" aria-label="A chave e a palavra-passe ficam nos Secrets do repositório, cifrados, e ninguém os volta a ler. No build, o robô recebe-os como texto, recria o ficheiro da chave numa pasta temporária e o key.properties; no fim a máquina é apagada.">
+    <rect x="10" y="20" width="230" height="190" rx="12" class="box"/>
+    <text x="30" y="50" class="t b">O vosso computador</text>
+    <text x="30" y="80" class="t">upload-keystore.jks</text>
+    <text x="30" y="104" class="t">a palavra-passe</text>
+    <text x="30" y="128" class="t">pdm.json</text>
+    <text x="30" y="170" class="t s">a chave passa a texto</text>
+    <text x="30" y="190" class="t s">(Base64) para se colar</text>
+    <path d="M240 115H276" class="arrow accent"/>
+    <rect x="278" y="20" width="210" height="190" rx="12" class="box accent"/>
+    <text x="298" y="50" class="t b">Secrets do GitHub</text>
+    <text x="298" y="80" class="t mono">KEYSTORE_BASE64</text>
+    <text x="298" y="104" class="t mono">KEYSTORE_PASSWORD</text>
+    <text x="298" y="128" class="t mono">PDM_JSON</text>
+    <text x="298" y="170" class="t s">cifrados: depois de</text>
+    <text x="298" y="190" class="t s">gravados, ninguém os lê</text>
+    <path d="M488 115H524" class="arrow accent"/>
+    <rect x="526" y="20" width="224" height="190" rx="12" class="box"/>
+    <text x="546" y="50" class="t b">Máquina do build</text>
+    <text x="546" y="80" class="t">recria o .jks</text>
+    <text x="546" y="104" class="t">escreve o key.properties</text>
+    <text x="546" y="128" class="t">assina o APK</text>
+    <text x="546" y="170" class="t s">no fim, a máquina</text>
+    <text x="546" y="190" class="t s">é apagada</text>
+  </svg>
+  </figure>
+  <p><strong>Para os testes:</strong> segredos de build ficam nos secrets do CI, nunca no repositório; o build recria-os numa máquina temporária.</p>
+  <aside class="notes">O que dizer: um secret é uma variável cifrada do repositório; o build usa-a, mas nos logs aparece <code>***</code>. O <code>.jks</code> é binário: o Base64 passa-o a texto para caber numa caixa de texto, e o build volta a fazer o ficheiro. É o mesmo princípio da sexta, o segredo não entra no git, só que agora o "computador do grupo" é uma máquina do GitHub que nasce para o build e morre no fim. Nem vocês conseguem voltar a ler um secret depois de gravado: só substituí-lo. Base64 não é cifra, é só uma forma de escrever bytes com letras e números; quem tiver o texto tem a chave, por isso não o colem em mais lado nenhum. Só o dono do repositório (ou um admin) vê o menu Settings onde se criam os secrets.</aside>
+</section>
+
+<section class="slide">
+  <h2>O número da versão sobe sozinho</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Build</th><th>pubspec.yaml</th><th>versionCode</th><th>Release no GitHub</th></tr></thead>
+  <tbody>
+  <tr><td>Sexta, à mão</td><td><code>0.3.0+3</code></td><td>3</td><td><code>v0.3.0</code></td></tr>
+  <tr><td>1.º commit hoje</td><td><code>0.3.0+3</code></td><td>101</td><td><code>v0.3.0-build.101</code></td></tr>
+  <tr><td>2.º commit</td><td><code>0.3.0+3</code></td><td>102</td><td><code>v0.3.0-build.102</code></td></tr>
+  <tr><td>Mudam para 0.4.0</td><td><code>0.4.0+3</code></td><td>103</td><td><code>v0.4.0-build.103</code></td></tr>
+  </tbody></table></div>
+  <p>O versionCode é 100 mais o número do build no GitHub. Vocês só mexem no <code>0.3.0</code>, quando quiserem.</p>
+  <aside class="notes">O que dizer: lembram-se da sexta? O Android recusa instalar um versionCode mais baixo por cima de um mais alto, e só compara o número depois do +. Esquecer de o subir é o erro clássico de quem faz builds à mão. Aqui o robô usa o número do build do Actions (1, 2, 3...) e soma 100, para ficar sempre acima do 3 de sexta. Assim cada APK novo instala-se por cima do anterior, sem desinstalar e sem perder a sessão. Estas Releases saem marcadas como "Pre-release": a v0.3.0 de sexta continua a ser a "Latest" até vocês decidirem publicar uma versão a sério.</aside>
+</section>
+
+<section class="slide">
+  <h2>Quem faz isto nas empresas</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Ferramenta</th><th>O que é</th></tr></thead>
+  <tbody>
+  <tr><td>GitHub Actions</td><td>O robô do GitHub: o vosso CI, e hoje o CD</td></tr>
+  <tr><td>Codemagic</td><td>CI/CD feito para Flutter, com Macs para o iOS</td></tr>
+  <tr><td>Bitrise</td><td>CI/CD só para apps móveis</td></tr>
+  <tr><td>Xcode Cloud</td><td>O CI/CD da Apple, para iOS</td></tr>
+  <tr><td>fastlane</td><td>Scripts para assinar e enviar às lojas</td></tr>
+  </tbody></table></div>
+  <p>O que muda de uma para outra é a sintaxe. As peças são sempre as mesmas: segredos, build, assinatura e entrega.</p>
+  <aside class="notes">O que dizer: para iOS é preciso um Mac no build; o GitHub tem Macs, mas o minuto custa dez vezes o do Linux, e por isso muitas equipas de Flutter usam o Codemagic para o iOS. O fastlane não é um CI: é uma ferramenta que corre dentro de qualquer CI e que sabe falar com a Play Console e o App Store Connect. Na entrevista de estágio, "já configurei um pipeline que assina e distribui a app a cada merge" vale mais do que mais um ecrã no portefólio.</aside>
+</section>
+
+<section class="slide" data-part="Workshop">
+  <h2>Workshop: um APK novo a cada commit</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>Passo</th><th>O quê</th><th>Até às</th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td>Os segredos no GitHub: a chave, a palavra-passe e o <code>pdm.json</code></td><td>17:05</td></tr>
+  <tr><td>2</td><td>O ficheiro <code>build.yml</code> no projeto</td><td>17:10</td></tr>
+  <tr><td>3</td><td>PR, merge e o primeiro build automático</td><td>17:30</td></tr>
+  <tr><td>4</td><td>Os testers do Firebase também automáticos</td><td>17:40</td></tr>
+  <tr><td>5</td><td>O ícone do grupo, até ao telemóvel dos testers</td><td>17:50</td></tr>
+  </tbody></table></div>
+  <p>Um slide, um passo. Só passas ao seguinte quando vês o que diz a caixa verde.</p>
+  <aside class="notes">O que dizer: a meta de hoje é o passo 3 feito por todos: uma Release que ninguém fez à mão. O build demora uns 10 minutos: enquanto corre, vejam o slide dos erros e preparem o passo 4. Na ronda final cada grupo mostra no projetor a Release automática e o separador Actions com o visto verde.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 0: antes de começar</h2>
+  <ol class="steps">
+    <li>O computador do grupo com a chave da sexta: <code>C:\dev\upload-keystore.jks</code> e o <code>android\key.properties</code>.</li>
+    <li>Quem criou o repositório do grupo, com sessão iniciada no GitHub: só o dono vê o menu Settings.</li>
+    <li>O VS Code aberto na pasta do projeto e, no terminal, <code>git checkout main</code> e <code>git pull</code>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>No GitHub, a Release <code>v0.3.0</code> de sexta. Sem ela, façam primeiro os passos 1 a 4 da aula de sexta.</div>
+  <aside class="notes">O que dizer: o workflow de hoje não cria a chave nem a assinatura, só as usa. Por isso precisa do que fizeram na sexta: o <code>signingConfigs</code> no <code>build.gradle.kts</code> e a chave do grupo. Se a chave só existe no computador de alguém que faltou, o grupo não consegue fazer o passo 1 hoje: faz o passo 2 e deixa o 1 para quando tiver a chave. No macOS: a chave está em <code>~/upload-keystore.jks</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 1.1: a chave em texto</h2>
+<pre data-title="Terminal do VS Code (PowerShell), no computador com a chave"><code class="language-powershell">$bytes = [IO.File]::ReadAllBytes("C:\dev\upload-keystore.jks")
+[Convert]::ToBase64String($bytes) | Set-Clipboard</code></pre>
+  <ol class="steps">
+    <li>Corre as duas linhas. Não aparece nada: o texto foi para a área de transferência.</li>
+    <li>Não copies mais nada até ao passo 1.2.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Nenhum erro no terminal. Se colares num ficheiro vazio, aparece uma linha muito comprida que começa por <code>MII</code>.</div>
+  <aside class="notes">O que dizer: o Base64 escreve os bytes da chave com letras e números, para caber numa caixa de texto do GitHub. Não é cifra: este texto é a chave. Não o colem no chat do grupo nem num ficheiro do projeto. Se der "Could not find file", o caminho da chave é outro: está na linha <code>storeFile</code> do <code>android\key.properties</code>. No macOS: <code>base64 -i ~/upload-keystore.jks | pbcopy</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 1.2: o primeiro segredo</h2>
+  <ol class="steps">
+    <li>No repositório do grupo: <strong>Settings</strong>, à esquerda <strong>Secrets and variables</strong>, <strong>Actions</strong>.</li>
+    <li>Botão verde <strong>New repository secret</strong>.</li>
+    <li>Name: <code>KEYSTORE_BASE64</code></li>
+    <li>Secret: cola (Ctrl+V) e carrega em <strong>Add secret</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Em "Repository secrets", uma linha <code>KEYSTORE_BASE64</code>, "Updated now".</div>
+  <aside class="notes">O que dizer: o nome tem de ser exatamente este, em maiúsculas: o <code>build.yml</code> procura-o por esse nome. Se não aparece o separador Settings, a pessoa não é a dona do repositório: troquem de conta ou peçam ao dono para vos dar o papel de admin. Se colaram por engano outra coisa, carreguem no lápis do segredo e colem de novo; não dá para ver o que lá está, só substituir.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 1.3: a palavra-passe</h2>
+  <ol class="steps">
+    <li>No VS Code, abre <code>android\key.properties</code> e copia o que está depois de <code>storePassword=</code>.</li>
+    <li>No GitHub, outra vez <strong>New repository secret</strong>.</li>
+    <li>Name: <code>KEYSTORE_PASSWORD</code>, Secret: cola, <strong>Add secret</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Dois segredos na lista: <code>KEYSTORE_BASE64</code> e <code>KEYSTORE_PASSWORD</code>.</div>
+  <aside class="notes">O que dizer: copiem só a palavra-passe, sem <code>storePassword=</code> e sem espaços no fim. Na sexta a chave foi criada com uma palavra-passe só, por isso a da chave (<code>keyPassword</code>) é a mesma: o build usa esta para as duas. Se o grupo usou palavras-passe diferentes, chamem o professor.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 1.4: o <code>pdm.json</code>, só se o têm</h2>
+  <ol class="steps">
+    <li>Há um <code>pdm.json</code> na raiz do projeto, ao lado do <code>pubspec.yaml</code>? Se não, salta para o passo 2.1.</li>
+    <li>Abre-o no VS Code, Ctrl+A, Ctrl+C.</li>
+    <li>No GitHub: Name <code>PDM_JSON</code>, Secret: cola, <strong>Add secret</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Três segredos com <code>pdm.json</code>, ou dois sem ele.</div>
+  <aside class="notes">O que dizer: o <code>pdm.json</code> é o cartão do grupo na API (clientId e clientSecret), o mesmo do comando de build de sexta. Quem o tem e não cria este segredo fica com um APK que abre mas dá 401 no login. Quem tem o clientId escrito no código não precisa dele hoje.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 2.1: um branch e o ficheiro do build</h2>
+<pre data-title="Terminal do VS Code (PowerShell), na pasta do projeto"><code class="language-powershell">git checkout -b build-automatico
+mkdir -Force .github\workflows
+$url = "https://tiago-rocha.github.io/pdm-aulas/aulas/aula-28-build.yml"
+Invoke-WebRequest $url -OutFile .github\workflows\build.yml</code></pre>
+  <div class="callout tip"><strong>Deves ver</strong>No VS Code, à esquerda, <code>.github</code>, <code>workflows</code>, e lá dentro o <code>ci.yml</code> de sempre e o <code>build.yml</code> novo.</div>
+  <aside class="notes">O que dizer: o <code>build.yml</code> é igual para todos os grupos: não tem nada vosso, os segredos vêm do GitHub. Por isso descarrega-se em vez de se copiar do slide, onde uma indentação errada no YAML parte tudo. Se o <code>git checkout -b</code> disser que há alterações por gravar, façam <code>git status</code> e chamem o professor antes de continuar. No macOS: <code>mkdir -p .github/workflows</code> e <code>curl -o .github/workflows/build.yml</code> com o mesmo endereço.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde a magia acontece 1: quando corre</h2>
+<pre data-title=".github/workflows/build.yml (início)"><code class="language-yaml">on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5</code></pre>
+  <p>Corre a cada merge no <code>main</code>, cria Releases e usa o Flutter da turma.</p>
+  <aside class="notes">O que dizer: só para ler, não mudem nada. <code>on: push</code> ao <code>main</code>: corre a cada merge, não em cada PR; o <code>ci.yml</code> continua a tratar dos PRs. <code>contents: write</code> deixa o robô criar Releases. O excerto tem as linhas que interessam; o ficheiro completo tem também o Java 17 e a cache, para o segundo build ser mais rápido. A versão do Flutter fica fixa porque, com a mais recente, o projeto que o Flutter criou em setembro já não compila (pede um Android Gradle Plugin mais novo). Um build reprodutível é isto: o mesmo código dá o mesmo APK hoje e daqui a um mês.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde a magia acontece 2: a chave</h2>
+<pre data-title=".github/workflows/build.yml (o passo «A chave do grupo»)"><code class="language-yaml">        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d &gt; "$RUNNER_TEMP/upload.jks"
+          cat &gt; android/key.properties &lt;&lt;FIM
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=upload
+          storeFile=$RUNNER_TEMP/upload.jks
+          FIM</code></pre>
+  <aside class="notes">O que dizer: é aqui que a magia acontece. <code>secrets.KEYSTORE_BASE64</code> é o segredo do passo 1.2; o <code>base64 -d</code> volta a fazer o <code>.jks</code> numa pasta temporária. A seguir escreve o mesmo <code>key.properties</code> que vocês escreveram à mão na sexta, só que com o caminho da máquina do build. O Gradle não sabe que está num robô: lê o <code>key.properties</code> como no vosso computador.</aside>
+</section>
+
+<section class="slide">
+  <h2>Onde a magia acontece 3: o número</h2>
+<pre data-title=".github/workflows/build.yml (o passo «APK de release»)"><code class="language-yaml">      - name: APK de release
+        run: |
+          flutter build apk --release \
+            --build-number=$((100 + BUILD)) \
+            --dart-define-from-file=pdm.json</code></pre>
   <ul>
-    <li>Autenticação, favoritos e os headers <code>X-Platform</code> e <code>X-App-Version</code> não mudam. Os avisos mudam ao mesmo estilo: <code>level</code> passa a <code>severity</code> e as datas a ISO 8601.</li>
-    <li>A v1 responde até 09/12 com <code>Deprecation: true</code> e <code>Sunset</code>; depois, <code>410 Gone</code>. O changelog completo está na página <a href="../api.html">API</a>.</li>
+    <li>O mesmo comando da sexta, com o versionCode feito pelo robô: 100 mais o número do build.</li>
+    <li>O <code>pdm.json</code> vem do segredo <code>PDM_JSON</code>; quem não o tem recebe um <code>{}</code> vazio.</li>
   </ul>
-  <aside class="notes">Mostra no Swagger a mesma localidade nas duas versões, lado a lado. Pergunta: "que testes da aula 25 vão partir?" Nenhum, se o fromJson atual passar a chamar-se fromJsonV1. É a ideia: acrescentar, não substituir.</aside>
+  <aside class="notes">O que dizer: <code>BUILD</code> é o <code>github.run_number</code>, o número do build no Actions (1, 2, 3...), definido no início do ficheiro. Um passo antes deste escreve o <code>pdm.json</code> a partir do segredo, ou <code>{}</code> para quem tem o clientId no código, e assim o mesmo ficheiro serve todos os grupos. Este é o passo mais lento, uns 8 minutos no primeiro build.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. Um elemento de <code>forecast</code>, nas duas versões</h2>
-<pre data-title="GET /v1/forecast/3420300 (excerto)"><code class="language-json">{
-  "locationId": "3420300",
-  "forecastDate": "2026-11-23",
-  "tMin": 14.2,
-  "tMax": 19.8,
-  "weatherType": "rain",
-  "precipProb": 65
-}</code></pre>
-<pre data-title="GET /v2/forecast/3420300 (excerto)"><code class="language-json">{
-  "location_id": "3420300",
-  "date": "2026-11-23T00:00:00-01:00",
-  "temperature": { "min": 14.2, "max": 19.8 },
-  "weather": "rain",
-  "precipitation_probability": 65,
-  "issued_at": "2026-11-23T06:12:00-01:00"
-}</code></pre>
-  <p>Os dois excertos estão em <code>test/amostras/</code> no starter, copiados da API real. É contra eles que os testes correm.</p>
+  <h2>Onde a magia acontece 4: a Release</h2>
+<pre data-title=".github/workflows/build.yml (o passo «Release no GitHub»)"><code class="language-yaml">        run: |
+          VERSAO=$(grep -oP '^version: \K[^+]+' pubspec.yaml)
+          N=$((100 + BUILD))
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          cp "$APK" "app-$VERSAO-$N.apk"
+          git log -1 --format=%B &gt; notas.txt
+          gh release create "v$VERSAO-build.$N" "app-$VERSAO-$N.apk" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "$VERSAO ($N)" --notes-file notas.txt</code></pre>
+  <p>As notas da Release são a mensagem do último commit: os títulos dos PRs passam a ser o que os testers leem.</p>
+  <aside class="notes">O que dizer: é o mesmo que fizeram com cliques na sexta (tag, título, notas, APK), numa linha só com o <code>gh</code>, a ferramenta de linha de comandos do GitHub. <code>--target</code> prende a tag ao commit exato do build; <code>--prerelease</code> não tira à v0.3.0 o lugar de "Latest". Num merge de um PR, a mensagem do commit é "Merge pull request #N" e o título do PR: escrevam títulos de PR que um tester perceba. No fim do ficheiro há mais um passo, o do Firebase, que só corre se existir o segredo <code>FIREBASE_APP_ID</code>: é o passo 4.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. Duas factories no mesmo modelo</h2>
-<pre data-title="lib/models/previsao.dart"><code class="language-dart">class Previsao {
-  // campos e construtor como na aula 25
-
-  factory Previsao.fromJsonV1(Map&lt;String, dynamic&gt; json) => Previsao(
-        localidadeId: json['locationId'] as String,
-        dia: DateTime.parse(json['forecastDate'] as String),
-        tMin: (json['tMin'] as num).toDouble(),
-        tMax: (json['tMax'] as num).toDouble(),
-        tipo: TipoTempo.fromApi(json['weatherType'] as String),
-        probPrecipitacao: (json['precipProb'] as num?)?.toDouble(),
-      );
-
-  factory Previsao.fromJsonV2(Map&lt;String, dynamic&gt; json) {
-    final temp = json['temperature'] as Map&lt;String, dynamic&gt;?;
-    if (temp == null) throw const FormatException('v2: falta o objeto "temperature"');
-    return Previsao(
-      localidadeId: json['location_id'] as String,
-      dia: DateTime.parse(json['date'] as String).toLocal(),
-      tMin: (temp['min'] as num).toDouble(),
-      tMax: (temp['max'] as num).toDouble(),
-      tipo: TipoTempo.fromApi(json['weather'] as String),
-      probPrecipitacao: (json['precipitation_probability'] as num?)?.toDouble(),
-    );
-  }
-}</code></pre>
+  <h2>Passo 3.1: o PR e o merge</h2>
+  <ol class="steps">
+    <li><code>git status</code>: só <code>.github/workflows/build.yml</code>, e mais nada.</li>
+    <li><code>git add .github</code>, um commit, por exemplo <code>Build automático do APK</code>, e <code>git push -u origin build-automatico</code>.</li>
+    <li>O PR no GitHub. Um colega do grupo revê e aprova.</li>
+    <li>Merge no <code>main</code>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>O PR com o merge feito e um só ficheiro em "Files changed".</div>
+  <aside class="notes">O que dizer: o build não corre no PR, só depois do merge, porque só o <code>main</code> chega aos testers. Se aparecer o <code>key.properties</code> ou o <code>pdm.json</code> no <code>git status</code>, parem: algum <code>.gitignore</code> foi mexido. O CI (o <code>ci.yml</code>) corre no PR como sempre; nos grupos em que está vermelho por avisos do analyze, isso não trava o build, são dois workflows separados.</aside>
 </section>
 
 <section class="slide">
-  <h2>3. Os testes da v2</h2>
-<pre data-title="test/models/previsao_v2_test.dart"><code class="language-dart">import 'dart:convert';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:tempo_acores/models/previsao.dart';
-
-const amostraV2 = '''
-{"location_id": "3420300", "date": "2026-11-23T00:00:00-01:00",
- "temperature": {"min": 14.2, "max": 19.8}, "weather": "rain",
- "precipitation_probability": 65}
-''';
-
-void main() {
-  final p = Previsao.fromJsonV2(jsonDecode(amostraV2) as Map&lt;String, dynamic&gt;);
-
-  test('lê as temperaturas do objeto temperature', () {
-    expect(p.tMin, 14.2);
-    expect(p.tMax, 19.8);
-    expect(p.amplitude, closeTo(5.6, 0.001));
-  });
-
-  test('converte a data ISO com fuso para hora local', () {
-    expect(p.dia.isUtc, isFalse);
-    expect(p.dia.toUtc(), DateTime.utc(2026, 11, 23, 1));   // 00:00 nos Açores é 01:00 UTC
-  });
-
-  test('lança FormatException se faltar temperature', () {
-    expect(() => Previsao.fromJsonV2({'location_id': '1', 'date': '2026-11-23T00:00:00Z', 'weather': 'sun'}),
-        throwsFormatException);
-  });
-}</code></pre>
-  <div class="callout task"><strong>Exercício 3</strong> TODOs 5 e 6: renomeia o <code>fromJson</code> atual para <code>fromJsonV1</code> (os testes da aula 25 mudam só o nome), escreve o <code>fromJsonV2</code>, e faz o mesmo para <code>Aviso</code>. Testes verdes nas duas versões.</div>
+  <h2>Passo 3.2: o robô a trabalhar</h2>
+  <ol class="steps">
+    <li>No repositório: separador <strong>Actions</strong>.</li>
+    <li>Em cima, o "Build" com o título do vosso PR e um círculo amarelo. Clica nele, depois em <strong>apk</strong>.</li>
+    <li>Abre os passos: "A chave do grupo", "APK de release", "Release no GitHub".</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Os passos a ficarem verdes um a um. O "APK de release" é o mais demorado: uns 8 minutos.</div>
+  <aside class="notes">O que dizer: esta é a máquina que nasceu para o vosso build. Procurem o passo "A chave do grupo" e vejam que a palavra-passe aparece como <code>***</code>: o GitHub esconde os segredos nos logs. Enquanto espera, cada grupo lê o slide seguinte, com os erros comuns. Os builds seguintes são mais rápidos, porque o Gradle e o Flutter ficam em cache.</aside>
 </section>
 
 <section class="slide">
-  <h2>4. v1 e v2 lado a lado, com uma feature flag</h2>
-<pre data-title="lib/data/api_config.dart e lib/data/previsao_repository_http.dart"><code class="language-dart">enum ApiVersao { v1, v2 }
-
-class ApiConfig {
-  /// flutter run --dart-define=API_V2=true liga a v2; por defeito fica na v1.
-  static const versao = bool.fromEnvironment('API_V2') ? ApiVersao.v2 : ApiVersao.v1;
-}
-
-class PrevisaoRepositoryHttp implements PrevisaoRepository {
-  PrevisaoRepositoryHttp(this._client, {this.versao = ApiConfig.versao});
-  final ApiClient _client;
-  final ApiVersao versao;
-
-  @override
-  Future&lt;List&lt;Previsao&gt;&gt; previsao(String localidadeId) async {
-    final (caminho, parse) = switch (versao) {
-      ApiVersao.v1 => ('/v1/forecast/$localidadeId', Previsao.fromJsonV1),
-      ApiVersao.v2 => ('/v2/forecast/$localidadeId', Previsao.fromJsonV2),
-    };
-    final json = await _client.getJson(caminho);
-    final itens = json['forecast'] as List&lt;dynamic&gt;;
-    return itens.map((e) => parse(e as Map&lt;String, dynamic&gt;)).toList();
-  }
-}</code></pre>
+  <h2>Quando o build fica vermelho</h2>
+  <div class="table-wrap"><table class="compacta">
+  <thead><tr><th>O erro diz</th><th>Quer dizer</th><th>Resolve-se</th></tr></thead>
+  <tbody>
+  <tr><td><code>Keystore was tampered with</code></td><td>Palavra-passe errada</td><td>Passo 1.3 outra vez</td></tr>
+  <tr><td><code>base64: invalid input</code></td><td>A chave colada a meio</td><td>Passo 1.1 e 1.2 outra vez</td></tr>
+  <tr><td><code>Alias name upload does not exist</code></td><td>A chave tem outro nome</td><td>Chamar o professor</td></tr>
+  <tr><td><code>tag_name already exists</code></td><td>Re-run de um build</td><td>Um commit novo, não Re-run</td></tr>
+  <tr><td>A app dá 401 no login</td><td>Falta o <code>PDM_JSON</code></td><td>Passo 1.4 e um commit</td></tr>
+  </tbody></table></div>
+  <p>Depois de corrigir um segredo, o build não corre sozinho: precisa de um commit novo no <code>main</code>.</p>
+  <aside class="notes">O que dizer: o erro está sempre no passo vermelho: cliquem nele e leiam as últimas linhas. "Alias name upload does not exist": na sexta o comando do keytool tinha <code>-alias upload</code>; se alguém mudou, a linha <code>keyAlias=upload</code> do <code>build.yml</code> tem de mudar para o nome que está no <code>key.properties</code> do grupo. Para um commit novo sem mudar código: editem o README no GitHub e façam commit direto no <code>main</code>, ou um PR pequeno. Re-run dá erro na Release porque o número do build é o mesmo, e a tag já existe.</aside>
 </section>
 
 <section class="slide">
-  <h2>4. A migração: o que interessa</h2>
-  <ul>
-    <li>A flag vive num sítio só. O ecrã não sabe que existe v1 ou v2; o notifier também não. Só o repository muda de caminho e de parser.</li>
-    <li><code>--dart-define</code> é uma flag de build: o CI corre os testes contra as duas. Uma flag de Remote Config (aula 26) troca sem novo build; a lógica é a mesma, muda a origem do valor.</li>
-    <li>Ordem: modelos com as duas factories e testes verdes → repository com a flag → build de teste em v2 aos testers → flag por defeito a v2 → apagar a v1 quando o backend desligar e subir a versão mínima (forced update, aula 30).</li>
-    <li>Nunca apagues a v1 no PR em que ligas a v2. Se a v2 falhar em produção, o kill switch é voltar a flag atrás.</li>
-    <li>O <code>switch</code> sobre o enum é exaustivo: quando aparecer uma <code>ApiVersao.v3</code>, o compilador obriga-te a tratá-la.</li>
-  </ul>
-  <p><strong>Para os testes:</strong> migrar uma API é acrescentar a versão nova ao lado da antiga, trocar por flag e só depois remover; nunca substituir num só passo.</p>
-  <div class="callout task"><strong>Exercício 4</strong> TODOs 7 e 8: a flag em <code>ApiConfig</code>, o repository a escolher caminho e parser, e o mesmo no <code>AvisosRepository</code>. Corre a app com e sem <code>--dart-define=API_V2=true</code> e mostra "API v1" ou "API v2" no ecrã de definições. Teste: com <code>versao: ApiVersao.v2</code>, o repository pede <code>/v2/forecast/3420300</code> (mock do <code>ApiClient</code> com mocktail e <code>verify</code>).</div>
-  <aside class="notes">Nos últimos 10 minutos: cada grupo diz quantos ficheiros do projeto tocam em JSON da API. Se a resposta for "só os modelos e os repositories", a arquitetura da aula 13 pagou-se hoje. Se for "os ecrãs também", é o primeiro TODO da sprint.</aside>
+  <h2>Passo 3.3: a Release que ninguém fez</h2>
+  <ol class="steps">
+    <li>Na página do repositório, coluna da direita: <strong>Releases</strong>.</li>
+    <li>Em cima, a Release nova, com a etiqueta "Pre-release".</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>A Release <code>0.3.0 (101)</code>, com o título do vosso PR nas notas e o <code>app-0.3.0-101.apk</code> em Assets.</div>
+  <aside class="notes">O que dizer: o número pode ser outro (102, 103) se o workflow já correu mais vezes. A partir de agora cada merge dá uma Release destas. O APK tem o mesmo tamanho do de sexta: é o mesmo build, feito por outra máquina, com a mesma chave.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 3.4: a prova, no telemóvel</h2>
+  <ol class="steps">
+    <li>Descarrega o <code>app-0.3.0-101.apk</code> da Release.</li>
+    <li>Emulador: arrasta o APK para a janela. Telemóvel: passa-o pelo cabo e abre-o no gestor de ficheiros.</li>
+    <li>Abre a app.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>A app atualiza por cima da de sexta, sem desinstalar, e continua com a sessão iniciada.</div>
+  <aside class="notes">O que dizer: esta é a prova de que a assinatura do robô é a vossa. Se o Android disser "App não instalada" ou "conflito com um pacote existente", o APK foi assinado com outra chave: o segredo <code>KEYSTORE_BASE64</code> não é a chave do grupo. Os repositórios dos grupos são privados, por isso no telemóvel só se descarrega da Release com a conta GitHub de um membro do grupo; para os testers, o caminho é o Firebase, no passo 4.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 4.1: o App ID do Firebase</h2>
+  <div class="passo-lado larga">
+  <div>
+  <ol class="steps">
+    <li>Firebase, o projeto da sexta: menu da esquerda, <strong>Settings</strong>, <strong>General</strong>.</li>
+    <li>Em "Your apps", copia o <strong>App ID</strong> (começa por <code>1:</code>).</li>
+    <li>No GitHub, segredo novo <code>FIREBASE_APP_ID</code>: cola.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>O segredo <code>FIREBASE_APP_ID</code> na lista do GitHub.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-fb-appid.jpg" target="_blank" rel="noopener"><img class="captura-lab" src="../assets/img/a28-fb-appid.jpg" alt="Consola do Firebase: 1, Settings no menu da esquerda; 2, o App ID da app Android em Your apps"></a>
+  </div>
+  <aside class="notes">O que dizer: o último passo do <code>build.yml</code> só corre quando este segredo existe; até lá é saltado, e o build fica verde na mesma. O App ID não é segredo nenhum (vai dentro do APK), mas fica junto dos outros por arrumação. Já não há roda dentada ao lado de "Project Overview": é o item Settings, por baixo, que abre um submenu.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 4.2: o mesmo projeto no Google Cloud</h2>
+  <div class="passo-topo">
+  <ol class="steps">
+    <li><code>console.cloud.google.com</code>, com a mesma conta Google do Firebase. Em cima, o botão do projeto.</li>
+    <li>Escreve o nome do projeto do Firebase e carrega nele.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>O nome do projeto do Firebase no botão de cima.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-gc-projeto.jpg" target="_blank" rel="noopener"><img class="captura-lab passo-larga" src="../assets/img/a28-gc-projeto.jpg" alt="Google Cloud: 1, o botão do projeto em cima; 2, o projeto do Firebase na janela de pesquisa"></a>
+  <aside class="notes">O que dizer: um projeto do Firebase é um projeto do Google Cloud com o mesmo nome, por isso já lá está. Se a consola pedir para aceitar os termos, aceitem. Se oferecer o "Free trial", um "Upgrade" ou pedir cartão: não. Nada disto precisa de faturação.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 4.3: uma conta para o robô</h2>
+  <div class="passo-lado">
+  <div>
+  <ol class="steps">
+    <li>Menu <strong>☰</strong>, <strong>IAM &amp; Admin</strong>, <strong>Service Accounts</strong>.</li>
+    <li><strong>Create service account</strong>. Nome: <code>github-build</code>.</li>
+    <li><strong>Create and continue</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>"Permissions (optional)" aberto por baixo.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-gc-conta.jpg" target="_blank" rel="noopener"><img class="captura-lab" src="../assets/img/a28-gc-conta.jpg" alt="Google Cloud, Create service account: 1, Service Accounts no menu; 2, o nome github-build; 3, Create and continue"></a>
+  </div>
+  <aside class="notes">O que dizer: o robô não pode entrar no Firebase com a vossa conta Google, por isso ganha uma conta só dele. Na lista de Service Accounts já há uma <code>firebase-adminsdk</code>: é do Firebase, tem poderes a mais, não a usem. O "Service account ID" preenche-se sozinho.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 4.4: só o que o robô precisa</h2>
+  <div class="passo-lado">
+  <div>
+  <ol class="steps">
+    <li>Role: escreve <code>App Distribution</code> e escolhe <strong>Firebase App Distribution Admin</strong>.</li>
+    <li><strong>Continue</strong>.</li>
+    <li><strong>Done</strong>.</li>
+  </ol>
+  <div class="callout warn"><strong>Atenção</strong>Aparecem três parecidas. É a <strong>Admin</strong>, nem Viewer nem "Admin SDK Service Agent".</div>
+  <div class="callout tip"><strong>Deves ver</strong>A <code>github-build</code> na lista.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-gc-role.jpg" target="_blank" rel="noopener"><img class="captura-lab" src="../assets/img/a28-gc-role.jpg" alt="Google Cloud, Permissions: 1, o role Firebase App Distribution Admin; 2, Continue; 3, Done"></a>
+  </div>
+  <aside class="notes">O que dizer: é o princípio do menor privilégio. Se o segredo vazar, quem o tiver só consegue mandar APKs aos vossos testers: não apaga a base de dados nem gasta dinheiro. Com o Viewer o robô só vê, e o passo do Firebase fica vermelho com "permission denied". O terceiro passo do formulário fica vazio. Pode aparecer "Policy updated. It may take a few minutes": é normal.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 4.5: a chave do robô</h2>
+  <div class="passo-lado">
+  <div>
+  <ol class="steps">
+    <li>Na lista, carrega em <code>github-build</code>. Separador <strong>Keys</strong>.</li>
+    <li><strong>Add key</strong>, <strong>Create new key</strong>.</li>
+    <li><strong>JSON</strong> (já vem escolhido), <strong>Create</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Um <code>.json</code> nas Transferências.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-gc-chave.jpg" target="_blank" rel="noopener"><img class="captura-lab" src="../assets/img/a28-gc-chave.jpg" alt="Google Cloud, conta github-build: 1, separador Keys; 2, Add key; 3, JSON e Create"></a>
+  </div>
+  <aside class="notes">O que dizer: o ficheiro chama-se algo como <code>nome-do-projeto-1a2b3c.json</code> e começa por <code>"type": "service_account"</code>. A Google avisa, a amarelo, que estas chaves são perigosas: é verdade, e é por isso que vai para um segredo e o ficheiro se apaga a seguir. Não há segunda cópia: se o perderem, apagam esta chave e criam outra.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 4.6: a chave num segredo</h2>
+  <div class="passo-lado">
+  <div>
+  <ol class="steps">
+    <li>No GitHub, <strong>Settings</strong>.</li>
+    <li><strong>Secrets and variables</strong>, <strong>Actions</strong>, <strong>New repository secret</strong>.</li>
+    <li>Name <code>FIREBASE_SERVICE_ACCOUNT</code>. Abre o <code>.json</code> no VS Code, Ctrl+A, Ctrl+C, e cola tudo em Secret. <strong>Add secret</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong><code>FIREBASE_APP_ID</code> e <code>FIREBASE_SERVICE_ACCOUNT</code> na lista. Depois apaga o <code>.json</code>.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-gh-segredo.jpg" target="_blank" rel="noopener"><img class="captura-lab" src="../assets/img/a28-gh-segredo.jpg" alt="GitHub, New secret: 1, Settings; 2, Secrets and variables, Actions; 3, Name, Secret e Add secret"></a>
+  </div>
+  <aside class="notes">O que dizer: é o ficheiro inteiro, da primeira chaveta à última. O robô escreve-o num ficheiro temporário a cada build e o Firebase lê-o de lá. Apaguem o <code>.json</code> depois de colar: é uma chave. Nunca vai para o repositório: a Google desativa sozinha as chaves que aparecem em repositórios públicos.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 4.7: o grupo de testers</h2>
+  <div class="passo-topo">
+  <ol class="steps">
+    <li>No Firebase, <strong>App Distribution</strong>, no menu da esquerda.</li>
+    <li>Separador <strong>Testers &amp; Groups</strong>.</li>
+    <li><strong>Add group</strong>, nome <code>testers</code>, em minúsculas, <strong>Save</strong>.</li>
+    <li><strong>Add tester</strong>: os três testers de sexta, um a um.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>O grupo <code>testers</code> com três pessoas. O próximo merge no <code>main</code>, o do ícone, chega-lhes sozinho.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-fb-grupo.jpg" target="_blank" rel="noopener"><img class="captura-lab passo-larga" src="../assets/img/a28-fb-grupo.jpg" alt="Firebase App Distribution: 1, App Distribution no menu; 2, Testers &amp; Groups; 3, Add group e o grupo testers; 4, Add tester"></a>
+  <aside class="notes">O que dizer: o nome do grupo tem de ser <code>testers</code>, em minúsculas: é o que o <code>build.yml</code> usa (o Firebase mostra o mesmo nome, em cinzento, ao lado do título do grupo). Os testers já aceitaram o convite na sexta, por isso a versão nova aparece-lhes no App Tester sem fazerem nada. Testado a 23/11 num projeto Firebase novo, com este <code>build.yml</code>: o robô enviou o APK e o grupo recebeu-o. Se der erro de permissões, mostrem o passo vermelho ao professor; em geral é o role errado do 4.4. Se o Firebase encravar, passem ao passo 5: o ícone é para todos.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5.1: o ícone do grupo</h2>
+  <ol class="steps">
+    <li>Um PNG quadrado, 1024 por 1024, sem transparência.</li>
+    <li>Tem de dizer quem são: as iniciais, a cor do grupo, um desenho. Ninguém pode confundir a vossa app com a de outro grupo.</li>
+    <li>No Figma: um frame de 1024 por 1024, <strong>Export</strong>, <strong>PNG</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Um ficheiro <code>.png</code> nas Transferências, que abre como um quadrado cheio, sem xadrez de transparência.</div>
+  <aside class="notes">O que dizer: o ícone é o trabalho final de hoje, e é por ele que o professor sabe de quem é cada app nos telemóveis dos testers. É também a primeira coisa que um utilizador vê de uma app, antes de a abrir. Desenhem com margem: o Android corta os cantos em círculo ou em quadrado arredondado, e o que estiver encostado à borda desaparece. Transparência: a Apple recusa ícones com fundo transparente, e o pacote do passo seguinte tira-a no iOS, e o fundo transparente fica branco.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5.2: um branch e a pasta do ícone</h2>
+<pre data-title="Terminal do VS Code (PowerShell), na pasta do projeto"><code class="language-powershell">git checkout main
+git pull
+git checkout -b icone
+mkdir -Force assets\icon
+flutter pub add dev:flutter_launcher_icons</code></pre>
+  <ol class="steps">
+    <li>Arrasta o PNG para a pasta <code>assets/icon</code>, no VS Code, e muda-lhe o nome para <code>icon.png</code>.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>No VS Code, à esquerda, <code>assets</code>, <code>icon</code>, <code>icon.png</code>. Um clique e aparece o quadrado.</div>
+  <aside class="notes">O que dizer: o <code>git pull</code> traz o merge do <code>build.yml</code>, que foi feito no GitHub. Cuidado no Windows: com as extensões escondidas, mudar o nome para <code>icon.png</code> no Explorador dá <code>icon.png.png</code>. No VS Code vê-se o nome verdadeiro. A última linha junta ao <code>pubspec.yaml</code> o pacote que gera os ícones. No macOS: <code>mkdir -p assets/icon</code>.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5.3: o pacote que faz os ícones</h2>
+  <p>No fim do <code>pubspec.yaml</code>, encostado à esquerda:</p>
+<pre data-title="pubspec.yaml (no fim)"><code class="language-yaml">flutter_launcher_icons:
+  image_path: assets/icon/icon.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true</code></pre>
+  <div class="callout tip"><strong>Deves ver</strong><code>flutter_launcher_icons</code> duas vezes: em <code>dev_dependencies</code> e no bloco do fim.</div>
+  <aside class="notes">O que dizer: é um pacote <code>dev</code> porque só corre no vosso computador, não vai dentro da app. Um PNG dá todos os tamanhos: cinco para o Android, mais de vinte para o iOS, e o favicon da versão web, que é o ícone do separador no Chrome. O YAML conta espaços: dois por nível, nunca tabs. Se o bloco ficar dentro do <code>flutter:</code> (indentado), o pacote não o encontra.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5.4: gerar os ícones</h2>
+<pre data-title="Terminal do VS Code (PowerShell), na pasta do projeto"><code class="language-powershell">dart run flutter_launcher_icons
+git status</code></pre>
+  <div class="callout tip"><strong>Deves ver</strong><code>Successfully generated launcher icons</code> e, no <code>git status</code>, os <code>ic_launcher.png</code> do Android, os <code>Icon-App</code> do iOS e o <code>web/favicon.png</code>.</div>
+  <aside class="notes">O que dizer: o pacote escreve por cima dos ícones do Flutter que vinham no projeto desde o primeiro dia. Para ver já, sem esperar pelo robô: <code>flutter run -d chrome</code> e o favicon aparece no separador (Ctrl+F5 se o Chrome mostrar o antigo). Erros comuns: <code>PathNotFoundException</code> com <code>icon.png</code> é o nome ou a pasta errados (o <code>icon.png.png</code> do slide anterior); <code>Could not find package</code> é o <code>flutter pub add</code> do passo 5.2 que ficou por fazer.</aside>
+</section>
+
+<section class="slide">
+  <h2>Passo 5.5: o PR, o merge e a Release</h2>
+  <ol class="steps">
+    <li><code>git add .</code>, um commit <code>Ícone do grupo</code> e <code>git push -u origin icone</code>.</li>
+    <li>O PR no GitHub. Um colega do grupo aprova. Merge no <code>main</code>.</li>
+    <li>Separador <strong>Actions</strong>: o Build a correr. Quando ficar verde, <strong>Releases</strong>.</li>
+    <li>Instala o APK novo no telemóvel, por cima do outro.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Uma Release nova, com o número acima da anterior, e no telemóvel a app com o ícone do grupo. Quem fez o passo 4: os testers recebem esta versão sozinhos.</div>
+  <aside class="notes">O que dizer: ninguém fez esta Release à mão: o merge chegou ao <code>main</code> e o robô fez o resto. A versão continua <code>0.3.0</code>; o que sobe é o número do build, e é ele que deixa o Android instalar por cima. Se o telemóvel continuar a mostrar o ícone antigo, é a cache do ecrã inicial: reiniciar o telemóvel resolve. No PR, o "Files changed" mostra as imagens antes e depois, lado a lado.</aside>
+</section>
+
+<section class="slide cap">
+  <h2>Passo 5.6: os testers recebem sozinhos</h2>
+  <div class="passo-lado larga">
+  <div>
+  <ol class="steps">
+    <li>Se fizeste o passo 4: Firebase, <strong>App Distribution</strong>, <strong>Releases</strong>.</li>
+    <li>A versão nova: o número da Release do GitHub e o título do PR.</li>
+    <li>Em baixo, o grupo <code>testers</code>: Invited 3.</li>
+  </ol>
+  <div class="callout tip"><strong>Deves ver</strong>Os testers com um email novo e o ícone do grupo no telemóvel.</div>
+  </div>
+  <a class="captura-link" href="../assets/img/a28-fb-release.jpg" target="_blank" rel="noopener"><img class="captura-lab" src="../assets/img/a28-fb-release.jpg" alt="Firebase App Distribution, Releases: 1, a versão 0.3.0 (107) com as notas; 2, o grupo testers convidado"></a>
+  </div>
+  <aside class="notes">O que dizer: ninguém arrastou este APK para o Firebase. O número entre parênteses é o número do build, o mesmo da Release do GitHub. As notas são a mensagem do commit de merge: por isso os títulos dos PR têm de fazer sentido para quem testa. Accepted e Downloaded sobem quando os testers instalam. Se a release não aparecer: no GitHub, Actions, o passo "Firebase App Distribution"; se foi saltado, falta o segredo <code>FIREBASE_APP_ID</code>.</aside>
 </section>
 
 <section class="slide" data-part="Fim">
   <h2>Até amanhã</h2>
   <div class="cols">
     <div>
-      <h3>Para fazer</h3>
+      <h3>O que fica feito hoje</h3>
       <ul class="checklist">
-        <li>Projeto migrado para a API v2: modelos com <code>fromJsonV1</code> e <code>fromJsonV2</code>, repositories com a flag, testes verdes nas duas versões e CI verde.</li>
-        <li>Build de teste com <code>API_V2=true</code> distribuído aos testers do grupo antes de ligar a v2 por defeito.</li>
-        <li>Quem não distribuiu na sexta a três testers fora do grupo, fá-lo hoje: é requisito da sprint 3.</li>
+        <li>Os segredos da chave no GitHub, e a chave fora do repositório.</li>
+        <li>O <code>build.yml</code> no <code>main</code>.</li>
+        <li>Uma Release automática com o APK assinado.</li>
+        <li>Os testers recebem cada build sozinhos.</li>
+        <li>O ícone do grupo numa Release nova, feita pelo robô.</li>
       </ul>
     </div>
     <div>
       <h3>Para ler</h3>
       <ul>
-        <li><a href="https://docs.flutter.dev/platform-integration/platform-channels" target="_blank" rel="noopener">Writing custom platform-specific code</a> (docs.flutter.dev): o exemplo oficial de <code>MethodChannel</code> é precisamente a bateria, em Kotlin, Java, Swift e Objective-C.</li>
-        <li><a href="https://docs.flutter.dev/packages-and-plugins/developing-packages" target="_blank" rel="noopener">Developing packages and plugins</a> (docs.flutter.dev): como se estrutura um plugin federado e como se publica no pub.dev.</li>
-        <li><a href="https://dart.dev/interop/c-interop" target="_blank" rel="noopener">C interop using dart:ffi</a> (dart.dev): chamar bibliotecas C sem canal nem serialização, com <code>ffigen</code> e gestão manual de memória.</li>
-        <li><a href="https://pub.dev/help/scoring" target="_blank" rel="noopener">Package scores</a> (pub.dev): o que são os pub points e como se calcula a pontuação que a tabela de avaliação usa.</li>
+        <li><a href="https://docs.flutter.dev/platform-integration/platform-channels" target="_blank" rel="noopener">Writing custom platform-specific code</a></li>
+        <li><a href="https://pub.dev/help/scoring" target="_blank" rel="noopener">Package scores no pub.dev</a></li>
+        <li><a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions" target="_blank" rel="noopener">Secrets no GitHub Actions</a></li>
+        <li><a href="https://docs.flutter.dev/deployment/cd" target="_blank" rel="noopener">Continuous delivery with Flutter</a></li>
+        <li><a href="https://firebase.google.com/docs/app-distribution/android/distribute-cli" target="_blank" rel="noopener">App Distribution pela linha de comandos</a></li>
       </ul>
     </div>
   </div>
+  <aside class="notes">Ronda final, das 17:50 às 18:00: cada grupo abre o separador Actions no projetor, com o visto verde, e a Release automática. Cada grupo mostra também o ícone novo no telemóvel. Anota por grupo: segredos feitos, build verde, Release, Firebase automático, ícone. O que faltou fica para amanhã de manhã, antes da sprint. A partir de hoje, cada merge da sprint 3 chega sozinho a uma Release: lembra-os de escrever títulos de PR que um tester perceba.</aside>
   <nav class="pager" id="pager"></nav>
 </section>
 
@@ -502,5 +784,94 @@ class PrevisaoRepositoryHttp implements PrevisaoRepository {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dart.min.js"></script>
 <script src="../assets/app.js"></script>
+<script>
+(function () {
+  var frames = Array.prototype.slice.call(document.querySelectorAll(".figura-iso iframe[data-fig]"));
+  if (!frames.length) return;
+  var root = document.documentElement, deck = document.getElementById("deck");
+  var NAT = 732; // largura natural de uma figura: 700 de desenho e 16 de margem de cada lado (data-nat muda-a)
+  var alturas = new Map();
+  frames.forEach(function (f) { f.closest(".slide").classList.add("com-fig"); });
+  function pick() {
+    var t = root.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    frames.forEach(function (f) {
+      var src = f.getAttribute("data-fig") + (t === "light" ? "-light" : "") + ".html";
+      if (f.getAttribute("src") !== src) { f.setAttribute("src", src); alturas.delete(f); }
+    });
+  }
+  pick();
+  new MutationObserver(pick).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // Sem escolha guardada, em modo projeção a figura abre logo em ecrã inteiro.
+  var guardado = null;
+  try { guardado = localStorage.getItem("pdm-fig-palco"); } catch (e) {}
+  var palco = guardado === null ? root.classList.contains("proj") : guardado === "1";
+  function largo() { return !deck.classList.contains("doc") && innerWidth >= 1000 && innerWidth > innerHeight * 1.2; }
+  // Em grande, a legenda comprida sai da figura (fica nas notas); só dá para mexer quando a página e a figura têm a mesma origem.
+  function legenda(f, esconder) {
+    try {
+      var d = f.contentDocument; if (!d || !d.head) return;
+      var st = d.getElementById("fig-grande");
+      if (!st) { st = d.createElement("style"); st.id = "fig-grande"; st.textContent = "html.grande .iso-caption{display:none}html.grande .iso-figure{margin:6px 0 4px}html.grande .iso-plate-corner[data-corner=hint]{display:none}html.grande .iso-plate-corner{font-size:12px}html.grande .iso-plate-corner[data-corner=readout]{font-size:14px;color:var(--anatomy-strong)}"; d.head.appendChild(st); }
+      d.documentElement.classList.toggle("grande", esconder);
+    } catch (e) {}
+  }
+  function layout() {
+    var on = largo(), ativa = deck.querySelector(".slide.active");
+    var comFig = !!(ativa && ativa.classList.contains("com-fig"));
+    root.classList.toggle("fig-grande", on);
+    root.classList.toggle("fig-ativa", on && comFig);
+    root.classList.toggle("fig-palco", on && comFig && palco);
+    if (btn) btn.classList.toggle("on", palco);
+    frames.forEach(function (f) {
+      var box = f.parentNode, h = alturas.get(f);
+      var aqui = on && f.closest(".slide") === ativa;
+      legenda(f, on);
+      if (!aqui || !h) {
+        f.classList.remove("escalada"); f.style.transform = ""; f.style.width = ""; box.style.width = ""; box.style.height = "";
+        if (h) { f.style.aspectRatio = "auto"; f.style.height = h + "px"; }
+        return;
+      }
+      var bar = document.querySelector(".deckbar");
+      var topo = palco ? 0 : Math.max(0, bar ? bar.getBoundingClientRect().bottom : 118);
+      var altoUtil = innerHeight - topo - (palco ? innerHeight * 0.04 : 24);
+      var col = +f.getAttribute("data-texto") || 340; // largura mínima da coluna de texto
+      var largUtil = ativa.clientWidth - Math.max(col, ativa.clientWidth * 0.26);
+      var nat = +f.getAttribute("data-nat") || NAT;
+      var s = Math.max(0.4, Math.min(largUtil / nat, altoUtil / h));
+      f.classList.add("escalada");
+      f.style.aspectRatio = "auto"; f.style.width = nat + "px"; f.style.height = h + "px";
+      f.style.transform = "scale(" + s.toFixed(4) + ")";
+      box.style.width = Math.floor(nat * s) + "px"; box.style.height = Math.floor(h * s) + "px";
+    });
+  }
+  window.addEventListener("message", function (e) {
+    if (!e.data || !e.data.altura) return;
+    frames.forEach(function (f) {
+      var nome = f.getAttribute("data-fig").split("/").pop().replace(/-en$/, "");
+      if (e.source === f.contentWindow || e.data.figura === nome) alturas.set(f, e.data.altura);
+    });
+    layout();
+  });
+  frames.forEach(function (f) { f.addEventListener("load", layout); });
+  var mo = new MutationObserver(layout);
+  mo.observe(deck, { attributes: true, attributeFilter: ["class"] });
+  Array.prototype.forEach.call(deck.querySelectorAll(".slide"), function (sl) { mo.observe(sl, { attributes: true, attributeFilter: ["class"] }); });
+  window.addEventListener("resize", layout);
+  function alternar() { palco = !palco; try { localStorage.setItem("pdm-fig-palco", palco ? "1" : "0"); } catch (e) {} layout(); }
+  var btn = null, ctrl = document.querySelector(".deckbar .ctrl");
+  if (ctrl) {
+    btn = document.createElement("button"); btn.type = "button"; btn.textContent = "Z"; btn.title = "Figura em ecrã inteiro (Z)";
+    btn.addEventListener("click", alternar);
+    var n = ctrl.querySelector('[data-act="notes"]'); ctrl.insertBefore(btn, n ? n.nextSibling : null);
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "z" || e.key === "Z") alternar();
+    else if (e.key === "Escape" && palco) alternar();
+  });
+  layout();
+})();
+</script>
 </body>
 </html>
