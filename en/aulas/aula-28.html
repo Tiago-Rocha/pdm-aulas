@@ -367,8 +367,8 @@ Future&lt;int?&gt; batteryLevel() async {
   <div class="table-wrap"><table class="compacta">
   <thead><tr><th>Step</th><th>What</th><th>By</th></tr></thead>
   <tbody>
-  <tr><td>1</td><td>The secrets on GitHub: the key, the password and <code>pdm.json</code></td><td>17:05</td></tr>
-  <tr><td>2</td><td>The <code>build.yml</code> file in the project</td><td>17:10</td></tr>
+  <tr><td>1</td><td>The secrets on GitHub and <code>pdm.json</code> out of the code</td><td>17:10</td></tr>
+  <tr><td>2</td><td>The <code>build.yml</code> file in the project</td><td>17:15</td></tr>
   <tr><td>3</td><td>PR, merge and the first automatic build</td><td>17:30</td></tr>
   <tr><td>4</td><td>Firebase testers automatic too</td><td>17:40</td></tr>
   <tr><td>5</td><td>The group icon, all the way to the testers' phones</td><td>17:50</td></tr>
@@ -424,14 +424,55 @@ Future&lt;int?&gt; batteryLevel() async {
 </section>
 
 <section class="slide">
-  <h2>Step 1.4: <code>pdm.json</code>, only if you have it</h2>
+  <h2>Step 1.4: the clientId leaves the code</h2>
+  <pre data-title="lib/main.dart"><code class="language-dart">final apiClient = ApiClient(
+  clientId: const String.fromEnvironment('CLIENT_ID'),
+  clientSecret: const String.fromEnvironment('CLIENT_SECRET'),
+);</code></pre>
   <ol class="steps">
-    <li>Is there a <code>pdm.json</code> at the root of the project, next to <code>pubspec.yaml</code>? If not, skip to step 2.1.</li>
-    <li>Open it in VS Code, Ctrl+A, Ctrl+C.</li>
-    <li>On GitHub: Name <code>PDM_JSON</code>, Secret: paste, <strong>Add secret</strong>.</li>
+    <li>In VS Code, Ctrl+Shift+F and search for <code>clientSecret:</code></li>
+    <li>If it shows up with the secret in quotes, replace both lines with the ones above.</li>
+    <li>If it already says <code>fromEnvironment</code>, leave it and go to 1.5.</li>
   </ol>
-  <div class="callout tip"><strong>You should see</strong>Three secrets with <code>pdm.json</code>, or two without it.</div>
-  <aside class="notes">What to say: <code>pdm.json</code> is the group's card for the API (clientId and clientSecret), the same one from Friday's build command. If you have it and skip this secret, you get an APK that opens but gives a 401 on login. If the clientId is written in the code, you do not need it today.</aside>
+  <div class="callout tip"><strong>You should see</strong>No <code>pdm-</code> and no secret in quotes in <code>lib</code>.</div>
+  <aside class="notes">What to say: this is the sprint 3 rule, already in the project brief: API credentials only come in through <code>pdm.json</code>. With the secret written in the code, anyone with access to the repository can read it, and it stays in the git history forever. <code>String.fromEnvironment</code> reads what comes with the build; if nothing comes, it is an empty string. Groups that do not call the API on <code>main</code> find nothing: go to 1.5 anyway, because you will need <code>pdm.json</code> in sprint 3.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 1.5: <code>pdm.json</code>, only on your computer</h2>
+  <pre data-title="pdm.json, at the project root, next to pubspec.yaml"><code class="language-json">{
+  "CLIENT_ID": "the clientId from issue #1 of the repository",
+  "CLIENT_SECRET": "the clientSecret from the same issue"
+}</code></pre>
+  <ol class="steps">
+    <li>Create the file in VS Code and paste the values from issue #1. It is the same one from Wednesday, before the review: if you already have it, leave it.</li>
+    <li>Open <code>.gitignore</code>: the last line must be <code>pdm.json</code>.</li>
+  </ol>
+  <div class="callout danger"><strong>Never in git</strong><code>pdm.json</code> is never committed. If <code>git status</code> shows it, stop and call the lecturer.</div>
+  <aside class="notes">What to say: <code>pdm.json</code> is the group's card for the API, like a company access badge. It lives in two places only: on each person's computer, to run the app, and on GitHub as a secret, so the robot can build the APK. Never in the repository. The template already has the <code>pdm.json</code> line in <code>.gitignore</code>; if someone deleted it, put it back. Everyone in the group who runs the app needs their own <code>pdm.json</code>: share it through issue #1, not the chat.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 1.6: the proof, in Chrome</h2>
+  <pre data-title="VS Code terminal, in the project folder"><code class="language-powershell">flutter run -d chrome --dart-define-from-file=pdm.json</code></pre>
+  <ol class="steps">
+    <li>Run the app with <code>pdm.json</code> and log in with your account.</li>
+    <li>In the terminal, <code>git status</code>.</li>
+  </ol>
+  <div class="callout tip"><strong>You should see</strong>The login going through. In <code>git status</code>, <code>main.dart</code> if you changed it, and never <code>pdm.json</code>.</div>
+  <div class="callout danger"><strong>Without the file, it does not work</strong>Without <code>pdm.json</code>, or without the flag, the clientId is empty and login gives 401.</div>
+  <aside class="notes">What to say: F5 in VS Code does not pass the flag, so use the terminal, or add <code>"args": ["--dart-define-from-file=pdm.json"]</code> to <code>launch.json</code>. If you get 401: the file is not at the root, the names are not <code>CLIENT_ID</code> and <code>CLIENT_SECRET</code> in capitals, or the values are the sample ones from the slides.</aside>
+</section>
+
+<section class="slide">
+  <h2>Step 1.7: the same <code>pdm.json</code>, as a secret</h2>
+  <ol class="steps">
+    <li>Open <code>pdm.json</code> in VS Code, Ctrl+A, Ctrl+C.</li>
+    <li>On GitHub, <strong>New repository secret</strong> again.</li>
+    <li>Name: <code>PDM_JSON</code>, Secret: paste, <strong>Add secret</strong>.</li>
+  </ol>
+  <div class="callout tip"><strong>You should see</strong>Three secrets: <code>KEYSTORE_BASE64</code>, <code>KEYSTORE_PASSWORD</code> and <code>PDM_JSON</code>.</div>
+  <aside class="notes">What to say: it is not one or the other, it is both. The file serves your computer; the secret serves the GitHub machine, which does not have your computer, with the same text inside. <code>build.yml</code> writes <code>pdm.json</code> from this secret before the build. Without it, the robot writes <code>{}</code>: the APK opens, but login gives 401.</aside>
 </section>
 
 <section class="slide">
@@ -441,7 +482,7 @@ mkdir -Force .github\workflows
 $url = "https://tiago-rocha.github.io/pdm-aulas/aulas/aula-28-build.yml"
 Invoke-WebRequest $url -OutFile .github\workflows\build.yml</code></pre>
   <div class="callout tip"><strong>You should see</strong>In VS Code, on the left, <code>.github</code>, <code>workflows</code>, and inside the usual <code>ci.yml</code> and the new <code>build.yml</code>.</div>
-  <aside class="notes">What to say: <code>build.yml</code> is the same for every group: it has nothing of yours, the secrets come from GitHub. That is why it is downloaded rather than copied from the slide, where a wrong YAML indent breaks everything. The file is shared with the Portuguese-speaking classmates, so its step names are in Portuguese. If <code>git checkout -b</code> says there are unsaved changes, run <code>git status</code> and call the lecturer before carrying on. On macOS: <code>mkdir -p .github/workflows</code> and <code>curl -o .github/workflows/build.yml</code> with the same address.</aside>
+  <aside class="notes">What to say: <code>build.yml</code> is the same for every group: it has nothing of yours, the secrets come from GitHub. That is why it is downloaded rather than copied from the slide, where a wrong YAML indent breaks everything. The file is shared with the Portuguese-speaking classmates, so its step names are in Portuguese. The <code>main.dart</code> changed in step 1.4 comes with you to the branch: that is normal, it goes in the same PR. On macOS: <code>mkdir -p .github/workflows</code> and <code>curl -o .github/workflows/build.yml</code> with the same address.</aside>
 </section>
 
 <section class="slide">
@@ -487,9 +528,9 @@ jobs:
             --dart-define-from-file=pdm.json</code></pre>
   <ul>
     <li>Friday's command, with the versionCode made by the robot: 100 plus the build number.</li>
-    <li><code>pdm.json</code> comes from the <code>PDM_JSON</code> secret; anyone without it gets an empty <code>{}</code>.</li>
+    <li><code>pdm.json</code> comes from the <code>PDM_JSON</code> secret; without it, an empty <code>{}</code> goes in and login gives 401.</li>
   </ul>
-  <aside class="notes">What to say: "APK de release" is "Release APK". <code>BUILD</code> is <code>github.run_number</code>, the Actions build number (1, 2, 3...), set at the top of the file. A step before this one writes <code>pdm.json</code> from the secret, or <code>{}</code> for groups with the clientId in the code, so the same file works for every group. This is the slowest step, about 8 minutes on the first build.</aside>
+  <aside class="notes">What to say: "APK de release" is "Release APK". <code>BUILD</code> is <code>github.run_number</code>, the Actions build number (1, 2, 3...), set at the top of the file. A step before this one writes <code>pdm.json</code> from the secret, or <code>{}</code> if the secret is missing, so the same file works for every group. This is the slowest step, about 8 minutes on the first build.</aside>
 </section>
 
 <section class="slide">
@@ -510,12 +551,12 @@ jobs:
 <section class="slide">
   <h2>Step 3.1: the PR and the merge</h2>
   <ol class="steps">
-    <li><code>git status</code>: only <code>.github/workflows/build.yml</code>, nothing else.</li>
-    <li><code>git add .github</code>, a commit, for example <code>Automatic APK build</code>, and <code>git push -u origin build-automatico</code>.</li>
+    <li><code>git status</code>: <code>build.yml</code> and, if you changed it in 1.4, <code>main.dart</code>. Never <code>pdm.json</code>.</li>
+    <li><code>git add .github lib</code>, a commit, for example <code>Automatic APK build</code>, and <code>git push -u origin build-automatico</code>.</li>
     <li>The PR on GitHub. A group mate reviews and approves.</li>
     <li>Merge into <code>main</code>.</li>
   </ol>
-  <div class="callout tip"><strong>You should see</strong>The PR merged and a single file under "Files changed".</div>
+  <div class="callout tip"><strong>You should see</strong>The PR merged and, under "Files changed", <code>build.yml</code> and <code>main.dart</code>, with no <code>pdm.json</code>.</div>
   <aside class="notes">What to say: the build does not run on the PR, only after the merge, because only <code>main</code> reaches testers. If <code>key.properties</code> or <code>pdm.json</code> shows up in <code>git status</code>, stop: someone changed a <code>.gitignore</code>. CI (<code>ci.yml</code>) runs on the PR as always; in groups where it is red because of analyze warnings, that does not stop the build, they are two separate workflows.</aside>
 </section>
 
@@ -539,7 +580,7 @@ jobs:
   <tr><td><code>base64: invalid input</code></td><td>Key pasted halfway</td><td>Steps 1.1 and 1.2 again</td></tr>
   <tr><td><code>Alias name upload does not exist</code></td><td>The key has another name</td><td>Call the lecturer</td></tr>
   <tr><td><code>tag_name already exists</code></td><td>A re-run of a build</td><td>A new commit, not Re-run</td></tr>
-  <tr><td>The app gives 401 on login</td><td><code>PDM_JSON</code> is missing</td><td>Step 1.4 and a commit</td></tr>
+  <tr><td>The app gives 401 on login</td><td><code>PDM_JSON</code> is missing</td><td>Step 1.7 and a commit</td></tr>
   </tbody></table></div>
   <p>After fixing a secret, the build does not run on its own: it needs a new commit on <code>main</code>.</p>
   <aside class="notes">What to say: the error is always in the red step: click it and read the last lines. "Alias name upload does not exist": on Friday the keytool command had <code>-alias upload</code>; if someone changed it, the <code>keyAlias=upload</code> line in <code>build.yml</code> has to change to the name in the group's <code>key.properties</code>. For a new commit without changing code: edit the README on GitHub and commit straight to <code>main</code>, or open a small PR. Re-run fails at the Release because the build number is the same, and the tag already exists.</aside>
